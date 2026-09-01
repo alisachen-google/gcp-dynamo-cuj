@@ -80,6 +80,25 @@ file records what actually happened.
   Job 1 of the campaign done. Silicon smoke gate is now unblocked (pending AIC
   round-4 worker shape).
 
+- **08:31 — AIC NVFP4 round 4: all 4 brackets exit 0** (real nvfp4 kernels
+  confirmed in pareto). Warm agg **197.6 tok/s/GPU** @ TTFT 356 ms / TPOT
+  9.6 ms; cold 59.5 @ 28.2 s → **reuse worth 3.3× throughput**. Agg beats
+  disagg at both scales (1.09× cold, 1.42–1.63× warm). Winning worker TP4-based
+  (top-1 = 8-GPU TP4×DP2; plain TP4 on-pareto) → Kimi routing granularity
+  (6 workers @24) carries over. Artifacts: `sim-results/aic-nvfp4/`.
+- **08:35 — DynoSim n3u constants fitted + committed** (`apply_n3u_constants`,
+  `--model n3u`): prefill 19.7k tok/s/TP4-worker (per-GPU ≈ Kimi — LatentMoE
+  dominates prefill despite linear attention), TPOT 5.26+0.277·bs **no batch
+  cliff to bs≥80** (the Mamba dividend), cache unbounded (100M tok/worker).
+- **08:42 — n3u agg-24 DynoSim sweep complete** (`dynosim_n3u_agg_v1.csv`).
+  **HYPOTHESIS ANSWERED (sim): the KV win survives the hybrid architecture,
+  and it is pure placement.** With zero eviction anywhere, RR converges to 43%
+  hit (rotation splits sessions) vs KV 78–84% — same-cell gains **1.18→1.69×**
+  rising with conc; KV knees at conc ~64–128 (5,127–5,185 tok/s ≈ 214/GPU,
+  p95 2.4 s) vs Kimi's conc-16 peak — the no-cliff decode lets agg run 4–8×
+  deeper. RR knee ≈ conc 32 (p50 super-linear from 48). Framing-2 sim
+  prediction: **KV 5,127@64 vs RR 2,797@32 → 1.83×, 2× conc**.
+
 ## Next planned (in order)
 
 1. AIC solves complete → pull candidate configs + rates → `sim-results/`,

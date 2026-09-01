@@ -47,6 +47,30 @@ def agg_tpot_ms(batch):
 #   decode:  min-TPOT-per-batch ratio sgl/trt at operating bs (0.72 base, 0.70 slope)
 #   agg:     sglang shows a batch cliff at bs>=8 for 137k ISL (AIC ratio jumps
 #            0.70 -> 2.47) -> piecewise model instead of one line
+def apply_n3u_constants():
+    """Nemotron-3-Ultra 550B-A55B NVFP4 (hybrid Mamba/LatentMoE), sglang, GB300.
+    Fitted from AIC 0.11.0 SILICON solves (nvfp4 config, round 4, 2026-08-19):
+      - uncached prefill ~19.7k tok/s per TP4 worker (cold agg min-TTFT row:
+        96k in 4.87s on 4 GPUs) — per-GPU similar to Kimi despite linear
+        attention: LatentMoE FFN cost dominates prefill.
+      - decode TPOT 5.26 + 0.277*bs (agg, linear to bs>=80 — NO batch cliff;
+        the Mamba dividend) / disagg decode base 5.97, slope ~0.4.
+      - KV 6KB/token -> per-TP4-worker pool >100M tokens: eviction never binds
+        (capacity set high; reuse modeled block-aligned — Mamba checkpoint
+        spacing pending sglang hybrid-cache verification).
+    """
+    global PREFILL_TOKRATE, TPOT_BASE_MS, TPOT_SLOPE_MS, KV_CAPACITY_TOKENS, \
+        AGG_PREFILL_RATE, agg_tpot_ms
+    PREFILL_TOKRATE = 19_700
+    TPOT_BASE_MS = 5.97
+    TPOT_SLOPE_MS = 0.4
+    KV_CAPACITY_TOKENS = 100_000_000
+    AGG_PREFILL_RATE = 19_700
+    def agg_tpot_ms(batch):  # noqa: F811
+        return 5.26 + 0.277 * batch
+    globals()["agg_tpot_ms"] = agg_tpot_ms
+
+
 def apply_sglang_constants():
     global PREFILL_TOKRATE, TPOT_BASE_MS, TPOT_SLOPE_MS, AGG_PREFILL_RATE, agg_tpot_ms
     PREFILL_TOKRATE = 78_000       # 19.4k/GPU AIC cold floor x4
@@ -302,8 +326,13 @@ if __name__ == "__main__":
     ap.add_argument("--disagg72", action="store_true", help="72-GPU disagg: 18 workers, P:D splits")
     ap.add_argument("--out", default="dynosim_sweep.csv")
     ap.add_argument("--backend", choices=["trtllm", "sglang"], default="trtllm")
+    ap.add_argument("--model", choices=["kimi", "n3u"], default="kimi")
     args = ap.parse_args()
-    if args.backend == "sglang":
+    if args.model == "n3u":
+        apply_n3u_constants()
+        print("model=n3u (NVFP4 AIC-fitted: prefill 19.7k/TP4-worker, "
+              "tpot 5.97+0.4bs disagg / 5.26+0.277bs agg no-cliff, cache unbounded)")
+    elif args.backend == "sglang":
         apply_sglang_constants()
         print("backend=sglang (sgl-sim v1 seed: prefill 78k, tpot 10.3+0.07bs, "
               "agg 23.7k + piecewise tpot with bs>=8 cliff)")
