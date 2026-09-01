@@ -128,6 +128,19 @@ file records what actually happened.
   Simulation + selection stage of the campaign is now COMPLETE; silicon
   next (smoke → 24-agg ladder 16/32/64/128).
 
+- **09:05 — SMOKE PASSES ALL FOUR GATES.** Worker ready in ~14 min (sglang
+  0.5.14 loads NemotronH under `--quantization modelopt_fp4`); serve probe
+  coherent; **repeated-prompt reuse: `cached_tokens: 6400/6416` (99.75%) — the
+  hybrid Mamba radix cache genuinely reuses prefixes**; kv-events flowing
+  (router indexer active) and `dynamo_component_router_kv_hit_rate` histogram
+  live on the frontend. The routing experiment proceeds as designed.
+- **09:2x — 24-AGG COMPARISON LAUNCHED** (`scripts/sweep_n3u_agg.sh`): smoke
+  torn down, 6×TP4 fleet deploying on np-3; 8 points kv/rr × conc 16/32/64/128,
+  frontend router-swap protocol, per-point 300 s settle + 900 s trace warmup +
+  1800 s measure; knee gate halts only where sim predicts bounded (RR 64/128
+  are knee-location points, verdict logged). Bench jobs sed-derived from the
+  Kimi template with N3U model/tokenizer staging swaps. ETA ~7.5 h.
+
 ## Next planned (in order)
 
 1. AIC solves complete → pull candidate configs + rates → `sim-results/`,
