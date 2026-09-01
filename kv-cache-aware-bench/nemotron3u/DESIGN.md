@@ -39,7 +39,7 @@ finding; the sim predicts which before silicon spends a GPU-hour.
 | Gate | Status |
 |---|---|
 | AIC support, gb300 × sglang, agg + disagg | **[verified] PASS on aiconfigurator 0.11.0** (5/6 architecture vote; 0.10.0 FAILS 2/6 — pin 0.11.0). AIC's sglang DB = **0.5.14**, exactly our proven silicon pair with dynamo 1.3.1 |
-| HF weights access | **[open]** nvidia repo is gated (401) → need HF token on the staging path; ~300 GB NVFP4 to `/model-cache` |
+| HF weights access | **[verified] CLOSED** — `nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4` is **ungated** (the earlier 401s were wrong repo names missing the `NVIDIA-` prefix): 113 shards, **352 GB**, mixed FP8 (Mamba mixers) / FP4 (MoE) quantization. The unsloth mirror was evaluated and rejected for serving: it is the **BF16** release (225 shards, 1.12 TB — weights alone would fill a TP4 worker's HBM); it remains useful as the ungated config source. Staged to `/model-cache/alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4` via `nemotron3u/stage-weights-job.yaml` (no token needed) |
 | sglang 0.5.14 NemotronH serving | **[open]** AIC's support matrix says yes; still smoke-verify: does 0.5.14 serve NemotronH+LatentMoE+MTP? |
 | **Hybrid prefix cache** (the critical one) | **[open]** KV-aware routing requires radix *reuse* over the hybrid cache: attention KV per block + Mamba SSM state checkpoints at reuse boundaries. Verify sglang's hybrid/Mamba radix cache exists in 0.5.14 and reports `cached_tokens`; if reuse is attention-only or disabled for hybrid models, the whole experiment changes meaning |
 | kv-events for hybrid cache | **[open]** does `--kv-events-config` publish block events for hybrid models? (Kimi lesson: without events the router silently degrades to load-only — verify via `dynamo_component_router_kv_hit_rate` before trusting any KV run) |
@@ -162,6 +162,5 @@ verdicts from per-request timestamps (`knee_check.py`).
 
 ## Open items owed to the user
 
-- HF token (gated weights) when staging starts.
 - GPU budget confirmation: same 24-agg / 72-disagg scales, np-3?
 - MTP-off-for-parity confirmation (recommended above).

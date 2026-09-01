@@ -1,0 +1,55 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: alisachen-n3u-stage-weights
+  namespace: dynamo-cloud
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: 28800
+  template:
+    metadata:
+      annotations:
+        gke-gcsfuse/volumes: 'true'
+        gke-gcsfuse/memory-limit: 4Gi
+        gke-gcsfuse/cpu-limit: '2'
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        cloud.google.com/gke-nodepool: system
+      tolerations:
+      - operator: Exists
+      containers:
+      - name: stage
+        image: python:3.12-slim
+        command: ["bash", "-c"]
+        args:
+        - |
+          set -e
+          pip install -q "huggingface_hub[hf_transfer]"
+          export HF_HUB_ENABLE_HF_TRANSFER=1
+          python3 - <<'EOF'
+          from huggingface_hub import snapshot_download
+          import os, time
+          dst = "/model-cache/alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4"
+          t0 = time.time()
+          snapshot_download(
+              repo_id="nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4",
+              local_dir=dst,
+              max_workers=4,   # gcsfuse write path; avoid memory-limit pressure
+          )
+          n = sum(1 for f in os.listdir(dst) if f.endswith(".safetensors"))
+          sz = sum(os.path.getsize(os.path.join(dst, f)) for f in os.listdir(dst)
+                   if os.path.isfile(os.path.join(dst, f)))
+          print(f"STAGING DONE: {n} shards, {sz/1e9:.0f} GB in {(time.time()-t0)/60:.0f} min")
+          EOF
+        resources:
+          requests:
+            cpu: "4"
+            memory: 8Gi
+        volumeMounts:
+        - name: model-cache
+          mountPath: /model-cache
+      volumes:
+      - name: model-cache
+        persistentVolumeClaim:
+          claimName: model-cache
