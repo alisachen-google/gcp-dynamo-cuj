@@ -99,6 +99,24 @@ file records what actually happened.
   deeper. RR knee ≈ conc 32 (p50 super-linear from 48). Framing-2 sim
   prediction: **KV 5,127@64 vs RR 2,797@32 → 1.83×, 2× conc**.
 
+- **~09:0x — cluster resurvey on user request**: access OK; np-3 has 10 free
+  nodes (new neighbors joeywan-ubench on 7); np-1/2/4 full. **Our 9:8 Kimi
+  fleet was deleted by someone else** (sgl-d72-9x9-* deployments gone; other
+  fleets at 0 replicas) — manifests regenerate, GCS data safe.
+- **~09:1x — N3U SMOKE LAUNCHED** (user directive: smoke now, 24-agg after
+  selection): generator parameterized by model (`MODELS` map, per-arm model
+  field) → `n3u-smoke.yaml` (1 agg TP4 worker + kv frontend, np-3),
+  `n3u-agg-{rr,kv}.yaml` (6×TP4 comparison arms, ready). Smoke worker Running,
+  model loading; watcher fails fast on crashloop. Open q's the smoke answers:
+  0.5.14 loads NemotronH? `--quantization modelopt_fp4` correct for this
+  checkpoint? hybrid radix reuse + kv-events?
+- **~09:1x — SELECTION.md (agg) written from the sweep**: silicon ladder
+  **conc 16/32/64/128 both arms**; framing-1 cells 16 & 32; framing-2 sim
+  prediction KV 5,185@128 vs RR 2,797@32 → **1.85×, 4× conc**. RR knee c32
+  (p50 slope super-linear at 48), KV knee c128 (thr rollover). d72 sweep still
+  running (unbounded radix = slow sim); its role is quantifying agg-vs-disagg,
+  not silicon selection.
+
 ## Next planned (in order)
 
 1. AIC solves complete → pull candidate configs + rates → `sim-results/`,

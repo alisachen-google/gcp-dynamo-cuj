@@ -45,6 +45,12 @@ OUT = Path.home() / "kv-cache-aware-bench/sglang/manifests"
 NS = "dynamo-cloud"
 MODEL_DIR = "/model-cache/alisachen/Kimi-K2.5-NVFP4"
 SERVED = "alisachen/Kimi-K2.5-NVFP4"
+# Nemotron-3-Ultra 550B NVFP4 (hybrid Mamba/LatentMoE) — second study model
+MODELS = {
+    "kimi": (MODEL_DIR, SERVED),
+    "n3u": ("/model-cache/alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4",
+            "alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4"),
+}
 SGL_IMAGE = "lmsysorg/sglang:v0.5.14-cu130-runtime"
 FE_IMAGE = "nvcr.io/nvidia/ai-dynamo/tensorrtllm-runtime:1.3.1"
 NODEPOOL = sys.argv[1] if len(sys.argv) > 1 else "np-1"
@@ -71,6 +77,11 @@ UCX_ENV = [
     {"name": "UCX_MEMTYPE_REG_WHOLE", "value": "n"},
     {"name": "UCX_CUDA_IPC_ENABLE_MNNVL", "value": "y"},
     {"name": "UCX_IB_GID_INDEX", "value": "5"},
+    # GPUDirect RDMA is broken on the rebuilt cluster image (driver 580.126.20):
+    # mid-transfer REMOTE_DISCONNECT on both np-1 and np-3. Host-staged bypass —
+    # still rc_mlx5 verbs on the wire, passes the transport guard. Do NOT remove
+    # until the driver fault is fixed (see cluster-owner escalation).
+    {"name": "UCX_IB_GPU_DIRECT_RDMA", "value": "n"},
     {"name": "UCX_IB_ROCE_LOCAL_SUBNET", "value": "y"},
     {"name": "UCX_IB_ROCE_SUBNET_PREFIX_LEN", "value": "64"},
     {"name": "SGLANG_DISAGGREGATION_BOOTSTRAP_TIMEOUT", "value": "100000"},
@@ -118,11 +129,11 @@ def worker_env(dyn_ns):
     ]
 
 
-def sgl_args(mode, extra=None):
+def sgl_args(mode, extra=None, model="kimi"):
     """dynamo.sglang passes unknown args through to sglang server args."""
     args = [
-        "--model-path", MODEL_DIR,
-        "--served-model-name", SERVED,
+        "--model-path", MODELS[model][0],
+        "--served-model-name", MODELS[model][1],
         "--skip-tokenizer-init",
         "--tp-size", "4",
         "--ep-size", "4",
@@ -197,13 +208,13 @@ def deployment(name, dyn_ns, container, replicas=1, gpu=False):
     return dep
 
 
-def worker(kind, name, dyn_ns, replicas):
+def worker(kind, name, dyn_ns, replicas, model="kimi"):
     c = {
         "name": kind,
         "image": SGL_IMAGE,
         "command": ["bash", "-c"],
         "args": [PIP_INSTALL + " && exec python3 -m dynamo.sglang " +
-                 " ".join(shlex.quote(a) for a in sgl_args(kind))],
+                 " ".join(shlex.quote(a) for a in sgl_args(kind, model=model))],
         "env": worker_env(dyn_ns),
         "resources": {"limits": {"nvidia.com/gpu": "4"}, "claims": [{"name": "rdma"}]},
         "securityContext": {"runAsUser": 0, "capabilities": {"add": ["IPC_LOCK"]}},
@@ -247,24 +258,37 @@ def frontend(name, dyn_ns, router):
     return [dep, svc]
 
 
-# arm -> (dyn namespace, router, n_prefill, n_decode, n_agg)
+# arm -> (dyn namespace, router, n_prefill, n_decode, n_agg[, model])
 ARMS = {
     "sgl-smoke":        ("sgl-smoke", "kv", 1, 1, 0),
     "sgl-disagg72-rr":  ("sgl-disagg72-rr", "rr", 6, 12, 0),
     "sgl-disagg72-kv":  ("sgl-disagg72-kv", "kv", 6, 12, 0),
+    # 9:9 both-bounded cell (drain-probe selection): single fleet, router swapped
+    # per point via frontend patch (flag-sweep protocol)
+    # TEMP 2026-08-18: np-3 node dkwr unreachable since 09:00 (17 usable nodes)
+    # -> 9P+8D fallback (sim: gain 1.088x @ c240, RR stationary; 8:9 rejected -
+    # RR backlog grows at every conc). Restore (9, 9) when the node returns.
+    "sgl-d72-9x9":      ("sgl-d72-9x9", "kv", 9, 8, 0),
     "sgl-agg-rr":       ("sgl-agg-rr", "rr", 0, 0, 6),
     "sgl-agg-kv":       ("sgl-agg-kv", "kv", 0, 0, 6),
+    # N3U smoke: 1 agg TP4 worker + kv frontend (stage-0 serving gate)
+    "n3u-smoke":        ("n3u-smoke", "kv", 0, 0, 1, "n3u"),
+    # N3U 24-GPU agg comparison arms (6 x TP4, only router differs)
+    "n3u-agg-rr":       ("n3u-agg-rr", "rr", 0, 0, 6, "n3u"),
+    "n3u-agg-kv":       ("n3u-agg-kv", "kv", 0, 0, 6, "n3u"),
 }
 
 OUT.mkdir(parents=True, exist_ok=True)
-for arm, (dyn_ns, router, np_, nd, na) in ARMS.items():
+for arm, spec in ARMS.items():
+    dyn_ns, router, np_, nd, na = spec[:5]
+    model = spec[5] if len(spec) > 5 else "kimi"
     docs = frontend(f"{arm}-frontend", dyn_ns, router)
     if np_:
-        docs.append(worker("prefill", f"{arm}-prefill", dyn_ns, np_))
+        docs.append(worker("prefill", f"{arm}-prefill", dyn_ns, np_, model))
     if nd:
-        docs.append(worker("decode", f"{arm}-decode", dyn_ns, nd))
+        docs.append(worker("decode", f"{arm}-decode", dyn_ns, nd, model))
     if na:
-        docs.append(worker("agg", f"{arm}-worker", dyn_ns, na))
+        docs.append(worker("agg", f"{arm}-worker", dyn_ns, na, model))
     p = OUT / f"{arm}.yaml"
     p.write_text(yaml.dump_all(docs, sort_keys=False, default_flow_style=False))
-    print(f"wrote {p.name}: {np_}P+{nd}D+{na}A, router={router}, pool={NODEPOOL}")
+    print(f"wrote {p.name}: {np_}P+{nd}D+{na}A, router={router}, model={model}, pool={NODEPOOL}")
