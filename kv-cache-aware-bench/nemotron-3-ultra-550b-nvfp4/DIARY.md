@@ -75,6 +75,11 @@ file records what actually happened.
   with `--model-path /tmp/n3u-fp4`. BF16 round-3 outputs kept in
   `sim-results/aic/` as a precision-sensitivity reference.
 
+- **~08:40 — WEIGHT STAGING COMPLETE**: all 243 repo files, **113 shards /
+  352 GB in 46 min** → `/model-cache/alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4`.
+  Job 1 of the campaign done. Silicon smoke gate is now unblocked (pending AIC
+  round-4 worker shape).
+
 ## Next planned (in order)
 
 1. AIC solves complete → pull candidate configs + rates → `sim-results/`,
