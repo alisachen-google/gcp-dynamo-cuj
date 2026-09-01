@@ -141,6 +141,19 @@ file records what actually happened.
   are knee-location points, verdict logged). Bench jobs sed-derived from the
   Kimi template with N3U model/tokenizer staging swaps. ETA ~7.5 h.
 
+- **15:38 — 24-AGG SILICON CAMPAIGN COMPLETE: all 8 points, zero errors.**
+  (Mid-campaign note: knee_check's run-dir filter was Kimi-named — fixed to
+  model-agnostic; artifact roots looked "empty" in plain `ls` due to gcsfuse
+  zero-byte dir markers — recursive listing shows all data; summary fetch had
+  a double-slash path bug — fixed.)
+- **RESULTS** (`AGG24_RESULTS.md`): both-bounded cells at conc 16 AND 32;
+  at c32 **KV 1,657 tok/s (69/GPU) vs RR 993 (41.4) = 1.67× with 3.9× better
+  p95**, both queues stationary. Both policies knee at ~32–48 → framing 2
+  collapses into framing 1 (same best cell). Gains 1.41–1.79× everywhere —
+  **larger than sim's placement-only prediction (1.19–1.46×): hypothesis
+  confirmed on silicon.** Sim verdicts: ratios + RR knee confirmed; KV knee
+  over-predicted (128 vs ~32–48); absolutes 2.5× optimistic (calibration v2).
+
 ## Next planned (in order)
 
 1. AIC solves complete → pull candidate configs + rates → `sim-results/`,
