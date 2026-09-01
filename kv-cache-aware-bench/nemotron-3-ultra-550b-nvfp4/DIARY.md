@@ -117,6 +117,17 @@ file records what actually happened.
   running (unbounded radix = slow sim); its role is quantifying agg-vs-disagg,
   not silicon selection.
 
+- **08:58 — disagg72 sweep complete** (`dynosim_n3u_disagg72_v1.csv`): best
+  disagg KV 5,927 tok/s (3:15@c96) = **82 tok/s/GPU vs agg's 216** —
+  **DynoSim independently confirms AIC: disagg costs ~2.6× per-GPU on this
+  architecture.** RR knees c48–96 on every split. No silicon disagg cell;
+  SELECTION.md disagg section finalized as the topology negative-finding.
+- **~09:2x — CURVES PUBLISHED** (Kimi-style panel set + 2 cross-model
+  frontier panels): `reports/n3u-curves.html`, artifact
+  https://claude.ai/code/artifact/7cc21d53-d658-4047-85bc-c403711b568b.
+  Simulation + selection stage of the campaign is now COMPLETE; silicon
+  next (smoke → 24-agg ladder 16/32/64/128).
+
 ## Next planned (in order)
 
 1. AIC solves complete → pull candidate configs + rates → `sim-results/`,

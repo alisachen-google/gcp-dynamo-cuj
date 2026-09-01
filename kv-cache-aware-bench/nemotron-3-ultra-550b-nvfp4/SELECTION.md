@@ -26,9 +26,18 @@ scatters session turns) vs KV 79–84%. The entire gap is *placement*. The
 no-cliff Mamba decode moves the whole operating range 4–8× deeper in
 concurrency than Kimi agg (knee 128 vs 16).
 
-## Disaggregated 72 GPU — pending
-`dynosim_n3u_disagg72_v1.csv` still sweeping (unbounded radix makes the sim
-slow). Expectation from AIC: disagg loses to agg at equal GPUs for this model;
-the disagg sweep's role is to quantify that (and the transfer-BW sensitivity)
-rather than to select a silicon cell. Silicon disagg remains gated on the
-Kimi-era ~1.5 req/s ceiling root-cause regardless.
+## Disaggregated 72 GPU — swept; confirms the agg verdict, no silicon cell selected
+
+`dynosim_n3u_disagg72_v1.csv` (5 splits × 8 conc × 11 policies). Best KV cells
+per split: 3:15 → 5,927 tok/s @c96 (p95 7.5 s); 6:12 → 5,920 @c144 (5.2 s);
+9:9 → 5,259 @c144; 12:6 → 4,383 @c96; 15:3 → 2,932 @c48. RR knees by c48–96
+on every split.
+
+**The verdict**: best disagg = **82 tok/s/GPU** on 72 GPUs vs agg's **216
+tok/s/GPU** on 24 — DynoSim independently reproduces AIC's agg-wins call:
+**disaggregation costs ~2.6× per-GPU for this architecture** (cheap linear
+prefill + tiny KV remove the separation benefit; the decode tier idles).
+Reported as the cross-model topology finding — the study's silicon budget goes
+to agg (ladder above). A silicon disagg arm would only be revisited if the
+GPUDirect fix lands *and* the cross-model story needs a measured confirmation
+of the negative.
