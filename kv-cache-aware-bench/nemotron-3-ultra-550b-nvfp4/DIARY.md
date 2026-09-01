@@ -48,6 +48,33 @@ file records what actually happened.
   also down — new since yesterday's survey)**, np-3 17/18 (dkwr still dead),
   np-4 18/18. Cluster-owner escalation list grows to four node-level faults.
 
+- **08:0x — AIC solve round 1: all 4 brackets crashed at the finish line** —
+  the *experiments succeeded* (warm24: agg 535 results + disagg 76 in ~2 min;
+  fast because NemotronH's search space is smaller than Kimi's) but AIC's final
+  summary calls `plotext.plot_size` (a plotext-4.x API) and pip had installed
+  plotext 5.x (renamed `plotsize`) → AttributeError before results were saved.
+  **Fix**: pin `plotext==4.2.0` alongside aiconfigurator 0.11.0 (toolchain-pin
+  lesson #2 for this model). Round 2 relaunched, watcher armed.
+
+- **08:00–08:07 — solve round 2 failed the same way**: plotext 4.2.0 lacks
+  `theme` (5.x API). Root cause found: AIC declares `plotext>=5.3.2`; pip
+  resolved 6.0.0 which *removed* `plot_size`. **Correct pin: plotext==5.3.2
+  exactly** (has both APIs). Toolchain pins for this model now: aiconfigurator
+  0.11.0 + plotext 5.3.2 + sglang 0.5.14 DB.
+- **08:09–08:15 — solve round 3: all 4 brackets exit 0**, outputs fetched to
+  `sim-results/aic/` (pareto.csv + top-3 deploy configs per bracket). Headline
+  (later invalidated, see next): agg beats disagg 1.45–1.94× at both scales;
+  warm 63.4 tok/s/GPU @ TTFT 233 ms TPOT 9.5 ms; cold 31.8 @ 25.3 s.
+- **08:2x — round-3 results INVALIDATED before use: they model BF16, not
+  NVFP4.** Pareto rows show `gemm=bfloat16` throughout — AIC's quant inference
+  read our config source, the unsloth **BF16** config (no `quantization_config`
+  key) → solver assumed 1.1 TB weights (hence 8-GPU workers). Lesson recorded:
+  **the config.json you hand AIC determines the precision it models** — always
+  use the target checkpoint's own config. NVFP4 repo's config.json +
+  hf_quant_config.json fetched (`quant_algo` present) → **round 4 launched**
+  with `--model-path /tmp/n3u-fp4`. BF16 round-3 outputs kept in
+  `sim-results/aic/` as a precision-sensitivity reference.
+
 ## Next planned (in order)
 
 1. AIC solves complete → pull candidate configs + rates → `sim-results/`,
