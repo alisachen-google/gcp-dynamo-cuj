@@ -154,6 +154,22 @@ file records what actually happened.
   confirmed on silicon.** Sim verdicts: ratios + RR knee confirmed; KV knee
   over-predicted (128 vs ~32–48); absolutes 2.5× optimistic (calibration v2).
 
+- **~16:0x — agg flag-grid verification (user q)**: sim's 9-variant grid says
+  **defaults tie for best at the bounded cells** (c16/c32 within 0.1%); tuning
+  pays only post-knee (scale3.0+credit0.8: +1.4% @c64, +12.6% @c128) — same
+  pattern as Kimi. Silicon headline (c32, defaults) stands; live flag probe at
+  c32/c64 queued as the one unverified corner (after disagg).
+- **~16:1x — N3U 72-GPU DISAGG CAMPAIGN LAUNCHED** (np-3 fully free — all 18
+  nodes): 6P+12D TP4 (sim-best bounded split 6:12), single fleet + router-swap,
+  ladder kv/rr × conc 24/48/96/144 (anchored low: silicon ~2.5× below sim
+  absolutes). RDMA transport gate every point (stop policy — NIXL now carries
+  KV + Mamba state); knee gate halts if kv:24/rr:24/kv:48 measure post-knee.
+  Dual purpose: measures the sim's agg-beats-disagg negative on silicon AND
+  the transfer-ceiling diagnostic (N3U transfers 4× lighter than Kimi — if
+  kv:24 saturates like Kimi disagg did, the ceiling isn't transfer-bound).
+  First disagg serving of NemotronH (SSM-state transfer over NIXL untested —
+  fleet-up + kv:24 double as that smoke). ETA ~8 h.
+
 ## Next planned (in order)
 
 1. AIC solves complete → pull candidate configs + rates → `sim-results/`,

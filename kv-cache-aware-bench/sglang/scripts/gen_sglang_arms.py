@@ -276,6 +276,10 @@ ARMS = {
     # N3U 24-GPU agg comparison arms (6 x TP4, only router differs)
     "n3u-agg-rr":       ("n3u-agg-rr", "rr", 0, 0, 6, "n3u"),
     "n3u-agg-kv":       ("n3u-agg-kv", "kv", 0, 0, 6, "n3u"),
+    # N3U 72-GPU disagg (sim-best bounded split 6:12): single fleet, router
+    # swapped per point; measures the sim's agg-beats-disagg negative + the
+    # transfer-ceiling diagnostic (N3U transfers 4x lighter than Kimi)
+    "n3u-d72":          ("n3u-d72", "kv", 6, 12, 0, "n3u"),
 }
 
 OUT.mkdir(parents=True, exist_ok=True)
