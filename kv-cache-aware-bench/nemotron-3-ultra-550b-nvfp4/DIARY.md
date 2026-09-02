@@ -182,6 +182,19 @@ file records what actually happened.
   AIC gb300/sglang DB decode batch-scaling for NemotronH looks
   under-sampled — candidate for an aiconfigurator issue.
 
+- **20:05 (09-02) — d72 first point + designed halt.** kv:24: **2,005 tok/s
+  (27.8/GPU), 3.34 req/s, TTFT p50 4.05 s growing (2.6→5.1) → POST-KNEE**,
+  gate PASS (first-ever NemotronH disagg serving: NIXL carried KV + Mamba
+  state cleanly). Three findings: (1) **agg-beats-disagg confirmed on
+  silicon** — 27.8/GPU vs agg's bounded 69/GPU ≈ 2.5× worse, matching sim's
+  2.6×; (2) **Kimi-ceiling was transfer-bound** — N3U disagg reaches 3.34
+  req/s vs Kimi's ~1.5–1.7 hard ceiling, scaling with the 4× lighter
+  transfers → sharpens the GPUDirect escalation; (3) silicon disagg knee <24
+  vs sim 144 — decode is idle (ITL 8.7 ms), so the disagg drift lives in
+  prefill-tier/transfer (decomposition when ladder completes). Campaign
+  resumed with revised ladder: kv/rr:12 expected-bounded anchors,
+  24/48/96 knee-location, 144 dropped.
+
 ## Next planned (in order)
 
 1. AIC solves complete → pull candidate configs + rates → `sim-results/`,
