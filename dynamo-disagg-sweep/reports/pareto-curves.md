@@ -73,28 +73,28 @@ throughput) and therefore appears only in the drift series on the chart.
 
 ### Point-by-point vs InferenceMax — DSV4-Pro
 
-| Source | Concurrency | Config | Curve | Total Tput (tok/s/GPU) | Input Tput (tok/s/GPU) | Output Tput (tok/s/GPU) | Median E2EL (s) | Median ITL (s) |
-|---|---|---|---|---|---|---|---|---|
-| InferenceMax | 1 | 4P/4D · 8 GPU | Low-latency | 193 | 344 | 43 | 5.06 | 0.02 |
-| GKE (`p1`) | | | | 216 (+11.70%) | 384 (+11.70%) | 48 (+11.70%) | 4.33 (-14.47%) | 0.02 (-0.10%) |
-| InferenceMax | 8 | 4P/24D · 28 GPU | Low-latency | 328 | 2,035 | 43 | 6.19 | 0.02 |
-| GKE | | | | — | — | — | — | — |
-| InferenceMax | 32 | 4P/24D · 28 GPU | Low-latency | 954 | 5,933 | 124 | 8.88 | 0.02 |
-| GKE | | | | — | — | — | — | — |
-| InferenceMax | 64 | 4P/24D · 28 GPU | Low-latency | 1,599 | 9,954 | 207 | 10.56 | 0.02 |
-| GKE | | | | — | — | — | — | — |
-| InferenceMax | 256 | 4P/16D · 20 GPU | Mid-curve | 3,056 | 13,580 | 424 | 32.36 | 0.80 |
-| GKE (`p4`) | | | | 3,056 (+0.01%) | 13,581 (+0.01%) | 425 (+0.01%) | 31.59 (-2.37%) | 0.79 (-0.62%) |
-| InferenceMax | 256 | 4P/8D · 12 GPU | Mid-curve | 5,250 | 13,999 | 875 | 31.79 | 1.06 |
-| GKE (`p3`) | | | | 5,265 (+0.30%) | 14,040 (+0.30%) | 878 (+0.30%) | 32.31 (+1.66%) | 1.08 (+1.73%) |
-| InferenceMax | 512 | 8P/8D · 16 GPU | Mid-curve | 7,295 | 12,968 | 1,621 | 32.08 | 1.32 |
-| GKE (`p5`) | | | | 7,426 (+1.81%) | 13,202 (+1.81%) | 1,650 (+1.81%) | 32.13 (+0.16%) | 1.36 (+3.33%) |
-| InferenceMax | 1024 | 16P/8D · 24 GPU | Mid-curve | 9,746 | 12,995 | 3,249 | 32.02 | 1.68 |
-| GKE (`p6`) | | | | 9,790 (+0.45%) | 13,053 (+0.45%) | 3,264 (+0.45%) | 32.42 (+1.27%) | 1.69 (+0.39%) |
-| InferenceMax | 4096 | 24P/8D · 32 GPU | High-throughput | 11,634 | 13,789 | 5,169 | 84.82 | 1.71 |
-| GKE (`p7`) | | | | 11,593 (-0.35%) | 13,741 (-0.35%) | 5,151 (-0.35%) | 84.29 (-0.63%) | 1.65 (-3.29%) |
-| InferenceMax | 8192 | 32P/8D · 40 GPU | High-throughput | 12,233 | 13,593 | 6,795 | 132.31 | 2.21 |
-| GKE (`p8`, latency-only rerun) | | | | — | — | — | 135.03 (+2.06%) | 2.14 (-2.91%) |
+| Source | Concurrency | Config | Curve | Total Tput (tok/s/GPU) | Input Tput (tok/s/GPU) | Output Tput (tok/s/GPU) | TPOT mean (ms) | Interactivity (tok/s/user) | Median E2EL (s) | Median ITL (s) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| InferenceMax | 1 | 4P/4D · 8 GPU | Low-latency | 193 | 344 | 43 | 4.30 | 232.5 | 5.06 | 0.02 |
+| GKE (`p1`) | | | | 216 (+11.70%) | 384 (+11.70%) | 48 (+11.70%) | 4.47 (+4.01%) | 223.6 (-3.85%) | 4.33 (-14.47%) | 0.02 (-0.10%) |
+| InferenceMax | 256 | 4P/8D · 12 GPU | Mid-curve | 5,250 | 13,999 | 875 | 10.86 | 92.1 | 31.79 | 1.06 |
+| GKE (`p3`) | | | | 5,265 (+0.30%) | 14,040 (+0.30%) | 878 (+0.30%) | 10.75 (-0.97%) | 93.0 (+0.97%) | 32.31 (+1.66%) | 1.08 (+1.73%) |
+| InferenceMax | 256 | 4P/16D · 20 GPU | Mid-curve | 3,056 | 13,580 | 424 | 8.44 | 118.4 | 32.36 | 0.80 |
+| GKE (`p4`) | | | | 3,056 (+0.01%) | 13,581 (+0.01%) | 425 (+0.01%) | 8.28 (-1.90%) | 120.7 (+1.94%) | 31.59 (-2.37%) | 0.79 (-0.62%) |
+| InferenceMax | 8 | 4P/24D · 28 GPU | Low-latency | 328 | 2,035 | 43 | 5.52 | 181.1 | 6.19 | 0.02 |
+| GKE (`p2`) | | | | 389 (+18.64%) | 2,415 (+18.64%) | 51 (+18.64%) | 5.23 (-5.36%) | 191.4 (+5.66%) | 5.37 (-13.22%) | 0.02 (-0.09%) |
+| InferenceMax | 32 | 4P/24D · 28 GPU | Low-latency | 954 | 5,933 | 124 | 6.56 | 152.5 | 8.88 | 0.02 |
+| GKE (`p2`) | | | | 1,045 (+9.48%) | 6,496 (+9.48%) | 136 (+9.48%) | 6.85 (+4.43%) | 146.0 (-4.24%) | 8.32 (-6.30%) | 0.02 (+2.69%) |
+| InferenceMax | 64 | 4P/24D · 28 GPU | Low-latency | 1,599 | 9,954 | 207 | 7.54 | 132.7 | 10.56 | 0.02 |
+| GKE (`p2`) | | | | 1,727 (+8.00%) | 10,750 (+8.00%) | 224 (+8.00%) | 7.96 (+5.55%) | 125.7 (-5.26%) | 10.05 (-4.85%) | 0.02 (+1.20%) |
+| InferenceMax | 512 | 8P/8D · 16 GPU | Mid-curve | 7,295 | 12,968 | 1,621 | 13.05 | 76.7 | 32.08 | 1.32 |
+| GKE (`p5`) | | | | 7,426 (+1.81%) | 13,202 (+1.81%) | 1,650 (+1.81%) | 13.22 (+1.38%) | 75.6 (-1.36%) | 32.13 (+0.16%) | 1.36 (+3.33%) |
+| InferenceMax | 1024 | 16P/8D · 24 GPU | Mid-curve | 9,746 | 12,995 | 3,249 | 16.64 | 60.1 | 32.02 | 1.68 |
+| GKE (`p6`) | | | | 9,790 (+0.45%) | 13,053 (+0.45%) | 3,264 (+0.45%) | 16.63 (-0.09%) | 60.1 (+0.09%) | 32.42 (+1.27%) | 1.69 (+0.39%) |
+| InferenceMax | 4096 | 24P/8D · 32 GPU | High-conc | 11,634 | 13,789 | 5,169 | 24.28 | 41.2 | 84.82 | 1.71 |
+| GKE (`p7`) | | | | 11,593 (-0.35%) | 13,741 (-0.35%) | 5,151 (-0.35%) | 23.82 (-1.89%) | 42.0 (+1.93%) | 84.29 (-0.63%) | 1.65 (-3.29%) |
+| InferenceMax | 8192 | 32P/8D · 40 GPU | High-conc | 12,233 | 13,593 | 6,795 | 37.43 | 26.7 | 132.31 | 2.21 |
+| GKE (`p8`) | | | | 11,844 (-3.18%) | 13,161 (-3.18%) | 6,577 (-3.21%) | 36.63 (-2.13%) | 27.3 (+2.17%) | 135.03 (+2.06%) | 2.14 (-2.91%) |
 
 Percentages on GKE rows are the gap vs the InferenceMax published value for the same point: `(GKE − InferenceMax) / InferenceMax`. Positive means GKE is higher — better for throughput columns, worse for latency columns. Input/output tput are per prefill/decode GPU respectively; E2EL and ITL are medians in seconds.
 GKE p8 (conc 8192) is the latency-only clean rerun — no throughput numbers; concurrencies 8–64 (4P/24D) have no GKE run yet.
