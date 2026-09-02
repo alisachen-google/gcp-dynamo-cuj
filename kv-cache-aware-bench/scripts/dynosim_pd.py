@@ -66,8 +66,12 @@ def apply_n3u_constants():
     TPOT_SLOPE_MS = 0.4
     KV_CAPACITY_TOKENS = 100_000_000
     AGG_PREFILL_RATE = 19_700
+    # v2 (2026-09-01): decode refit from silicon ITL (13.5ms @bs2.7 -> 18.0
+    # @bs5.3, kv-c16/c32 cells) — AIC DB slope was 6x too shallow (0.277);
+    # drift decomposition in nemotron-3-ultra-550b-nvfp4/AGG24_RESULTS.md.
+    # v1 (AIC-seeded) was: 5.26 + 0.277*bs.
     def agg_tpot_ms(batch):  # noqa: F811
-        return 5.26 + 0.277 * batch
+        return 8.9 + 1.73 * batch
     globals()["agg_tpot_ms"] = agg_tpot_ms
 
 

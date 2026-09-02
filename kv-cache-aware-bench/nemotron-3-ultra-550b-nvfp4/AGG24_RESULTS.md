@@ -44,11 +44,38 @@ ITL p50 at the bounded cells: 13.5–18.0 ms (KV) / 12.4–19.3 ms (RR).
 | Absolute KV throughput 5,127 @c64 | 2.5× over-predicted (measured 2,045) |
 | Both-bounded cells at 16 & 32 | Confirmed exactly |
 
-Calibration v2 items: silicon prefill/decode effective rates ~2.5× below the
-AIC-seeded constants (same over-prediction class as Kimi's 1.5–2.7×; AIC agg
-warm said 197 tok/s/GPU vs 69 measured at the bounded cell) — refit from these
-8 points; the *ratio* and *RR-knee* fidelity is what the sim earns its keep on,
-and both held.
+## Drift analysis: where the 1.9–2.8× sim-vs-silicon gap lives (apple-to-apple)
+
+Method: substitute measured component rates into DynoSim one step at a time at
+the c16/c32 cells and observe which substitution closes the throughput gap.
+
+| Sim variant | KV c16 pred/meas | RR c16 | KV c32 | RR c32 |
+|---|---|---|---|---|
+| v1 (AIC-seeded) | 1.89× | 2.24× | 2.31× | 2.82× |
+| **decode substituted** (measured ITL line 8.9 + 1.73 ms/seq) | **0.80×** | **1.06×** | **0.86×** | **1.31×** |
+| + prefill ×0.5 | 0.81× | 0.99× | 0.82× | 1.15× |
+| + prefill ×0.25 | 0.77× | 0.78× | 0.82× | 0.86× |
+
+**Verdict: the e2e drift is essentially one step — decode.** The AIC gb300
+sglang-0.5.14 DB models NemotronH decode as 5.26 + 0.277·bs ms; silicon
+measures 13.5 ms @ per-worker bs 2.7 → 18.0 ms @ 5.3, i.e. **8.9 + 1.73
+ms/seq — a 6× steeper batch slope**. Substituting decode alone moves every
+cell to within ~±30%; prefill scaling then barely moves throughput
+(decode-bound regime) and stock prefill already reproduces RR's TTFT
+(0.74–1.23 s predicted vs 1.10–1.44 s measured), so the prefill rate is
+approximately right. The secondary residual is **hit-rate drift**: engine
+telemetry shows KV median cached ≈ 52k/83k ≈ 63% vs the sim's 84% (the sim's
+block-aligned reuse is optimistic about hybrid-cache checkpoint granularity),
+which explains RR's remaining +31% at c32 and KV's TTFT p50 (0.56 s vs 0.13 s
+predicted). Root-cause attribution for the DB: NemotronH decode is
+Mamba-state + LatentMoE bound, and the DB's batch-scaling row for this
+architecture appears interpolated from too-sparse measurements — worth
+reporting upstream to aiconfigurator.
+
+**n3u-sim v2 constants** (applied): agg TPOT 8.9 + 1.73·bs (measured), prefill
+unchanged 19.7k, reuse model pending a hybrid-checkpoint granularity term.
+With v2 the sim is mildly conservative for KV (0.80–0.86×) — acceptable
+polarity (under-promise) for prediction use.
 
 ## Reproduction
 

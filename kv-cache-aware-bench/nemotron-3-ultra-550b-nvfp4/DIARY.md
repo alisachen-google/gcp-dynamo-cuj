@@ -170,6 +170,18 @@ file records what actually happened.
   First disagg serving of NemotronH (SSM-state transfer over NIXL untested —
   fleet-up + kv:24 double as that smoke). ETA ~8 h.
 
+- **~16:3x — DRIFT ANALYSIS (goal directive): apple-to-apple substitution
+  localizes the agg sim-vs-silicon gap (1.9–2.8×) to ONE step — decode.**
+  Measured ITL line 8.9 + 1.73 ms/seq vs AIC DB's 5.26 + 0.277 (slope 6× too
+  shallow for NemotronH); decode substitution alone brings every cell to
+  ±30%. Prefill ≈ correct (stock constants reproduce RR TTFT). Secondary:
+  hit-rate drift (engine cached p50 ≈63% vs sim 84% — hybrid-checkpoint
+  granularity optimistic in the block-aligned reuse model). Report section
+  added to AGG24_RESULTS.md; **n3u-sim v2 decode constants applied** (now
+  mildly conservative, 0.80–0.86× on KV — right polarity). Upstream note:
+  AIC gb300/sglang DB decode batch-scaling for NemotronH looks
+  under-sampled — candidate for an aiconfigurator issue.
+
 ## Next planned (in order)
 
 1. AIC solves complete → pull candidate configs + rates → `sim-results/`,
