@@ -63,7 +63,7 @@ def row(run_id, run_name, model_id, ckpt, tok, precision, conc, num_prompts, tp,
     inter = 1000.0 / d['mean_tpot_ms'] if d.get('mean_tpot_ms') else None
     rps = d.get('completed', num_prompts) / dur if dur else None
     return f"""(
-  '{run_id}', 'gcp-dynamo-cuj (DynamoBench)', TRUE, 'server', '{run_name}',
+  '{run_name}',
   '{model_id}', 'Dynamo+SGLang', 'a4x_max', 'a4x_max', 'a4x_max',
   'serving-disagg-8k1k', '{ckpt}', '{tok}', 'random (sa-bench)',
   {num_prompts}, {conc}, NULL, 8192, 1024, TRUE, '{precision}',
@@ -81,7 +81,7 @@ def row(run_id, run_name, model_id, ckpt, tok, precision, conc, num_prompts, tp,
 )"""
 
 
-COLS = """run_id, run_source, is_run_externally_visible, run_type, run_name,
+COLS = """run_name,
   model_id, inference_software_id, hardware_id, prefill_hardware_id, decode_hardware_id,
   workload_type, workload_checkpoint_path, workload_tokenizer_name_or_path, workload_dataset_name_or_path,
   workload_num_prompts, workload_global_batch_size, workload_request_rate_qps,
@@ -108,7 +108,7 @@ for pid, conc, pat, kv, plane, pg, dg, tot, nodes, pw, gap in DSR1:
           f'in/prefill-GPU={d["total_input_tokens"]/d["duration"]/pg:.0f}; per_chip cols divide by total {tot} chips. '
           f'Closed-loop max-concurrency={conc}, 10x measured. Configs+logs: {REPO}')
     rows.append(row(f'dsr1-fp4-a4xmax-gke-dynamo-sglang-rdmakv-{pid}-c{conc}-01',
-                    f'DSR1-FP4 8k1k {pid} ({kv} KV, conc {conc})', 'deepseek-r1-0528',
+                    f'DSR1-FP4 8k1k {pid} (conc {conc})', 'deepseek-r1-0528',
                     'nvidia/DeepSeek-R1-0528-NVFP4-v2', 'nvidia/DeepSeek-R1-0528-NVFP4-v2',
                     'NVFP4', conc, 10*conc, dg, dg, dg, nodes, tot, pw,
                     f'prefill DEP4 x{pw} / decode DEP{dg} x1', d, cm, 'trtllm_mla'))
