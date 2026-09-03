@@ -219,6 +219,14 @@ file records what actually happened.
   reports; drift analyzed apple-to-apple for both agg (decode slope) and
   disagg (transfer floor + tier-rate halving).
 
+- **~06:0x (09-03) — NEW METHODOLOGY (user directive): SLO-fixed comparison
+  (framing 3)** — fix TTFT p95 SLO, compare max compliant throughput per
+  policy, agg + disagg. Gap analysis on the 16 measured N3U points: at 5 s
+  agg-RR and both disagg policies lack compliant points; agg-KV boundary
+  coarse between c32/c64. **4 boundary jobs launched** (`scripts/slo_points.sh`,
+  chained fleets): agg rr:8 + kv:48, then d72 kv:8 + rr:8 (RDMA-gated).
+  Report `SLO_COMPARISON.md` (cross-model, SLO 5/10/30 s) lands when they do.
+
 ## Next planned (in order)
 
 1. AIC solves complete → pull candidate configs + rates → `sim-results/`,
