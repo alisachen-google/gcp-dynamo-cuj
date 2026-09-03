@@ -21,9 +21,10 @@ declare -A ROUTER=(
   [kv]="--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs"
   [rr]="--router-mode round-robin"
 )
-# Revised after kv:24 measured post-knee (halt 2026-09-02): down-anchor at 12,
-# 24/48/96 become knee-location points; 144 dropped (sim knee badly off).
-POINTS="kv:12:bounded rr:12:bounded rr:24:post-ok kv:48:post-ok rr:48:post-ok kv:96:post-ok rr:96:post-ok"
+# Revision 3 (2026-09-03): kv:12 measured BOUNDED, rr:12 POST-KNEE (RR knee
+# <12 — no practical bounded RR disagg regime; boundary evidence banked, not
+# re-chased). Remaining points are knee-location/saturation only.
+POINTS="rr:24:post-ok kv:48:post-ok rr:48:post-ok kv:96:post-ok rr:96:post-ok"
 
 say "=== n3u d72 campaign: deploying 6P+12D fleet"
 kubectl apply -n $NS -f $HOME/kv-cache-aware-bench/sglang/manifests/n3u-d72.yaml >> "$LOG" 2>&1

@@ -195,6 +195,15 @@ file records what actually happened.
   resumed with revised ladder: kv/rr:12 expected-bounded anchors,
   24/48/96 knee-location, 144 dropped.
 
+- **00:42 (09-03) — the conc-12 anchor pair delivers the disagg headline:
+  at the SAME cell, KV is BOUNDED (stationary, p50 2.67 s, 2.40 req/s, gate
+  PASS) while RR DIVERGES (2.2→6.4 s growing) — on 72-GPU disagg silicon the
+  router flag alone determines whether the system is bounded.** RR knee <12 =
+  no practical bounded RR disagg regime (mirrors Kimi disagg). Gate halted on
+  rr:12-expected-bounded as designed; review: boundary evidence banked, not
+  chased below 12. Resumed (rev 3) with saturation/knee-location points only:
+  rr:24, kv:48, rr:48, kv:96, rr:96 (~4.5 h).
+
 ## Next planned (in order)
 
 1. AIC solves complete → pull candidate configs + rates → `sim-results/`,
