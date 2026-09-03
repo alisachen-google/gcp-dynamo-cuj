@@ -76,8 +76,7 @@ def row(run_id, run_name, model_id, ckpt, tok, precision, conc, num_prompts, tp,
   {n(d.get('mean_tpot_ms'))}, {n(d.get('median_tpot_ms'))}, {n(d.get('p99_tpot_ms'))}, {n(d.get('std_tpot_ms'))},
   {n(d.get('mean_itl_ms'))}, {n(d.get('median_itl_ms'))}, {n(d.get('p99_itl_ms'))}, {n(d.get('std_itl_ms'))},
   {n(inter, '.2f')}, {('NULL' if not attn else "'" + attn + "'")},
-  'alisachen', CURRENT_TIMESTAMP(),
-  '{comment}'
+  'alisachen', CURRENT_TIMESTAMP()
 )"""
 
 
@@ -97,8 +96,7 @@ COLS = """run_name,
   metrics_tpot_avg_ms, metrics_tpot_p50_ms, metrics_tpot_p99_ms, metrics_tpot_stddev_ms,
   metrics_itl_avg_ms, metrics_itl_p50_ms, metrics_itl_p99_ms, metrics_itl_stddev_ms,
   metrics_interactivity_tokens_per_sec_per_user, attention_backend,
-  update_person_ldap, update_timestamp,
-  logs_comments_string"""
+  update_person_ldap, update_timestamp"""
 
 rows = []
 for pid, conc, pat, kv, plane, pg, dg, tot, nodes, pw, gap in DSR1:

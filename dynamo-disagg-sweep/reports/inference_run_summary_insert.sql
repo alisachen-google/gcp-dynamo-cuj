@@ -20,8 +20,7 @@ INSERT INTO `ml-workload-benchmarks.benchmark_dataset_v2.inference_run_summary` 
   metrics_tpot_avg_ms, metrics_tpot_p50_ms, metrics_tpot_p99_ms, metrics_tpot_stddev_ms,
   metrics_itl_avg_ms, metrics_itl_p50_ms, metrics_itl_p99_ms, metrics_itl_stddev_ms,
   metrics_interactivity_tokens_per_sec_per_user, attention_backend,
-  update_person_ldap, update_timestamp,
-  logs_comments_string
+  update_person_ldap, update_timestamp
 )
 VALUES
 (
@@ -38,8 +37,7 @@ VALUES
   6.21, 6.18, 6.85, 0.15,
   303.36, 309.00, 316.47, 47.98,
   160.99, 'trtllm_mla',
-  'alisachen', CURRENT_TIMESTAMP(),
-  'DSR1-FP4 8k1k GKE disagg final p1 (conc 4): total tput/GPU +8.1% vs InferenceMax; KV=RDMA, request plane=NATS; out/decode-GPU=37.2, in/prefill-GPU=1188; per_chip cols divide by total 20 chips. Closed-loop max-concurrency=4, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
+  'alisachen', CURRENT_TIMESTAMP()
 ),
 (
   'DSR1-FP4 8k1k p2 (conc 8)',
@@ -55,8 +53,7 @@ VALUES
   6.57, 6.60, 6.76, 0.12,
   319.41, 329.81, 367.41, 44.18,
   152.31, 'trtllm_mla',
-  'alisachen', CURRENT_TIMESTAMP(),
-  'DSR1-FP4 8k1k GKE disagg final p2 (conc 8): total tput/GPU +8.2% vs InferenceMax; KV=RDMA, request plane=NATS; out/decode-GPU=69.6, in/prefill-GPU=2198; per_chip cols divide by total 20 chips. Closed-loop max-concurrency=8, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
+  'alisachen', CURRENT_TIMESTAMP()
 ),
 (
   'DSR1-FP4 8k1k p3 (conc 32)',
@@ -72,8 +69,7 @@ VALUES
   8.80, 8.85, 9.32, 0.26,
   428.55, 442.03, 499.06, 60.45,
   113.58, 'trtllm_mla',
-  'alisachen', CURRENT_TIMESTAMP(),
-  'DSR1-FP4 8k1k GKE disagg final p3 (conc 32): total tput/GPU +1.5% vs InferenceMax; KV=RDMA, request plane=NATS; out/decode-GPU=195.1, in/prefill-GPU=6198; per_chip cols divide by total 20 chips. Closed-loop max-concurrency=32, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
+  'alisachen', CURRENT_TIMESTAMP()
 ),
 (
   'DSR1-FP4 8k1k p4 (conc 64)',
@@ -89,8 +85,7 @@ VALUES
   11.37, 11.50, 12.14, 0.57,
   553.58, 574.44, 660.12, 82.31,
   87.94, 'trtllm_mla',
-  'alisachen', CURRENT_TIMESTAMP(),
-  'DSR1-FP4 8k1k GKE disagg final p4 (conc 64): total tput/GPU +3.4% vs InferenceMax; KV=RDMA, request plane=NATS; out/decode-GPU=300.2, in/prefill-GPU=9623; per_chip cols divide by total 20 chips. Closed-loop max-concurrency=64, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
+  'alisachen', CURRENT_TIMESTAMP()
 ),
 (
   'DSR1-FP4 8k1k p5 (conc 512)',
@@ -106,8 +101,7 @@ VALUES
   12.70, 12.77, 13.05, 0.30,
   618.29, 637.30, 669.10, 84.20,
   78.73, 'trtllm_mla',
-  'alisachen', CURRENT_TIMESTAMP(),
-  'DSR1-FP4 8k1k GKE disagg final p5 (conc 512): total tput/GPU +11.1% vs InferenceMax; KV=RDMA, request plane=NATS; out/decode-GPU=491.1, in/prefill-GPU=7858; per_chip cols divide by total 72 chips. Closed-loop max-concurrency=512, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
+  'alisachen', CURRENT_TIMESTAMP()
 ),
 (
   'DSR1-FP4 8k1k p6 (conc 2048)',
@@ -123,8 +117,7 @@ VALUES
   13.75, 13.87, 14.05, 0.33,
   669.74, 688.07, 748.48, 94.26,
   72.73, 'trtllm_mla',
-  'alisachen', CURRENT_TIMESTAMP(),
-  'DSR1-FP4 8k1k GKE disagg final p6 (conc 2048): total tput/GPU -1.2% vs InferenceMax; KV=RDMA, request plane=NATS; out/decode-GPU=828.7, in/prefill-GPU=13245; per_chip cols divide by total 72 chips. Closed-loop max-concurrency=2048, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
+  'alisachen', CURRENT_TIMESTAMP()
 ),
 (
   'DSR1-FP4 8k1k p7 (conc 4096)',
@@ -140,8 +133,7 @@ VALUES
   13.87, 13.93, 14.24, 0.30,
   675.44, 691.47, 883.47, 115.24,
   72.09, 'trtllm_mla',
-  'alisachen', CURRENT_TIMESTAMP(),
-  'DSR1-FP4 8k1k GKE disagg final p7 (conc 4096): total tput/GPU +8.5% vs InferenceMax; KV=RDMA, request plane=NATS; out/decode-GPU=830.8, in/prefill-GPU=13296; per_chip cols divide by total 72 chips. Closed-loop max-concurrency=4096, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
+  'alisachen', CURRENT_TIMESTAMP()
 ),
 (
   'DSR1-FP4 8k1k p8 (conc 2048)',
@@ -157,8 +149,7 @@ VALUES
   17.85, 18.08, 18.72, 0.98,
   869.33, 899.03, 1144.86, 145.82,
   56.03, 'trtllm_mla',
-  'alisachen', CURRENT_TIMESTAMP(),
-  'DSR1-FP4 8k1k GKE disagg final p8 (conc 2048): total tput/GPU -0.6% vs InferenceMax; KV=RDMA, request plane=NATS; out/decode-GPU=1771.7, in/prefill-GPU=11327; per_chip cols divide by total 72 chips. Closed-loop max-concurrency=2048, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
+  'alisachen', CURRENT_TIMESTAMP()
 ),
 (
   'DSv4-FP4 8k1k p1 (conc 1)',
@@ -174,8 +165,7 @@ VALUES
   4.47, 4.04, 7.56, 1.14,
   15.70, 15.65, 16.91, 0.69,
   223.56, NULL,
-  'alisachen', CURRENT_TIMESTAMP(),
-  'DSv4-FP4 8k1k GKE disagg final p1 (conc 1): total tput/GPU +11.7% vs InferenceMax; TP4+TP4 point; KV=MNNVL (mooncake), NATS plane, EAGLE MTP; out/decode-GPU=48.3; per_chip cols divide by total 8 chips. Closed-loop max-concurrency=1, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
+  'alisachen', CURRENT_TIMESTAMP()
 ),
 (
   'DSv4-FP4 8k1k p2 (conc 8)',
@@ -191,8 +181,7 @@ VALUES
   5.23, 4.71, 8.43, 1.17,
   17.27, 17.19, 20.53, 6.43,
   191.38, NULL,
-  'alisachen', CURRENT_TIMESTAMP(),
-  'DSv4-FP4 8k1k GKE disagg final p2 (conc 8): total tput/GPU +18.6% vs InferenceMax; KV=MNNVL (mooncake), NATS plane, EAGLE MTP; out/decode-GPU=51.0; per_chip cols divide by total 28 chips. Closed-loop max-concurrency=8, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
+  'alisachen', CURRENT_TIMESTAMP()
 ),
 (
   'DSv4-FP4 8k1k p2 (conc 32)',
@@ -208,8 +197,7 @@ VALUES
   6.85, 6.22, 11.57, 1.82,
   20.73, 20.82, 25.45, 2.16,
   146.05, NULL,
-  'alisachen', CURRENT_TIMESTAMP(),
-  'DSv4-FP4 8k1k GKE disagg final p2 (conc 32): total tput/GPU +9.5% vs InferenceMax; KV=MNNVL (mooncake), NATS plane, EAGLE MTP; out/decode-GPU=136.3; per_chip cols divide by total 28 chips. Closed-loop max-concurrency=32, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
+  'alisachen', CURRENT_TIMESTAMP()
 ),
 (
   'DSv4-FP4 8k1k p2 (conc 64)',
@@ -225,8 +213,7 @@ VALUES
   7.96, 7.21, 13.71, 2.19,
   25.01, 24.06, 30.11, 18.11,
   125.70, NULL,
-  'alisachen', CURRENT_TIMESTAMP(),
-  'DSv4-FP4 8k1k GKE disagg final p2 (conc 64): total tput/GPU +8.0% vs InferenceMax; KV=MNNVL (mooncake), NATS plane, EAGLE MTP; out/decode-GPU=223.5; per_chip cols divide by total 28 chips. Closed-loop max-concurrency=64, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
+  'alisachen', CURRENT_TIMESTAMP()
 ),
 (
   'DSv4-FP4 8k1k p3 (conc 256)',
@@ -242,8 +229,7 @@ VALUES
   10.75, 9.47, 18.07, 2.67,
   1983.51, 1075.77, 8778.51, 2140.53,
   93.00, NULL,
-  'alisachen', CURRENT_TIMESTAMP(),
-  'DSv4-FP4 8k1k GKE disagg final p3 (conc 256): total tput/GPU +0.3% vs InferenceMax; KV=MNNVL (mooncake), NATS plane, EAGLE MTP; out/decode-GPU=877.7; per_chip cols divide by total 12 chips. Closed-loop max-concurrency=256, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
+  'alisachen', CURRENT_TIMESTAMP()
 ),
 (
   'DSv4-FP4 8k1k p4 (conc 256)',
@@ -259,8 +245,7 @@ VALUES
   8.28, 7.16, 13.91, 2.06,
   1481.24, 792.04, 6753.34, 1648.72,
   120.72, NULL,
-  'alisachen', CURRENT_TIMESTAMP(),
-  'DSv4-FP4 8k1k GKE disagg final p4 (conc 256): total tput/GPU +0.0% vs InferenceMax (exact reproduction); KV=MNNVL (mooncake), NATS plane, EAGLE MTP; out/decode-GPU=424.5; per_chip cols divide by total 20 chips. Closed-loop max-concurrency=256, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
+  'alisachen', CURRENT_TIMESTAMP()
 ),
 (
   'DSv4-FP4 8k1k p5 (conc 512)',
@@ -276,8 +261,7 @@ VALUES
   12.38, 10.94, 21.19, 3.18,
   2255.76, 1243.16, 10179.98, 2417.91,
   80.75, NULL,
-  'alisachen', CURRENT_TIMESTAMP(),
-  'DSv4-FP4 8k1k GKE disagg final p5 (conc 512): total tput/GPU +1.8% vs InferenceMax; KV=MNNVL (mooncake), NATS plane, EAGLE MTP; out/decode-GPU=1325.4; per_chip cols divide by total 16 chips. Drift-labeled run (MTP template), documented in report. Closed-loop max-concurrency=512, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
+  'alisachen', CURRENT_TIMESTAMP()
 ),
 (
   'DSv4-FP4 8k1k p6 (conc 1024)',
@@ -293,8 +277,7 @@ VALUES
   16.55, 14.64, 27.79, 4.17,
   3090.62, 1691.37, 13698.71, 3315.08,
   60.42, NULL,
-  'alisachen', CURRENT_TIMESTAMP(),
-  'DSv4-FP4 8k1k GKE disagg final p6 (conc 1024): total tput/GPU +0.5% vs InferenceMax; KV=MNNVL (mooncake), NATS plane, EAGLE MTP; out/decode-GPU=3196.8; per_chip cols divide by total 24 chips. Drift-labeled run (MTP template), documented in report. Closed-loop max-concurrency=1024, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
+  'alisachen', CURRENT_TIMESTAMP()
 ),
 (
   'DSv4-FP4 8k1k p7 (conc 4096)',
@@ -310,8 +293,7 @@ VALUES
   21.98, 19.55, 37.10, 5.61,
   4118.88, 2281.32, 18252.76, 4410.50,
   45.49, NULL,
-  'alisachen', CURRENT_TIMESTAMP(),
-  'DSv4-FP4 8k1k GKE disagg final p7 (conc 4096): total tput/GPU -0.4% vs InferenceMax; KV=MNNVL (mooncake), NATS plane, EAGLE MTP; out/decode-GPU=5062.4; per_chip cols divide by total 32 chips. Drift-labeled run (MTP template), documented in report. Closed-loop max-concurrency=4096, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
+  'alisachen', CURRENT_TIMESTAMP()
 ),
 (
   'DSv4-FP4 8k1k p8 (conc 8192)',
@@ -327,6 +309,5 @@ VALUES
   36.63, 36.31, 45.06, 3.45,
   4268.15, 2143.05, 35549.23, 6965.28,
   27.30, NULL,
-  'alisachen', CURRENT_TIMESTAMP(),
-  'DSv4-FP4 8k1k GKE disagg final p8 (conc 8192): total tput/GPU -3.2% vs InferenceMax (SUSPECT-JIT conservative floor, clean est ~-2%); throughput from 2026-08-07 measured record (81919/81920 reqs), latency metrics from 2026-08-01 parity rerun; out/decode-GPU=6577.1, in/prefill-GPU=13161; per_chip cols divide by 40 chips. Closed-loop max-concurrency=8192, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
+  'alisachen', CURRENT_TIMESTAMP()
 );
