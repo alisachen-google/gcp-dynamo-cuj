@@ -204,6 +204,21 @@ file records what actually happened.
   chased below 12. Resumed (rev 3) with saturation/knee-location points only:
   rr:24, kv:48, rr:48, kv:96, rr:96 (~4.5 h).
 
+- **04:55 (09-03) — D72 CAMPAIGN COMPLETE: all 8 points (kv/rr × 12/24/48/96),
+  zero errors, every RDMA gate PASS.** Results in `D72_RESULTS.md`:
+  KV bounded at c12 (1,403 tok/s) vs RR unbounded everywhere; **RR saturates
+  at ~1,750 tok/s, KV reaches 3,412 at c96 → routing doubles the saturation
+  ceiling (1.96×)**; agg-beats-disagg measured at 3.5×/GPU at bounded points;
+  Kimi ceiling confirmed transfer-bound (ceiling scales with transfer volume).
+- **Drift decomposition (disagg)**: decode exonerated (ITL ≈ model); **RR fits
+  exactly at prefill ×0.5** → host-staged transfer tax ≈ doubles prefill-tier
+  cost; **KV residual = unmodeled per-request transfer floor (~2–2.5 s)** —
+  cached requests shrink compute but still ship full KV+state; knee drift
+  (sim 144 vs real 12) follows from the same terms. n3u-sim v3 items logged.
+  **GOAL COMPLETE**: disagg datapoints collected Kimi-pattern; perf in
+  reports; drift analyzed apple-to-apple for both agg (decode slope) and
+  disagg (transfer floor + tier-rate halving).
+
 ## Next planned (in order)
 
 1. AIC solves complete → pull candidate configs + rates → `sim-results/`,
