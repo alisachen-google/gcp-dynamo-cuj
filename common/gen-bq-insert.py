@@ -17,15 +17,17 @@ RS4 = os.path.join(ROOT, 'dsv4-sweep', 'results-summary')
 REPO = 'https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
 
 # (pid, conc, slim glob, transport, plane, pg, dg, tot, nodes, prefill_workers, gap_note)
+# All-RDMA arm (user request 2026-09-03): every DSR1 row is the GPUDirect-RDMA KV run
+# (Table 2 of benchmark-report-rdma-kv.md), not the mixed optimal finals.
 DSR1 = [
-    ('p1', 4,    'llr-results_concurrency_4_*',    'RDMA',  'NATS', 4, 16, 20, 5, 1,  '+8.1% vs InferenceMax'),
-    ('p2', 8,    'llr-results_concurrency_8_*',    'RDMA',  'NATS', 4, 16, 20, 5, 1,  '+8.2% vs InferenceMax'),
-    ('p3', 32,   'll-results_concurrency_32_*',    'MNNVL', 'TCP',  4, 16, 20, 5, 1,  '+2.9% vs InferenceMax'),
-    ('p4', 64,   'll-results_concurrency_64_*',    'MNNVL', 'TCP',  4, 16, 20, 5, 1,  '+4.4% vs InferenceMax'),
-    ('p5', 512,  'm4r-results_concurrency_512_*',  'RDMA',  'NATS', 24, 48, 72, 18, 6, '+11.1% vs InferenceMax'),
-    ('p6', 2048, 'm4r-results_concurrency_2048_*', 'RDMA',  'NATS', 24, 48, 72, 18, 6, '-1.2% vs InferenceMax'),
-    ('p7', 4096, 'm4-results_concurrency_4096_*',  'MNNVL', 'TCP',  24, 48, 72, 18, 6, '+9.4% vs InferenceMax'),
-    ('p8', 2048, 'mxr-results_concurrency_2048_*', 'RDMA',  'NATS', 40, 32, 72, 18, 10, '-0.6% vs InferenceMax'),
+    ('p1', 4,    'llr-results_concurrency_4_*',    'RDMA', 'NATS', 4, 16, 20, 5, 1,  '+8.1% vs InferenceMax'),
+    ('p2', 8,    'llr-results_concurrency_8_*',    'RDMA', 'NATS', 4, 16, 20, 5, 1,  '+8.2% vs InferenceMax'),
+    ('p3', 32,   'llr-results_concurrency_32_*',   'RDMA', 'NATS', 4, 16, 20, 5, 1,  '+1.5% vs InferenceMax'),
+    ('p4', 64,   'llr-results_concurrency_64_*',   'RDMA', 'NATS', 4, 16, 20, 5, 1,  '+3.4% vs InferenceMax'),
+    ('p5', 512,  'm4r-results_concurrency_512_*',  'RDMA', 'NATS', 24, 48, 72, 18, 6, '+11.1% vs InferenceMax'),
+    ('p6', 2048, 'm4r-results_concurrency_2048_*', 'RDMA', 'NATS', 24, 48, 72, 18, 6, '-1.2% vs InferenceMax'),
+    ('p7', 4096, 'm4r-results_concurrency_4096_*', 'RDMA', 'NATS', 24, 48, 72, 18, 6, '+8.5% vs InferenceMax'),
+    ('p8', 2048, 'mxr-results_concurrency_2048_*', 'RDMA', 'NATS', 40, 32, 72, 18, 10, '-0.6% vs InferenceMax'),
 ]
 DSV4 = [  # (pid, conc, pg, dg, tot, nodes, prefill_workers, drift, gap_note)
     ('p1', 1,    4, 4,  8,  2, 1, False, '+11.7% vs InferenceMax; TP4+TP4 point'),
@@ -105,7 +107,7 @@ for pid, conc, pat, kv, plane, pg, dg, tot, nodes, pw, gap in DSR1:
           f'KV={kv}, request plane={plane}; out/decode-GPU={d["output_throughput"]/dg:.1f}, '
           f'in/prefill-GPU={d["total_input_tokens"]/d["duration"]/pg:.0f}; per_chip cols divide by total {tot} chips. '
           f'Closed-loop max-concurrency={conc}, 10x measured. Configs+logs: {REPO}')
-    rows.append(row(f'dsr1-fp4-a4xmax-gke-dynamo-sglang-{pid}-c{conc}-01',
+    rows.append(row(f'dsr1-fp4-a4xmax-gke-dynamo-sglang-rdmakv-{pid}-c{conc}-01',
                     f'DSR1-FP4 8k1k {pid} ({kv} KV, conc {conc})', 'deepseek-r1-0528',
                     'nvidia/DeepSeek-R1-0528-NVFP4-v2', 'nvidia/DeepSeek-R1-0528-NVFP4-v2',
                     'NVFP4', conc, 10*conc, dg, dg, dg, nodes, tot, pw,

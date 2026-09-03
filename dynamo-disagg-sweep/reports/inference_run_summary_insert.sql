@@ -25,7 +25,7 @@ INSERT INTO `ml-workload-benchmarks.benchmark_dataset_v2.inference_run_summary` 
 )
 VALUES
 (
-  'dsr1-fp4-a4xmax-gke-dynamo-sglang-p1-c4-01', 'gcp-dynamo-cuj (DynamoBench)', TRUE, 'server', 'DSR1-FP4 8k1k p1 (RDMA KV, conc 4)',
+  'dsr1-fp4-a4xmax-gke-dynamo-sglang-rdmakv-p1-c4-01', 'gcp-dynamo-cuj (DynamoBench)', TRUE, 'server', 'DSR1-FP4 8k1k p1 (RDMA KV, conc 4)',
   'deepseek-r1-0528', 'Dynamo+SGLang', 'a4x_max', 'a4x_max', 'a4x_max',
   'serving-disagg-8k1k', 'nvidia/DeepSeek-R1-0528-NVFP4-v2', 'nvidia/DeepSeek-R1-0528-NVFP4-v2', 'random (sa-bench)',
   40, 4, NULL, 8192, 1024, TRUE, 'NVFP4',
@@ -42,7 +42,7 @@ VALUES
   'DSR1-FP4 8k1k GKE disagg final p1 (conc 4): total tput/GPU +8.1% vs InferenceMax; KV=RDMA, request plane=NATS; out/decode-GPU=37.2, in/prefill-GPU=1188; per_chip cols divide by total 20 chips. Closed-loop max-concurrency=4, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
 ),
 (
-  'dsr1-fp4-a4xmax-gke-dynamo-sglang-p2-c8-01', 'gcp-dynamo-cuj (DynamoBench)', TRUE, 'server', 'DSR1-FP4 8k1k p2 (RDMA KV, conc 8)',
+  'dsr1-fp4-a4xmax-gke-dynamo-sglang-rdmakv-p2-c8-01', 'gcp-dynamo-cuj (DynamoBench)', TRUE, 'server', 'DSR1-FP4 8k1k p2 (RDMA KV, conc 8)',
   'deepseek-r1-0528', 'Dynamo+SGLang', 'a4x_max', 'a4x_max', 'a4x_max',
   'serving-disagg-8k1k', 'nvidia/DeepSeek-R1-0528-NVFP4-v2', 'nvidia/DeepSeek-R1-0528-NVFP4-v2', 'random (sa-bench)',
   80, 8, NULL, 8192, 1024, TRUE, 'NVFP4',
@@ -59,41 +59,41 @@ VALUES
   'DSR1-FP4 8k1k GKE disagg final p2 (conc 8): total tput/GPU +8.2% vs InferenceMax; KV=RDMA, request plane=NATS; out/decode-GPU=69.6, in/prefill-GPU=2198; per_chip cols divide by total 20 chips. Closed-loop max-concurrency=8, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
 ),
 (
-  'dsr1-fp4-a4xmax-gke-dynamo-sglang-p3-c32-01', 'gcp-dynamo-cuj (DynamoBench)', TRUE, 'server', 'DSR1-FP4 8k1k p3 (MNNVL KV, conc 32)',
+  'dsr1-fp4-a4xmax-gke-dynamo-sglang-rdmakv-p3-c32-01', 'gcp-dynamo-cuj (DynamoBench)', TRUE, 'server', 'DSR1-FP4 8k1k p3 (RDMA KV, conc 32)',
   'deepseek-r1-0528', 'Dynamo+SGLang', 'a4x_max', 'a4x_max', 'a4x_max',
   'serving-disagg-8k1k', 'nvidia/DeepSeek-R1-0528-NVFP4-v2', 'nvidia/DeepSeek-R1-0528-NVFP4-v2', 'random (sa-bench)',
   320, 32, NULL, 8192, 1024, TRUE, 'NVFP4',
   16, 1, 16, 16, TRUE, TRUE, 96,
   5, 4, 20, 1, 1, 'prefill DEP4 x1 / decode DEP16 x1', 'disaggregated', 'GB300 NVL72',
-  TRUE, 93.57, 3.4199,
-  3164.91, 25136.71, 158.2454, 28301.62,
-  8992.98, 8866.43, 12605.13, 1003.22,
-  797.69, 572.63, 4508.27, 795.87,
-  8.86, 9.00, 9.32, 0.33,
-  431.54, 447.99, 508.00, 62.27,
-  112.82, 'trtllm_mla',
+  TRUE, 94.87, 3.3732,
+  3121.72, 24793.69, 156.0859, 27915.40,
+  9108.08, 8976.02, 12951.91, 973.63,
+  969.63, 811.83, 4771.82, 816.69,
+  8.80, 8.85, 9.32, 0.26,
+  428.55, 442.03, 499.06, 60.45,
+  113.58, 'trtllm_mla',
   'alisachen', CURRENT_TIMESTAMP(),
-  'DSR1-FP4 8k1k GKE disagg final p3 (conc 32): total tput/GPU +2.9% vs InferenceMax; KV=MNNVL, request plane=TCP; out/decode-GPU=197.8, in/prefill-GPU=6284; per_chip cols divide by total 20 chips. Closed-loop max-concurrency=32, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
+  'DSR1-FP4 8k1k GKE disagg final p3 (conc 32): total tput/GPU +1.5% vs InferenceMax; KV=RDMA, request plane=NATS; out/decode-GPU=195.1, in/prefill-GPU=6198; per_chip cols divide by total 20 chips. Closed-loop max-concurrency=32, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
 ),
 (
-  'dsr1-fp4-a4xmax-gke-dynamo-sglang-p4-c64-01', 'gcp-dynamo-cuj (DynamoBench)', TRUE, 'server', 'DSR1-FP4 8k1k p4 (MNNVL KV, conc 64)',
+  'dsr1-fp4-a4xmax-gke-dynamo-sglang-rdmakv-p4-c64-01', 'gcp-dynamo-cuj (DynamoBench)', TRUE, 'server', 'DSR1-FP4 8k1k p4 (RDMA KV, conc 64)',
   'deepseek-r1-0528', 'Dynamo+SGLang', 'a4x_max', 'a4x_max', 'a4x_max',
   'serving-disagg-8k1k', 'nvidia/DeepSeek-R1-0528-NVFP4-v2', 'nvidia/DeepSeek-R1-0528-NVFP4-v2', 'random (sa-bench)',
   640, 64, NULL, 8192, 1024, TRUE, 'NVFP4',
   16, 1, 16, 16, TRUE, TRUE, 192,
   5, 4, 20, 1, 1, 'prefill DEP4 x1 / decode DEP16 x1', 'disaggregated', 'GB300 NVL72',
-  TRUE, 121.64, 5.2613,
-  4849.64, 38863.98, 242.4822, 43713.62,
-  11709.34, 11426.10, 19694.12, 1811.53,
-  1147.54, 716.09, 8628.05, 1556.51,
-  11.47, 11.72, 12.17, 0.61,
-  558.55, 583.46, 657.39, 83.78,
-  87.17, 'trtllm_mla',
+  TRUE, 122.82, 5.2109,
+  4803.16, 38491.47, 240.1581, 43294.64,
+  11821.92, 11505.71, 19831.44, 1789.28,
+  1354.05, 928.77, 9151.39, 1608.90,
+  11.37, 11.50, 12.14, 0.57,
+  553.58, 574.44, 660.12, 82.31,
+  87.94, 'trtllm_mla',
   'alisachen', CURRENT_TIMESTAMP(),
-  'DSR1-FP4 8k1k GKE disagg final p4 (conc 64): total tput/GPU +4.4% vs InferenceMax; KV=MNNVL, request plane=TCP; out/decode-GPU=303.1, in/prefill-GPU=9716; per_chip cols divide by total 20 chips. Closed-loop max-concurrency=64, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
+  'DSR1-FP4 8k1k GKE disagg final p4 (conc 64): total tput/GPU +3.4% vs InferenceMax; KV=RDMA, request plane=NATS; out/decode-GPU=300.2, in/prefill-GPU=9623; per_chip cols divide by total 20 chips. Closed-loop max-concurrency=64, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
 ),
 (
-  'dsr1-fp4-a4xmax-gke-dynamo-sglang-p5-c512-01', 'gcp-dynamo-cuj (DynamoBench)', TRUE, 'server', 'DSR1-FP4 8k1k p5 (RDMA KV, conc 512)',
+  'dsr1-fp4-a4xmax-gke-dynamo-sglang-rdmakv-p5-c512-01', 'gcp-dynamo-cuj (DynamoBench)', TRUE, 'server', 'DSR1-FP4 8k1k p5 (RDMA KV, conc 512)',
   'deepseek-r1-0528', 'Dynamo+SGLang', 'a4x_max', 'a4x_max', 'a4x_max',
   'serving-disagg-8k1k', 'nvidia/DeepSeek-R1-0528-NVFP4-v2', 'nvidia/DeepSeek-R1-0528-NVFP4-v2', 'random (sa-bench)',
   5120, 512, NULL, 8192, 1024, TRUE, 'NVFP4',
@@ -110,7 +110,7 @@ VALUES
   'DSR1-FP4 8k1k GKE disagg final p5 (conc 512): total tput/GPU +11.1% vs InferenceMax; KV=RDMA, request plane=NATS; out/decode-GPU=491.1, in/prefill-GPU=7858; per_chip cols divide by total 72 chips. Closed-loop max-concurrency=512, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
 ),
 (
-  'dsr1-fp4-a4xmax-gke-dynamo-sglang-p6-c2048-01', 'gcp-dynamo-cuj (DynamoBench)', TRUE, 'server', 'DSR1-FP4 8k1k p6 (RDMA KV, conc 2048)',
+  'dsr1-fp4-a4xmax-gke-dynamo-sglang-rdmakv-p6-c2048-01', 'gcp-dynamo-cuj (DynamoBench)', TRUE, 'server', 'DSR1-FP4 8k1k p6 (RDMA KV, conc 2048)',
   'deepseek-r1-0528', 'Dynamo+SGLang', 'a4x_max', 'a4x_max', 'a4x_max',
   'serving-disagg-8k1k', 'nvidia/DeepSeek-R1-0528-NVFP4-v2', 'nvidia/DeepSeek-R1-0528-NVFP4-v2', 'random (sa-bench)',
   20480, 2048, NULL, 8192, 1024, TRUE, 'NVFP4',
@@ -127,24 +127,24 @@ VALUES
   'DSR1-FP4 8k1k GKE disagg final p6 (conc 2048): total tput/GPU -1.2% vs InferenceMax; KV=RDMA, request plane=NATS; out/decode-GPU=828.7, in/prefill-GPU=13245; per_chip cols divide by total 72 chips. Closed-loop max-concurrency=2048, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
 ),
 (
-  'dsr1-fp4-a4xmax-gke-dynamo-sglang-p7-c4096-01', 'gcp-dynamo-cuj (DynamoBench)', TRUE, 'server', 'DSR1-FP4 8k1k p7 (MNNVL KV, conc 4096)',
+  'dsr1-fp4-a4xmax-gke-dynamo-sglang-rdmakv-p7-c4096-01', 'gcp-dynamo-cuj (DynamoBench)', TRUE, 'server', 'DSR1-FP4 8k1k p7 (RDMA KV, conc 4096)',
   'deepseek-r1-0528', 'Dynamo+SGLang', 'a4x_max', 'a4x_max', 'a4x_max',
   'serving-disagg-8k1k', 'nvidia/DeepSeek-R1-0528-NVFP4-v2', 'nvidia/DeepSeek-R1-0528-NVFP4-v2', 'random (sa-bench)',
   40960, 4096, NULL, 8192, 1024, TRUE, 'NVFP4',
   48, 1, 48, 48, TRUE, TRUE, 12288,
   18, 4, 72, 6, 1, 'prefill DEP4 x6 / decode DEP48 x1', 'disaggregated', 'GB300 NVL72',
-  TRUE, 938.92, 43.6244,
-  40195.68, 321644.78, 558.2733, 361840.46,
-  86655.95, 84294.16, 120275.95, 16933.82,
-  70177.48, 67720.05, 103330.19, 16836.85,
-  17.90, 17.99, 18.46, 0.47,
-  871.83, 898.75, 1025.18, 126.83,
-  55.85, 'trtllm_mla',
+  TRUE, 946.37, 43.2813,
+  39879.57, 319115.30, 553.8829, 358994.87,
+  86694.69, 86031.14, 125169.74, 15963.62,
+  73928.10, 73209.44, 112785.10, 15851.83,
+  13.87, 13.93, 14.24, 0.30,
+  675.44, 691.47, 883.47, 115.24,
+  72.09, 'trtllm_mla',
   'alisachen', CURRENT_TIMESTAMP(),
-  'DSR1-FP4 8k1k GKE disagg final p7 (conc 4096): total tput/GPU +9.4% vs InferenceMax; KV=MNNVL, request plane=TCP; out/decode-GPU=837.4, in/prefill-GPU=13402; per_chip cols divide by total 72 chips. Closed-loop max-concurrency=4096, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
+  'DSR1-FP4 8k1k GKE disagg final p7 (conc 4096): total tput/GPU +8.5% vs InferenceMax; KV=RDMA, request plane=NATS; out/decode-GPU=830.8, in/prefill-GPU=13296; per_chip cols divide by total 72 chips. Closed-loop max-concurrency=4096, 10x measured. Configs+logs: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep'
 ),
 (
-  'dsr1-fp4-a4xmax-gke-dynamo-sglang-p8-c2048-01', 'gcp-dynamo-cuj (DynamoBench)', TRUE, 'server', 'DSR1-FP4 8k1k p8 (RDMA KV, conc 2048)',
+  'dsr1-fp4-a4xmax-gke-dynamo-sglang-rdmakv-p8-c2048-01', 'gcp-dynamo-cuj (DynamoBench)', TRUE, 'server', 'DSR1-FP4 8k1k p8 (RDMA KV, conc 2048)',
   'deepseek-r1-0528', 'Dynamo+SGLang', 'a4x_max', 'a4x_max', 'a4x_max',
   'serving-disagg-8k1k', 'nvidia/DeepSeek-R1-0528-NVFP4-v2', 'nvidia/DeepSeek-R1-0528-NVFP4-v2', 'random (sa-bench)',
   20480, 2048, NULL, 8192, 1024, TRUE, 'NVFP4',
