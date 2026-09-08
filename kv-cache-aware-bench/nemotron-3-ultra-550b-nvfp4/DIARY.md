@@ -227,6 +227,20 @@ file records what actually happened.
   chained fleets): agg rr:8 + kv:48, then d72 kv:8 + rr:8 (RDMA-gated).
   Report `SLO_COMPARISON.md` (cross-model, SLO 5/10/30 s) lands when they do.
 
+- **09-04 02:12–06:32 — BOTH FINAL RUNNERS COMPLETED** (found on 09-08;
+  watchers had been externally killed): SLO points (agg rr:8 BOUNDED p50
+  0.99 s but p95 7.8 s; agg kv:48 BOUNDED 1,853 tok/s; d72 kv:8 bounded;
+  d72 rr:8 post-knee → triggered rr:4) then the completion set (kv:16
+  BOUNDED 1,614 — refined KV knee; rr:4 BOUNDED 504 — RR floor; flags at
+  c12: scale2/credit08 noise, **temp0.5 destabilizes to post-knee**). UCX
+  evidence: rc_mlx5 RDMA, zero MNNVL, guard PASS ×15.
+- **09-08 — REPORTS FINAL**: `SLO_COMPARISON.md` (framing 3, cross-model:
+  at 5 s p95 **only KV-routed agg can serve at all** on both models; KV
+  1.5–3.2× at 10–30 s); `D72_RESULTS.md` updated (framing-2 refined:
+  **KV 1,614@16 vs RR 504@4 = 3.2× at 4× conc**; flag + transport tables).
+  **The 72-GPU disagg KV-vs-RR dataset is COMPLETE**: kv {8,12,16,24,48,96},
+  rr {4,8,12,24,48,96}, 3 flag variants, 15 gated points, zero errors.
+
 ## Next planned (in order)
 
 1. AIC solves complete → pull candidate configs + rates → `sim-results/`,

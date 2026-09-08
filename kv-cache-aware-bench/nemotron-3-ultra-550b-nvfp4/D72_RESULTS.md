@@ -39,6 +39,35 @@ ITL p50 7.8–10.4 ms at every point — the decode tier idles throughout.
    ~3.4 GB). Sharpens the GPUDirect-driver escalation: the broken driver is
    costing disagg deployments their viability.
 
+## Dataset completion (2026-09-04): boundary, floor, and flag points
+
+| point | tok/s | TTFT p50/p95 | knee verdict |
+|---|---|---|---|
+| KV c8 | 1,007 | 2.22 / 6.4 s | bounded |
+| **KV c16** | **1,614** | 3.19 / 8.6 s | **bounded — KV's refined best bounded cell** |
+| RR c8 | 818 | 2.42 / 14.6 s | post-knee (1.8→5.2 s growing) |
+| **RR c4** | **504** | 2.04 / 8.1 s | **bounded — RR's floor** (7 tok/s/GPU on 72 GPUs) |
+| KV-scale2 c12 | 1,420 | 2.50 / 6.3 s | bounded (+1.2% vs defaults) |
+| KV-credit0.8 c12 | 1,444 | 2.66 / 6.3 s | bounded (+2.9% — noise) |
+| KV-temp0.5 c12 | 1,177 | 3.59 / 12.5 s | **POST-KNEE** (−16%; temperature destabilizes the bounded cell) |
+
+**Refined framing-2 headline: KV 1,614 tok/s @ conc 16 vs RR 504 @ conc 4 —
+3.2× throughput at 4× concurrency**, each policy at its best bounded cell.
+There is no both-bounded same-conc cell above c4: KV's bounded range
+(≤16) and RR's (≤4) barely overlap, and KV was not run at c4 (RR's floor is
+below any operationally meaningful load).
+
+**Flag sweep verdict (matches sim + Kimi)**: score-shaping flags (scale,
+credit) are within noise at the bounded cell; **router temperature 0.5 is
+actively harmful** — it randomizes placement enough to tip the same cell from
+bounded to post-knee. Defaults + temperature 0 remain correct.
+
+**Transport verification (per user directive)**: per-point UCX log sampling
+found `rc_mlx5` RDMA endpoints (e.g. 393 on the decode tier) and **zero
+`cuda_ipc`/MNNVL lines** at every point where the log window was fresh; the
+kv-transport-guard gate passed all 15 points. All disagg traffic ran RoCE v2
+RDMA (host-staged).
+
 ## Drift analysis (apple-to-apple, mirroring the agg method)
 
 Substituting measured component rates into DynoSim at c12/48/96 for both
