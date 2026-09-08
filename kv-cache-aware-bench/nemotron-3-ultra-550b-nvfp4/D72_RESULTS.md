@@ -19,6 +19,15 @@ per-request timestamp stationarity.
 
 ITL p50 7.8–10.4 ms at every point — the decode tier idles throughout.
 
+**Per-GPU accounting note**: "/GPU" columns divide by ALL 72 GPUs (the
+deployment pays for the prefill tier whether or not it emits output tokens).
+The alternative decode-GPU normalization (÷48) answers the narrower
+decode-tier-efficiency question: e.g. KV c96 = 71.1 tok/s/decode-GPU ≈ agg's
+69/GPU — i.e. the decode workers are as productive as agg workers when fed;
+disagg's per-GPU loss is the oversized prefill tier + transfer, not decode
+inefficiency. KV-vs-RR ratios are identical under either accounting. Cross-
+topology comparisons in this study always use total-GPU.
+
 ## Headlines
 
 1. **The router flag determines whether the deployment is bounded at all.** At
