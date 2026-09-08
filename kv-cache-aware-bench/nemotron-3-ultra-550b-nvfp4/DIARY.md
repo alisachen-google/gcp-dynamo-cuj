@@ -241,6 +241,16 @@ file records what actually happened.
   **The 72-GPU disagg KV-vs-RR dataset is COMPLETE**: kv {8,12,16,24,48,96},
   rr {4,8,12,24,48,96}, 3 flag variants, 15 gated points, zero errors.
 
+- **09-08 13:36 — CEILING/TOPOLOGY VERIFICATION COMPLETE** (5 points, gates
+  PASS ×5): 6:12 KV ceiling confirmed ~3,400 @c96 (c144 3,307, c192 3,263);
+  RR plateau ~1,750 re-confirmed; **3:15 (decode-heaviest) is ~2× WORSE than
+  6:12** (1,828 @c96; decode starved by the 3-worker prefill+transfer tier) —
+  first hardware validation of the sim split ranking, and the definitive
+  close of agg-vs-disagg: best disagg 47.4/GPU post-knee vs agg 69 bounded /
+  85 post-knee. UCX evidence layer noted: tail-sampling misses rotated wireup
+  lines (guard + UCX_TLS exclusion carry the per-point verdict); improvement
+  = capture wireup block at fleet start.
+
 ## Next planned (in order)
 
 1. AIC solves complete → pull candidate configs + rates → `sim-results/`,

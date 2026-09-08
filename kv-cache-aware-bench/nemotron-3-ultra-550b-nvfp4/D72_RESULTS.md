@@ -77,6 +77,31 @@ found `rc_mlx5` RDMA endpoints (e.g. 393 on the decode tier) and **zero
 kv-transport-guard gate passed all 15 points. All disagg traffic ran RoCE v2
 RDMA (host-staged).
 
+## Ceiling & topology verification (2026-09-08; all gates PASS)
+
+| point | tok/s | /GPU-total | /GPU-decode | TTFT p50/p95 |
+|---|---|---|---|---|
+| 6:12 KV c144 | 3,307 | 45.9 | 68.9 | 36.7 / 61 s |
+| 6:12 KV c192 | 3,263 | 45.3 | 68.0 | 51.4 / 84 s |
+| 6:12 RR c144 | 1,690 | 23.5 | 35.2 | 63.9 / 205 s |
+| 3:15 KV c96 | 1,828 | 25.4 | 30.5 | 38.0 / 86 s |
+| 3:15 KV c144 | 1,679 | 23.3 | 28.0 | 71.8 / 140 s |
+
+- **Ceilings confirmed**: KV saturates at ~3,400 (c96; flat-to-declining
+  through c192); RR's ~1,750 plateau re-confirmed at c144. The 2× saturation
+  gap holds across the extended range.
+- **The decode-heaviest split (3:15) — disagg's only arithmetic path to agg
+  per-GPU parity — performs ~2× WORSE than 6:12**: with the host-staged
+  transfer tax, 3 prefill workers starve 15 decode workers (decode-GPU
+  productivity collapses 68.9 → 30.5). The prefill+transfer tier is the
+  binding constraint; enlarging decode cannot help. First on-hardware
+  validation of the sim's split-ranking direction.
+- **Closes the agg-vs-disagg question by measurement**: best disagg under any
+  measured topology/concurrency = 47.4 tok/s/GPU (post-knee) vs agg 69
+  bounded / 85 post-knee. Aggregated serving wins for this architecture under
+  every consistent accounting, at every measured load, on every measured
+  split.
+
 ## Drift analysis (apple-to-apple, mirroring the agg method)
 
 Substituting measured component rates into DynoSim at c12/48/96 for both
