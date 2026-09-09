@@ -70,7 +70,8 @@ NATS = "nats://dynamo-platform-nats.dynamo-cloud.svc.cluster.local:4222"
 # gve eth0) for the NIXL data channel -> NIXL_ERR_REMOTE_DISCONNECT + "Foreign
 # traffic?" guard assertions (S2 catch).
 UCX_ENV = [
-    {"name": "UCX_TLS", "value": "cuda_copy,rc_x,tcp"},
+    # certified 2026-09-09: no-tcp TLS (probe B: 20/20 clean; GPUDirect still faults)
+    {"name": "UCX_TLS", "value": "cuda_copy,rc_x"},
     {"name": "UCX_NET_DEVICES",
      "value": "mlx5_0:1,mlx5_1:1,mlx5_2:1,mlx5_3:1,mlx5_4:1,mlx5_5:1,mlx5_6:1,mlx5_7:1"},
     {"name": "UCX_MEMTYPE_CACHE", "value": "n"},
