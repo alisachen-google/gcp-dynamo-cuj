@@ -251,6 +251,19 @@ file records what actually happened.
   lines (guard + UCX_TLS exclusion carry the per-point verdict); improvement
   = capture wireup block at fleet start.
 
+- **09-09/10 — TRANSPORT CERTIFICATION + FULL RE-SWEEP (goal complete).**
+  Probe: GPUDirect STILL faults (0/20, 112 UCX errs — fresh escalation
+  evidence); certified = host-staged + **UCX_TLS=cuda_copy,rc_x (no tcp at
+  all)**, 20/20 clean; adopted in generator (one self-inflicted syntax bug in
+  the automated edit caught & fixed before any stale-manifest data landed).
+  Fleet-start wireup capture: all size classes on rc_mlx5, zero
+  tcp/cuda_ipc — positive per-run RDMA evidence now standard. Re-sweep 8/8
+  points complete, gates PASS, warm per point: **original dataset reproduced
+  within ±6% (no systematic shift), all knee verdicts identical** → tcp was
+  wireup-only all along; disagg conclusions robust. dsv4 finding banked:
+  mooncake+GPUDirect (MC_FORCE_MNNVL=0, GID 5, mrdma claims) is a second
+  proven RDMA stack = fallback if NIXL path ever fails. dkwr node healed.
+
 ## Next planned (in order)
 
 1. AIC solves complete → pull candidate configs + rates → `sim-results/`,

@@ -102,6 +102,29 @@ RDMA (host-staged).
   every consistent accounting, at every measured load, on every measured
   split.
 
+## Certified-transport re-sweep (2026-09-10): reproduction + transport closure
+
+Per directive, the full ladder (kv/rr × 12/24/48/96) was re-run on a
+**certified transport**: probe re-confirmed GPUDirect still faults (0/20,
+112 UCX errors), certified config = host-staged RDMA with **TCP removed from
+UCX_TLS entirely** (`cuda_copy,rc_x`; probe 20/20 clean), adopted permanently
+in the arm generator. Positive per-fleet evidence captured at startup: UCX's
+protocol table routes every size class to `rc_mlx5` (zero-copy striped across
+two NICs), zero tcp/cuda_ipc lines.
+
+| point | certified tok/s | original | Δ |
+|---|---|---|---|
+| kv 12/24/48/96 | 1,394 / 2,043 / 2,853 / 3,423 | 1,403 / 2,005 / 2,844 / 3,412 | −0.6…+1.9% |
+| rr 12/24/48/96 | 1,135 / 1,500 / 1,646 / 1,746 | 1,112 / 1,534 / 1,750 / 1,743 | −5.9…+2.1% |
+
+**Verdicts**: (1) the original dataset is *reproduced* within run-to-run noise
+(|Δ| ≤ 6%, no systematic direction) — every knee verdict identical (kv:12
+bounded/stationary, everything else post-knee); the study's disagg
+conclusions are robust. (2) Removing TCP from the transport changed nothing
+measurable — confirming the baseline's tcp was wireup-only and the data path
+was always RDMA, now guaranteed by construction. (3) GPUDirect remains the
+open lever: still broken as of 2026-09-09 (fresh escalation evidence).
+
 ## Drift analysis (apple-to-apple, mirroring the agg method)
 
 Substituting measured component rates into DynoSim at c12/48/96 for both
