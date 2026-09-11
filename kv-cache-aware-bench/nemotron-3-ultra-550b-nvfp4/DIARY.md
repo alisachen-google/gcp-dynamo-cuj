@@ -264,6 +264,23 @@ file records what actually happened.
   mooncake+GPUDirect (MC_FORCE_MNNVL=0, GID 5, mrdma claims) is a second
   proven RDMA stack = fallback if NIXL path ever fails. dkwr node healed.
 
+- **09-11 — GPUDIRECT ROOT CAUSE FOUND: the rebuilt node image ships without
+  `nvidia_peermem`** (UCX diag names it; privileged modprobe: "Module not
+  found in /lib/modules/6.12.85+"; no module file on the node). Established
+  via the m2r verbatim-dsr1 debugging ladder, which along the way peeled:
+  etcd model-card contamination across dynamo versions (isolated etcd fix),
+  vintage pods lacking startup probes (voided three early "verdicts"),
+  frontend model volume emptyDir (PVC patch), 0.8.1 frontend non-streaming
+  panic + decode-card binding — and finally bypassed serving entirely with a
+  raw NIXL/UCX cuda-buffer test that surfaced the kernel-level truth.
+  Hypotheses eliminated by experiment: gib userspace, TLS config, wheel
+  vintage, pool-specificity. **Not fixable from pods; escalation package
+  `GPUDIRECT_REGRESSION.md`** (evidence chain, cost quantification, ask,
+  20-min post-fix verification). Version-ladder goal ("newest images with
+  GDR") is moot until the node fix — no userspace version can supply a
+  missing kernel module; 0.5.18+dynamo-1.4.2 upgrade remains queued as a
+  separate post-fix item. Debug fleets cleaned (np-1/np-2 freed).
+
 ## Next planned (in order)
 
 1. AIC solves complete → pull candidate configs + rates → `sim-results/`,
