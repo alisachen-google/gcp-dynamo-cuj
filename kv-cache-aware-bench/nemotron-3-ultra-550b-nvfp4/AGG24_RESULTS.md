@@ -44,6 +44,49 @@ ITL p50 at the bounded cells: 13.5–18.0 ms (KV) / 12.4–19.3 ms (RR).
 | Absolute KV throughput 5,127 @c64 | 2.5× over-predicted (measured 2,045) |
 | Both-bounded cells at 16 & 32 | Confirmed exactly |
 
+## KV vs RR under a fixed SLO (framing 3, agg)
+
+Fix a TTFT p95 budget; compare each policy's best measured throughput among
+compliant, queue-stationary runs (concurrency free per policy; compliance from
+measured p95 only; boundaries refined by measured bisection — details in
+`SLO_COMPARISON.md`):
+
+| TTFT p95 SLO | KV max compliant | RR max compliant | KV impact |
+|---|---|---|---|
+| **≤ 5 s** | **1,657 tok/s @ conc 32** (4.3 s) | **none** — RR misses 5 s even at conc 8 (7.8 s; recompute tail, not queueing) | **servable vs not servable** |
+| ≤ 10 s | 1,853 @ conc 48 (7.8 s) | 882 @ conc 16 (9.8 s) | **2.1× throughput, 3× concurrency** |
+| ≤ 30 s | 2,045 @ conc 64 | 1,141 @ conc 64 | 1.8× |
+
+Reading: at a strict interactive SLO the router flag is binary — KV-routed agg
+is the only Nemotron configuration (any topology) that serves this workload at
+all. At relaxed SLOs, KV converts the same latency budget into ~2× the tokens
+and ~3× the concurrent users. Same placement mechanism as the framing-1/2
+results; the SLO lens prices it in deployment terms.
+
+## Real-job sweep methodology: what we sweep, and how
+
+**Swept on silicon** (each cell = one gated, warmed run):
+
+| axis | values | how varied |
+|---|---|---|
+| Router policy | kv (defaults + temp 0) vs round-robin | frontend-only arg swap; **fresh frontend per point** (router-state isolation); workers untouched |
+| Concurrency | ladder 16/32/64/128 (sim-bracketed) + measured-bisection in-fills 8, 48 (SLO boundaries) | `CONCURRENCIES` env of the bench job |
+| Router flags | credit / prefill-load-scale / temperature | **sim-swept (9 variants per cell); deliberately not swept live on agg** — the grid showed defaults tie within 0.1% at bounded cells and tuning pays only post-knee (+12.6% @ c128), so the live flag-sweep budget went to disagg where sensitivity existed |
+
+**Held fixed** so every delta is attributable to a swept axis: worker shape
+(6×TP4/EP4 from the AIC SILICON solve), engine flags, dataset + replay mode
+(native deterministic loader, 393 sessions, seed 42), and the per-point
+protocol — 300 s settle, **900 s trace-replay warmup under the measured
+point's own router config** (each policy measured on cache placement it
+produced), 1800 s window, zero-error requirement.
+
+**Per-point verification on every cell**: KV-routing liveness
+(`kv_hit_rate` histogram + engine `cached_tokens` — excludes silent
+load-routing fallback), knee verdict from per-request timestamp stationarity
+(`knee_check.py`), artifacts on GCS with summaries in `results/silicon/`.
+Reported cells are then selected from measured verdicts only: both-bounded
+cells (framing 1), measured knees (framing 2), measured p95 (framing 3).
+
 ## Drift analysis: where the 1.9–2.8× sim-vs-silicon gap lives (apple-to-apple)
 
 Method: substitute measured component rates into DynoSim one step at a time at
