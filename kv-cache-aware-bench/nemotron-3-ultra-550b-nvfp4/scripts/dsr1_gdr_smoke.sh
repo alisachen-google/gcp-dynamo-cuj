@@ -18,11 +18,25 @@ until grep -q "DEEP CONC DONE" /tmp/deep_conc.log 2>/dev/null; do
   sleep 600
 done
 
-say "=== deploying 1P+1D with dsr1-faithful env"
+say "=== deploying 1P+1D with dsr1-faithful env + gib userspace stack"
 kubectl apply -n $NS -f $HOME/kv-cache-aware-bench/sglang/manifests/n3u-d72.yaml >> "$LOG" 2>&1
-# dsr1-faithful: TLS back to rc_x+tcp, GPU_DIRECT variable REMOVED (default=on)
+# dsr1-faithful: TLS back to rc_x+tcp, GPU_DIRECT variable REMOVED (default=on),
+# PLUS the piece our arms never had: nccl-gib userspace staged via the dsr1
+# init-container pattern + LD_LIBRARY_PATH with gib lib64 first.
+GIB_PATCH='{"spec":{"template":{"spec":{
+  "volumes":[{"name":"gib","emptyDir":{}}],
+  "initContainers":[{"name":"gib-installer",
+    "image":"us-docker.pkg.dev/gce-ai-infra/gpudirect-gib/nccl-plugin-gib-diagnostic-arm64:v1.0.7",
+    "command":["/bin/sh","-c"],
+    "args":["set -ex; /scripts/container_entry.sh install --install-nccl; mkdir -p /target/usr/local/gib/lib64; cp -R /var/lib/gib/lib64/. /target/usr/local/gib/lib64; cp -R /var/lib/gib/. /target/usr/local/gib"],
+    "volumeMounts":[{"name":"gib","mountPath":"/target/usr/local/gib"}]}],
+  "containers":[{"name":"TIER",
+    "volumeMounts":[{"name":"gib","mountPath":"/usr/local/gib","readOnly":true}],
+    "env":[{"name":"LD_LIBRARY_PATH","value":"/usr/local/gib/lib64:/usr/local/nvidia/lib64"}]}]}}}}'
 for d in ${ARM}-prefill ${ARM}-decode; do
-  kubectl set env deployment/$d -n $NS -c ${d##*-} \
+  tier=${d##*-}
+  kubectl patch deployment/$d -n $NS --type=strategic -p "${GIB_PATCH//TIER/$tier}" >> "$LOG" 2>&1
+  kubectl set env deployment/$d -n $NS -c $tier \
     UCX_TLS="cuda_copy,rc_x,tcp" UCX_IB_GPU_DIRECT_RDMA- >> "$LOG" 2>&1
 done
 kubectl scale deployment/${ARM}-prefill deployment/${ARM}-decode -n $NS --replicas=1 >> "$LOG" 2>&1
