@@ -281,6 +281,16 @@ file records what actually happened.
   missing kernel module; 0.5.18+dynamo-1.4.2 upgrade remains queued as a
   separate post-fix item. Debug fleets cleaned (np-1/np-2 freed).
 
+- **09-11 (later) — GDR root cause REFINED to datapath level via minimal
+  reproducer** (30-line raw NIXL cuda transfer, `scripts/gdr-reproducer/`):
+  dmabuf GDR *registration succeeds* (peermem unnecessary for reg!); the
+  NIC↔GPU peer-DMA *datapath* aborts the QP (REMOTE_DISCONNECT, target
+  survives). Definitive A/B: GPU_DIRECT=y fails / =n completes at **0.34 GB/s
+  — matching the drift model's inferred ~0.35 to two decimals** (independent
+  validation of the whole transfer-tax analysis). Prime suspect: IOMMU/PCIe-
+  ACS on the rebuilt image. Escalation updated: fix the datapath, not just
+  ship peermem. GDR-fix watcher remains armed for the auto-rerun.
+
 ## Next planned (in order)
 
 1. AIC solves complete → pull candidate configs + rates → `sim-results/`,
