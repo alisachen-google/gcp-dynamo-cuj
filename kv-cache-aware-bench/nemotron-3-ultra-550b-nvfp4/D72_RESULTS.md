@@ -125,6 +125,25 @@ measurable — confirming the baseline's tcp was wireup-only and the data path
 was always RDMA, now guaranteed by construction. (3) GPUDirect remains the
 open lever: still broken as of 2026-09-09 (fresh escalation evidence).
 
+
+## Deep-saturation extension (conc 615 / 1024; user-directed)
+
+| point | tok/s | req/s | TTFT p50/p95 |
+|---|---|---|---|
+| KV c615 | 2,683 | 5.13 | 165 / 263 s |
+| KV c1024 | 3,324 | 6.52 | 232 / 309 s |
+| RR c615 | 1,557 | 3.13 | 305 / 471 s |
+| RR c1024 | 1,571 | 3.33 | 452 / 593 s |
+
+(AIPERF_HTTP_CONNECTION_LIMIT raised 200→1100 for these points — the template
+default would have silently capped effective concurrency.) Verdicts: KV's
+~3.3–3.4k ceiling holds to conc 1024 with no deep-saturation collapse (mild
+sag at 615 within run variance); RR's plateau sags to ~1.56–1.57k; the **~2×
+KV-over-RR saturation gap persists to conc 1024** (2.1× at the top). TTFT is
+pure queue arithmetic at these depths (Little's-law forecast ~3/~7 min vs
+measured 3.9/7.5 min p50) — confirming, as argued pre-run, that beyond-ceiling
+concurrency buys only queue depth.
+
 ## Drift analysis (apple-to-apple, mirroring the agg method)
 
 Substituting measured component rates into DynoSim at c12/48/96 for both
