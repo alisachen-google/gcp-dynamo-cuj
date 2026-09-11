@@ -42,11 +42,32 @@ host-staged RDMA at ~50–100× per-transfer cost.
   (Kimi 1.6 vs N3U 3.3+ req/s, inverse to transfer volume) fingerprints the
   transfer path as the binding constraint.
 
+## Minimal reproducer + definitive A/B (2026-09-11)
+
+30-line raw NIXL transfer (`scripts/gdr-reproducer/`): register a 256 MB CUDA
+buffer on pod B, READ it from pod A. Same pods, same buffers, one env var:
+
+| `UCX_IB_GPU_DIRECT_RDMA` | result |
+|---|---|
+| `y` | `NIXL_ERR_REMOTE_DISCONNECT` mid-transfer; **target process verified alive after** (transport-level QP abort) |
+| `n` | `XFER_DONE`, data verified, 0.34 GB/s (matches production drift-model inference of ~0.35 GB/s) |
+
+UCX debug refines the mechanism: peermem probes all fail (module absent), but
+**dmabuf is supported and registration SUCCEEDS** ("dmabuf is supported on
+cuda device 0"; "mlx5_0: dmabuf is supported") — the failure is in the
+**RDMA datapath to GPU memory** (NIC↔GPU peer DMA), which aborts the RC
+connection. Prime suspects on the rebuilt image: IOMMU / PCIe ACS
+configuration blocking peer DMA, or a kernel-6.12.85+/driver-580.126.20
+dmabuf mapping fault.
+
 ## Ask
 
-Restore GPUDirect on the node image: ship/load `nvidia_peermem` matching
-driver 580.126.20 on kernel 6.12.85+ (or provide the DMA-BUF GDR path in the
-image's rdma-core/driver combination — either restores NIC↔GPU-memory DMA).
+Fix the NIC↔GPU peer-DMA datapath on the rebuilt node image — most likely
+IOMMU/PCIe-ACS settings (pre-rebuild image allowed peer DMA), or the
+driver/firmware dmabuf mapping. Shipping `nvidia_peermem` is the alternative
+registration path but will hit the same datapath fault if IOMMU/ACS is the
+cause — the datapath is the thing to fix. The 30-line reproducer runs in any
+2 GPU pods with mrdma claims in ~2 minutes.
 
 ## 20-minute verification once fixed
 
