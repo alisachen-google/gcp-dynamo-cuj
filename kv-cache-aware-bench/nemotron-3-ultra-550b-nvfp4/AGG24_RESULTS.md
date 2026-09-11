@@ -87,6 +87,28 @@ load-routing fallback), knee verdict from per-request timestamp stationarity
 Reported cells are then selected from measured verdicts only: both-bounded
 cells (framing 1), measured knees (framing 2), measured p95 (framing 3).
 
+
+### Live KV-flag sweep at conc 48 (2026-09-11; wspt/decay grid, temp 0 fixed)
+
+| variant | tok/s (/GPU) | TTFT p50/p95 | vs control |
+|---|---|---|---|
+| **control (fcfs, scale 1.0, defaults)** | **1,860 (77.5)** | 0.75 / 9.7 s | — |
+| wspt + scale 1.0 + decay 0.50 | 1,820 (75.8) | 0.70 / 8.2 s | −2.1% |
+| wspt + scale 1.0 + decay 0.65 | 1,803 (75.1) | 0.71 / 6.8 s | −3.0% |
+| wspt + scale 1.0 + decay 0.85 | 1,788 (74.5) | 0.72 / 9.7 s | −3.9% |
+| wspt + scale 0.5 + decay 0.65 | 1,644 (68.5) | 0.72 / 7.2 s | −11.6% |
+| control-repeat (drift control) | 1,867 (77.8) | 0.72 / 8.6 s | +0.4% |
+
+All six runs bounded/stationary; drift control at +0.4% puts the noise floor
+near ±0.5%, so the deltas are real. **Selection rule (max tok/s/GPU): the
+defaults win** — wspt+decay costs 2–4% throughput at scale 1.0 and 12% at
+scale 0.5, closing the last silicon-unverified corner of the flag question
+(the sim's defaults-optimal verdict now holds live on agg too). Real secondary
+finding: **wspt buys tail latency** (p95 9.7 → 6.8 s at decay 0.65) at that
+throughput cost — a genuine knob for tail-sensitive deployments, not a
+throughput optimization. (Also: c48 control here measured 1,860 vs 1,853 in
+the SLO round — 0.4% reproducibility across days.)
+
 ## Drift analysis: where the 1.9–2.8× sim-vs-silicon gap lives (apple-to-apple)
 
 Method: substitute measured component rates into DynoSim one step at a time at
