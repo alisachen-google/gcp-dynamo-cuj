@@ -1,0 +1,116 @@
+<title>Agg Silicon Curves — KV vs RR</title>
+<style>
+:root{color-scheme:light;--surface-1:#fcfcfb;--page:#f9f9f7;--ink:#0b0b0b;--ink-2:#52514e;--muted:#898781;
+--grid:#e1e0d9;--border:rgba(11,11,11,.10);--kv:#eb6834;--rr:#2a78d6}
+@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){color-scheme:dark;--surface-1:#1a1a19;
+--page:#0d0d0d;--ink:#fff;--ink-2:#c3c2b7;--muted:#8f8d86;--grid:#2c2c2a;--border:rgba(255,255,255,.10);--kv:#d95926;--rr:#3987e5}}
+:root[data-theme="dark"]{color-scheme:dark;--surface-1:#1a1a19;--page:#0d0d0d;--ink:#fff;--ink-2:#c3c2b7;--muted:#8f8d86;
+--grid:#2c2c2a;--border:rgba(255,255,255,.10);--kv:#d95926;--rr:#3987e5}
+body{margin:0;background:var(--page);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1060px;margin:0 auto;padding:24px}h1{font-size:19px;margin:0 0 2px}
+.sub{color:var(--ink-2);font-size:13px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(460px,1fr));gap:14px}
+.panel{background:var(--surface-1);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+.panel h2{font-size:13.5px;margin:0 0 2px}.panel .d{font-size:11.5px;color:var(--muted);margin-bottom:6px}
+svg{width:100%;height:auto;display:block}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-2);margin-top:6px}
+.sw{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:-1px}
+.tip{position:fixed;pointer-events:none;background:var(--surface-1);border:1px solid var(--border);border-radius:6px;
+padding:7px 9px;font-size:12px;color:var(--ink);box-shadow:0 2px 10px rgba(0,0,0,.15);opacity:0;line-height:1.45}
+.note{font-size:11.5px;color:var(--muted);margin-top:12px}
+</style>
+<div class="wrap"><h1>Aggregated serving — measured (silicon) KV vs RR curves</h1>
+<div class="sub">Real-job runs on GB300 (24 GPUs, 6×TP4, sglang 0.5.14 + dynamo 1.3.1) · Weka 256k agentic trace,
+native deterministic replay · 900 s warmup + 1800 s measured window per point · solid marks = queue stationary
+(bounded), hollow = post-knee (growing) · hover for detail</div>
+<div class="grid" id="grid"></div>
+<div class="note">Data: nemotron-3-ultra-550b-nvfp4/results/silicon (N3U) and sglang results (Kimi). Knee verdicts from
+per-request timestamp stationarity. Companion sim curves: n3u-curves.html / sglang-curves.html.</div></div>
+<div class="tip" id="tip"></div>
+<script>
+const D={"n3u": {"kv": {"48": {"thr": 1852.8876227756725, "p50": 0.6832732669999999, "p95": 7.7559234252, "itl": 22.090237376785}, "128": {"thr": 1922.486070503808, "p50": 28.819895444999997, "p95": 106.13842885, "itl": 31.447520060723512}, "64": {"thr": 2044.6035088509334, "p50": 1.088184802, "p95": 21.47067281284998, "itl": 25.887270502923975}, "32": {"thr": 1656.8901118129002, "p50": 0.617976499, "p95": 4.295558179949999, "itl": 18.049016616822428}, "16": {"thr": 1245.6235029502047, "p50": 0.5599748194999999, "p95": 4.040742972299999, "itl": 13.536427716612378}}, "rr": {"8": {"thr": 643.1252438285131, "p50": 0.9891214, "p95": 7.820032604, "itl": 9.736083002092926}, "128": {"thr": 1096.303504444838, "p50": 34.30227775299999, "p95": 129.4790936316, "itl": 51.92991644657788}, "64": {"thr": 1141.0915831517086, "p50": 5.133952061, "p95": 29.378837376499987, "itl": 35.31731427272727}, "32": {"thr": 993.3913842684777, "p50": 1.4448876484999997, "p95": 16.781245938749997, "itl": 19.308930496124027}, "16": {"thr": 881.8068658254098, "p50": 1.098329659, "p95": 9.832915943999994, "itl": 12.402067591044776}}}, "kimi": {"KV": {"32": {"thr": 2119.227251011108, "p50": 0.4364942195, "p95": 2.565170256899997}, "24": {"thr": 1880.795739936824, "p50": 0.42290326999999994, "p95": 2.0233498179}, "16": {"thr": 1747.92164808023, "p50": 0.40180793, "p95": 1.8206534735999997}, "8": {"thr": 1139.56323230751, "p50": 0.3795391015, "p95": 1.940254483049999}}, "RR": {"32": {"thr": 1397.9628324155328, "p50": 0.7194077784999999, "p95": 9.519020342649998}, "24": {"thr": 1379.0573497796386, "p50": 0.6329063404999999, "p95": 7.86313817175}, "16": {"thr": 1253.442718775118, "p50": 0.599990854, "p95": 6.178378385}, "8": {"thr": 963.7715190085107, "p50": 0.6049754980000001, "p95": 4.647048833849996}}}}, K={"n3u": {"kv": {"16": 1, "32": 1, "48": 1, "64": 0, "128": 0}, "rr": {"8": 1, "16": 1, "32": 1, "64": 0, "128": 0}}, "kimi": {"KV": {"8": 1, "16": 1, "24": 1, "32": 1}, "RR": {"8": 1, "16": 1, "24": 1, "32": 0}}};
+const PW=460,PH=300,M={t:14,r:14,b:38,l:56};
+function panel(id,title,desc,build,leg){const el=document.createElement('div');el.className='panel';
+ el.innerHTML=`<h2>${title}</h2><div class="d">${desc}</div><div id="${id}"></div><div class="legend">${leg.map(([n,c,d])=>`<span><span class="sw" style="background:${d?'transparent':`var(--${c})`};border:2px ${d?'dashed':'solid'} var(--${c})"></span>${n}</span>`).join('')}</div>`;
+ document.getElementById('grid').appendChild(el);
+ document.getElementById(id).innerHTML=`<svg viewBox="0 0 ${PW} ${PH}">${build()}</svg>`;}
+function axes(X,Y,xt,yt,xl,yl){let g='';
+ for(const v of xt){g+=`<line x1="${X(v)}" y1="${M.t}" x2="${X(v)}" y2="${PH-M.b}" stroke="var(--grid)"/><text x="${X(v)}" y="${PH-M.b+15}" text-anchor="middle" font-size="10" fill="var(--muted)">${v}</text>`;}
+ for(const v of yt){g+=`<line x1="${M.l}" y1="${Y(v)}" x2="${PW-M.r}" y2="${Y(v)}" stroke="var(--grid)"/><text x="${M.l-6}" y="${Y(v)+3.5}" text-anchor="end" font-size="10" fill="var(--muted)">${v}</text>`;}
+ g+=`<text x="${(M.l+PW-M.r)/2}" y="${PH-6}" text-anchor="middle" font-size="11" fill="var(--ink-2)">${xl}</text>`;
+ g+=`<text x="13" y="${(M.t+PH-M.b)/2}" text-anchor="middle" font-size="11" fill="var(--ink-2)" transform="rotate(-90 13 ${(M.t+PH-M.b)/2})">${yl}</text>`;return g;}
+function series(mdl,pol){const s=D[mdl][pol];return Object.keys(s).map(c=>({conc:+c,...s[c],b:K[mdl][pol][c]})).sort((a,b)=>a.conc-b.conc);}
+function line(pts,X,Y,val,color,dash,name){
+ let g=`<path d="${pts.map((p,i)=>`${i?'L':'M'}${X(p.conc)} ${Y(val(p))}`).join('')}" fill="none" stroke="var(--${color})" stroke-width="2"${dash?' stroke-dasharray="5 4"':''}/>`;
+ for(const p of pts){const t=JSON.stringify({s:name,conc:p.conc,thr:Math.round(p.thr),p50:p.p50.toFixed(2),p95:p.p95.toFixed(1),b:p.b});
+  g+=`<g class="pt" data-tip='${t}'><circle cx="${X(p.conc)}" cy="${Y(val(p))}" r="9" fill="transparent"/><circle cx="${X(p.conc)}" cy="${Y(val(p))}" r="3.6" fill="${p.b?`var(--${color})`:'none'}" stroke="var(--${color})" stroke-width="1.8"/></g>`;}
+ return g;}
+function chart(id,title,desc,mdl,val,ylabel,logy,ymaxmult,sets){
+ panel(id,title,desc,()=>{
+  const all=sets.flatMap(([pol])=>series(mdl,pol));
+  const concs=[...new Set(all.map(p=>p.conc))].sort((a,b)=>a-b);
+  const xmin=Math.log(concs[0]),xmax=Math.log(concs[concs.length-1]);
+  const X=c=>M.l+((Math.log(c)-xmin)/(xmax-xmin))*(PW-M.l-M.r);
+  const vals=all.map(val);
+  const ymin=logy?Math.log10(Math.min(...vals)*0.7):0, ymax=logy?Math.log10(Math.max(...vals)*1.4):Math.max(...vals)*(ymaxmult||1.12);
+  const Y=v=>{const t=logy?Math.log10(v):v;return PH-M.b-((t-ymin)/(ymax-ymin))*(PH-M.t-M.b);};
+  const yt=logy?[1,3,10,30,100].filter(v=>Math.log10(v)>=ymin&&Math.log10(v)<=ymax):[0,.25,.5,.75,1].map(f=>Math.round(ymax*f));
+  let g=axes(X,Y,concs,yt,'concurrency (log)',ylabel);
+  for(const [pol,color,dash,name] of sets) g+=line(series(mdl,pol),X,Y,val,color,dash,name);
+  return g;
+ },sets.map(([p,c,d,n])=>[n,c,d]));}
+chart('p1','1 · N3U — output tok/s vs concurrency','both-bounded headline at conc 32: KV 1,657 vs RR 993 (1.67×)','n3u',p=>p.thr,'output tok/s',false,1.12,[['kv','kv',0,'KV'],['rr','rr',0,'RR']]);
+chart('p2','2 · N3U — TTFT p95 vs concurrency','hollow marks = queue growing (post-knee)','n3u',p=>p.p95,'TTFT p95 (s, log)',true,1,[['kv','kv',0,'KV'],['rr','rr',0,'RR']]);
+chart('p3','3 · Kimi-K2.5 — output tok/s vs concurrency','KV still climbing at ladder top (knee ≥32); RR flatlines at 24','kimi',p=>p.thr,'output tok/s',false,1.12,[['KV','kv',0,'KV'],['RR','rr',0,'RR']]);
+chart('p4','4 · Kimi-K2.5 — TTFT p95 vs concurrency','KV p95 ≤2.6 s everywhere; RR tail grows with load','kimi',p=>p.p95,'TTFT p95 (s, log)',true,1,[['KV','kv',0,'KV'],['RR','rr',0,'RR']]);
+
+</script><script>
+(function(){
+ const PW=460,PH=300,M={t:14,r:14,b:38,l:56};
+ function series(mdl,pol){const s=D[mdl][pol];return Object.keys(s).map(c=>({conc:+c,...s[c],b:K[mdl][pol][c]})).sort((a,b)=>a.conc-b.conc);}
+ function mk(id,title,desc,builder,leg){const el=document.createElement('div');el.className='panel';
+  el.innerHTML=`<h2>${title}</h2><div class="d">${desc}</div><div id="${id}"></div><div class="legend">${leg.map(([n,c,d])=>`<span><span class="sw" style="background:${d?'transparent':`var(--${c})`};border:2px ${d?'dashed':'solid'} var(--${c})"></span>${n}</span>`).join('')}</div>`;
+  document.getElementById('grid').appendChild(el);document.getElementById(id).innerHTML=`<svg viewBox="0 0 ${PW} ${PH}">${builder()}</svg>`;}
+ function axes(X,Y,xt,yt,xl,yl){let g='';
+  for(const v of xt){g+=`<line x1="${X(v)}" y1="${M.t}" x2="${X(v)}" y2="${PH-M.b}" stroke="var(--grid)"/><text x="${X(v)}" y="${PH-M.b+15}" text-anchor="middle" font-size="10" fill="var(--muted)">${v}</text>`;}
+  for(const v of yt){g+=`<line x1="${M.l}" y1="${Y(v)}" x2="${PW-M.r}" y2="${Y(v)}" stroke="var(--grid)"/><text x="${M.l-6}" y="${Y(v)+3.5}" text-anchor="end" font-size="10" fill="var(--muted)">${v}</text>`;}
+  g+=`<text x="${(M.l+PW-M.r)/2}" y="${PH-6}" text-anchor="middle" font-size="11" fill="var(--ink-2)">${xl}</text>`;
+  g+=`<text x="13" y="${(M.t+PH-M.b)/2}" text-anchor="middle" font-size="11" fill="var(--ink-2)" transform="rotate(-90 13 ${(M.t+PH-M.b)/2})">${yl}</text>`;return g;}
+ const sets=[['n3u','kv','kv',false,'N3U KV'],['n3u','rr','rr',false,'N3U RR'],['kimi','KV','kv',true,'Kimi KV'],['kimi','RR','rr',true,'Kimi RR']];
+ mk('p5','5 · Cross-model — output tok/s per GPU','solid = Nemotron, dashed = Kimi; identical 24-GPU fleets and trace',()=>{
+  const all=sets.flatMap(([m,p])=>series(m,p));
+  const concs=[...new Set(all.map(p=>p.conc))].sort((a,b)=>a-b);
+  const xmin=Math.log(concs[0]),xmax=Math.log(concs[concs.length-1]);
+  const X=c=>M.l+((Math.log(c)-xmin)/(xmax-xmin))*(PW-M.l-M.r);
+  const ymax=Math.max(...all.map(p=>p.thr/24))*1.12;
+  const Y=v=>PH-M.b-(v/ymax)*(PH-M.t-M.b);
+  let g=axes(X,Y,concs,[0,.25,.5,.75,1].map(f=>Math.round(ymax*f)),'concurrency (log)','output tok/s per GPU');
+  for(const [m,p,c,d,n] of sets){const pts=series(m,p);
+   g+=`<path d="${pts.map((q,i)=>`${i?'L':'M'}${X(q.conc)} ${Y(q.thr/24)}`).join('')}" fill="none" stroke="var(--${c})" stroke-width="2"${d?' stroke-dasharray="5 4"':''}/>`;
+   for(const q of pts){const t=JSON.stringify({s:n,conc:q.conc,thr:Math.round(q.thr),p50:q.p50.toFixed(2),p95:q.p95.toFixed(1),b:q.b});
+    g+=`<g class="pt" data-tip='${t}'><circle cx="${X(q.conc)}" cy="${Y(q.thr/24)}" r="9" fill="transparent"/><circle cx="${X(q.conc)}" cy="${Y(q.thr/24)}" r="3.6" fill="${q.b?`var(--${c})`:'none'}" stroke="var(--${c})" stroke-width="1.8"/></g>`;}}
+  return g;},sets.map(([m,p,c,d,n])=>[n,c,d]));
+ mk('p6','6 · KV/RR throughput gain vs concurrency','measured same-cell ratio; hollow = one or both sides post-knee',()=>{
+  const models=[['n3u','kv','rr','kv',false,'N3U gain'],['kimi','KV','RR','rr',true,'Kimi gain']];
+  let rows=[];
+  for(const [m,kp,rp] of models){const kv=series(m,kp),rr=series(m,rp);
+   for(const q of kv){const r=rr.find(x=>x.conc===q.conc); if(r) rows.push({m,conc:q.conc,g:q.thr/r.thr,b:q.b&&r.b});}}
+  const concs=[...new Set(rows.map(p=>p.conc))].sort((a,b)=>a-b);
+  const xmin=Math.log(concs[0]),xmax=Math.log(concs[concs.length-1]);
+  const X=c=>M.l+((Math.log(c)-xmin)/(xmax-xmin))*(PW-M.l-M.r);
+  const ymax=Math.max(...rows.map(p=>p.g))*1.15;
+  const Y=v=>PH-M.b-(v/ymax)*(PH-M.t-M.b);
+  let g=axes(X,Y,concs,[0,0.5,1,1.5,2].filter(v=>v<=ymax),'concurrency (log)','KV / RR output tok/s');
+  g+=`<line x1="${M.l}" y1="${Y(1)}" x2="${PW-M.r}" y2="${Y(1)}" stroke="var(--muted)" stroke-dasharray="3 3"/>`;
+  for(const [m,kp,rp,c,d,n] of models){const pts=rows.filter(r=>r.m===m).sort((a,b)=>a.conc-b.conc);
+   g+=`<path d="${pts.map((q,i)=>`${i?'L':'M'}${X(q.conc)} ${Y(q.g)}`).join('')}" fill="none" stroke="var(--${c})" stroke-width="2"${d?' stroke-dasharray="5 4"':''}/>`;
+   for(const q of pts){const t=JSON.stringify({s:n,conc:q.conc,thr:q.g.toFixed(2)+'x',p50:'-',p95:'-',b:q.b});
+    g+=`<g class="pt" data-tip='${t}'><circle cx="${X(q.conc)}" cy="${Y(q.g)}" r="9" fill="transparent"/><circle cx="${X(q.conc)}" cy="${Y(q.g)}" r="3.6" fill="${q.b?`var(--${c})`:'none'}" stroke="var(--${c})" stroke-width="1.8"/></g>`;}}
+  return g;},[['N3U gain','kv',false],['Kimi gain','rr',true]]);
+ const tip=document.getElementById('tip');
+ document.querySelectorAll('.pt').forEach(el=>{el.addEventListener('mousemove',e=>{const p=JSON.parse(el.dataset.tip);
+  tip.innerHTML=`<b>${p.s}</b> · conc ${p.conc}<br>${p.thr} tok/s${p.p50!=='-'?`<br><span style="color:var(--ink-2)">TTFT p50 ${p.p50} s · p95 ${p.p95} s</span>`:''}<br><span style="color:var(--ink-2)">${p.b?'bounded (stationary)':'post-knee'}</span>`;
+  tip.style.left=Math.min(e.clientX+13,innerWidth-240)+'px';tip.style.top=(e.clientY+13)+'px';tip.style.opacity=1;});
+  el.addEventListener('mouseleave',()=>tip.style.opacity=0);});
+})();
+</script>
