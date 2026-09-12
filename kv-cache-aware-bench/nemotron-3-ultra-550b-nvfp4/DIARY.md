@@ -306,6 +306,22 @@ file records what actually happened.
   1P+1D — verify cuda_ipc transport, no host-staging; (C) full disagg re-run on
   MNNVL. dsv4 confirms all fits one 18-node NVL72 domain.
 
+- **09-12 (cont) — MNNVL SMOKE PASSED; transport verified on NVLink.** After
+  fixing the compat version stack (sglang 0.5.16 + dynamo 1.4.2 + flashinfer
+  0.6.18 aligned to the image cubin) and a `piexec` generator bug (missing
+  comma made PIP a str; PIP[0]+PIP[1] indexed chars, dropping both pip installs),
+  the 1P+1D MNNVL+mooncake disagg smoke: **8/8 completions, 43 cuda_ipc/MNNVL
+  proto lines per tier, rc_mlx5=0, errors=0** → KV transfer rides NVLink, NOT
+  RDMA/tcp/host-staged. **This is the first working non-host-staged N3U disagg
+  transport** — MNNVL sidesteps the broken GPUDirect entirely. Goal half 1 done.
+- **Full MNNVL re-sweep armed with domain-wait**: needs a full 18-node NVL72
+  domain; none free now (np-1/np-4 held by a 15-day glm53 StatefulSet, np-3 max
+  12 free). Runner (`mnnvl_domain_wait_resweep.sh`) polls all pools every 30m,
+  retargets the generator to whichever frees to 18, then runs kv/rr × 12/24/48/96
+  on MNNVL with per-point MNNVL transport gate (requires cuda_ipc, forbids
+  tcp/rdma/fallback). New MNNVL guard + gated runner committed. Goal half 2 =
+  capacity-blocked, self-launching.
+
 ## Next planned (in order)
 
 1. AIC solves complete → pull candidate configs + rates → `sim-results/`,
