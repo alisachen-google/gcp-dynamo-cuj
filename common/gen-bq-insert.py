@@ -36,9 +36,9 @@ DSV4 = [  # (pid, conc, pg, dg, tot, nodes, prefill_workers, drift, gap_note)
     ('p2', 64,   4, 24, 28, 7, 1, False, '+8.0% vs InferenceMax'),
     ('p3', 256,  4, 8,  12, 3, 1, False, '+0.3% vs InferenceMax'),
     ('p4', 256,  4, 16, 20, 5, 1, False, '+0.0% vs InferenceMax (exact reproduction)'),
-    ('p5', 512,  8, 8,  16, 4, 2, True,  '+1.8% vs InferenceMax'),
-    ('p6', 1024, 16, 8, 24, 6, 4, True,  '+0.5% vs InferenceMax'),
-    ('p7', 4096, 24, 8, 32, 8, 6, True,  '-0.4% vs InferenceMax'),
+    ('p5', 512,  8, 8,  16, 4, 2, False, '+1.8% vs InferenceMax'),
+    ('p6', 1024, 16, 8, 24, 6, 4, False, '+0.5% vs InferenceMax'),
+    ('p7', 4096, 24, 8, 32, 8, 6, False, '-0.4% vs InferenceMax'),
     # p8 handled specially: throughput from measured record, latency from parity rerun
 ]
 

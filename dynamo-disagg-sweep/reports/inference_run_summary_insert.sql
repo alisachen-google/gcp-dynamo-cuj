@@ -1,5 +1,5 @@
 -- Final DSR1-FP4 (8 points) + DSv4-FP4 (10 points) GKE A4X Max disagg results
--- Generated 2026-09-03 from DynamoBench slims; provenance: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep
+-- Generated 2026-09-12 from DynamoBench slims; provenance: https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/dynamo-disagg-sweep
 -- Prereq (already applied): ALTER TABLE `ml-workload-benchmarks.benchmark_dataset_v2.inference_run_summary`
 --   ADD COLUMN IF NOT EXISTS metrics_interactivity_tokens_per_sec_per_user FLOAT64;
 
@@ -254,13 +254,13 @@ VALUES
   5120, 512, NULL, 8192, 1024, TRUE, 'FP4 (mxfp4)',
   8, 1, 8, 8, TRUE, TRUE, 1536,
   4, 4, 16, 2, 1, 'prefill DEP4 x2 / decode DEP8 x1', 'disaggregated', 'GB300 NVL72',
-  TRUE, 445.24, 11.4993,
-  10603.03, 84831.10, 662.6895, 95434.13,
-  38679.06, 36889.72, 82678.61, 17393.41,
-  27274.70, 25590.96, 72962.17, 17409.86,
-  12.38, 10.94, 21.19, 3.18,
-  2255.76, 1243.16, 10179.98, 2417.91,
-  80.75, NULL,
+  TRUE, 357.61, 14.3172,
+  13201.31, 105619.03, 825.0821, 118820.34,
+  31965.79, 32133.49, 53960.75, 8834.53,
+  19786.27, 20007.92, 44121.75, 8314.80,
+  13.22, 11.68, 22.21, 3.37,
+  2486.01, 1359.92, 10883.38, 2649.10,
+  75.62, NULL,
   'alisachen', CURRENT_TIMESTAMP()
 ),
 (
@@ -270,13 +270,13 @@ VALUES
   10240, 1024, NULL, 8192, 1024, TRUE, 'FP4 (mxfp4)',
   8, 1, 8, 8, TRUE, TRUE, 3072,
   6, 4, 24, 4, 1, 'prefill DEP4 x4 / decode DEP8 x1', 'disaggregated', 'GB300 NVL72',
-  TRUE, 369.07, 27.7456,
-  25574.44, 204576.05, 1065.6017, 230150.49,
-  32644.96, 32104.98, 56674.60, 9585.85,
-  17410.38, 17025.46, 41694.21, 8959.10,
-  16.55, 14.64, 27.79, 4.17,
-  3090.62, 1691.37, 13698.71, 3315.08,
-  60.42, NULL,
+  TRUE, 361.51, 28.3254,
+  26108.81, 208850.57, 1087.8669, 234959.38,
+  32713.46, 32421.52, 53538.25, 8755.95,
+  17407.16, 17244.32, 35274.86, 7908.30,
+  16.63, 14.68, 27.92, 4.16,
+  3117.09, 1690.89, 13761.92, 3356.55,
+  60.14, NULL,
   'alisachen', CURRENT_TIMESTAMP()
 ),
 (
@@ -286,13 +286,13 @@ VALUES
   40960, 4096, NULL, 8192, 1024, TRUE, 'FP4 (mxfp4)',
   8, 1, 8, 8, TRUE, TRUE, 12288,
   8, 4, 32, 6, 1, 'prefill DEP4 x6 / decode DEP8 x1', 'disaggregated', 'GB300 NVL72',
-  TRUE, 931.90, 43.9534,
-  40499.04, 324090.26, 1265.5950, 364589.30,
-  85710.32, 85113.34, 130945.99, 19444.55,
-  65484.08, 65208.98, 108161.53, 18584.61,
-  21.98, 19.55, 37.10, 5.61,
-  4118.88, 2281.32, 18252.76, 4410.50,
-  45.49, NULL,
+  TRUE, 915.79, 44.7244,
+  41209.23, 329773.52, 1287.7885, 370982.75,
+  84135.13, 84287.45, 119024.35, 17027.47,
+  62216.03, 62505.54, 96569.16, 16487.58,
+  23.82, 22.32, 34.13, 3.75,
+  3466.73, 1653.33, 20864.13, 4237.28,
+  41.98, NULL,
   'alisachen', CURRENT_TIMESTAMP()
 ),
 (
