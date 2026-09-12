@@ -178,6 +178,55 @@ disagg prefill-tier rate under host-staging, add hybrid-checkpoint hit-rate
 granularity. Polarity check: with RR fitted, the sim's KV *gain* prediction
 becomes conservative — acceptable.
 
+
+## MNNVL+mooncake re-run (2026-09-12; in progress) — transport, disagg-vs-agg, sim drift
+
+Motivation: GPUDirect RDMA is broken on the rebuilt node image (see
+`GPUDIRECT_REGRESSION.md`), so the host-staged disagg numbers above carry a
+~2.4 s/request transfer floor. MNNVL routes KV over NVLink within the NVL72
+domain, sidestepping the fault. Stack: **sglang 0.5.16 + dynamo 1.4.2 +
+flashinfer 0.6.18** (newest runnable pair; the old set was 0.5.14+1.3.1),
+`--disaggregation-transfer-backend mooncake`, `MC_FORCE_MNNVL=1`, ComputeDomain
+channel per worker, no mrdma/NET_DEVICES. Every point transport-gated:
+cuda_ipc required, tcp/rdma/host-staged fallback forbidden.
+NOTE: MNNVL-vs-host-staged folds in a minor version bump (0.5.14→0.5.16); the
+clean transport isolation is the same-stack reproducer A/B (0.34 GB/s staged
+vs NVLink cuda_ipc, `scripts/gdr-reproducer/`).
+
+### Results (output tok/s; 72 GPU, 6:12)
+
+| conc | MNNVL KV (/GPU) · p50 · gate | host-staged KV | MNNVL/HS | DynoSim v1 KV | sim/MNNVL |
+|---|---|---|---|---|---|
+| 12 | **1,734 (24.1)** · 0.37s · PASS | 1,394 | 1.24× | (sim grid starts c48) | — |
+| 24 | _pending_ | 2,043 | — | (—) | — |
+| 48 | _pending_ | 2,853 | — | 4,725 | — |
+| 96 | _pending_ | 3,423 | — | 5,813 | — |
+
+| conc | MNNVL RR (/GPU) · p50 · gate | host-staged RR | MNNVL/HS | DynoSim v1 RR | sim/MNNVL |
+|---|---|---|---|---|---|
+| 12 | **1,381 (19.2)** · 1.32s · PASS | 1,135 | 1.22× | (c48+) | — |
+| 24 | _pending_ | 1,500 | — | (—) | — |
+| 48 | _pending_ | 1,646 | — | 3,196 | — |
+| 96 | _pending_ | 1,746 | — | 3,595 | — |
+
+### The transport win (confirmed at c12, both policies bounded)
+KV TTFT p50 **2.67 s → 0.37 s (7×)**, RR 3.17 → 1.32 s — the host-staged
+per-request transfer floor removed by NVLink, exactly as the drift model
+predicted. Throughput +22–24% at c12.
+
+### Disagg-vs-agg (verdict pending c48/c96)
+agg bounded reference: **69.0 tok/s/GPU** (KV c32, 24 GPU). MNNVL disagg KV@c12
+= 24.1/GPU — below agg, but c12 is deeply pre-knee (p50 0.37 s), so the fair
+test is the higher-conc points where MNNVL's raised knee (vs host-staged's c16)
+lets throughput climb. _Verdict written when c48/c96 land._
+
+### DynoSim drift (pending c48/c96)
+v1 sim assumes ~free transfer ≈ MNNVL, so the drift should **shrink sharply**
+vs the host-staged comparison (which was 1.25–2.06× over-predicted because the
+sim lacked the transfer tax). At c48/c96 the sim/MNNVL ratio tests this: values
+near 1.0× would confirm transfer was the entire missing physics. _Filled when
+c48/c96 land._
+
 ## Reproduction
 
 Arm `manifests/n3u-d72.yaml`; sequencer `scripts/sweep_n3u_d72.sh` (3
