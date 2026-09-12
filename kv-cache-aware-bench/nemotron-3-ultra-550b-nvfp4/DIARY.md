@@ -291,6 +291,21 @@ file records what actually happened.
   ACS on the rebuilt image. Escalation updated: fix the datapath, not just
   ship peermem. GDR-fix watcher remains armed for the auto-rerun.
 
+- **09-12 — MNNVL transition + newest-images directive (combined).** Targets
+  locked from registries: **sglang v0.5.19-cu130-runtime** (newest cu130-runtime)
+  + **ai-dynamo 1.4.2** (newest stable; 1.5.0 only as daily dev builds). This
+  matched-new pair also escapes the old 0.5.14/1.3.1 pin (1.4.2 notes fix NIXL
+  loader-path in sglang runtime images → built for the 0.5.1x line that broke
+  1.3.1). Transport plan: adopt dsv4's **MNNVL + mooncake** recipe
+  (`--disaggregation-transfer-backend mooncake`, UCX_TLS=cuda_copy,cuda_ipc,tcp,
+  UCX_CUDA_IPC_ENABLE_MNNVL=y, MC_FORCE_MNNVL=1, NCCL_MNNVL_ENABLE=1,
+  ComputeDomain CR + channel claim per worker, NO mrdma, NO UCX_NET_DEVICES) —
+  rides NVLink within the NVL72 domain, bypassing the broken GPUDirect/peermem
+  path entirely. Gated rollout: (A) compat smoke — new pair loads NemotronH &
+  serves [running, crashloop fast-fail armed]; (B) MNNVL+mooncake disagg smoke
+  1P+1D — verify cuda_ipc transport, no host-staging; (C) full disagg re-run on
+  MNNVL. dsv4 confirms all fits one 18-node NVL72 domain.
+
 ## Next planned (in order)
 
 1. AIC solves complete → pull candidate configs + rates → `sim-results/`,
