@@ -1,0 +1,358 @@
+apiVersion: resource.nvidia.com/v1beta1
+kind: ComputeDomain
+metadata:
+  name: n3u-mnnvl-full-cd
+  namespace: dynamo-cloud
+spec:
+  numNodes: 18
+  channel:
+    resourceClaimTemplate:
+      name: n3u-mnnvl-full-cd-channel
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: n3u-mnnvl-full-frontend
+  namespace: dynamo-cloud
+  labels:
+    app: n3u-mnnvl-full-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: n3u-mnnvl-full-frontend
+  template:
+    metadata:
+      labels:
+        app: n3u-mnnvl-full-frontend
+      annotations:
+        gke-gcsfuse/volumes: 'true'
+        gke-gcsfuse/memory-limit: 4Gi
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: np-3
+      tolerations:
+      - operator: Exists
+      containers:
+      - name: frontend
+        image: lmsysorg/sglang:v0.5.19-cu130-runtime
+        command:
+        - bash
+        - -c
+        args:
+        - pip install -q "ai-dynamo==1.4.2" && exec python3 -m dynamo.frontend --router-mode
+          kv --router-temperature 0.0 --router-queue-policy fcfs --request-plane nats
+        env:
+        - name: ETCD_ENDPOINTS
+          value: http://dynamo-platform-etcd.dynamo-cloud.svc.cluster.local:2379
+        - name: NATS_SERVER
+          value: nats://dynamo-platform-nats.dynamo-cloud.svc.cluster.local:4222
+        - name: DYN_NAMESPACE
+          value: n3u-mnnvl-full
+        - name: DYN_SYSTEM_PORT
+          value: '9090'
+        - name: HF_HOME
+          value: /model-cache
+        - name: HF_HUB_OFFLINE
+          value: '1'
+        - name: HF_MODULES_CACHE
+          value: /tmp/hf_modules
+        volumeMounts:
+        - mountPath: /model-cache
+          name: model-cache
+          readOnly: true
+      volumes:
+      - name: model-cache
+        persistentVolumeClaim:
+          claimName: model-cache
+          readOnly: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: n3u-mnnvl-full-frontend
+  namespace: dynamo-cloud
+spec:
+  selector:
+    app: n3u-mnnvl-full-frontend
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: n3u-mnnvl-full-prefill
+  namespace: dynamo-cloud
+  labels:
+    app: n3u-mnnvl-full-prefill
+spec:
+  replicas: 6
+  strategy:
+    type: Recreate
+  progressDeadlineSeconds: 3600
+  selector:
+    matchLabels:
+      app: n3u-mnnvl-full-prefill
+  template:
+    metadata:
+      labels:
+        app: n3u-mnnvl-full-prefill
+      annotations:
+        gke-gcsfuse/volumes: 'true'
+        gke-gcsfuse/memory-limit: 4Gi
+        gke-gcsfuse/ephemeral-storage-limit: 1200Gi
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: np-3
+        kubernetes.io/arch: arm64
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule
+      - key: kubernetes.io/arch
+        operator: Equal
+        value: arm64
+        effect: NoSchedule
+      resourceClaims:
+      - name: compute-domain-channel
+        resourceClaimTemplateName: n3u-mnnvl-full-cd-channel
+      containers:
+      - name: prefill
+        image: lmsysorg/sglang:v0.5.19-cu130-runtime
+        command:
+        - bash
+        - -c
+        args:
+        - pip install -q "ai-dynamo[sglang]==1.4.2" && pip install -q --force-reinstall
+          --no-deps flashinfer-python==0.6.18 && exec python3 -m dynamo.sglang --model-path
+          /model-cache/alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4 --served-model-name
+          alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4 --skip-tokenizer-init --tp-size
+          4 --ep-size 4 --quantization modelopt_fp4 --request-plane nats --host 0.0.0.0
+          --trust-remote-code --mem-fraction-static 0.85 --context-length 262144 --page-size
+          64 --watchdog-timeout 1000000 --kv-events-config '{"publisher":"zmq","endpoint":"tcp://*:5557","replay_endpoint":"tcp://*:5558"}'
+          --disaggregation-mode prefill --disaggregation-transfer-backend mooncake
+          --disaggregation-bootstrap-port 30001 --chunked-prefill-size 16384 --max-running-requests
+          8
+        env:
+        - name: ETCD_ENDPOINTS
+          value: http://dynamo-platform-etcd.dynamo-cloud.svc.cluster.local:2379
+        - name: NATS_SERVER
+          value: nats://dynamo-platform-nats.dynamo-cloud.svc.cluster.local:4222
+        - name: DYN_NAMESPACE
+          value: n3u-mnnvl-full
+        - name: DYN_SYSTEM_PORT
+          value: '9090'
+        - name: HF_HOME
+          value: /model-cache
+        - name: HF_HUB_OFFLINE
+          value: '1'
+        - name: HF_MODULES_CACHE
+          value: /tmp/hf_modules
+        - name: UCX_TLS
+          value: cuda_copy,cuda_ipc,tcp
+        - name: UCX_CUDA_IPC_ENABLE_MNNVL
+          value: 'y'
+        - name: UCX_MEMTYPE_CACHE
+          value: 'n'
+        - name: UCX_MEMTYPE_REG_WHOLE
+          value: 'n'
+        - name: UCX_PROTO_INFO
+          value: 'y'
+        - name: UCX_LOG_LEVEL
+          value: info
+        - name: MC_FORCE_MNNVL
+          value: '1'
+        - name: MC_TE_METRIC
+          value: 'true'
+        - name: NCCL_MNNVL_ENABLE
+          value: '1'
+        - name: NCCL_CUMEM_ENABLE
+          value: '1'
+        - name: NCCL_SOCKET_IFNAME
+          value: eth0
+        - name: GLOO_SOCKET_IFNAME
+          value: eth0
+        - name: TP_SOCKET_IFNAME
+          value: eth0
+        - name: PYTORCH_CUDA_ALLOC_CONF
+          value: expandable_segments:True
+        - name: SGLANG_MOONCAKE_CUSTOM_MEM_POOL
+          value: 'True'
+        - name: SGLANG_NVFP4_CKPT_FP8_GEMM_IN_ATTN
+          value: '1'
+        - name: SGLANG_DISABLE_REQUEST_LOGGING
+          value: '1'
+        - name: PYTHONUNBUFFERED
+          value: '1'
+        resources:
+          limits:
+            nvidia.com/gpu: '4'
+          claims:
+          - name: compute-domain-channel
+        securityContext:
+          runAsUser: 0
+          capabilities:
+            add:
+            - IPC_LOCK
+        startupProbe:
+          failureThreshold: 240
+          httpGet:
+            path: /live
+            port: 9090
+          periodSeconds: 60
+          timeoutSeconds: 20
+        volumeMounts:
+        - mountPath: /model-cache
+          name: model-cache
+          readOnly: true
+        - mountPath: /dev/shm
+          name: shm
+      volumes:
+      - name: model-cache
+        persistentVolumeClaim:
+          claimName: model-cache
+          readOnly: true
+      - name: shm
+        emptyDir:
+          medium: Memory
+          sizeLimit: 250Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: n3u-mnnvl-full-decode
+  namespace: dynamo-cloud
+  labels:
+    app: n3u-mnnvl-full-decode
+spec:
+  replicas: 12
+  strategy:
+    type: Recreate
+  progressDeadlineSeconds: 3600
+  selector:
+    matchLabels:
+      app: n3u-mnnvl-full-decode
+  template:
+    metadata:
+      labels:
+        app: n3u-mnnvl-full-decode
+      annotations:
+        gke-gcsfuse/volumes: 'true'
+        gke-gcsfuse/memory-limit: 4Gi
+        gke-gcsfuse/ephemeral-storage-limit: 1200Gi
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: np-3
+        kubernetes.io/arch: arm64
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule
+      - key: kubernetes.io/arch
+        operator: Equal
+        value: arm64
+        effect: NoSchedule
+      resourceClaims:
+      - name: compute-domain-channel
+        resourceClaimTemplateName: n3u-mnnvl-full-cd-channel
+      containers:
+      - name: decode
+        image: lmsysorg/sglang:v0.5.19-cu130-runtime
+        command:
+        - bash
+        - -c
+        args:
+        - pip install -q "ai-dynamo[sglang]==1.4.2" && pip install -q --force-reinstall
+          --no-deps flashinfer-python==0.6.18 && exec python3 -m dynamo.sglang --model-path
+          /model-cache/alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4 --served-model-name
+          alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4 --skip-tokenizer-init --tp-size
+          4 --ep-size 4 --quantization modelopt_fp4 --request-plane nats --host 0.0.0.0
+          --trust-remote-code --mem-fraction-static 0.85 --context-length 262144 --page-size
+          64 --watchdog-timeout 1000000 --kv-events-config '{"publisher":"zmq","endpoint":"tcp://*:5557","replay_endpoint":"tcp://*:5558"}'
+          --disaggregation-mode decode --disaggregation-transfer-backend mooncake
+          --disaggregation-bootstrap-port 30001 --max-running-requests 64
+        env:
+        - name: ETCD_ENDPOINTS
+          value: http://dynamo-platform-etcd.dynamo-cloud.svc.cluster.local:2379
+        - name: NATS_SERVER
+          value: nats://dynamo-platform-nats.dynamo-cloud.svc.cluster.local:4222
+        - name: DYN_NAMESPACE
+          value: n3u-mnnvl-full
+        - name: DYN_SYSTEM_PORT
+          value: '9090'
+        - name: HF_HOME
+          value: /model-cache
+        - name: HF_HUB_OFFLINE
+          value: '1'
+        - name: HF_MODULES_CACHE
+          value: /tmp/hf_modules
+        - name: UCX_TLS
+          value: cuda_copy,cuda_ipc,tcp
+        - name: UCX_CUDA_IPC_ENABLE_MNNVL
+          value: 'y'
+        - name: UCX_MEMTYPE_CACHE
+          value: 'n'
+        - name: UCX_MEMTYPE_REG_WHOLE
+          value: 'n'
+        - name: UCX_PROTO_INFO
+          value: 'y'
+        - name: UCX_LOG_LEVEL
+          value: info
+        - name: MC_FORCE_MNNVL
+          value: '1'
+        - name: MC_TE_METRIC
+          value: 'true'
+        - name: NCCL_MNNVL_ENABLE
+          value: '1'
+        - name: NCCL_CUMEM_ENABLE
+          value: '1'
+        - name: NCCL_SOCKET_IFNAME
+          value: eth0
+        - name: GLOO_SOCKET_IFNAME
+          value: eth0
+        - name: TP_SOCKET_IFNAME
+          value: eth0
+        - name: PYTORCH_CUDA_ALLOC_CONF
+          value: expandable_segments:True
+        - name: SGLANG_MOONCAKE_CUSTOM_MEM_POOL
+          value: 'True'
+        - name: SGLANG_NVFP4_CKPT_FP8_GEMM_IN_ATTN
+          value: '1'
+        - name: SGLANG_DISABLE_REQUEST_LOGGING
+          value: '1'
+        - name: PYTHONUNBUFFERED
+          value: '1'
+        resources:
+          limits:
+            nvidia.com/gpu: '4'
+          claims:
+          - name: compute-domain-channel
+        securityContext:
+          runAsUser: 0
+          capabilities:
+            add:
+            - IPC_LOCK
+        startupProbe:
+          failureThreshold: 240
+          httpGet:
+            path: /live
+            port: 9090
+          periodSeconds: 60
+          timeoutSeconds: 20
+        volumeMounts:
+        - mountPath: /model-cache
+          name: model-cache
+          readOnly: true
+        - mountPath: /dev/shm
+          name: shm
+      volumes:
+      - name: model-cache
+        persistentVolumeClaim:
+          claimName: model-cache
+          readOnly: true
+      - name: shm
+        emptyDir:
+          medium: Memory
+          sizeLimit: 250Gi
