@@ -26,12 +26,15 @@ batch-scaling curve for this hybrid architecture.
 ## 2. Experimental Setup
 
 ### 2.1 Model and workload
-- **Model:** Nemotron-3-Ultra-550B-A55B-NVFP4 — hybrid Mamba-2 / Latent-MoE,
-  108 layers (48 Mamba + 48 Latent-MoE + 12 attention), NVFP4 (MoE) / FP8
-  (Mamba mixers) mixed quantization, ~6 KB/token attention KV + ~200 MB Mamba
-  state/request.
-- **Workload:** `semianalysisai/cc-traces-weka-062126-256k` agentic trace,
-  native deterministic replay (393 sessions, seed 42), 256K context.
+- **Model:** [Nemotron-3-Ultra-550B-A55B-NVFP4](https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4)
+  (`nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4`) — hybrid Mamba-2 /
+  Latent-MoE, 108 layers (48 Mamba + 48 Latent-MoE + 12 attention), NVFP4 (MoE)
+  / FP8 (Mamba mixers) mixed quantization, ~6 KB/token attention KV + ~200 MB
+  Mamba state/request. Base (BF16) checkpoint:
+  [`nvidia/Nemotron-3-Ultra-550B-A55B`](https://huggingface.co/nvidia/Nemotron-3-Ultra-550B-A55B).
+- **Workload:** [`semianalysisai/cc-traces-weka-062126-256k`](https://huggingface.co/datasets/semianalysisai/cc-traces-weka-062126-256k)
+  agentic trace, native deterministic replay (393 sessions, seed 42), 256K
+  context.
 
 ### 2.2 Hardware and software provenance
 
