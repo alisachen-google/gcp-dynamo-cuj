@@ -18,7 +18,7 @@ declare -A ROUTER=(
   [kv]="--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs"
   [rr]="--router-mode round-robin"
 )
-POINTS="kv:32 kv:16 rr:16 kv:64 rr:32 rr:64 kv:128 rr:128"  # kv:32 first = smoke
+POINTS="kv:32 kv:16 rr:16 kv:64 rr:32 rr:64 kv:128 rr:128 kv:192 rr:192 kv:256 rr:256 kv:384 rr:384 kv:512 rr:512"  # smoke first; extended to 512 per user
 
 swap_frontend() {  # $1=policy ; frontend is bash-c/pip -> must keep that form
   local FE_CMD="pip install -q \"ai-dynamo==1.4.2\" && exec python3 -m dynamo.frontend ${ROUTER[$1]} --request-plane nats"
