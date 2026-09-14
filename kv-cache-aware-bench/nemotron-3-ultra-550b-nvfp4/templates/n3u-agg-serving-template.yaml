@@ -1,0 +1,114 @@
+# =============================================================================
+# Nemotron-3-Ultra-550B-A55B-NVFP4 — AGGREGATED serving, ALL-IN-ONE template
+# KV-aware and round-robin are the SAME fleet; only the frontend router flags
+# differ. Render with:  scripts/render_agg_template.sh kv|rr [out.yaml]
+# (envsubst over the ${VARS} below). Sweeping is separate: scripts/sweep_n3u_agg.sh
+# (old stack) / scripts/resweep_agg_newstack.sh (new stack) swap the router per
+# point and run the bench job per concurrency.
+#
+# Selected data points (silicon, 24 GPU = 6 x TP4/EP4):
+#   framing 1 (both-bounded, same cell): conc 16, 32   -> KV 1.41x / 1.67x RR
+#   framing 2 (each policy at its knee): KV c48 (1,853), RR c32 (993)
+#   framing 3 (TTFT p95 SLO):  <=5 s  KV c32 vs RR none;  <=10 s KV c48 vs RR c16
+#   ladder measured: kv/rr x 16/32/64/128 (+ bisection 8, 48); new-stack re-sweep
+#   extends to 192/256/384/512.
+#
+# Stack variables (defaults = latest+workable pair, validated 2026-09-13):
+#   IMAGE=lmsysorg/sglang:v0.5.19-cu130-runtime   DYNAMO_VER=1.4.2   FLASHINFER_VER=0.6.18
+#   (effective runtime: SGLang 0.5.16 + Dynamo 1.4.2 + FlashInfer 0.6.18)
+#   Old pinned pair (AGG24 report): IMAGE=lmsysorg/sglang:v0.5.14-cu130-runtime DYNAMO_VER=1.3.1
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${ARM}-frontend
+  namespace: ${NS}
+  labels: {app: ${ARM}-frontend}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector: {matchLabels: {app: ${ARM}-frontend}}
+  template:
+    metadata:
+      labels: {app: ${ARM}-frontend}
+      annotations: {gke-gcsfuse/volumes: 'true', gke-gcsfuse/memory-limit: 8Gi}
+    spec:
+      nodeSelector: {cloud.google.com/gke-nodepool: ${POOL}}
+      tolerations: [{operator: Exists}]
+      containers:
+      - name: frontend
+        image: ${IMAGE}
+        command: [bash, -c]
+        # ROUTER_FLAGS: kv -> "--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs"
+        #               rr -> "--router-mode round-robin"
+        args: ['pip install -q "ai-dynamo==${DYNAMO_VER}" && exec python3 -m dynamo.frontend ${ROUTER_FLAGS} --request-plane nats']
+        env:
+        - {name: ETCD_ENDPOINTS, value: http://dynamo-platform-etcd.${NS}.svc.cluster.local:2379}
+        - {name: NATS_SERVER,    value: nats://dynamo-platform-nats.${NS}.svc.cluster.local:4222}
+        - {name: DYN_NAMESPACE,  value: ${ARM}}
+        volumeMounts: [{mountPath: /model-cache, name: model-cache, readOnly: true}]
+      volumes: [{name: model-cache, persistentVolumeClaim: {claimName: model-cache, readOnly: true}}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: ${ARM}-frontend, namespace: ${NS}}
+spec:
+  selector: {app: ${ARM}-frontend}
+  ports: [{name: http, port: 8000, targetPort: 8000}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${ARM}
+  namespace: ${NS}
+  labels: {app: ${ARM}}
+spec:
+  replicas: ${WORKERS}            # 6 x TP4 = 24 GPU
+  strategy: {type: Recreate}
+  progressDeadlineSeconds: 3600
+  selector: {matchLabels: {app: ${ARM}}}
+  template:
+    metadata:
+      labels: {app: ${ARM}}
+      annotations: {gke-gcsfuse/volumes: 'true', gke-gcsfuse/memory-limit: 8Gi, gke-gcsfuse/ephemeral-storage-limit: 1200Gi}
+    spec:
+      nodeSelector: {cloud.google.com/gke-nodepool: ${POOL}, kubernetes.io/arch: arm64}
+      tolerations:
+      - {key: nvidia.com/gpu, operator: Exists, effect: NoSchedule}
+      - {key: kubernetes.io/arch, operator: Equal, value: arm64, effect: NoSchedule}
+      containers:
+      - name: agg
+        image: ${IMAGE}
+        command: [bash, -c]
+        args:
+        - >-
+          pip install -q "ai-dynamo[sglang]==${DYNAMO_VER}" &&
+          pip install -q --force-reinstall --no-deps flashinfer-python==${FLASHINFER_VER} &&
+          exec python3 -m dynamo.sglang
+          --model-path ${MODEL_DIR} --served-model-name ${SERVED_NAME} --skip-tokenizer-init
+          --tp-size ${TP} --ep-size ${EP} --quantization modelopt_fp4 --request-plane nats
+          --host 0.0.0.0 --trust-remote-code --mem-fraction-static 0.85 --context-length 262144
+          --page-size 64 --watchdog-timeout 1000000
+          --kv-events-config '{"publisher":"zmq","endpoint":"tcp://*:5557","replay_endpoint":"tcp://*:5558"}'
+          --chunked-prefill-size 16384 --max-running-requests ${MAX_RUNNING}
+        env:
+        - {name: ETCD_ENDPOINTS, value: http://dynamo-platform-etcd.${NS}.svc.cluster.local:2379}
+        - {name: NATS_SERVER,    value: nats://dynamo-platform-nats.${NS}.svc.cluster.local:4222}
+        - {name: DYN_NAMESPACE,  value: ${ARM}}
+        - {name: DYN_SYSTEM_PORT, value: '9090'}
+        - {name: HF_HOME, value: /model-cache}
+        - {name: HF_HUB_OFFLINE, value: '1'}
+        - {name: HF_MODULES_CACHE, value: /tmp/hf_modules}
+        - {name: SGLANG_NVFP4_CKPT_FP8_GEMM_IN_ATTN, value: '1'}
+        - {name: SGLANG_DISABLE_REQUEST_LOGGING, value: '1'}
+        - {name: PYTORCH_CUDA_ALLOC_CONF, value: 'expandable_segments:True'}
+        - {name: PYTHONUNBUFFERED, value: '1'}
+        resources: {limits: {nvidia.com/gpu: '${TP}'}}
+        securityContext: {runAsUser: 0, capabilities: {add: [IPC_LOCK]}}
+        startupProbe: {failureThreshold: 240, periodSeconds: 60, timeoutSeconds: 20, httpGet: {path: /live, port: 9090}}
+        volumeMounts:
+        - {mountPath: /model-cache, name: model-cache, readOnly: true}
+        - {mountPath: /dev/shm, name: shm}
+      volumes:
+      - {name: model-cache, persistentVolumeClaim: {claimName: model-cache, readOnly: true}}
+      - {name: shm, emptyDir: {medium: Memory, sizeLimit: 250Gi}}
