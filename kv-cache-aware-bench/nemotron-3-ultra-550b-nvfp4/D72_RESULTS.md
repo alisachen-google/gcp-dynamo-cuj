@@ -229,6 +229,62 @@ vs NVLink cuda_ipc, `scripts/gdr-reproducer/`). The new-stack agg re-sweep
 **RR peak bounded = 1,980 @c24 (27.5/GPU)**. KV/RR: same-cell both-bounded
 1.26× (c12) → 1.35× (c24); peak-bounded per-GPU **1.80×**.
 
+
+### Extended concurrency (2026-09-14; c144–512 on the same fleet/stack; RR 384/512 not run)
+
+| conc | MNNVL KV (/GPU) · TTFT p50 · knee · errors | MNNVL RR (/GPU) · TTFT p50 · knee · errors | DynoSim v1 KV | sim/real KV |
+|---|---|---|---|---|
+| 144 | **6,221 (86.4) · 11.5 s · AT/PRE · 0%** — *unreproduced spike, see note* | 2,078 (28.9) · 49.7 s · POST · **0.8%** | 5,920 | 0.95× |
+| 192 | 2,707 (37.6) · 63.7 s · POST · 0% | 1,931 (26.8) · 83.4 s · POST · 0% | 5,613 | 2.07× |
+| 288 | 2,489 (34.6) · 97.5 s · POST · 0% | ~~1,754~~ **INVALID** — 83/5,782 requests failed (1.4%): `Decode transfer failed` burst at 16:31 (mooncake transfer timeouts under 78 s p50 / 294 s p99 queueing); runner halted per transport policy | 4,947 | 1.99× |
+| 384 / 512 | KV pending (queued after reproduction) | not run — RR already fails transfers at c288 | 4,397 / 3,703 | — |
+
+**The c144 KV point needs reproduction before it is banked.** 6,221 tok/s (86.4/GPU,
+above agg's 69 bounded) sits between a POST-knee c96 (3,691, TTFT 16 s) and a
+collapsed c192 (2,707) — a 1.69× rise then a 2.3× fall, with *lower* TTFT than c96
+under 1.5× the load. It is physically plausible: the live capture at c144 shows both
+tiers fully busy (prefill 92% / decode 99.6% GPU util) and an 89% cached-token share,
+and it lands within 5% of the sim (5,920). But the c96 neighbour (yesterday's fleet
+instance) contradicts it. Reproduction runs kv:96 / kv:120 / kv:144 on the current
+fleet are in progress; the disagg-vs-agg verdict in §2 stands on the c48 peak
+(49.6/GPU) until they land, and flips only if c144 reproduces.
+
+**RR at deep saturation fails, not just slows.** From c144 on, RR shows request
+errors (0.8% at c144, 1.4% at c288) from KV-transfer timeouts while queued behind
+50–80 s TTFTs; KV at the same concurrencies has 0%. This is a second, qualitative KV
+advantage: placement keeps the prefill queue short enough that hand-offs do not time
+out. RR 384/512 were therefore not run.
+
+### Profiling at kv:144 (read-only live capture over the measurement window) — where the disagg drift comes from
+
+| tier | GPUs | mean util | ≥90% busy | idle (<10%) | scheduler state (SGLang step lines) |
+|---|---|---|---|---|---|
+| prefill | 24 | **92.3%** | 83.2% | 0.1% | 1 batch in flight (running-req 0), **queue-req 10.3/worker**, 2.2 new-seq/step, 14.6k new tok/step, **cached-token share 89.1%** |
+| decode | 48 | **99.6%** | 99.4% | 0.0% | **running-req 9.7/worker of 64 slots** (max 61), 815 gen tok/s/worker, queue 0 |
+
+Reading: **the prefill tier is the binding constraint** — every prefill worker has
+~10 requests queued while running one batch at a time, so decode workers sit at
+~15% slot occupancy (9.7/64) waiting to be fed. Decode GPUs read "99% busy" because
+Mamba/MoE decode kernels saturate the SM even at small batch — busy is not
+productive; 48 GPUs generate at low batch efficiency. This is the mechanism behind
+the per-GPU gap: the 24 prefill GPUs cap the rate at which 48 decode GPUs receive
+work, and aggregated workers avoid the hand-off entirely.
+
+Drift attribution for disagg, revised with this evidence:
+- **Hit rate is not the disagg drift source.** Measured cached-token share is 89%
+  at c144 — *above* the sim's 84%, the opposite of agg (63%). KV routing across 6
+  prefill workers concentrates each trace slice well. So the reuse model
+  over-predicts nothing here.
+- **The drift is the prefill-tier queueing the sim does not model.** With 89%
+  reuse, only ~11% of tokens are new, yet the prefill tier still runs 92% busy with
+  a 10-deep queue — chunked 16k prefills of 256K-context requests are expensive
+  even when mostly cached (the sim's near-linear prefill rate is too optimistic
+  at this ISL), and the sim treats hand-off as free. That is why real throughput
+  sits 1.3–2× under the sim at c48–288 while, at the one point where both tiers
+  happen to be fully fed (c144), real ≈ sim.
+- The AIC decode batch-slope error (agg finding) matters less here: decode runs at
+  batch ~10 where the slope difference is small; decode is starved, not slow.
+
 ### 1. The transport win (MNNVL vs host-staged)
 NVLink beats host-staging at every point. KV TTFT p50 **2.67 → 0.37 s (7×)** at
 c12. KV throughput +24–31% through c48, shrinking to +8% at c96 — because KV is
