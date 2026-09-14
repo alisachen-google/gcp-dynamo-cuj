@@ -179,53 +179,88 @@ granularity. Polarity check: with RR fitted, the sim's KV *gain* prediction
 becomes conservative — acceptable.
 
 
-## MNNVL+mooncake re-run (2026-09-12; in progress) — transport, disagg-vs-agg, sim drift
+## MNNVL+mooncake re-run (2026-09-12/13; COMPLETE) — transport, disagg-vs-agg, sim drift
 
 Motivation: GPUDirect RDMA is broken on the rebuilt node image (see
 `GPUDIRECT_REGRESSION.md`), so the host-staged disagg numbers above carry a
 ~2.4 s/request transfer floor. MNNVL routes KV over NVLink within the NVL72
 domain, sidestepping the fault. Stack: **sglang 0.5.16 + dynamo 1.4.2 +
-flashinfer 0.6.18** (newest runnable pair; the old set was 0.5.14+1.3.1),
-`--disaggregation-transfer-backend mooncake`, `MC_FORCE_MNNVL=1`, ComputeDomain
-channel per worker, no mrdma/NET_DEVICES. Every point transport-gated:
-cuda_ipc required, tcp/rdma/host-staged fallback forbidden.
+flashinfer 0.6.18** (newest runnable pair; base image `lmsysorg/sglang:v0.5.19-cu130-runtime`;
+the old set was 0.5.14+1.3.1), `--disaggregation-transfer-backend mooncake`,
+`MC_FORCE_MNNVL=1`, ComputeDomain channel per worker, no mrdma/NET_DEVICES.
+**Every point transport-gated and PASSED**: cuda_ipc evidence 34k–71k lines per
+point, zero tcp/rdma/host-staged fallback on the data path. Knee verdicts from
+per-request timestamp stationarity (`knee_check.py`), zero request errors.
 NOTE: MNNVL-vs-host-staged folds in a minor version bump (0.5.14→0.5.16); the
 clean transport isolation is the same-stack reproducer A/B (0.34 GB/s staged
-vs NVLink cuda_ipc, `scripts/gdr-reproducer/`).
+vs NVLink cuda_ipc, `scripts/gdr-reproducer/`). The new-stack agg re-sweep
+(in progress) isolates the pure engine-version delta.
 
-### Results (output tok/s; 72 GPU, 6:12)
+### Results (output tok/s; 72 GPU, 6:12 TP4/EP4; all 8 points MNNVL-gate PASS)
 
-| conc | MNNVL KV (/GPU) · p50 · gate | host-staged KV | MNNVL/HS | DynoSim v1 KV | sim/MNNVL |
+| conc | MNNVL KV (/GPU) · TTFT p50 · knee | host-staged KV | MNNVL/HS | DynoSim v1 KV | sim/MNNVL |
 |---|---|---|---|---|---|
-| 12 | **1,734 (24.1)** · 0.37s · PASS | 1,394 | 1.24× | (sim grid starts c48) | — |
-| 24 | _pending_ | 2,043 | — | (—) | — |
-| 48 | _pending_ | 2,853 | — | 4,725 | — |
-| 96 | _pending_ | 3,423 | — | 5,813 | — |
+| 12 | 1,734 (24.1) · 0.37 s · AT/PRE | 1,394 | 1.24× | (grid starts c48) | — |
+| 24 | 2,672 (37.1) · 0.79 s · AT/PRE | 2,043 | **1.31×** | — | — |
+| 48 | **3,573 (49.6) · 3.23 s · AT/PRE** | 2,853 | **1.25×** | 4,725 | **1.32×** |
+| 96 | 3,691 (51.3) · 16.2 s · POST | 3,423 | 1.08× | 5,813 | **1.58×** |
 
-| conc | MNNVL RR (/GPU) · p50 · gate | host-staged RR | MNNVL/HS | DynoSim v1 RR | sim/MNNVL |
+| conc | MNNVL RR (/GPU) · TTFT p50 · knee | host-staged RR | MNNVL/HS | DynoSim v1 RR | sim/MNNVL |
 |---|---|---|---|---|---|
-| 12 | **1,381 (19.2)** · 1.32s · PASS | 1,135 | 1.22× | (c48+) | — |
-| 24 | _pending_ | 1,500 | — | (—) | — |
-| 48 | _pending_ | 1,646 | — | 3,196 | — |
-| 96 | _pending_ | 1,746 | — | 3,595 | — |
+| 12 | 1,381 (19.2) · 1.32 s · AT/PRE | 1,135 | 1.22× | (c48+) | — |
+| 24 | **1,980 (27.5) · 3.10 s · AT/PRE** | 1,500 | 1.32× | — | — |
+| 48 | 2,286 (31.8) · 9.03 s · POST | 1,646 | 1.39× | 3,196 | 1.40× |
+| 96 | 2,460 (34.2) · 23.9 s · POST (sat) | 1,746 | 1.41× | 3,595 | 1.46× |
 
-### The transport win (confirmed at c12, both policies bounded)
-KV TTFT p50 **2.67 s → 0.37 s (7×)**, RR 3.17 → 1.32 s — the host-staged
-per-request transfer floor removed by NVLink, exactly as the drift model
-predicted. Throughput +22–24% at c12.
+**KV peak bounded = 3,573 tok/s @c48 (49.6/GPU)**; ceiling ~3,691 post-knee.
+**RR peak bounded = 1,980 @c24 (27.5/GPU)**. KV/RR: same-cell both-bounded
+1.26× (c12) → 1.35× (c24); peak-bounded per-GPU **1.80×**.
 
-### Disagg-vs-agg (verdict pending c48/c96)
-agg bounded reference: **69.0 tok/s/GPU** (KV c32, 24 GPU). MNNVL disagg KV@c12
-= 24.1/GPU — below agg, but c12 is deeply pre-knee (p50 0.37 s), so the fair
-test is the higher-conc points where MNNVL's raised knee (vs host-staged's c16)
-lets throughput climb. _Verdict written when c48/c96 land._
+### 1. The transport win (MNNVL vs host-staged)
+NVLink beats host-staging at every point. KV TTFT p50 **2.67 → 0.37 s (7×)** at
+c12. KV throughput +24–31% through c48, shrinking to +8% at c96 — because KV is
+**compute-saturated** there and transport is no longer the bottleneck. RR's gain
+*grows* with load (1.22 → 1.41×): RR's poorer placement keeps it
+transfer-limited longer. Transfer tax removal is real but bounded.
 
-### DynoSim drift (pending c48/c96)
-v1 sim assumes ~free transfer ≈ MNNVL, so the drift should **shrink sharply**
-vs the host-staged comparison (which was 1.25–2.06× over-predicted because the
-sim lacked the transfer tax). At c48/c96 the sim/MNNVL ratio tests this: values
-near 1.0× would confirm transfer was the entire missing physics. _Filled when
-c48/c96 land._
+### 2. Disagg-vs-agg — the architecture verdict: NVLink does NOT flip it
+agg bounded reference **69.0 tok/s/GPU** (KV c32, 24 GPU); agg post-knee 85.
+- KV disagg peak bounded **49.6/GPU** vs agg **69.0** → **agg wins 1.39×**.
+- Post-knee ceilings: disagg 51.3 vs agg 85 → agg wins 1.66×.
+Removing the transfer tax narrowed the gap (host-staged best was 47.4/GPU
+post-knee) but did not close it. **Aggregated serving wins per-GPU for this
+architecture on both transports.** The remaining gap is not transfer — it is
+tier imbalance: cheap linear prefill (Mamba + 12/108 attention) leaves the
+24-GPU prefill tier bursty while 48 decode GPUs wait; agg keeps every GPU
+doing both phases. (Profiling comparison to attribute this in detail —
+in progress; see §"Profiling gap analysis" when landed.)
+
+### 3. DynoSim drift — narrowed, not closed; widens with load
+sim/MNNVL: **1.32× (c48) → 1.58× (c96)** (was 1.66×/1.70× vs host-staged).
+Decomposition of the sim − host-staged gap:
+
+| conc | sim − HS | transfer tax recovered (MNNVL − HS) | residual model optimism (sim − MNNVL) |
+|---|---|---|---|
+| 48 | 1,872 | 720 (**38%**) | 1,152 (**62%**) |
+| 96 | 2,390 | 268 (**11%**) | 2,122 (**89%**) |
+
+Transfer was the *minority* of the drift; the majority is genuine model
+optimism, and it dominates at saturation because real KV plateaus ~3.7k while
+the sim projects 5.8k. Two sources, both now identified: (a) the AIC decode
+batch-slope (6× too shallow, as on agg), and (b) **the AIC seed was labelled
+0.5.14 but AIC 0.11.0's gb300 SGLang DB tops out at 0.5.12** — the seed was an
+extrapolation above the DB's newest real point. No AIC release ships a
+0.5.14/0.5.16 DB (0.11.0 is the latest on PyPI), so the sim is re-anchored by
+**DynoSim v3 recalibration from measured 0.5.16 silicon** (agg + disagg), not
+by an AIC re-solve.
+
+### 4. Topology
+6:12 is the optimal split among all silicon-measured splits (6:12 ≫ 3:15 on
+host-staged; 6:12 complete on MNNVL). The sim-preferred 9:9 is being verified
+on MNNVL (KV c48/96/144, peak-bounded tok/s/GPU vs 6:12's 49.6) — first
+attempt failed at 0/9 prefill pods (three stale ComputeDomains held the
+nodes' IMEX channels; a node belongs to one CD); re-run with CD cleanup +
+domain-availability wait in progress.
 
 ## Reproduction
 
