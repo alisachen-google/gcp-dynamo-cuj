@@ -1,5 +1,18 @@
 # Nemotron-3-Ultra 550B: 72-GPU Disaggregated KV-vs-RR — Silicon Results + Drift
 
+## Links (reports, curves, evidence)
+
+| What | Link |
+|---|---|
+| **Disagg real-perf curve** (interactive: MNNVL/host-staged × KV/RR, sim dashed, agg rule, knee markers) | [rendered](https://htmlpreview.github.io/?https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/reports/n3u-disagg-curve.html) · [artifact](https://claude.ai/code/artifact/5342de51-ce44-4a08-b434-51178e0030ab) |
+| DynoSim pareto curves (agg 24-GPU + disagg 72-GPU 6:12) | [rendered](https://htmlpreview.github.io/?https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/reports/n3u-curves.html) |
+| Agg silicon curves (KV vs RR) | [rendered](https://htmlpreview.github.io/?https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/reports/agg-silicon-curves.html) |
+| Aggregated technical report | [AGG24_RESULTS.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/AGG24_RESULTS.md) |
+| Knee-point analysis (sim vs silicon, KV/RR, agg/disagg) | [KNEE_ANALYSIS.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/KNEE_ANALYSIS.md) |
+| GPUDirect regression + filed bug | [GPUDIRECT_REGRESSION.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/GPUDIRECT_REGRESSION.md) · [BUG_GPUDIRECT.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/BUG_GPUDIRECT.md) |
+| Profiled agg-vs-disagg gap analysis | `profiles/GAP_ANALYSIS.md` (generated when the profiled comparison lands) |
+
+
 Disagg comparison following the Kimi pattern (2026-09-02/03): 6P+12D TP4 (6:12,
 sim-best bounded split), single fleet with per-point frontend router swap,
 fresh frontend + 300 s settle + 900 s trace warmup + 1800 s measured window per
@@ -261,6 +274,34 @@ on MNNVL (KV c48/96/144, peak-bounded tok/s/GPU vs 6:12's 49.6) — first
 attempt failed at 0/9 prefill pods (three stale ComputeDomains held the
 nodes' IMEX channels; a node belongs to one CD); re-run with CD cleanup +
 domain-availability wait in progress.
+
+
+## Knee points — simulation vs silicon (KV / RR, agg / disagg)
+
+Full analysis: [KNEE_ANALYSIS.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/KNEE_ANALYSIS.md). Same rule both worlds —
+silicon knee = last concurrency whose queue stays stationary over the window
+(`knee_check.py`); sim knee = last concurrency before TTFT p50 growth turns
+super-linear in concurrency. No SLO gate either side.
+
+| arm | policy | sim knee (v1) | silicon knee | sim / real |
+|---|---|---|---|---|
+| agg 24 GPU | KV | c96 → 128 | **c48** | 2–2.7× high |
+| agg 24 GPU | RR | c24 | **c32** | ~matched |
+| disagg 6:12 MNNVL | KV | c96 | **c48 → 96** | up to 2× high |
+| disagg 6:12 MNNVL | RR | c48 | **c24 → 48** | up to 2× high |
+| disagg 6:12 host-staged | KV | (same) | ~c16 → 24 | 4–6× high |
+
+- **The sim over-places every KV knee (~2×)** — the flat AIC decode slope lets
+  the modelled decode tier absorb more concurrency before backing up, and the
+  sim's 84% hit rate (vs ~63% measured) under-models prefill load so KV backs
+  up later. **RR knees are near-matched** because RR gets no reuse benefit —
+  the asymmetry pins the KV-specific error on the reuse/hit-rate model.
+- **Transport moves the knee 3–6× but the ceiling only 8–31%**: the host-staged
+  transfer floor was a queueing tax that blocked the decode tier at low load;
+  NVLink removes it and the knee jumps, but the ceiling is compute-set.
+- RR always knees before KV; disagg's KV knee is deeper than agg's (48–96 vs
+  48) because 12 decode workers hold 3× the in-flight capacity — at 3× the
+  GPUs, so per-GPU still favours agg.
 
 ## Reproduction
 

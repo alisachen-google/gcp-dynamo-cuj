@@ -1,0 +1,139 @@
+<title>N3U Disagg 6:12 Throughput Curve</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{color-scheme:light;--bg:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--ink3:#8a8983;--grid:#e6e5e0;--rule:#8a8983;--band:#f0efe9;--tile:#f5f4ef;
+ --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--focus:#2a78d6}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#1a1a19;--ink:#ffffff;--ink2:#c3c2b7;--ink3:#8c8b84;--grid:#2e2e2c;--rule:#8c8b84;--band:#232322;--tile:#222221;
+ --s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--focus:#3987e5}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#1a1a19;--ink:#ffffff;--ink2:#c3c2b7;--ink3:#8c8b84;--grid:#2e2e2c;--rule:#8c8b84;--band:#232322;--tile:#222221;
+ --s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--focus:#3987e5}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 "IBM Plex Sans",system-ui,sans-serif;padding-block:28px 40px;padding-inline:clamp(16px,4vw,40px);max-width:1080px;margin:0 auto}
+h1{font-size:22px;font-weight:600;margin:0 0 4px;text-wrap:balance}
+.sub{color:var(--ink2);margin:0 0 18px;max-width:70ch}
+.row{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin-bottom:10px}
+.seg{display:inline-flex;border:1px solid var(--grid);border-radius:6px;overflow:hidden}
+.seg button{background:none;border:0;color:var(--ink2);font:inherit;padding:5px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--tile);color:var(--ink);font-weight:500}
+.seg button:focus-visible,label:focus-within{outline:2px solid var(--focus);outline-offset:1px}
+label.chk{display:inline-flex;gap:6px;align-items:center;color:var(--ink2);cursor:pointer}
+.chart{position:relative;width:100%}
+svg{width:100%;height:auto;display:block;font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.tip{position:absolute;pointer-events:none;background:var(--bg);border:1px solid var(--grid);border-radius:6px;padding:8px 10px;font:12px/1.45 "IBM Plex Mono",ui-monospace,monospace;box-shadow:0 2px 8px rgba(0,0,0,.12);display:none;min-width:190px}
+.tip b{display:block;margin-bottom:3px;font-weight:500}
+.tip .r{display:flex;gap:8px;align-items:center;white-space:nowrap}
+.tip .sw{width:10px;height:3px;border-radius:2px;flex:none}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin:8px 0 22px;color:var(--ink2);font-size:13px}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.legend .ln{width:22px;height:0;border-top:2px solid;flex:none}.legend .ln.d{border-top-style:dashed}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:22px}
+.tile{background:var(--tile);border-radius:8px;padding:12px 14px}
+.tile .k{font-size:12px;color:var(--ink2);letter-spacing:.02em;text-transform:uppercase}
+.tile .v{font:500 24px/1.2 "IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;margin:4px 0 2px}
+.tile .n{font-size:12px;color:var(--ink2)}
+details{margin-top:6px}summary{cursor:pointer;color:var(--ink2)}
+.tw{overflow-x:auto;margin-top:10px}
+table{border-collapse:collapse;font:13px "IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;min-width:640px}
+th,td{text-align:right;padding:6px 10px;border-bottom:1px solid var(--grid)}th:first-child,td:first-child{text-align:left}
+th{color:var(--ink2);font-weight:500}
+.fn{color:var(--ink2);font-size:12.5px;max-width:78ch;margin-top:18px}
+@media (prefers-reduced-motion:no-preference){.tip{transition:opacity .08s}}
+</style>
+
+<h1>Nemotron-3-Ultra 550B — disaggregated 6:12, measured throughput vs concurrency</h1>
+<p class="sub">72 GPU (6 prefill : 12 decode, TP4/EP4), GB300 NVL72, Weka 256K agentic trace replay. Solid lines are silicon; dashed is DynoSim v1 in the same hue. Marker shape is the knee verdict on the MNNVL series.</p>
+
+<div class="row" role="group" aria-label="Chart controls">
+  <div class="seg" id="unit"><button id="u-total" aria-pressed="true">Output tok/s</button><button id="u-gpu" aria-pressed="false">tok/s per GPU</button></div>
+  <label class="chk"><input type="checkbox" id="showsim" checked> show DynoSim v1</label>
+  <label class="chk"><input type="checkbox" id="showhs" checked> show host-staged (broken GPUDirect)</label>
+</div>
+
+<div class="chart" id="chart"><div class="tip" id="tip" role="status" aria-live="polite"></div></div>
+
+<div class="legend" id="legend" aria-label="Legend">
+  <span><i class="ln" style="border-color:var(--s1)"></i>MNNVL KV-aware</span>
+  <span><i class="ln" style="border-color:var(--s2)"></i>MNNVL round-robin</span>
+  <span><i class="ln" style="border-color:var(--s3)"></i>host-staged KV</span>
+  <span><i class="ln" style="border-color:var(--s4)"></i>host-staged RR</span>
+  <span><i class="ln d" style="border-color:var(--ink3)"></i>DynoSim v1 (dashed, same hue)</span>
+  <span>● at / pre-knee &nbsp; ○ post-knee &nbsp; ■ host-staged (knee not encoded)</span>
+</div>
+
+<div class="tiles">
+  <div class="tile"><div class="k">KV peak bounded (MNNVL)</div><div class="v">3,573 tok/s</div><div class="n">c48 · 49.6 per GPU · queue stationary</div></div>
+  <div class="tile"><div class="k">Aggregated reference</div><div class="v">69.0 / GPU</div><div class="n">24-GPU agg, KV c32, bounded → agg wins 1.39×</div></div>
+  <div class="tile"><div class="k">Transport win vs host-staged</div><div class="v">+25 %</div><div class="n">KV @c48 (3,573 vs 2,853); TTFT p50 2.67 → 0.37 s @c12</div></div>
+</div>
+
+<details><summary>Table view (all series)</summary><div class="tw"><table id="tbl"></table></div></details>
+
+<p class="fn">Every MNNVL point passed the transport gate (cuda_ipc on the KV data path, no tcp/rdma/host-staged fallback). Knee verdicts from per-request timestamp stationarity; no latency SLO gate. The shaded band marks c144 / 192 / 288, where the MNNVL sweep is running now — those points land in this chart when complete. Stack: SGLang 0.5.16 · Dynamo 1.4.2 · FlashInfer 0.6.18 (MNNVL) vs 0.5.14 · 1.3.1 (host-staged).</p>
+
+<script>
+const S={
+ mkv:{name:"MNNVL KV-aware",c:"--s1",pts:[[12,1734,"AT/PRE"],[24,2672,"AT/PRE"],[48,3573,"AT/PRE"],[96,3691,"POST"]]},
+ mrr:{name:"MNNVL round-robin",c:"--s2",pts:[[12,1381,"AT/PRE"],[24,1980,"AT/PRE"],[48,2286,"POST"],[96,2460,"POST"]]},
+ hkv:{name:"host-staged KV",c:"--s3",hs:true,pts:[[12,1394],[24,2043],[48,2853],[96,3423],[144,3307],[192,3263]]},
+ hrr:{name:"host-staged RR",c:"--s4",hs:true,pts:[[12,1135],[24,1500],[48,1646],[96,1746],[144,1690]]},
+ skv:{name:"DynoSim v1 KV",c:"--s1",sim:true,pts:[[48,4725],[96,5813],[144,5920],[192,5613],[288,4947],[384,4397],[512,3703],[768,2841]]},
+ srr:{name:"DynoSim v1 RR",c:"--s2",sim:true,pts:[[48,3196],[96,3595],[144,3501],[192,3363],[288,3065],[384,2841],[512,2571],[768,2130]]}
+};
+const GPUS=72, AGG_PER_GPU=69.0, XT=[12,24,48,96,144,192,288,384,512,768];
+const el=id=>document.getElementById(id);
+let unit="total", showSim=true, showHS=true;
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+function val(v){return unit==="total"?v:v/GPUS}
+function fmt(v){return unit==="total"?Math.round(v).toLocaleString():v.toFixed(1)}
+function render(){
+ const W=1000,H=440,m={t:26,r:150,b:44,l:66};
+ const x=c=>m.l+(Math.log2(c)-Math.log2(12))/(Math.log2(768)-Math.log2(12))*(W-m.l-m.r);
+ const vis=Object.entries(S).filter(([k,s])=>(!s.sim||showSim)&&(!s.hs||showHS));
+ let ymax=0; vis.forEach(([k,s])=>s.pts.forEach(p=>ymax=Math.max(ymax,val(p[1]))));
+ ymax=Math.max(ymax,val(AGG_PER_GPU*GPUS))*1.08;
+ const y=v=>m.t+(1-v/ymax)*(H-m.t-m.b);
+ const step=unit==="total"?1000:10; const ticks=[]; for(let v=0;v<=ymax;v+=step)ticks.push(v);
+ let g=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-labelledby="ct" ><title id="ct">Output throughput versus concurrency, 6:12 disaggregated Nemotron-3-Ultra</title>`;
+ g+=`<rect x="${x(144)-8}" y="${m.t}" width="${x(288)-x(144)+16}" height="${H-m.t-m.b}" fill="var(--band)"/>`;
+ g+=`<text x="${(x(144)+x(288))/2}" y="${m.t+14}" font-size="11" fill="var(--ink3)" text-anchor="middle">MNNVL sweep running</text>`;
+ ticks.forEach(v=>{g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${m.l-8}" y="${y(v)+4}" font-size="11" fill="var(--ink2)" text-anchor="end">${unit==="total"?v.toLocaleString():v}</text>`});
+ XT.forEach(c=>{g+=`<text x="${x(c)}" y="${H-m.b+18}" font-size="11" fill="var(--ink2)" text-anchor="middle">${c}</text>`});
+ g+=`<text x="${(m.l+W-m.r)/2}" y="${H-6}" font-size="11.5" fill="var(--ink2)" text-anchor="middle">concurrency (log₂ scale)</text>`;
+ g+=`<text transform="translate(14 ${(m.t+H-m.b)/2}) rotate(-90)" font-size="11.5" fill="var(--ink2)" text-anchor="middle">${unit==="total"?"output tokens / s (72 GPU)":"output tokens / s / GPU"}</text>`;
+ const ay=y(val(AGG_PER_GPU*GPUS));
+ g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${ay}" y2="${ay}" stroke="var(--rule)" stroke-width="1.5" stroke-dasharray="3 5"/>`;
+ g+=`<text x="${W-m.r+8}" y="${ay+4}" font-size="11" fill="var(--ink2)">agg 24-GPU bounded${unit==="total"?" (×72 equiv)":""}: ${unit==="total"?"4,968":"69.0"}</text>`;
+ const ends=[];
+ vis.forEach(([k,s])=>{const col=`var(${s.c})`;const d=s.pts.map((p,i)=>`${i?"L":"M"}${x(p[0])},${y(val(p[1]))}`).join(" ");
+  g+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="2" ${s.sim?'stroke-dasharray="6 5" opacity=".8"':''} stroke-linejoin="round"/>`;
+  if(!s.sim){s.pts.forEach(p=>{const cx=x(p[0]),cy=y(val(p[1]));
+   if(s.hs)g+=`<rect x="${cx-4}" y="${cy-4}" width="8" height="8" fill="${col}" stroke="var(--bg)" stroke-width="2"/>`;
+   else if(p[2]==="POST")g+=`<circle cx="${cx}" cy="${cy}" r="5" fill="var(--bg)" stroke="${col}" stroke-width="2.2"/>`;
+   else g+=`<circle cx="${cx}" cy="${cy}" r="5" fill="${col}" stroke="var(--bg)" stroke-width="2"/>`;});
+   const last=s.pts[s.pts.length-1];ends.push({y:y(val(last[1])),x:x(last[0]),t:s.name,col});}});
+ ends.sort((a,b)=>a.y-b.y);for(let i=1;i<ends.length;i++)if(ends[i].y-ends[i-1].y<14)ends[i].y=ends[i-1].y+14;
+ ends.forEach(e=>{g+=`<text x="${e.x+9}" y="${e.y+4}" font-size="11" fill="var(--ink)">${e.t}</text>`});
+ g+=`<line id="xh" x1="0" x2="0" y1="${m.t}" y2="${H-m.b}" stroke="var(--ink3)" stroke-dasharray="2 3" style="display:none"/>`;
+ g+=`<rect x="${m.l}" y="${m.t}" width="${W-m.l-m.r}" height="${H-m.t-m.b}" fill="transparent" id="hit"/></svg>`;
+ el("chart").innerHTML=g+`<div class="tip" id="tip" role="status" aria-live="polite"></div>`;
+ hover(x,vis,W,H,m);table(vis);
+}
+function hover(x,vis,W,H,m){
+ const svg=el("chart").querySelector("svg"),tip=el("tip"),xh=svg.querySelector("#xh"),hit=svg.querySelector("#hit");
+ const concs=XT.filter(c=>vis.some(([k,s])=>s.pts.some(p=>p[0]===c)));
+ function mv(ev){const r=svg.getBoundingClientRect(),px=(ev.clientX-r.left)*W/r.width;
+  let best=concs[0],bd=1e9;concs.forEach(c=>{const d=Math.abs(x(c)-px);if(d<bd){bd=d;best=c}});
+  xh.setAttribute("x1",x(best));xh.setAttribute("x2",x(best));xh.style.display="";
+  let h=`<b>concurrency ${best}</b>`;vis.forEach(([k,s])=>{const p=s.pts.find(q=>q[0]===best);if(!p)return;
+   h+=`<div class="r"><i class="sw" style="background:var(${s.c});${s.sim?'opacity:.6':''}"></i>${s.name}: ${fmt(val(p[1]))}${unit==="total"?` <span style="color:var(--ink2)">(${(p[1]/GPUS).toFixed(1)}/GPU)</span>`:''}${p[2]?` <span style="color:var(--ink2)">${p[2]}</span>`:''}</div>`});
+  tip.innerHTML=h;tip.style.display="block";const cr=el("chart").getBoundingClientRect();
+  let tx=(ev.clientX-cr.left)+14,ty=(ev.clientY-cr.top)-10;if(tx+tip.offsetWidth>cr.width)tx-=tip.offsetWidth+28;tip.style.left=tx+"px";tip.style.top=Math.max(0,ty)+"px";}
+ hit.addEventListener("mousemove",mv);hit.addEventListener("mouseleave",()=>{tip.style.display="none";xh.style.display="none"});
+}
+function table(vis){let h=`<tr><th>conc</th>${vis.map(([k,s])=>`<th>${s.name}</th>`).join("")}</tr>`;
+ XT.forEach(c=>{if(!vis.some(([k,s])=>s.pts.some(p=>p[0]===c)))return;h+=`<tr><td>${c}</td>${vis.map(([k,s])=>{const p=s.pts.find(q=>q[0]===c);return `<td>${p?fmt(val(p[1]))+(p[2]?" "+(p[2]==="POST"?"○":"●"):""):"—"}</td>`}).join("")}</tr>`});
+ el("tbl").innerHTML=h;}
+el("u-total").onclick=()=>{unit="total";el("u-total").setAttribute("aria-pressed","true");el("u-gpu").setAttribute("aria-pressed","false");render()};
+el("u-gpu").onclick=()=>{unit="gpu";el("u-gpu").setAttribute("aria-pressed","true");el("u-total").setAttribute("aria-pressed","false");render()};
+el("showsim").onchange=e=>{showSim=e.target.checked;render()};el("showhs").onchange=e=>{showHS=e.target.checked;render()};
+render();
+</script>
