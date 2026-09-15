@@ -59,19 +59,19 @@ th{color:var(--ink2);font-weight:500}
 
 <div class="tiles">
   <div class="tile"><div class="k">KV peak bounded (MNNVL)</div><div class="v">4,878 tok/s</div><div class="n">c120 · 67.7 per GPU · queue stationary · fleet instance 2</div></div>
-  <div class="tile"><div class="k">Aggregated reference</div><div class="v">69.0 / GPU</div><div class="n">24-GPU agg, KV c32, bounded → parity (0.98×); agg wins post-knee 1.25×</div></div>
+  <div class="tile"><div class="k">Aggregated reference</div><div class="v">69.0 / GPU</div><div class="n">24-GPU agg, KV c32 bounded → 6:12 parity (0.98×); <b>9:9 KV c96 = 91.1/GPU, 1.32×</b></div></div>
   <div class="tile"><div class="k">Sim drift at the KV peak</div><div class="v">0.83×</div><div class="n">real / DynoSim v1 at c120 (4,878 vs 5,873); pre-knee the sim is exact (c12 0.99×, c48 0.99×)</div></div>
 </div>
 
 <details><summary>Table view (all series)</summary><div class="tw"><table id="tbl"></table></div></details>
 
-<p class="fn">Every point passed the transport gate: KV moved via mooncake on MNNVL (transfer-engine throughput up to 2.0 GB/s per prefill worker, no RDMA device in the pod, no transfer failures). Knee verdicts from per-request timestamp stationarity; no latency SLO gate. The shaded band marks c384 / 512, where the MNNVL KV sweep is running now. Fleet instance 1 (2026-09-12/13) was inconsistent (−25% at c96, +36% at c144); those two points are shown as superseded and the KV series uses the reproduced instance-2 measurements from c96 up. c12–48 and RR points are instance-1 pending re-verification. RR c288 is omitted (1.4% transfer failures). Stack: SGLang 0.5.16 · Dynamo 1.4.2 · FlashInfer 0.6.18.</p>
+<p class="fn">Every point passed the transport gate: KV moved via mooncake on MNNVL (transfer-engine throughput up to 2.0 GB/s per prefill worker, no RDMA device in the pod, no transfer failures). Knee verdicts from per-request timestamp stationarity; no latency SLO gate. The shaded band marks c384 / 512, where the MNNVL KV sweep is running now. Fleet instance 1 (2026-09-12/13) was inconsistent (−25% at c96, +36% at c144); those two points are shown as superseded and the KV series uses the reproduced instance-2 measurements from c48 up (instance-1 c48 = 3,573 also shown as superseded). c12–24 and RR points are instance-1 pending re-verification. The 9:9 split series (c48, c96) is instance-2; its c144 is running. RR c288 is omitted (1.4% transfer failures). Stack: SGLang 0.5.16 · Dynamo 1.4.2 · FlashInfer 0.6.18.</p>
 
 <script>
 const S={
- mkv:{name:"MNNVL KV-aware",c:"--s1",pts:[[12,1734,"AT/PRE"],[24,2672,"AT/PRE"],[48,3573,"AT/PRE"],[96,4807,"AT/PRE"],[120,4878,"AT/PRE"],[144,4562,"POST"],[192,2707,"POST"],[288,2489,"POST"]]},
+ mkv:{name:"MNNVL KV-aware",c:"--s1",pts:[[12,1734,"AT/PRE"],[24,2672,"AT/PRE"],[48,4684,"AT/PRE"],[96,4807,"AT/PRE"],[120,4878,"AT/PRE"],[144,4562,"POST"],[192,2707,"POST"],[288,2489,"POST"]]},
  m99:{name:"MNNVL KV 9:9 split",c:"--s3",pts:[[48,4555,"AT/PRE"],[96,6560,"AT/PRE"]]},
- mkv1:{name:"MNNVL KV — fleet instance 1 (superseded)",c:"--ink3",sup:true,pts:[[96,3691,"POST"],[144,6221,"AT/PRE"]]},
+ mkv1:{name:"MNNVL KV — fleet instance 1 (superseded)",c:"--ink3",sup:true,pts:[[48,3573,"AT/PRE"],[96,3691,"POST"],[144,6221,"AT/PRE"]]},
  mrr:{name:"MNNVL round-robin",c:"--s2",pts:[[12,1381,"AT/PRE"],[24,1980,"AT/PRE"],[48,2286,"POST"],[96,2460,"POST"],[144,2078,"POST"],[192,1931,"POST"]]},
  skv:{name:"DynoSim v1 KV",c:"--s1",sim:true,pts:[[12,1751],[24,3026],[48,4725],[96,5813],[120,5873],[144,5920],[192,5613],[288,4947],[384,4397],[512,3703],[768,2841]]},
  srr:{name:"DynoSim v1 RR",c:"--s2",sim:true,pts:[[12,1505],[24,2433],[48,3196],[96,3595],[120,3580],[144,3501],[192,3363],[288,3065],[384,2841],[512,2571],[768,2130]]}
