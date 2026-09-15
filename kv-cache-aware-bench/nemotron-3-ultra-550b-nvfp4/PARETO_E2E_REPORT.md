@@ -65,13 +65,18 @@ Already measured (fleet instance 2, MNNVL, transport-gated, knee-checked):
 | 6:12 KV c144 | 82.2 · 5.2 | 63.4 · 49.1 · POST | 0.77× |
 | 9:9 KV c48 | 62.0 · 1.2 | 63.3 · 3.1 · AT/PRE | 1.02× |
 | **9:9 KV c96** | 72.6 · 1.6 | **91.1 · 8.5 · AT/PRE** | **1.25×** |
-| 9:9 KV c144 | 73.0 · 2.8 | running | — |
-| 12:6 KV c48 / c96 | 54.7 / 60.9 | queued (Pareto-verify runner) | — |
-| 3:15 KV c96 | 82.3 · 7.5 | queued | — |
-| 9:9 KV c120 | 73.9 · 3.0 | queued | — |
+| 9:9 KV c144 | 73.0 · 2.8 | re-running (first attempt: bench-pod OOM at export) | — |
+| 12:6 KV c48 | 54.7 · 1.1 | **52.7 · 3.7 · AT/PRE** | 0.96× |
+| 12:6 KV c96 | 60.9 · 1.2 | **78.7 · 4.5 · AT/PRE** (p50 0.56 s) | **1.29×** |
+| 3:15 KV c96 | 82.3 · 7.5 | **50.3 · 57.3 · POST** | **0.61×** |
+| **9:9 KV c120** | 73.9 · 3.0 | **98.5 · 8.7 · AT/PRE · 22,615 req** — new measured peak | **1.33×** |
 
 ## 4. Calibrate
-Two findings already force sim changes: (a) **the split ranking above c96 is inverted** — the sim
+The verification points confirm a *directional* error, not noise: real/sim is 0.61× for the decode-heavy
+3:15, 0.77–0.99× for 6:12, **1.29–1.33× for 9:9 and 12:6** — reality rewards prefill capacity
+monotonically, the sim penalises it. Measured frontier (throughput/GPU vs p95): 12:6 c48 (52.7 @ 3.7 s)
+→ 12:6 c96 (78.7 @ 4.5 s) → 9:9 c96 (91.1 @ 8.5 s) → 9:9 c120 (98.5 @ 8.7 s); every 6:12 and 3:15 cell is
+dominated. Two findings force sim changes: (a) **the split ranking above c96 is inverted** — the sim
 puts 6:12 (and 3:15) ahead of 9:9, silicon puts 9:9 1.36× ahead at c96 and above agg; the
 sim's prefill-tier service model does not capture the tier becoming the binding constraint
 (measured: 92% busy, 10-deep queue at 6:12 kv:144); (b) **TTFT is under-predicted 20–50× on KV

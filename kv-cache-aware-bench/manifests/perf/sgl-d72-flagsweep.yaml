@@ -34,68 +34,8 @@ spec:
         command:
         - /bin/bash
         - -c
-        - "set -euo pipefail\nulimit -n 600000\n# aiperf>=0.8.0 depends on crick,\
-          \ which has no Linux aarch64 wheel.\n# GB200 benchmark pods need build tools\
-          \ to compile it from source.\napt-get update && apt-get install -y curl\
-          \ jq procps git build-essential && apt-get clean\npip install \"aiperf==0.12.0\"\
-          \ tiktoken blobfile protobuf \"transformers==4.57.3\"\nsysctl -w net.ipv4.ip_local_port_range=\"\
-          1024 65000\" 2>/dev/null || true\nexport COLUMNS=200\nEPOCH=$(date +%s)\n\
-          \nwait_for_model_ready() {\n  local max_attempts=${WAIT_FOR_MODEL_MAX_ATTEMPTS:-720}\
-          \  # 720 * 5s = 1h default\n  local attempt=0\n  echo \"Waiting for model\
-          \ '$TARGET_MODEL' at $ENDPOINT/v1/models (max ${max_attempts} attempts)\
-          \ ...\"\n  while ! curl -sf \"http://$ENDPOINT/v1/models\" | jq -e --arg\
-          \ m \"$TARGET_MODEL\" '.data[]? | select(.id == $m)' >/dev/null 2>&1; do\n\
-          \    attempt=$((attempt + 1))\n    if [ \"$attempt\" -ge \"$max_attempts\"\
-          \ ]; then\n      echo \"ERROR: model '$TARGET_MODEL' did not become ready\
-          \ after ${max_attempts} attempts. Aborting.\"\n      exit 1\n    fi\n  \
-          \  echo \"[$(date '+%H:%M:%S')] not ready (attempt ${attempt}/${max_attempts}),\
-          \ sleeping 5s\"\n    sleep 5\n  done\n  curl -s \"http://$ENDPOINT/v1/models\"\
-          \ | jq .\n}\n\nif false; then\n  echo \"ERROR: trace file not found at ${TRACE_FILE}\"\
-          \n  echo \"Copy it onto the PVC via a helper pod, e.g.:\"\n  echo \"  kubectl\
-          \ cp <local_trace.jsonl> <ns>/<helper-pod>:${TRACE_FILE}\"\n  exit 1\nfi\n\
-          \nwait_for_model_ready\n\nexport HF_HOME=/tmp/hf\nCACHE=/tmp/hf/hub/models--alisachen--Kimi-K2.5-NVFP4\n\
-          mkdir -p $CACHE/snapshots/local $CACHE/refs\ncp /model-cache/alisachen/Kimi-K2.5-NVFP4/*.json\
-          \ /model-cache/alisachen/Kimi-K2.5-NVFP4/*.py /model-cache/alisachen/Kimi-K2.5-NVFP4/*.jinja\
-          \ /model-cache/alisachen/Kimi-K2.5-NVFP4/*.model $CACHE/snapshots/local/\
-          \ 2>/dev/null || true\nprintf local > $CACHE/refs/main\ncp -r /model-cache/hf-cache/hub/datasets--semianalysisai--cc-traces-weka-062126-256k\
-          \ /tmp/hf/hub/ 2>/dev/null && echo 'weka hub snapshot staged' || echo 'WARN:\
-          \ hub snapshot missing'\nmkdir -p /tmp/hf/datasets && cp -r /model-cache/hf-cache/datasets/*\
-          \ /tmp/hf/datasets/ 2>/dev/null && echo 'weka processed cache staged' ||\
-          \ echo 'WARN: processed cache missing'\nexport HF_HUB_OFFLINE=1\nls $CACHE/snapshots/local/\
-          \ | head -20\n\nROOT_DIR=\"${ROOT_ARTIFACT_DIR}/${EPOCH}_${JOB_NAME}\"\n\
-          mkdir -p \"$ROOT_DIR\"\n\necho \"==============================================\"\
-          \necho \"Trace Replay Benchmark (aiperf)\"\necho \"==============================================\"\
-          \necho \"Endpoint:        http://${ENDPOINT}\"\necho \"Model:          \
-          \ ${TARGET_MODEL}\"\necho \"Trace file:      ${TRACE_FILE}\"\necho \"Concurrencies:\
-          \   ${CONCURRENCIES}\"\necho \"TTFT threshold:  ${TTFT_THRESHOLD_MS}ms\"\
-          \necho \"ITL threshold:   ${ITL_THRESHOLD_MS}ms\"\necho \"Artifact root:\
-          \   ${ROOT_DIR}\"\necho \"==============================================\"\
-          \n\n# Warmup (synthetic phase disabled; see cache warmup)\nif false; then\n\
-          WARMUP_DIR=\"${ROOT_DIR}/warmup\"\nmkdir -p \"$WARMUP_DIR\"\naiperf profile\
-          \ \\\n  -m \"${TARGET_MODEL}\" \\\n  --tokenizer \"${TARGET_MODEL}\" \\\n\
-          \  --tokenizer-trust-remote-code \\\n  --url \"http://${ENDPOINT}\" \\\n\
-          \  --streaming \\\n  --ui dashboard \\\n  --extra-inputs ignore_eos:true\
-          \ \\\n  --concurrency 1 \\\n  --request-count 5 \\\n  --artifact-dir \"\
-          ${WARMUP_DIR}\"\nfi\necho \"Warmup complete\"\n\necho \"cache warmup skipped\
-          \ (flag sweep: warm workers)\"\n\nMODEL_BASE=\"${TARGET_MODEL##*/}\"\nTS=$(date\
-          \ +'%Y%m%d_%H%M%S')\n\nIFS=',' read -r -a CONCURRENCY_LIST <<< \"${CONCURRENCIES}\"\
-          \nfor C in \"${CONCURRENCY_LIST[@]}\"; do\n  echo \"\"\n  echo \"=== Concurrency=${C}\
-          \ ===\"\n  RUN_DIR=\"${ROOT_DIR}/${MODEL_BASE}_trace_c${C}_${TS}\"\n  mkdir\
-          \ -p \"$RUN_DIR\"\n\n  aiperf profile \\\n    -m \"${TARGET_MODEL}\" \\\n\
-          \    --tokenizer \"${TARGET_MODEL}\" \\\n    --tokenizer-trust-remote-code\
-          \ \\\n    --public-dataset semianalysis_cc_traces_weka_062126_256k \\\n\
-          \    --no-fixed-schedule \\\n    --ignore-trace-delays \\\n    --num-dataset-entries\
-          \ 393 \\\n    --slice-duration 1.0 \\\n    --max-context-length 262144 \\\
-          \n    --url \"http://${ENDPOINT}\" \\\n    --streaming \\\n    --extra-inputs\
-          \ ignore_eos:true \\\n    --concurrency \"${C}\" \\\n    --random-seed 42\
-          \ \\\n    --ui dashboard \\\n    --artifact-dir \"${RUN_DIR}\" \\\n    --goodput\
-          \ \"time_to_first_token:${TTFT_THRESHOLD_MS} inter_token_latency:${ITL_THRESHOLD_MS}\"\
-          \ \\\n    --benchmark-duration \"${BENCHMARK_DURATION}\" \\\n    --benchmark-grace-period\
-          \ 60 \\\n    --request-timeout-seconds 1200 \\\n    --workers-max 200 \\\
-          \n    --record-processors 8 \\\n    --profile-export-level raw \\\n    --concurrency-ramp-duration\
-          \ 60 \\\n    --export-http-trace\n\n  echo \"Concurrency ${C} complete;\
-          \ artifacts in ${RUN_DIR}\"\n  ls -la \"${RUN_DIR}\" || true\ndone\n\necho\
-          \ \"\"\necho \"All concurrencies done. Root: ${ROOT_DIR}\"\n"
+        - "set -euo pipefail\nulimit -n 600000\n# aiperf>=0.8.0 depends on crick, which has no Linux aarch64 wheel.\n# GB200 benchmark pods need build tools to compile it from source.\napt-get update && apt-get install -y curl jq procps git build-essential && apt-get clean\npip install \"aiperf==0.12.0\" tiktoken blobfile protobuf \"transformers==4.57.3\"\nsysctl -w net.ipv4.ip_local_port_range=\"1024 65000\" 2>/dev/null || true\nexport COLUMNS=200\nEPOCH=$(date +%s)\n\nwait_for_model_ready() {\n  local max_attempts=${WAIT_FOR_MODEL_MAX_ATTEMPTS:-720}  # 720 * 5s = 1h default\n  local attempt=0\n  echo \"Waiting for model '$TARGET_MODEL' at $ENDPOINT/v1/models (max ${max_attempts} attempts) ...\"\n  while ! curl -sf \"http://$ENDPOINT/v1/models\" | jq -e --arg m \"$TARGET_MODEL\" '.data[]? | select(.id == $m)' >/dev/null 2>&1; do\n    attempt=$((attempt + 1))\n    if [ \"$attempt\" -ge \"$max_attempts\" ]; then\n      echo \"ERROR: model '$TARGET_MODEL' did not become ready after ${max_attempts} attempts. Aborting.\"\n      exit 1\n    fi\n    echo \"[$(date '+%H:%M:%S')] not ready (attempt ${attempt}/${max_attempts}), sleeping 5s\"\n    sleep 5\n  done\n  curl -s \"http://$ENDPOINT/v1/models\" | jq .\n}\n\nif false; then\n  echo \"ERROR: trace file not found at ${TRACE_FILE}\"\n  echo \"Copy it onto the PVC via a helper pod, e.g.:\"\n  echo \"  kubectl cp <local_trace.jsonl> <ns>/<helper-pod>:${TRACE_FILE}\"\n  exit 1\nfi\n\nwait_for_model_ready\n\nexport HF_HOME=/tmp/hf\nCACHE=/tmp/hf/hub/models--alisachen--Kimi-K2.5-NVFP4\nmkdir -p $CACHE/snapshots/local $CACHE/refs\ncp /model-cache/alisachen/Kimi-K2.5-NVFP4/*.json /model-cache/alisachen/Kimi-K2.5-NVFP4/*.py /model-cache/alisachen/Kimi-K2.5-NVFP4/*.jinja /model-cache/alisachen/Kimi-K2.5-NVFP4/*.model $CACHE/snapshots/local/ 2>/dev/null || true\nprintf local > $CACHE/refs/main\ncp -r /model-cache/hf-cache/hub/datasets--semianalysisai--cc-traces-weka-062126-256k /tmp/hf/hub/ 2>/dev/null && echo 'weka hub snapshot staged' || echo 'WARN: hub snapshot missing'\nmkdir -p /tmp/hf/datasets && cp -r /model-cache/hf-cache/datasets/* /tmp/hf/datasets/ 2>/dev/null && echo 'weka processed cache staged' || echo 'WARN: processed cache missing'\nexport HF_HUB_OFFLINE=1\nls $CACHE/snapshots/local/ | head -20\n\nROOT_DIR=\"${ROOT_ARTIFACT_DIR}/${EPOCH}_${JOB_NAME}\"\nmkdir -p \"$ROOT_DIR\"\n\necho \"==============================================\"\necho \"Trace Replay Benchmark (aiperf)\"\necho \"==============================================\"\necho \"Endpoint:        http://${ENDPOINT}\"\necho \"Model:           ${TARGET_MODEL}\"\necho \"Trace file:      ${TRACE_FILE}\"\necho \"Concurrencies:   ${CONCURRENCIES}\"\necho \"TTFT threshold:  ${TTFT_THRESHOLD_MS}ms\"\necho \"ITL threshold:   ${ITL_THRESHOLD_MS}ms\"\necho \"Artifact root:   ${ROOT_DIR}\"\necho \"==============================================\"\n\n# Warmup (synthetic phase disabled; see cache warmup)\nif false; then\nWARMUP_DIR=\"${ROOT_DIR}/warmup\"\nmkdir -p \"$WARMUP_DIR\"\naiperf profile \\\n  -m \"${TARGET_MODEL}\" \\\n  --tokenizer \"${TARGET_MODEL}\" \\\n  --tokenizer-trust-remote-code \\\n  --url \"http://${ENDPOINT}\" \\\n  --streaming \\\n  --ui dashboard \\\n  --extra-inputs ignore_eos:true \\\n  --concurrency 1 \\\n  --request-count 5 \\\n  --artifact-dir \"${WARMUP_DIR}\"\nfi\necho \"Warmup complete\"\n\nCWARM_DIR=\"${ROOT_DIR}/cache-warmup\"\nmkdir -p \"$CWARM_DIR\"\naiperf profile \\\n  -m \"${TARGET_MODEL}\" \\\n  --tokenizer \"${TARGET_MODEL}\" \\\n  --tokenizer-trust-remote-code \\\n  --public-dataset semianalysis_cc_traces_weka_062126_256k \\\n  --no-fixed-schedule \\\n    --ignore-trace-delays \\\n    --num-dataset-entries 393 \\\n    --slice-duration 1.0 \\\n    --max-context-length 262144 \\\n  --isl-block-size 64 \\\n  --no-fixed-schedule \\\n  --ignore-trace-delays \\\n  --url \"http://${ENDPOINT}\" \\\n  --streaming \\\n  --ui dashboard \\\n  --extra-inputs ignore_eos:true \\\n  --concurrency 96 \\\n  --benchmark-duration 900 \\\n  --benchmark-grace-period 60 \\\n  --request-timeout-seconds 1200 \\\n\
+          \  --artifact-dir \"$CWARM_DIR\" || echo \"cache warmup non-fatal failure\"\necho \"Cache warmup complete (trace replay, 900s)\"\n\nMODEL_BASE=\"${TARGET_MODEL##*/}\"\nTS=$(date +'%Y%m%d_%H%M%S')\n\nIFS=',' read -r -a CONCURRENCY_LIST <<< \"${CONCURRENCIES}\"\nfor C in \"${CONCURRENCY_LIST[@]}\"; do\n  echo \"\"\n  echo \"=== Concurrency=${C} ===\"\n  RUN_DIR=\"${ROOT_DIR}/${MODEL_BASE}_trace_c${C}_${TS}\"\n  mkdir -p \"$RUN_DIR\"\n\n  aiperf profile \\\n    -m \"${TARGET_MODEL}\" \\\n    --tokenizer \"${TARGET_MODEL}\" \\\n    --tokenizer-trust-remote-code \\\n    --public-dataset semianalysis_cc_traces_weka_062126_256k \\\n    --no-fixed-schedule \\\n    --ignore-trace-delays \\\n    --num-dataset-entries 393 \\\n    --slice-duration 1.0 \\\n    --max-context-length 262144 \\\n    --url \"http://${ENDPOINT}\" \\\n    --streaming \\\n    --extra-inputs ignore_eos:true \\\n    --concurrency \"${C}\" \\\n    --random-seed 42 \\\n    --ui dashboard \\\n    --artifact-dir \"${RUN_DIR}\" \\\n    --goodput \"time_to_first_token:${TTFT_THRESHOLD_MS} inter_token_latency:${ITL_THRESHOLD_MS}\" \\\n    --benchmark-duration \"${BENCHMARK_DURATION}\" \\\n    --benchmark-grace-period 60 \\\n    --request-timeout-seconds 1200 \\\n    --workers-max 200 \\\n    --record-processors 8 \\\n    --profile-export-level raw \\\n    --concurrency-ramp-duration 60\n\n  echo \"Concurrency ${C} complete; artifacts in ${RUN_DIR}\"\n  ls -la \"${RUN_DIR}\" || true\ndone\n\necho \"\"\necho \"All concurrencies done. Root: ${ROOT_DIR}\"\n"
         env:
         - name: TARGET_MODEL
           value: alisachen/Kimi-K2.5-NVFP4
@@ -133,6 +73,12 @@ spec:
         volumeMounts:
         - name: model-cache
           mountPath: /model-cache
+        resources:
+          requests:
+            memory: 48Gi
+            cpu: '8'
+          limits:
+            memory: 96Gi
       restartPolicy: Never
       volumes:
       - name: model-cache

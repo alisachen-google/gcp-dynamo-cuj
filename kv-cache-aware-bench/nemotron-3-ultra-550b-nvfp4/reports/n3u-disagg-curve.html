@@ -53,13 +53,14 @@ th{color:var(--ink2);font-weight:500}
   <span><i class="ln" style="border-color:var(--s1)"></i>MNNVL KV-aware</span>
   <span><i class="ln" style="border-color:var(--s2)"></i>MNNVL round-robin</span>
   <span><i class="ln" style="border-color:var(--s3)"></i>MNNVL KV — 9:9 split</span>
+  <span><i class="ln" style="border-color:var(--s4)"></i>MNNVL KV — 12:6 split</span>
   <span><i class="ln d" style="border-color:var(--ink3)"></i>DynoSim v1 (dashed, same hue)</span>
   <span>● at / pre-knee &nbsp; ○ post-knee &nbsp; ▢ fleet instance 1, superseded (not reproduced)</span>
 </div>
 
 <div class="tiles">
-  <div class="tile"><div class="k">KV peak bounded (MNNVL)</div><div class="v">4,878 tok/s</div><div class="n">c120 · 67.7 per GPU · queue stationary · fleet instance 2</div></div>
-  <div class="tile"><div class="k">Aggregated reference</div><div class="v">69.0 / GPU</div><div class="n">24-GPU agg, KV c32 bounded → 6:12 parity (0.98×); <b>9:9 KV c96 = 91.1/GPU, 1.32×</b></div></div>
+  <div class="tile"><div class="k">KV peak bounded (MNNVL)</div><div class="v">7,089 tok/s</div><div class="n">9:9 split · c120 · 98.5 per GPU · queue stationary (6:12: 4,878 @c120)</div></div>
+  <div class="tile"><div class="k">Aggregated reference</div><div class="v">69.0 / GPU</div><div class="n">24-GPU agg, KV c32 bounded → 6:12 parity (0.98×); <b>9:9 KV c120 = 98.5/GPU, 1.43×</b></div></div>
   <div class="tile"><div class="k">Sim drift at the KV peak</div><div class="v">0.83×</div><div class="n">real / DynoSim v1 at c120 (4,878 vs 5,873); pre-knee the sim is exact (c12 0.99×, c48 0.99×)</div></div>
 </div>
 
@@ -70,7 +71,8 @@ th{color:var(--ink2);font-weight:500}
 <script>
 const S={
  mkv:{name:"MNNVL KV-aware",c:"--s1",pts:[[12,1734,"AT/PRE"],[24,2672,"AT/PRE"],[48,4684,"AT/PRE"],[96,4807,"AT/PRE"],[120,4878,"AT/PRE"],[144,4562,"POST"],[192,2707,"POST"],[288,2489,"POST"]]},
- m99:{name:"MNNVL KV 9:9 split",c:"--s3",pts:[[48,4555,"AT/PRE"],[96,6560,"AT/PRE"]]},
+ m99:{name:"MNNVL KV 9:9 split",c:"--s3",pts:[[48,4555,"AT/PRE"],[96,6560,"AT/PRE"],[120,7089,"AT/PRE"]]},
+ m126:{name:"MNNVL KV 12:6 split",c:"--s4",pts:[[48,3797,"AT/PRE"],[96,5667,"AT/PRE"]]},
  mkv1:{name:"MNNVL KV — fleet instance 1 (superseded)",c:"--ink3",sup:true,pts:[[48,3573,"AT/PRE"],[96,3691,"POST"],[144,6221,"AT/PRE"]]},
  mrr:{name:"MNNVL round-robin",c:"--s2",pts:[[12,1381,"AT/PRE"],[24,1980,"AT/PRE"],[48,2286,"POST"],[96,2460,"POST"],[144,2078,"POST"],[192,1931,"POST"]]},
  skv:{name:"DynoSim v1 KV",c:"--s1",sim:true,pts:[[12,1751],[24,3026],[48,4725],[96,5813],[120,5873],[144,5920],[192,5613],[288,4947],[384,4397],[512,3703],[768,2841]]},
