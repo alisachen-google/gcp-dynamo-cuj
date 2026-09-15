@@ -35,7 +35,7 @@ swap_frontend() {  # $1=policy ; frontend is bash-c/pip -> must keep that form
 }
 
 run_point() {  # $1=policy $2=conc ; returns job status in $st
-  local v=$1 C=$2 JOB=alisachen-${ARM}-${v}-c${C}
+  local v=$1 C=$2; local JOB=alisachen-${ARM}-${v}-c${C}
   kubectl delete job -n $NS "$JOB" --ignore-not-found --wait=true >> "$LOG" 2>&1
   sed -e "s|/model-cache/alisachen/Kimi-K2.5-NVFP4|${N3U_DIR}|g" \
       -e "s|alisachen/Kimi-K2.5-NVFP4|${N3U_SERVED}|g" \
