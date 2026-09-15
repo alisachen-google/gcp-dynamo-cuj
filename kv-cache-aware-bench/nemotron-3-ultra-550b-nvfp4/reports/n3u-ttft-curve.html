@@ -1,0 +1,80 @@
+<title>N3U Disagg TTFT vs Concurrency</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{color-scheme:light;--bg:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--ink3:#8a8983;--grid:#e6e5e0;--rule:#8a8983;--tile:#f5f4ef;--s1:#2a78d6;--s2:#eb6834;--focus:#2a78d6}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#1a1a19;--ink:#fff;--ink2:#c3c2b7;--ink3:#8c8b84;--grid:#2e2e2c;--rule:#8c8b84;--tile:#222221;--s1:#3987e5;--s2:#d95926;--focus:#3987e5}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#1a1a19;--ink:#fff;--ink2:#c3c2b7;--ink3:#8c8b84;--grid:#2e2e2c;--rule:#8c8b84;--tile:#222221;--s1:#3987e5;--s2:#d95926;--focus:#3987e5}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 "IBM Plex Sans",system-ui,sans-serif;padding-block:28px 40px;padding-inline:clamp(16px,4vw,40px);max-width:1080px;margin:0 auto}
+h1{font-size:22px;font-weight:600;margin:0 0 4px;text-wrap:balance}.sub{color:var(--ink2);margin:0 0 18px;max-width:72ch}
+.row{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin-bottom:10px}
+.seg{display:inline-flex;border:1px solid var(--grid);border-radius:6px;overflow:hidden}.seg button{background:none;border:0;color:var(--ink2);font:inherit;padding:5px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--tile);color:var(--ink);font-weight:500}.seg button:focus-visible,label:focus-within{outline:2px solid var(--focus);outline-offset:1px}
+label.chk{display:inline-flex;gap:6px;align-items:center;color:var(--ink2);cursor:pointer}
+.chart{position:relative;width:100%}svg{width:100%;height:auto;display:block;font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.tip{position:absolute;pointer-events:none;background:var(--bg);border:1px solid var(--grid);border-radius:6px;padding:8px 10px;font:12px/1.45 "IBM Plex Mono",ui-monospace,monospace;box-shadow:0 2px 8px rgba(0,0,0,.12);display:none;min-width:210px}
+.tip b{display:block;margin-bottom:3px;font-weight:500}.tip .r{display:flex;gap:8px;align-items:center;white-space:nowrap}.tip .sw{width:10px;height:3px;border-radius:2px;flex:none}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin:8px 0 22px;color:var(--ink2);font-size:13px}.legend span{display:inline-flex;align-items:center;gap:7px}
+.legend .ln{width:22px;height:0;border-top:2px solid;flex:none}.legend .ln.d{border-top-style:dashed}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:22px}.tile{background:var(--tile);border-radius:8px;padding:12px 14px}
+.tile .k{font-size:12px;color:var(--ink2);letter-spacing:.02em;text-transform:uppercase}.tile .v{font:500 24px/1.2 "IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;margin:4px 0 2px}.tile .n{font-size:12px;color:var(--ink2)}
+details{margin-top:6px}summary{cursor:pointer;color:var(--ink2)}.tw{overflow-x:auto;margin-top:10px}
+table{border-collapse:collapse;font:13px "IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;min-width:640px}th,td{text-align:right;padding:6px 10px;border-bottom:1px solid var(--grid)}th:first-child,td:first-child{text-align:left}th{color:var(--ink2);font-weight:500}
+.fn{color:var(--ink2);font-size:12.5px;max-width:78ch;margin-top:18px}
+</style>
+<h1>Nemotron-3-Ultra 550B — disaggregated 6:12, TTFT vs concurrency: measured vs DynoSim</h1>
+<p class="sub">Time to first token in seconds (log scale) at each concurrency. Solid = silicon (aiperf, 1800 s window), dashed = DynoSim v1 in the same hue. Pick the percentile. Filled markers = queue stationary (at/pre-knee), hollow = post-knee. GB300 NVL72, 72 GPU, KV over NVLink; RR c288 omitted (transfer failures).</p>
+<div class="row" role="group" aria-label="Chart controls">
+  <div class="seg" id="pct"><button data-p="0" aria-pressed="true">p50</button><button data-p="1" aria-pressed="false">p95</button><button data-p="2" aria-pressed="false">p99</button></div>
+  <label class="chk"><input type="checkbox" id="showsim" checked> show DynoSim v1</label>
+</div>
+<div class="chart" id="chart"></div>
+<div class="legend" aria-label="Legend">
+  <span><i class="ln" style="border-color:var(--s1)"></i>KV-aware — measured</span>
+  <span><i class="ln d" style="border-color:var(--s1)"></i>KV-aware — DynoSim</span>
+  <span><i class="ln" style="border-color:var(--s2)"></i>round-robin — measured</span>
+  <span><i class="ln d" style="border-color:var(--s2)"></i>round-robin — DynoSim</span>
+  <span>● at / pre-knee &nbsp; ○ post-knee (measured only)</span>
+</div>
+<div class="tiles">
+  <div class="tile"><div class="k">KV TTFT p50 at the bounded peak</div><div class="v">13.9 s</div><div class="n">c120 · sim says 0.34 s — 41× under-predicted (prefill queue not modelled)</div></div>
+  <div class="tile"><div class="k">KV vs RR p50, same cell</div><div class="v">3.6–8.9×</div><div class="n">RR / KV at c12–c48 (measured); sim predicts 6–18×</div></div>
+  <div class="tile"><div class="k">Pre-knee agreement</div><div class="v">c12</div><div class="n">KV p50 0.37 s real vs 0.12 s sim; p95 2.8 vs 3.3 s — closest point</div></div>
+</div>
+<details><summary>Table view</summary><div class="tw"><table id="tbl"></table></div></details>
+<p class="fn">Measured KV c48–c512 and the knee verdicts are fleet-instance-2 (2026-09-15); KV c12–c24 and RR are instance-1 pending re-verification. Sim = DynoSim v1 (n3u constants), 6:12, kv-nvda / rr; the c12/24/120 sim points were added 2026-09-15 (c48 reproduces v1 exactly). The sim models placement (hit rate) and recompute but not the prefill-tier queue, which is why measured KV TTFT sits 20–50× above it from c48 on while RR (recompute-dominated) is within 2.5–4×.</p>
+<script>
+const D={"real": {"kv": {"12": [0.37, 2.8, 7.4, 0], "24": [0.79, 8.7, 16.3, 0], "48": [1.01, 10.0, 19.3, 0], "96": [9.57, 33.6, 47.3, 0], "120": [13.86, 38.6, 51.5, 0], "144": [21.55, 49.1, 67.7, 1], "192": [63.7, 119.2, 140.8, 0], "288": [97.54, 175.5, 247.2, 0], "384": [108.27, 159.4, 176.7, 0], "512": [119.66, 188.9, 214.8, 0]}, "rr": {"12": [1.32, 13.6, 19.8, 0], "24": [3.1, 19.8, 30.7, 0], "48": [9.03, 43.9, 62.9, 0], "96": [23.92, 81.9, 132.4, 0], "144": [49.9, 196.2, 298.7, 56], "192": [83.4, 206.5, 232.2, 0]}}, "sim": {"kv": {"12": [0.12, 1.04, 3.25], "24": [0.13, 1.34, 3.72], "48": [0.14, 1.91, 4.13], "96": [0.19, 3.35, 6.12], "120": [0.34, 5.49, 7.57], "144": [0.42, 5.18, 6.91], "192": [1.93, 10.68, 13.41], "288": [4.07, 18.79, 20.62], "384": [8.43, 23.08, 24.62], "512": [16.33, 36.99, 40.43], "768": [37.81, 72.77, 75.68]}, "rr": {"12": [0.69, 7.13, 10.34], "24": [0.89, 12.65, 19.89], "48": [2.46, 31.65, 41.75], "96": [8.48, 61.65, 75.52], "120": [13.38, 76.41, 90.29], "144": [18.76, 91.83, 105.08], "192": [30.59, 121.69, 134.33], "288": [51.05, 170.18, 187.29], "384": [65.59, 209.09, 230.69], "512": [86.87, 249.63, 272.96], "768": [140.52, 332.06, 354.4]}}, "knee": {"kv": {"12": "AT/PRE", "24": "AT/PRE", "48": "AT/PRE", "96": "AT/PRE", "120": "AT/PRE", "144": "POST", "192": "POST", "288": "POST", "384": "POST", "512": "POST"}, "rr": {"12": "AT/PRE", "24": "AT/PRE", "48": "POST", "96": "POST", "144": "POST", "192": "POST"}}}; const el=id=>document.getElementById(id); let P=0, showSim=true; const PN=["p50","p95","p99"];
+const XT=[12,24,48,96,120,144,192,288,384,512,768];
+function render(){
+ const W=1000,H=460,m={t:26,r:150,b:44,l:66};
+ const x=c=>m.l+(Math.log2(c)-Math.log2(12))/(Math.log2(768)-Math.log2(12))*(W-m.l-m.r);
+ const series=[]; for(const pol of ["kv","rr"]){series.push({name:(pol==="kv"?"KV-aware":"round-robin")+" — measured",c:pol==="kv"?"--s1":"--s2",pol,real:true,pts:Object.entries(D.real[pol]).map(([c,v])=>[+c,v[P],D.knee[pol][c]])});
+  if(showSim)series.push({name:(pol==="kv"?"KV-aware":"round-robin")+" — DynoSim",c:pol==="kv"?"--s1":"--s2",pol,real:false,pts:Object.entries(D.sim[pol]).map(([c,v])=>[+c,v[P],""])});}
+ let lo=1e9,hi=0; series.forEach(s=>s.pts.forEach(p=>{lo=Math.min(lo,p[1]);hi=Math.max(hi,p[1])})); lo=Math.pow(10,Math.floor(Math.log10(lo))); hi=Math.pow(10,Math.ceil(Math.log10(hi)));
+ const y=v=>m.t+(1-(Math.log10(v)-Math.log10(lo))/(Math.log10(hi)-Math.log10(lo)))*(H-m.t-m.b);
+ let g=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-labelledby="ct"><title id="ct">TTFT ${PN[P]} versus concurrency, measured and simulated</title>`;
+ for(let d=Math.log10(lo);d<=Math.log10(hi);d++){const v=Math.pow(10,d);g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${m.l-8}" y="${y(v)+4}" font-size="11" fill="var(--ink2)" text-anchor="end">${v>=1?v:v.toFixed(1)} s</text>`;
+   [2,5].forEach(k=>{const vv=v*k; if(vv<hi)g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(vv)}" y2="${y(vv)}" stroke="var(--grid)" stroke-dasharray="2 4"/>`});}
+ XT.forEach(c=>{g+=`<text x="${x(c)}" y="${H-m.b+18}" font-size="11" fill="var(--ink2)" text-anchor="middle">${c}</text>`});
+ g+=`<text x="${(m.l+W-m.r)/2}" y="${H-6}" font-size="11.5" fill="var(--ink2)" text-anchor="middle">concurrency (log₂ scale)</text>`;
+ g+=`<text transform="translate(14 ${(m.t+H-m.b)/2}) rotate(-90)" font-size="11.5" fill="var(--ink2)" text-anchor="middle">TTFT ${PN[P]} (s, log scale)</text>`;
+ const ends=[];
+ series.forEach(s=>{const col=`var(${s.c})`; const pts=s.pts.sort((a,b)=>a[0]-b[0]);
+  g+=`<path d="${pts.map((p,i)=>`${i?"L":"M"}${x(p[0])},${y(p[1])}`).join(" ")}" fill="none" stroke="${col}" stroke-width="2" ${s.real?"":'stroke-dasharray="6 5" opacity=".8"'} stroke-linejoin="round"/>`;
+  if(s.real)pts.forEach(p=>{const cx=x(p[0]),cy=y(p[1]),post=p[2]==="POST"; g+=`<circle cx="${cx}" cy="${cy}" r="5" fill="${post?'var(--bg)':col}" stroke="${post?col:'var(--bg)'}" stroke-width="2.2"/>`});
+  const last=pts[pts.length-1]; ends.push({y:y(last[1]),x:x(last[0]),t:s.name,col});});
+ ends.sort((a,b)=>a.y-b.y); for(let i=1;i<ends.length;i++)if(ends[i].y-ends[i-1].y<14)ends[i].y=ends[i-1].y+14;
+ ends.forEach(e=>{g+=`<text x="${e.x+9}" y="${e.y+4}" font-size="11" fill="var(--ink)">${e.t}</text>`});
+ g+=`<line id="xh" x1="0" x2="0" y1="${m.t}" y2="${H-m.b}" stroke="var(--ink3)" stroke-dasharray="2 3" style="display:none"/><rect x="${m.l}" y="${m.t}" width="${W-m.l-m.r}" height="${H-m.t-m.b}" fill="transparent" id="hit"/></svg><div class="tip" id="tip" role="status" aria-live="polite"></div>`;
+ el("chart").innerHTML=g; const svg=el("chart").querySelector("svg"),tip=el("tip"),xh=svg.querySelector("#xh");
+ const concs=XT.filter(c=>series.some(s=>s.pts.some(p=>p[0]===c)));
+ svg.querySelector("#hit").addEventListener("mousemove",ev=>{const r=svg.getBoundingClientRect(),px=(ev.clientX-r.left)*W/r.width; let best=concs[0],bd=1e9; concs.forEach(c=>{const d=Math.abs(x(c)-px); if(d<bd){bd=d;best=c}});
+  xh.setAttribute("x1",x(best));xh.setAttribute("x2",x(best));xh.style.display=""; let h=`<b>concurrency ${best}</b>`;
+  series.forEach(s=>{const p=s.pts.find(q=>q[0]===best); if(!p)return; h+=`<div class="r"><i class="sw" style="background:var(${s.c});${s.real?'':'opacity:.6'}"></i>${s.name}: ${p[1]} s${p[2]?` <span style="color:var(--ink2)">${p[2]}</span>`:''}</div>`});
+  tip.innerHTML=h;tip.style.display="block";const cr=el("chart").getBoundingClientRect();let tx=(ev.clientX-cr.left)+14;if(tx+tip.offsetWidth>cr.width)tx-=tip.offsetWidth+28;tip.style.left=tx+"px";tip.style.top=Math.max(0,(ev.clientY-cr.top)-10)+"px";});
+ svg.querySelector("#hit").addEventListener("mouseleave",()=>{tip.style.display="none";xh.style.display="none"});
+ let t=`<tr><th>conc</th>${series.map(s=>`<th>${s.name} ${PN[P]}</th>`).join("")}</tr>`; concs.forEach(c=>{t+=`<tr><td>${c}</td>${series.map(s=>{const p=s.pts.find(q=>q[0]===c);return `<td>${p?p[1]+" s"+(p[2]?" "+(p[2]==="POST"?"○":"●"):""):"—"}</td>`}).join("")}</tr>`}); el("tbl").innerHTML=t;
+}
+document.querySelectorAll("#pct button").forEach(b=>b.onclick=()=>{P=+b.dataset.p;document.querySelectorAll("#pct button").forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));render()});
+el("showsim").onchange=e=>{showSim=e.target.checked;render()}; render();
+</script>

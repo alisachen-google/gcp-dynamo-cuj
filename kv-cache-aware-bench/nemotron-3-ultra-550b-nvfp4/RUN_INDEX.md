@@ -1,0 +1,107 @@
+# Run index — every bench job (artifact links) and every recipe (clickable)
+
+Artifacts: each job uploads `<model>_trace_c<conc>_<ts>/profile_export_aiperf.csv` (summary), `profile_export.jsonl` (per-request records, the knee-check input) and `cache-warmup/` to the bucket. Links open the GCS console (needs project access). Times are UTC from the run id. Runner logs live on the bench VM under `/tmp/resweep_*.log`, `/tmp/disagg_remainder.log`, `/tmp/resweep_agg_par.log`, `/tmp/profiled_comparison.log`.
+
+## Recipes, manifests, runners, tools
+
+| what | link |
+|---|---|
+| Bench job template (aiperf trace replay, warm-up + 1800 s window) | [sgl-d72-flagsweep.yaml](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/manifests/perf/sgl-d72-flagsweep.yaml) |
+| Disagg 6:12 MNNVL manifest | [n3u-mnnvl-full.yaml](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/sglang/manifests/n3u-mnnvl-full.yaml) |
+| Disagg 9:9 MNNVL manifest | [n3u-mnnvl-99.yaml](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/sglang/manifests/n3u-mnnvl-99.yaml) |
+| MNNVL manifest generator | [gen_mnnvl_arms.py](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/gen_mnnvl_arms.py) |
+| Agg old-stack manifest (0.5.14 / 1.3.1) | [n3u-agg-kv.yaml](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/sglang/manifests/n3u-agg-kv.yaml) |
+| Agg new-stack manifest (0.5.16 / 1.4.2 / FI 0.6.18) | [n3u-agg-newstack.yaml](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/sglang/manifests/n3u-agg-newstack.yaml) |
+| Agg all-in-one template + renderer | [n3u-agg-serving-template.yaml](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/templates/n3u-agg-serving-template.yaml) |
+| Profiled arms (agg-prof / mnnvl-prof) | [gen_profiled_arms.py](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/gen_profiled_arms.py) |
+| Runner: 6:12 MNNVL c12–96 | [resweep_mnnvl_d72.sh](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/resweep_mnnvl_d72.sh) |
+| Runner: 6:12 extended c144–512 | [resweep_mnnvl_d72_ext.sh](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/resweep_mnnvl_d72_ext.sh) |
+| Runner: reproduction kv:96/120/144/384/512 | [resweep_mnnvl_repro.sh](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/resweep_mnnvl_repro.sh) |
+| Runner: 9:9 verification | [resweep_mnnvl_99.sh](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/resweep_mnnvl_99.sh) |
+| Runner: disagg remainder (9:9 kv:96/144 → 6:12 rr:48/96) | [disagg_remainder.sh](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/disagg_remainder.sh) |
+| Runner: agg new-stack (parallel, np-1) | [resweep_agg_newstack_par.sh](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/resweep_agg_newstack_par.sh) |
+| Runner: profiled comparison + gap analyzer | [run_profiled_comparison.sh](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/run_profiled_comparison.sh) |
+| Transport guard v2.1 (mooncake-on-MNNVL) | [mnnvl_transport_guard.sh](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/mnnvl_transport_guard.sh) |
+| Live NVLink/NIC probe | [mnnvl_live_probe.sh](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/mnnvl_live_probe.sh) |
+| Knee check (queue-drain stationarity) | [knee_check.py](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/sglang/scripts/knee_check.py) |
+| DynoSim | [dynosim_pd.py](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/scripts/dynosim_pd.py) |
+| Profile capture / analyzer | [analyze_profiles.py](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/analyze_profiles.py) |
+
+## Bench jobs (chronological)
+
+| when (UTC) | arm | policy | conc | job | artifacts |
+|---|---|---|---|---|---|
+| 2026-09-01 09:31 | agg 24 old stack | kv | 16 | `n3u-agg-kv-c16` | [1788255083](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788255083_alisachen-n3u-agg-kv-c16) |
+| 2026-09-01 10:17 | agg 24 old stack | rr | 16 | `n3u-agg-rr-c16` | [1788257861](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788257861_alisachen-n3u-agg-rr-c16) |
+| 2026-09-01 11:03 | agg 24 old stack | kv | 32 | `n3u-agg-kv-c32` | [1788260637](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788260637_alisachen-n3u-agg-kv-c32) |
+| 2026-09-01 11:50 | agg 24 old stack | rr | 32 | `n3u-agg-rr-c32` | [1788263453](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788263453_alisachen-n3u-agg-rr-c32) |
+| 2026-09-01 12:36 | agg 24 old stack | kv | 64 | `n3u-agg-kv-c64` | [1788266191](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788266191_alisachen-n3u-agg-kv-c64) |
+| 2026-09-01 13:24 | agg 24 old stack | rr | 64 | `n3u-agg-rr-c64` | [1788269094](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788269094_alisachen-n3u-agg-rr-c64) |
+| 2026-09-01 14:11 | agg 24 old stack | kv | 128 | `n3u-agg-kv-c128` | [1788271875](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788271875_alisachen-n3u-agg-kv-c128) |
+| 2026-09-01 14:59 | agg 24 old stack | rr | 128 | `n3u-agg-rr-c128` | [1788274775](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788274775_alisachen-n3u-agg-rr-c128) |
+| 2026-09-02 19:22 | disagg 6:12 host-staged | kv | 24 | `n3u-d72-kv-c24` | [1788376970](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788376970_alisachen-n3u-d72-kv-c24) |
+| 2026-09-02 23:15 | disagg 6:12 host-staged | kv | 12 | `n3u-d72-kv-c12` | [1788390910](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788390910_alisachen-n3u-d72-kv-c12) |
+| 2026-09-03 00:02 | disagg 6:12 host-staged | rr | 12 | `n3u-d72-rr-c12` | [1788393747](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788393747_alisachen-n3u-d72-rr-c12) |
+| 2026-09-03 00:55 | disagg 6:12 host-staged | rr | 24 | `n3u-d72-rr-c24` | [1788396945](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788396945_alisachen-n3u-d72-rr-c24) |
+| 2026-09-03 01:43 | disagg 6:12 host-staged | kv | 48 | `n3u-d72-kv-c48` | [1788399805](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788399805_alisachen-n3u-d72-kv-c48) |
+| 2026-09-03 02:32 | disagg 6:12 host-staged | rr | 48 | `n3u-d72-rr-c48` | [1788402749](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788402749_alisachen-n3u-d72-rr-c48) |
+| 2026-09-03 03:22 | disagg 6:12 host-staged | kv | 96 | `n3u-d72-kv-c96` | [1788405732](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788405732_alisachen-n3u-d72-kv-c96) |
+| 2026-09-03 04:13 | disagg 6:12 host-staged | rr | 96 | `n3u-d72-rr-c96` | [1788408803](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788408803_alisachen-n3u-d72-rr-c96) |
+| 2026-09-03 22:54 | agg 24 old stack | kv | 8 | `n3u-agg-kv-rr-c8` | [1788476082](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788476082_alisachen-n3u-agg-kv-rr-c8) |
+| 2026-09-03 23:41 | agg 24 old stack | kv | 48 | `n3u-agg-kv-kv-c48` | [1788478863](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788478863_alisachen-n3u-agg-kv-kv-c48) |
+| 2026-09-04 00:45 | disagg 6:12 host-staged | kv | 8 | `n3u-d72-kv-c8` | [1788482714](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788482714_alisachen-n3u-d72-kv-c8) |
+| 2026-09-04 01:32 | disagg 6:12 host-staged | rr | 8 | `n3u-d72-rr-c8` | [1788485546](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788485546_alisachen-n3u-d72-rr-c8) |
+| 2026-09-04 02:37 | disagg 6:12 host-staged | kv | 16 | `n3u-d72-kv-c16` | [1788489475](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788489475_alisachen-n3u-d72-kv-c16) |
+| 2026-09-04 03:25 | disagg 6:12 host-staged | rr | 4 | `n3u-d72-rr-c4` | [1788492339](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788492339_alisachen-n3u-d72-rr-c4) |
+| 2026-09-04 04:13 | disagg 6:12 host-staged | kv | 12 | `n3u-d72-kv-scale2-c12` | [1788495196](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788495196_alisachen-n3u-d72-kv-scale2-c12) |
+| 2026-09-04 05:00 | disagg 6:12 host-staged | kv | 12 | `n3u-d72-kv-credit08-c12` | [1788498043](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788498043_alisachen-n3u-d72-kv-credit08-c12) |
+| 2026-09-04 05:50 | disagg 6:12 host-staged | kv | 12 | `n3u-d72-kv-temp05-c12` | [1788501035](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788501035_alisachen-n3u-d72-kv-temp05-c12) |
+| 2026-09-08 09:04 | disagg 6:12 host-staged | kv | 144 | `n3u-d72-s612-kv-c144` | [1788858277](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788858277_alisachen-n3u-d72-s612-kv-c144) |
+| 2026-09-08 09:56 | disagg 6:12 host-staged | rr | 144 | `n3u-d72-s612-rr-c144` | [1788861373](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788861373_alisachen-n3u-d72-s612-rr-c144) |
+| 2026-09-08 10:46 | disagg 6:12 host-staged | kv | 192 | `n3u-d72-s612-kv-c192` | [1788864383](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788864383_alisachen-n3u-d72-s612-kv-c192) |
+| 2026-09-08 12:04 | disagg 6:12 host-staged | kv | 96 | `n3u-d72-s315-kv-c96` | [1788869081](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788869081_alisachen-n3u-d72-s315-kv-c96) |
+| 2026-09-08 12:54 | disagg 6:12 host-staged | kv | 144 | `n3u-d72-s315-kv-c144` | [1788872069](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788872069_alisachen-n3u-d72-s315-kv-c144) |
+| 2026-09-09 18:37 | disagg 6:12 host-staged | kv | 12 | `n3u-d72-rs612-kv-c12` | [1788979024](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788979024_alisachen-n3u-d72-rs612-kv-c12) |
+| 2026-09-09 19:24 | disagg 6:12 host-staged | rr | 12 | `n3u-d72-rs612-rr-c12` | [1788981893](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788981893_alisachen-n3u-d72-rs612-rr-c12) |
+| 2026-09-09 20:11 | disagg 6:12 host-staged | kv | 24 | `n3u-d72-rs612-kv-c24` | [1788984696](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788984696_alisachen-n3u-d72-rs612-kv-c24) |
+| 2026-09-09 21:01 | disagg 6:12 host-staged | rr | 24 | `n3u-d72-rs612-rr-c24` | [1788987683](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788987683_alisachen-n3u-d72-rs612-rr-c24) |
+| 2026-09-09 21:50 | disagg 6:12 host-staged | kv | 48 | `n3u-d72-rs612-kv-c48` | [1788990636](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788990636_alisachen-n3u-d72-rs612-kv-c48) |
+| 2026-09-09 22:39 | disagg 6:12 host-staged | rr | 48 | `n3u-d72-rs612-rr-c48` | [1788993588](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788993588_alisachen-n3u-d72-rs612-rr-c48) |
+| 2026-09-09 23:29 | disagg 6:12 host-staged | kv | 96 | `n3u-d72-rs612-kv-c96` | [1788996588](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788996588_alisachen-n3u-d72-rs612-kv-c96) |
+| 2026-09-10 00:20 | disagg 6:12 host-staged | rr | 96 | `n3u-d72-rs612-rr-c96` | [1788999644](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1788999644_alisachen-n3u-d72-rs612-rr-c96) |
+| 2026-09-11 08:33 | disagg 6:12 host-staged | kv | 615 | `n3u-d72-deep-kv-c615` | [1789115581](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789115581_alisachen-n3u-d72-deep-kv-c615) |
+| 2026-09-11 09:25 | disagg 6:12 host-staged | rr | 615 | `n3u-d72-deep-rr-c615` | [1789118755](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789118755_alisachen-n3u-d72-deep-rr-c615) |
+| 2026-09-11 10:16 | disagg 6:12 host-staged | kv | 1024 | `n3u-d72-deep-kv-c1024` | [1789121799](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789121799_alisachen-n3u-d72-deep-kv-c1024) |
+| 2026-09-11 11:08 | disagg 6:12 host-staged | rr | 1024 | `n3u-d72-deep-rr-c1024` | [1789124893](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789124893_alisachen-n3u-d72-deep-rr-c1024) |
+| 2026-09-11 12:43 | n3u-aggfs-control-c48 | ? | 48 | `n3u-aggfs-control-c48` | [1789130611](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789130611_alisachen-n3u-aggfs-control-c48) |
+| 2026-09-11 13:31 | n3u-aggfs-wspt-s1-d050-c48 | ? | 48 | `n3u-aggfs-wspt-s1-d050-c48` | [1789133510](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789133510_alisachen-n3u-aggfs-wspt-s1-d050-c48) |
+| 2026-09-11 14:20 | n3u-aggfs-wspt-s1-d065-c48 | ? | 48 | `n3u-aggfs-wspt-s1-d065-c48` | [1789136408](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789136408_alisachen-n3u-aggfs-wspt-s1-d065-c48) |
+| 2026-09-11 15:08 | n3u-aggfs-wspt-s1-d085-c48 | ? | 48 | `n3u-aggfs-wspt-s1-d085-c48` | [1789139315](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789139315_alisachen-n3u-aggfs-wspt-s1-d085-c48) |
+| 2026-09-11 15:56 | n3u-aggfs-wspt-s05-d065-c48 | ? | 48 | `n3u-aggfs-wspt-s05-d065-c48` | [1789142216](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789142216_alisachen-n3u-aggfs-wspt-s05-d065-c48) |
+| 2026-09-11 16:45 | n3u-aggfs-control-repeat-c48 | ? | 48 | `n3u-aggfs-control-repeat-c48` | [1789145121](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789145121_alisachen-n3u-aggfs-control-repeat-c48) |
+| 2026-09-12 17:42 | disagg 6:12 MNNVL | kv | 12 | `n3u-mnnvl-kv-c12` | [1789234926](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789234926_alisachen-n3u-mnnvl-kv-c12) |
+| 2026-09-12 20:48 | disagg 6:12 MNNVL | rr | 12 | `n3u-mnnvl-rr-c12` | [1789246090](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789246090_alisachen-n3u-mnnvl-rr-c12) |
+| 2026-09-12 21:36 | disagg 6:12 MNNVL | kv | 24 | `n3u-mnnvl-kv-c24` | [1789248978](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789248978_alisachen-n3u-mnnvl-kv-c24) |
+| 2026-09-12 22:25 | disagg 6:12 MNNVL | rr | 24 | `n3u-mnnvl-rr-c24` | [1789251929](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789251929_alisachen-n3u-mnnvl-rr-c24) |
+| 2026-09-12 23:10 | disagg 6:12 MNNVL | kv | 48 | `n3u-mnnvl-kv-c48` | [1789254656](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789254656_alisachen-n3u-mnnvl-kv-c48) |
+| 2026-09-13 00:00 | disagg 6:12 MNNVL | rr | 48 | `n3u-mnnvl-rr-c48` | [1789257631](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789257631_alisachen-n3u-mnnvl-rr-c48) |
+| 2026-09-13 00:48 | disagg 6:12 MNNVL | kv | 96 | `n3u-mnnvl-kv-c96` | [1789260484](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789260484_alisachen-n3u-mnnvl-kv-c96) |
+| 2026-09-13 01:38 | disagg 6:12 MNNVL | rr | 96 | `n3u-mnnvl-rr-c96` | [1789263480](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789263480_alisachen-n3u-mnnvl-rr-c96) |
+| 2026-09-14 11:43 | disagg 6:12 MNNVL | kv | 144 | `n3u-mnnvl-kv-c144` | [1789386235](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789386235_alisachen-n3u-mnnvl-kv-c144) |
+| 2026-09-14 12:36 | disagg 6:12 MNNVL | rr | 144 | `n3u-mnnvl-rr-c144` | [1789389409](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789389409_alisachen-n3u-mnnvl-rr-c144) |
+| 2026-09-14 13:25 | disagg 6:12 MNNVL | kv | 192 | `n3u-mnnvl-kv-c192` | [1789392341](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789392341_alisachen-n3u-mnnvl-kv-c192) |
+| 2026-09-14 14:15 | disagg 6:12 MNNVL | rr | 192 | `n3u-mnnvl-rr-c192` | [1789395320](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789395320_alisachen-n3u-mnnvl-rr-c192) |
+| 2026-09-14 15:02 | disagg 6:12 MNNVL | kv | 288 | `n3u-mnnvl-kv-c288` | [1789398163](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789398163_alisachen-n3u-mnnvl-kv-c288) |
+| 2026-09-14 15:52 | disagg 6:12 MNNVL | rr | 288 | `n3u-mnnvl-rr-c288` | [1789401144](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789401144_alisachen-n3u-mnnvl-rr-c288) |
+| 2026-09-14 23:05 | disagg 6:12 MNNVL | kv | 96 | `n3u-mnnvl-kv-c96` | [1789427127](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789427127_alisachen-n3u-mnnvl-kv-c96) |
+| 2026-09-14 23:55 | disagg 6:12 MNNVL | kv | 120 | `n3u-mnnvl-kv-c120` | [1789430102](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789430102_alisachen-n3u-mnnvl-kv-c120) |
+| 2026-09-15 00:44 | disagg 6:12 MNNVL | kv | 144 | `n3u-mnnvl-kv-c144` | [1789433075](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789433075_alisachen-n3u-mnnvl-kv-c144) |
+| 2026-09-15 01:35 | disagg 6:12 MNNVL | kv | 384 | `n3u-mnnvl-kv-c384` | [1789436158](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789436158_alisachen-n3u-mnnvl-kv-c384) |
+| 2026-09-15 02:27 | disagg 6:12 MNNVL | kv | 512 | `n3u-mnnvl-kv-c512` | [1789439267](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789439267_alisachen-n3u-mnnvl-kv-c512) |
+| 2026-09-15 03:52 | disagg 6:12 MNNVL | kv | 48 | `n3u-mnnvl-kv-c48` | [1789444330](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789444330_alisachen-n3u-mnnvl-kv-c48) |
+| 2026-09-15 05:12 | disagg 9:9 MNNVL | kv | 48 | `n3u-mnnvl-99-kv-c48` | [1789449139](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789449139_alisachen-n3u-mnnvl-99-kv-c48) |
+| 2026-09-15 08:19 | disagg 9:9 MNNVL | kv | 96 | `n3u-mnnvl-99-kv-c96` | [1789460362](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789460362_alisachen-n3u-mnnvl-99-kv-c96) |
+| 2026-09-15 09:04 | agg 24 new stack | kv | 32 | `n3u-agg-ns-kv-c32` | [1789463062](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789463062_alisachen-n3u-agg-ns-kv-c32) |
+| 2026-09-15 09:12 | disagg 9:9 MNNVL | kv | 144 | `n3u-mnnvl-99-kv-c144` | [1789463572](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789463572_alisachen-n3u-mnnvl-99-kv-c144) |
+
+72 jobs listed. Later runs of the same job name supersede earlier ones (fleet-instance-2 re-runs on 2026-09-15).

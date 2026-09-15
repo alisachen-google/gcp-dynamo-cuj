@@ -228,6 +228,9 @@ v2 the sim is mildly conservative for KV (0.80–0.86×) — acceptable polarity
 
 ## 6. Reproduction and Artifacts
 
+Full clickable index of every job's artifacts and every recipe/runner: [RUN_INDEX.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/RUN_INDEX.md).
+
+
 - **Manifests:** `sglang/manifests/n3u-agg-kv.yaml` (router swapped per point).
 - **Sequencer:** `scripts/sweep_n3u_agg.sh`; jobs sed-derived from the Kimi
   flagsweep template (N3U model/tokenizer staging swaps).

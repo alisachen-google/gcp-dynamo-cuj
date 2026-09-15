@@ -6,12 +6,14 @@
 |---|---|
 | **Disagg real-perf curve** (interactive: MNNVL/host-staged × KV/RR, sim dashed, agg rule, knee markers) | [rendered](https://htmlpreview.github.io/?https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/reports/n3u-disagg-curve.html) · [artifact](https://claude.ai/code/artifact/5342de51-ce44-4a08-b434-51178e0030ab) |
 | **Throughput-vs-interactivity frontier** (x = P90 tok/s/user, y = total or output tok/s/chip; disagg 6:12 / 9:9 KV & RR + agg reference; floors at 20/30) | [rendered](https://htmlpreview.github.io/?https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/reports/n3u-frontier.html) |
+| **TTFT vs concurrency** (p50 / p95 / p99, log scale; measured KV & RR vs DynoSim) | [rendered](https://htmlpreview.github.io/?https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/reports/n3u-ttft-curve.html) |
 | DynoSim pareto curves (agg 24-GPU + disagg 72-GPU 6:12) | [rendered](https://htmlpreview.github.io/?https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/reports/n3u-curves.html) |
 | Agg silicon curves (KV vs RR) | [rendered](https://htmlpreview.github.io/?https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/reports/agg-silicon-curves.html) |
 | Aggregated technical report | [AGG24_RESULTS.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/AGG24_RESULTS.md) |
 | Knee-point analysis (sim vs silicon, KV/RR, agg/disagg) | [KNEE_ANALYSIS.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/KNEE_ANALYSIS.md) |
 | GPUDirect regression + filed bug | [GPUDIRECT_REGRESSION.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/GPUDIRECT_REGRESSION.md) · [BUG_GPUDIRECT.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/BUG_GPUDIRECT.md) |
 | InferenceX AgentX (dsv4/GB300) vs our study — concurrency semantics, knee, **P90 interactivity**, **why our throughput falls past the knee while theirs rises (§5b)** | [AGENTX_COMPARISON.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/AGENTX_COMPARISON.md) |
+| **Run index — all bench jobs (artifact links) + all recipes/runners** | [RUN_INDEX.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/RUN_INDEX.md) |
 | Profiled agg-vs-disagg gap analysis | `profiles/GAP_ANALYSIS.md` (generated when the profiled comparison lands) |
 
 
