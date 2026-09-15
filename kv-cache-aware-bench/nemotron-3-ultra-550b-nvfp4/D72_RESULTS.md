@@ -444,6 +444,49 @@ domain-availability wait in progress.
 
 
 
+
+## KV-router flag configuration and sweep for the disagg selected points
+
+**Config used at every disagg selected point (6:12 and 9:9, host-staged and MNNVL):**
+`--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs` with Dynamo 1.4.2
+defaults for the rest — `--router-kv-overlap-score-credit 1.0`, `--router-kv-overlap-score-credit-decay 0.0`,
+`--router-prefill-load-scale 1.0`. Score = prefill_load_scale × max(0, blocks − credit×overlap)
++ queue + decode load; temperature 0 = deterministic argmin. RR = `--router-mode round-robin`.
+
+**Silicon flag sweep (disagg 6:12, host-staged transport, 2026-09-04, at the then-bounded c12 cell):**
+
+| variant (one flag changed from the config above) | tok/s | TTFT p50 / p95 / p99 | knee | vs control |
+|---|---|---|---|---|
+| control (defaults) | 1,403 | 2.67 / 6.5 / 9.4 s | bounded | — |
+| `--router-prefill-load-scale 2.0` | 1,420 | 2.50 / 6.3 / 12.4 s | bounded | +1.2% |
+| `--router-kv-overlap-score-credit 0.8` | 1,444 | 2.66 / 6.3 / 9.0 s | bounded | +2.9% |
+| `--router-temperature 0.5` | 1,177 | 3.59 / 12.5 / 20.9 s | **post-knee** | **−16%** |
+| round-robin | 1,112 | 3.17 / 18.7 / 24.0 s | bounded | −21% |
+
+Noise floor ≈ ±0.5% (agg drift control). Scale 2 and credit 0.8 are within a few percent of
+the defaults; sampling temperature is harmful (it randomizes placement and destabilizes the
+bounded cell). Verdict then: defaults; flag budget spent on topology and concurrency. **The
+flags were not re-swept on MNNVL** — the transport change does not touch placement scoring.
+
+**DynoSim flag grid (6:12, 9 KV variants) at the MNNVL selected cells** — `kv-nvda` = scale
+1.0 / credit 1.0 (the defaults above); `kv-t-c{c}` = scale 2.0 / credit c; `kv-s{s}-c0.8` =
+scale s / credit 0.8:
+
+| cell | spread across KV variants | best | defaults (kv-nvda) | best vs defaults |
+|---|---|---|---|---|
+| c48 | 4,725–4,749 | scale 2 / credit 1.0 | 4,725 · p95 1.9 s | +0.5% |
+| c96 | 5,797–5,889 | scale 2 / credit 0.8 | 5,813 · p95 3.4 s | +1.3%, p95 2.0 s |
+| c120 (peak) | 5,873–6,008 | scale 2 / credit 1.0 | 5,873 · p95 5.5 s | **+2.3%, p95 2.5 s** |
+| c144 | 5,920–6,010 | scale 2 / credit 0.7 | 5,920 · p95 5.2 s | +1.5%, p95 3.5 s |
+
+The sim's flag surface is flat on throughput (≤2.3%) but consistent in direction: **a higher
+prefill-load-scale (2–3) is best at every cell from c96 up and roughly halves TTFT p95**, and
+the defaults are the *lowest* KV variant at c96–c144. That is exactly what the kv:144
+profiling predicts — the prefill tier is the binding constraint, so weighting prefill load
+more heavily in placement relieves it. Proposed live check on MNNVL (not yet run): scale 2.0 /
+credit 1.0 and scale 3.0 / credit 0.8 at c96 and c120 on 6:12 (4 points, ~3 h); a ≥2% gain
+with lower p95 would make it the recommended config.
+
 ## KV vs RR (disagg 6:12, MNNVL) — same configuration, and same SLO
 
 ### Same configuration (identical fleet, flags, trace; only the router differs)
