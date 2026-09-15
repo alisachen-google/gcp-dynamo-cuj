@@ -1,0 +1,88 @@
+<title>N3U Throughput–Interactivity Frontier</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{color-scheme:light;--bg:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--ink3:#8a8983;--grid:#e6e5e0;--rule:#8a8983;--tile:#f5f4ef;--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--focus:#2a78d6}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#1a1a19;--ink:#fff;--ink2:#c3c2b7;--ink3:#8c8b84;--grid:#2e2e2c;--rule:#8c8b84;--tile:#222221;--s1:#3987e5;--s2:#d95926;--s3:#199e70;--focus:#3987e5}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#1a1a19;--ink:#fff;--ink2:#c3c2b7;--ink3:#8c8b84;--grid:#2e2e2c;--rule:#8c8b84;--tile:#222221;--s1:#3987e5;--s2:#d95926;--s3:#199e70;--focus:#3987e5}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 "IBM Plex Sans",system-ui,sans-serif;padding-block:28px 40px;padding-inline:clamp(16px,4vw,40px);max-width:1080px;margin:0 auto}
+h1{font-size:22px;font-weight:600;margin:0 0 4px;text-wrap:balance}.sub{color:var(--ink2);margin:0 0 18px;max-width:72ch}
+.row{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin-bottom:10px}
+.seg{display:inline-flex;border:1px solid var(--grid);border-radius:6px;overflow:hidden}.seg button{background:none;border:0;color:var(--ink2);font:inherit;padding:5px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--tile);color:var(--ink);font-weight:500}.seg button:focus-visible,label:focus-within{outline:2px solid var(--focus);outline-offset:1px}
+label.chk{display:inline-flex;gap:6px;align-items:center;color:var(--ink2);cursor:pointer}
+.chart{position:relative;width:100%}svg{width:100%;height:auto;display:block;font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.tip{position:absolute;pointer-events:none;background:var(--bg);border:1px solid var(--grid);border-radius:6px;padding:8px 10px;font:12px/1.45 "IBM Plex Mono",ui-monospace,monospace;box-shadow:0 2px 8px rgba(0,0,0,.12);display:none;min-width:220px}
+.tip b{display:block;margin-bottom:3px;font-weight:500}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin:8px 0 22px;color:var(--ink2);font-size:13px}.legend span{display:inline-flex;align-items:center;gap:7px}
+.legend .ln{width:22px;height:0;border-top:2px solid;flex:none}.legend .ln.d{border-top-style:dashed}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:22px}.tile{background:var(--tile);border-radius:8px;padding:12px 14px}
+.tile .k{font-size:12px;color:var(--ink2);letter-spacing:.02em;text-transform:uppercase}.tile .v{font:500 24px/1.2 "IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;margin:4px 0 2px}.tile .n{font-size:12px;color:var(--ink2)}
+details{margin-top:6px}summary{cursor:pointer;color:var(--ink2)}.tw{overflow-x:auto;margin-top:10px}
+table{border-collapse:collapse;font:13px "IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;min-width:640px}th,td{text-align:right;padding:6px 10px;border-bottom:1px solid var(--grid)}th:first-child,td:first-child{text-align:left}th{color:var(--ink2);font-weight:500}
+.fn{color:var(--ink2);font-size:12.5px;max-width:78ch;margin-top:18px}
+</style>
+<h1>Nemotron-3-Ultra 550B — throughput per chip vs P90 interactivity (measured)</h1>
+<p class="sub">Each point is one measured concurrency (labelled). x = P90 interactivity = 1 / ITL p90, the tok/s/user that 90% of users exceed. y = total tokens (input + output) served per second per GPU, InferenceX's convention (toggle to output tokens). Hue = arm; marker = routing policy; filled = queue stationary (at/pre-knee), hollow = post-knee. GB300 NVL72, Weka 256K agentic trace, KV over NVLink.</p>
+<div class="row" role="group" aria-label="Chart controls">
+  <div class="seg" id="ym"><button id="y-total" aria-pressed="true">total tok/s/chip</button><button id="y-out" aria-pressed="false">output tok/s/chip</button></div>
+  <label class="chk"><input type="checkbox" id="showagg" checked> show aggregated 24-GPU reference (old stack)</label>
+</div>
+<div class="chart" id="chart"></div>
+<div class="legend" aria-label="Legend">
+  <span><i class="ln" style="border-color:var(--s1)"></i>disagg 6:12 (72 GPU)</span>
+  <span><i class="ln" style="border-color:var(--s3)"></i>disagg 9:9 (72 GPU)</span>
+  <span><i class="ln" style="border-color:var(--s2)"></i>agg 24 GPU (reference)</span>
+  <span>● KV-aware (solid) &nbsp; ◆ round-robin (dashed) &nbsp; filled = at/pre-knee &nbsp; hollow = post-knee</span>
+</div>
+<div class="tiles">
+  <div class="tile"><div class="k">Best ≥ 30 tok/s/user P90</div><div class="v">9,914</div><div class="n">total tok/s/chip · disagg 6:12 KV c48 · 32.5 tok/s/user · TTFT p50 1.0 s</div></div>
+  <div class="tile"><div class="k">Best ≥ 20 tok/s/user P90</div><div class="v">9,914</div><div class="n">still disagg KV c48 — agg KV c16 gives 9,026 at 23.5</div></div>
+  <div class="tile"><div class="k">Agg bounded peak</div><div class="v">11,800</div><div class="n">agg KV c32 · 19.4 tok/s/user · 1.19× disagg on tokens, 0.6× on interactivity</div></div>
+</div>
+<details><summary>Table view</summary><div class="tw"><table id="tbl"></table></div></details>
+<p class="fn">Interactivity from aiperf Inter-Token-Latency p90; throughput from aiperf Total / Output Token Throughput over the 1800 s measured window (900 s trace warm-up first). Disagg 6:12 c48–c512 and 9:9 are fleet-instance-2 measurements (2026-09-15); disagg RR and agg are earlier measurements pending re-verification. RR c144 had 0.8% failed requests; RR c288 is omitted (1.4% transfer failures). The agg series is the old stack (SGLang 0.5.14 / Dynamo 1.3.1); its new-stack re-sweep is in progress and will replace it.</p>
+<script>
+// [conc, total tok/s/chip, output tok/s/chip, P90 interactivity, knee, ttft_p50_s]
+const S={
+ d612kv:{name:"disagg 6:12 KV",c:"--s1",pol:"kv",pts:[[48,9914,65.1,32.5,"AT/PRE",1.0],[96,9359,66.8,33.0,"AT/PRE",9.6],[120,9338,67.8,32.7,"AT/PRE",13.9],[144,8379,63.4,33.7,"POST",21.5],[384,4602,42.8,40.9,"POST",108],[512,5075,48.5,40.5,"POST",120]]},
+ d612rr:{name:"disagg 6:12 RR",c:"--s1",pol:"rr",pts:[[48,5001,31.8,44.3,"POST",9.0],[96,4301,34.2,43.9,"POST",23.9],[144,3214,28.9,42.0,"POST",49.9]]},
+ d99kv:{name:"disagg 9:9 KV",c:"--s3",pol:"kv",pts:[[48,9571,63.3,29.9,"AT/PRE",0.56]]},
+ aggkv:{name:"agg 24 KV",c:"--s2",pol:"kv",agg:true,pts:[[16,9026,51.9,23.5,"AT/PRE",0.56],[32,11800,69.0,19.4,"AT/PRE",0.62],[64,13194,85.2,13.7,"POST",1.1],[128,9849,80.1,11.5,"POST",28.8]]},
+ aggrr:{name:"agg 24 RR",c:"--s2",pol:"rr",agg:true,pts:[[32,6925,41.4,11.7,"AT/PRE",1.4],[64,7109,47.5,8.2,"POST",5.1]]}
+};
+const el=id=>document.getElementById(id); let ym="total", showAgg=true;
+const yv=p=>ym==="total"?p[1]:p[2]; const fmt=v=>ym==="total"?Math.round(v).toLocaleString():v.toFixed(1);
+function render(){
+ const W=1000,H=480,m={t:24,r:40,b:50,l:70};
+ const vis=Object.entries(S).filter(([k,s])=>!s.agg||showAgg);
+ let xmax=0,ymax=0; vis.forEach(([k,s])=>s.pts.forEach(p=>{xmax=Math.max(xmax,p[3]);ymax=Math.max(ymax,yv(p))}));
+ xmax=Math.ceil(xmax/10)*10+5; ymax*=1.08;
+ const x=v=>m.l+v/xmax*(W-m.l-m.r), y=v=>m.t+(1-v/ymax)*(H-m.t-m.b);
+ const ystep=ym==="total"?2000:10; let g=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-labelledby="ct"><title id="ct">Throughput per chip versus P90 interactivity</title>`;
+ for(let v=0;v<=ymax;v+=ystep)g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${m.l-8}" y="${y(v)+4}" font-size="11" fill="var(--ink2)" text-anchor="end">${ym==="total"?v.toLocaleString():v}</text>`;
+ for(let v=0;v<=xmax;v+=10)g+=`<line y1="${m.t}" y2="${H-m.b}" x1="${x(v)}" x2="${x(v)}" stroke="var(--grid)"/><text x="${x(v)}" y="${H-m.b+18}" font-size="11" fill="var(--ink2)" text-anchor="middle">${v}</text>`;
+ [20,30].forEach(f=>{g+=`<line y1="${m.t}" y2="${H-m.b}" x1="${x(f)}" x2="${x(f)}" stroke="var(--rule)" stroke-width="1.5" stroke-dasharray="3 5"/><text x="${x(f)+5}" y="${m.t+12}" font-size="11" fill="var(--ink2)">≥ ${f} tok/s/user floor</text>`});
+ g+=`<text x="${(m.l+W-m.r)/2}" y="${H-8}" font-size="11.5" fill="var(--ink2)" text-anchor="middle">P90 interactivity — tok/s/user (1 / ITL p90) →  better</text>`;
+ g+=`<text transform="translate(16 ${(m.t+H-m.b)/2}) rotate(-90)" font-size="11.5" fill="var(--ink2)" text-anchor="middle">${ym==="total"?"total tokens / s / GPU":"output tokens / s / GPU"}  ↑ better</text>`;
+ const hits=[];
+ vis.forEach(([k,s])=>{const col=`var(${s.c})`, dash=s.pol==="rr"?'stroke-dasharray="6 5"':'';
+  const pts=[...s.pts].sort((a,b)=>a[0]-b[0]); g+=`<path d="${pts.map((p,i)=>`${i?"L":"M"}${x(p[3])},${y(yv(p))}`).join(" ")}" fill="none" stroke="${col}" stroke-width="2" ${dash} opacity=".85"/>`;
+  pts.forEach(p=>{const cx=x(p[3]),cy=y(yv(p)),post=p[4]==="POST";
+   if(s.pol==="kv")g+=`<circle cx="${cx}" cy="${cy}" r="5.5" fill="${post?'var(--bg)':col}" stroke="${post?col:'var(--bg)'}" stroke-width="2.2"/>`;
+   else g+=`<path d="M${cx},${cy-7}L${cx+7},${cy}L${cx},${cy+7}L${cx-7},${cy}Z" fill="${post?'var(--bg)':col}" stroke="${post?col:'var(--bg)'}" stroke-width="2.2"/>`;
+   g+=`<text x="${cx+8}" y="${cy-7}" font-size="10.5" fill="var(--ink)">c${p[0]}</text>`; hits.push({cx,cy,s,p});});});
+ g+=`<rect x="${m.l}" y="${m.t}" width="${W-m.l-m.r}" height="${H-m.t-m.b}" fill="transparent" id="hit"/></svg><div class="tip" id="tip" role="status" aria-live="polite"></div>`;
+ el("chart").innerHTML=g; const svg=el("chart").querySelector("svg"),tip=el("tip");
+ svg.querySelector("#hit").addEventListener("mousemove",ev=>{const r=svg.getBoundingClientRect(),px=(ev.clientX-r.left)*W/r.width,py=(ev.clientY-r.top)*H/r.height;
+  let b=null,bd=400; hits.forEach(h=>{const d=(h.cx-px)**2+(h.cy-py)**2; if(d<bd){bd=d;b=h}});
+  if(!b){tip.style.display="none";return}
+  tip.innerHTML=`<b>${b.s.name} · c${b.p[0]}</b>${b.p[1].toLocaleString()} total tok/s/chip · ${b.p[2]} output<br>P90 interactivity ${b.p[3]} tok/s/user<br>TTFT p50 ${b.p[5]} s · ${b.p[4]==="POST"?"post-knee":"at/pre-knee"}`;
+  tip.style.display="block"; const cr=el("chart").getBoundingClientRect(); let tx=(ev.clientX-cr.left)+14; if(tx+tip.offsetWidth>cr.width)tx-=tip.offsetWidth+28; tip.style.left=tx+"px"; tip.style.top=Math.max(0,(ev.clientY-cr.top)-10)+"px";});
+ svg.querySelector("#hit").addEventListener("mouseleave",()=>tip.style.display="none");
+ let t=`<tr><th>arm</th><th>conc</th><th>total tok/s/chip</th><th>output tok/s/chip</th><th>P90 interactivity</th><th>knee</th><th>TTFT p50 s</th></tr>`;
+ vis.forEach(([k,s])=>s.pts.forEach(p=>{t+=`<tr><td>${s.name}</td><td>${p[0]}</td><td>${p[1].toLocaleString()}</td><td>${p[2]}</td><td>${p[3]}</td><td>${p[4]}</td><td>${p[5]}</td></tr>`})); el("tbl").innerHTML=t;
+}
+el("y-total").onclick=()=>{ym="total";el("y-total").setAttribute("aria-pressed","true");el("y-out").setAttribute("aria-pressed","false");render()};
+el("y-out").onclick=()=>{ym="out";el("y-out").setAttribute("aria-pressed","true");el("y-total").setAttribute("aria-pressed","false");render()};
+el("showagg").onchange=e=>{showAgg=e.target.checked;render()}; render();
+</script>

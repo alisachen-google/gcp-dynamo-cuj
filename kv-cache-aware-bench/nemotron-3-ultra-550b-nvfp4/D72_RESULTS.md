@@ -5,6 +5,7 @@
 | What | Link |
 |---|---|
 | **Disagg real-perf curve** (interactive: MNNVL/host-staged × KV/RR, sim dashed, agg rule, knee markers) | [rendered](https://htmlpreview.github.io/?https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/reports/n3u-disagg-curve.html) · [artifact](https://claude.ai/code/artifact/5342de51-ce44-4a08-b434-51178e0030ab) |
+| **Throughput-vs-interactivity frontier** (x = P90 tok/s/user, y = total or output tok/s/chip; disagg 6:12 / 9:9 KV & RR + agg reference; floors at 20/30) | [rendered](https://htmlpreview.github.io/?https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/reports/n3u-frontier.html) |
 | DynoSim pareto curves (agg 24-GPU + disagg 72-GPU 6:12) | [rendered](https://htmlpreview.github.io/?https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/reports/n3u-curves.html) |
 | Agg silicon curves (KV vs RR) | [rendered](https://htmlpreview.github.io/?https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/reports/agg-silicon-curves.html) |
 | Aggregated technical report | [AGG24_RESULTS.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/AGG24_RESULTS.md) |
