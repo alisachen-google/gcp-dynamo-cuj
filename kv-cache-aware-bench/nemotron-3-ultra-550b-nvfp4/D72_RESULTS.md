@@ -398,6 +398,21 @@ Throughput per chip is **total tokens (input + output) served per second per GPU
 Reading: on **total** tokens per chip the bounded points are *not* parity — agg KV c32 (11,800) leads disagg KV c48 (9,914) by **1.19×**, because agg's per-chip request rate is ~10% higher and its completed mix carries longer inputs; on output tokens they are parity (69.0 vs 65.1). Disagg still delivers **~1.7× the P90 interactivity** (33 vs 19 tok/s/user). The cheapest total tokens overall are agg KV c64 (13,194/chip, post-knee, 13.7 tok/s/user, TTFT p90 12.6 s); the cheapest that clear a 30 tok/s/user P90 floor are disagg KV c48 (9,914/chip ≈ 35.7M tokens/GPU-hour). RR is ~half the tokens per dollar of KV in both arms.
 Method and the InferenceX comparison: [AGENTX_COMPARISON.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/AGENTX_COMPARISON.md).
 
+
+### 2c. Agg on the new stack (version-consistent reference) — first point, ladder in progress
+
+| cell | old stack (SGLang 0.5.14 / Dynamo 1.3.1) | **new stack (0.5.16 / 1.4.2 / FI 0.6.18)** | delta |
+|---|---|---|---|
+| agg KV c32 (bounded peak) | 1,657 tok/s · 69.0/GPU · 11,800 total/chip · p50 0.62 s · p95 4.3 s · ITL p90 51.6 ms | **1,854 · 77.3/GPU · 13,320 total/chip · p50 0.35 s · p95 3.8 s · ITL p90 49.3 ms** · AT/PRE · 5,911 req · 0 err | **+12% throughput, 1.8× lower TTFT p50** |
+
+The engine-version delta is real and positive, so (a) part of the disagg "residual sim drift"
+attributed earlier to model optimism is engine improvement the 0.5.14-seeded sim could not know,
+and (b) the disagg-vs-agg ratios re-base to the new-stack agg: **9:9 KV c120 vs new agg c32 =
+1.27× output tokens/GPU (98.5 vs 77.3), 1.10× total tokens/chip (14,682 vs 13,320), P90
+interactivity 22.4 vs 20.3** — disagg 9:9 still wins on every axis, by less. The remaining
+new-stack agg cells (kv/rr × 16–512) replace the old-stack agg series in every table and page
+when they land.
+
 ### 3. DynoSim drift — narrowed, not closed; widens with load
 sim/MNNVL: **1.32× (c48) → 1.58× (c96)** (was 1.66×/1.70× vs host-staged).
 Decomposition of the sim − host-staged gap:
