@@ -15,7 +15,7 @@ until grep -q "N3U DISAGG REMAINDER DONE" /tmp/disagg_remainder.log 2>/dev/null;
 for cd in n3u-mnnvl-full-cd n3u-mnnvl-99-cd n3u-mnnvl-cd; do kubectl delete computedomain/$cd -n $NS --ignore-not-found --wait=false >> "$LOG" 2>&1; done
 for d in n3u-mnnvl-full-prefill n3u-mnnvl-full-decode n3u-mnnvl-full-frontend n3u-mnnvl-99-prefill n3u-mnnvl-99-decode n3u-mnnvl-99-frontend; do kubectl delete deployment/$d -n $NS --ignore-not-found --wait=false >> "$LOG" 2>&1; done
 sleep 90; while :; do F=$(free_nodes); say "free np-3 nodes: $F / 18"; [ "$F" -ge 18 ] && break; sleep 300; done
-say "deploying 9:9 MTP fleet (NEXTN steps 3 / topk 1 / draft 4)"
+say "deploying 9:9 MTP fleet (NEXTN steps 1 / topk 1 / draft 2, mem-fraction 0.80)"
 kubectl apply -n $NS -f $HOME/kv-cache-aware-bench/sglang/manifests/n3u-mnnvl-99mtp.yaml >> "$LOG" 2>&1
 for d in ${ARM}-prefill ${ARM}-decode ${ARM}-frontend; do kubectl rollout status deployment/$d -n $NS --timeout=3600s >> "$LOG" 2>&1 || { say "STACK TIMEOUT $d — spec-decode fleet failed; HALTING"; kubectl logs -n $NS -l app=${ARM}-decode --tail=40 2>/dev/null | grep -iE "error|traceback|speculative|mtp" | tail -12 >> "$LOG"; exit 1; }; done
 FEP=$(kubectl get pods -n $NS -l app=${ARM}-frontend -o name | head -1)

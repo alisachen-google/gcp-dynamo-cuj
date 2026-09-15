@@ -134,8 +134,8 @@ spec:
           64 --watchdog-timeout 1000000 --kv-events-config '{"publisher":"zmq","endpoint":"tcp://*:5557","replay_endpoint":"tcp://*:5558"}'
           --disaggregation-mode prefill --disaggregation-transfer-backend mooncake
           --disaggregation-bootstrap-port 30001 --speculative-algorithm NEXTN --speculative-num-steps
-          3 --speculative-eagle-topk 1 --speculative-num-draft-tokens 4 --chunked-prefill-size
-          16384 --max-running-requests 8
+          1 --speculative-eagle-topk 1 --speculative-num-draft-tokens 2 --mem-fraction-static
+          0.80 --chunked-prefill-size 16384 --max-running-requests 8
         env:
         - name: ETCD_ENDPOINTS
           value: http://dynamo-platform-etcd.dynamo-cloud.svc.cluster.local:2379
@@ -274,8 +274,8 @@ spec:
           64 --watchdog-timeout 1000000 --kv-events-config '{"publisher":"zmq","endpoint":"tcp://*:5557","replay_endpoint":"tcp://*:5558"}'
           --disaggregation-mode decode --disaggregation-transfer-backend mooncake
           --disaggregation-bootstrap-port 30001 --speculative-algorithm NEXTN --speculative-num-steps
-          3 --speculative-eagle-topk 1 --speculative-num-draft-tokens 4 --max-running-requests
-          64
+          1 --speculative-eagle-topk 1 --speculative-num-draft-tokens 2 --mem-fraction-static
+          0.80 --max-running-requests 64
         env:
         - name: ETCD_ENDPOINTS
           value: http://dynamo-platform-etcd.dynamo-cloud.svc.cluster.local:2379
