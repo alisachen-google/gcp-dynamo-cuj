@@ -180,6 +180,28 @@ tail-sensitive deployments, not a throughput optimization.
 
 ---
 
+### 4.5 New-stack re-sweep (2026-09-15; SGLang 0.5.16 / Dynamo 1.4.2 / FlashInfer 0.6.18 — the disagg stack)
+
+Same manifest shape (24 GPU, TP4/EP4, 6 workers), same bench template, same trace; only the
+engine image pair changes (base `lmsysorg/sglang:v0.5.19-cu130-runtime` + `ai-dynamo[sglang]==1.4.2`
+→ effective SGLang 0.5.16, `flashinfer-python==0.6.18`). Ladder kv/rr × 16–512 in progress; landed
+cells:
+
+| conc | KV tok/s (/GPU) — new | KV TTFT p50 / p90 | RR tok/s (/GPU) — new | RR TTFT p50 | gain | knee (new stack) | vs old stack |
+|---|---|---|---|---|---|---|---|
+| 16 | **1,418 (59.1)** | 0.36 / 2.3 s | 963 (40.1) | 0.89 s | 1.47× | both stationary | KV +14%, RR +9% |
+| 32 | **1,854 (77.3)** | 0.35 / — (p95 3.8 s) | 1,233 (51.4) | 0.98 s | 1.50× | both stationary | KV +12%, RR +24% |
+| 64 | 2,060 (85.8) | 1.05 / 12.1 s | 1,319 (55.0) | 3.73 s | 1.56× | both growing (post) | KV +1%, RR +16% |
+| 128–512 | running | | | | | | |
+
+ITL p90 at the bounded cells: 39.1 / 49.3 ms (KV c16 / c32) → P90 interactivity 25.6 / 20.3
+tok/s/user; RR 49.7 / 68.4 ms → 20.1 / 14.6. Total tokens per chip at KV c32: 13,320 (old 11,800).
+Reading: the new stack lifts the *bounded* cells by 9–24% and cuts KV TTFT p50 by 1.6–1.8×, but
+the knees stay where they were (KV and RR both go post-knee between c32 and c64) and the KV
+post-knee ceiling is unchanged (85.8 vs 85.2/GPU), so the engine gain is in per-request latency
+at moderate load, not in saturated decode throughput. The bounded reference used by the disagg
+report is now **77.3/GPU (KV c32, new stack)**; the §4.1 table above stays as the old-stack record.
+
 ## 5. Simulation vs Silicon — Drift Analysis
 
 ### 5.1 Prediction scorecard (n3u-sim v1)

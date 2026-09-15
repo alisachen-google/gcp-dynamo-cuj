@@ -271,7 +271,12 @@ peak-bounded **67.7 tok/s/GPU (c120) vs agg 69.0 (c32) = 0.98×**. Post-knee cei
 still favour agg (85 vs ~68/GPU, 1.25×). Neither the earlier "agg wins 1.39×" (built on
 instance-1 cells) nor "disagg wins" (the unreproduced 6,221) survives. Remaining
 caveat: c12–48 and all RR cells are still instance-1 measurements — kv:48 / rr:48 /
-rr:96 are being re-run on instance 2 before the KV/RR ratios are re-issued. Sim drift
+rr:96 are being re-run on instance 2 before the KV/RR ratios are re-issued. **rr:48 on instance 2
+(2026-09-15 21:28 UTC): 2,321 tok/s (32.2/GPU), TTFT p50 9.0 s / p99 55 s, ITL p90 22.8 ms, POST-knee,
+6,985 req, guard PASS — reproduces instance-1's 2,286 within 1.5%.** So the instance-1 degradation
+that cut KV by 25–30% did not touch RR at c48, which is consistent with RR being bound by its own
+prefill-queue growth rather than by the component that was slow on instance 1; the RR c48 row and
+the c48 KV/RR gain (4,684 / 2,321 = 2.02×, both instance 2) are now clean. rr:96 is running. Sim drift
 at c96–144 is 0.77–0.83× (real/sim), from 0.63× on instance 1. The protocol now
 includes a cross-instance repeat of one anchor cell; the cause of instance 1's
 variance was not isolated (cache warmth excluded — both instances had 8+ prior points
@@ -401,13 +406,19 @@ Reading: on **total** tokens per chip the bounded points are *not* parity — ag
 Method and the InferenceX comparison: [AGENTX_COMPARISON.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/AGENTX_COMPARISON.md).
 
 
-### 2c. Agg on the new stack (version-consistent reference) — first point, ladder in progress
+### 2c. Agg on the new stack (version-consistent reference) — 6 of 16 points landed, ladder in progress
 
 | cell | old stack (SGLang 0.5.14 / Dynamo 1.3.1) | **new stack (0.5.16 / 1.4.2 / FI 0.6.18)** | delta |
 |---|---|---|---|
+| agg KV c16 | 1,246 tok/s · 51.9/GPU · 9,026 total/chip · p50 0.56 s | **1,418 · 59.1/GPU · 9,972 total/chip · p50 0.36 s · p90 2.3 s · ITL p90 39.1 ms** · AT/PRE · 4,296 req | **+14%** |
+| agg RR c16 | 882 · 36.7/GPU · p50 1.10 s | **963 · 40.1/GPU · 6,432 total/chip · p50 0.89 s · ITL p90 49.7 ms** · AT/PRE · 2,999 req | **+9%** |
 | agg KV c32 (bounded peak) | 1,657 tok/s · 69.0/GPU · 11,800 total/chip · p50 0.62 s · p95 4.3 s · ITL p90 51.6 ms | **1,854 · 77.3/GPU · 13,320 total/chip · p50 0.35 s · p95 3.8 s · ITL p90 49.3 ms** · AT/PRE · 5,911 req · 0 err | **+12% throughput, 1.8× lower TTFT p50** |
+| agg RR c32 | 993 · 41.4/GPU · 6,925 total/chip · p50 1.45 s | **1,233 · 51.4/GPU · 8,214 total/chip · p50 0.98 s · ITL p90 68.4 ms** · AT/PRE · 3,901 req | **+24%** |
+| agg KV c64 (post-knee) | 2,045 · 85.2/GPU · 13,194 total/chip · p50 1.09 s | **2,060 · 85.8/GPU · 13,526 total/chip · p50 1.05 s · p90 12.1 s · ITL p90 72.4 ms** · POST · 6,919 req | +1% (ceiling unchanged) |
+| agg RR c64 (post-knee) | 1,141 · 47.5/GPU · 7,109 total/chip · p50 5.13 s | **1,319 · 55.0/GPU · 8,832 total/chip · p50 3.73 s · ITL p90 98.2 ms** · POST · 4,433 req | +16% |
+| agg kv/rr c128–512 | old: KV c128 1,922 (80.1) · RR c128 1,096 | running (kv:128 started 22:07 UTC) | — |
 
-The engine-version delta is real and positive, so (a) part of the disagg "residual sim drift"
+The bounded cells (c16, c32) gain 9–24% on the new stack, the knees do not move (KV knees between c32 and c64, RR between c32 and c64 — same as the old stack), and the post-knee KV ceiling is unchanged at ~86/GPU, so the new stack raises the bounded region rather than the saturation ceiling. **The bounded agg reference for every disagg ratio is now 77.3/GPU (new-stack KV c32).** The engine-version delta is real and positive, so (a) part of the disagg "residual sim drift"
 attributed earlier to model optimism is engine improvement the 0.5.14-seeded sim could not know,
 and (b) the disagg-vs-agg ratios re-base to the new-stack agg: **9:9 KV c144 vs new agg c32 =
 1.36× output tokens/GPU (104.8 vs 77.3), 1.17× total tokens/chip (15,578 vs 13,320), P90
@@ -519,8 +530,8 @@ with lower p95 would make it the recommended config.
 
 Output tok/s and TTFT (s) from the aiperf summaries; gain = KV/RR throughput; TTFT ratios = RR/KV
 (how many times longer RR's TTFT is). Knee from `knee_check.py`. KV c48–c512 are fleet-instance-2
-re-runs; RR (all) and KV c12/c24 are instance-1 (rr:48 / rr:96 re-verification in progress) —
-so the c48/c96 gains mix instances and are upper bounds until the RR re-runs land.
+re-runs; RR c48 is now instance-2 (2,321, reproduces instance-1 within 1.5%); RR c96+ and KV c12/c24
+are instance-1 (rr:96 re-verification running) — the c96 gain still mixes instances.
 
 | conc | **KV** tok/s · p50 · p95 · p99 · knee | **RR** tok/s · p50 · p95 · p99 · knee | thr gain | TTFT p50 | TTFT p95 |
 |---|---|---|---|---|---|
