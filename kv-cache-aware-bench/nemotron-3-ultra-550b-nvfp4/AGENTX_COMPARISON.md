@@ -99,6 +99,31 @@ output tokens / end-to-end latency (median), InferenceX's second definition.
   (best 4,878 tok/s @c120); agg KV never does (23.5 at c16). At **≥ 20**: agg KV c16
   (1,246 tok/s, 51.9/GPU) vs disagg KV c120 (4,878, 67.7/GPU) → disagg 1.3× per GPU.
 
+## 4b. Throughput per chip, P90 interactivity, tokens per dollar
+
+Tokens per GPU-hour is exact (tok/s/chip × 3600). **Tokens per $1 is computed at an ASSUMED $10/GPU-hour** — no GB300 rate is pinned in this study; the column rescales linearly (tokens/$ = tokens/GPU-hour ÷ $/GPU-hour). Output tokens only (the study's throughput metric).
+
+| arm | point | throughput/chip (tok/s) | P90 interactivity (tok/s/user) | tokens / GPU-hour | tokens / $1 @ $10/GPU-h |
+|---|---|---|---|---|---|
+| disagg 6:12 KV | c48 | 65.1 | 32.5 | 234,200 | 23,420 |
+| disagg 6:12 KV | c96 | 66.8 | 33.0 | 240,350 | 24,035 |
+| disagg 6:12 KV | c120 (peak) | 67.8 | 32.7 | 243,900 | 24,390 |
+| disagg 6:12 KV | c144 | 63.4 | 33.7 | 228,100 | 22,810 |
+| disagg 6:12 KV | c384 | 42.8 | 40.9 | 154,100 | 15,410 |
+| disagg 6:12 KV | c512 | 48.5 | 40.5 | 174,750 | 17,475 |
+| disagg 6:12 RR | c48 | 31.8 | 44.3 | 114,300 | 11,430 |
+| disagg 6:12 RR | c96 | 34.2 | 43.9 | 123,000 | 12,300 |
+| disagg 6:12 RR | c144 | 28.9 | 42.0 | 103,900 | 10,390 |
+| disagg 9:9 KV | c48 | 63.3 | 29.9 | 227,750 | 22,775 |
+| agg 24 KV (old stack) | c16 | 51.9 | 23.5 | 186,900 | 18,690 |
+| agg 24 KV (old stack) | c32 (peak) | 69.0 | 19.4 | 248,550 | 24,855 |
+| agg 24 KV (old stack) | c64 | 85.2 | 13.7 | 306,750 | 30,675 |
+| agg 24 KV (old stack) | c128 | 80.1 | 11.5 | 288,300 | 28,830 |
+| agg 24 RR (old stack) | c32 | 41.4 | 11.7 | 148,950 | 14,895 |
+| agg 24 RR (old stack) | c64 | 47.5 | 8.2 | 171,150 | 17,115 |
+
+Reading: at equal tokens-per-dollar (parity throughput/chip, ~68–69 tok/s/chip → ~245k tokens/GPU-hour), disagg KV delivers ~1.7× agg's P90 interactivity; the cheapest tokens with ≥30 tok/s/user P90 are disagg KV c48–c120 (~234–244k tokens/GPU-hour); agg never reaches 30 tok/s/user P90. RR's higher raw interactivity comes with roughly half the tokens per dollar.
+
 ## 5. Can we run high concurrency for KV + N3U the way they do?
 
 **We already can, and did: disagg KV to c512.** Throughput 3.1–3.5k tok/s (43–49/GPU),

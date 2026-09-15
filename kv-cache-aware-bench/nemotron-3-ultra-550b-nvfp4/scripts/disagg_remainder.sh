@@ -11,12 +11,18 @@ declare -A ROUTER=([kv]="--router-mode kv --router-temperature 0.0 --router-queu
 free_nodes(){ n=0; for node in $(kubectl get nodes -l cloud.google.com/gke-nodepool=np-3 -o name); do node=${node#node/}; u=$(kubectl describe node "$node" | awk '/Allocated resources/,0' | grep "nvidia.com/gpu" | awk '{print $2}'); [ "${u:-0}" = "0" ] && n=$((n+1)); done; echo $n; }
 ladder(){ # $1=ARM $2=manifest $3=points "kv:96 rr:48"  $4=jobprefix
   local ARM=$1 MAN=$2 PTS=$3 JP=$4
+  local want=$(python3 -c "import yaml,sys;print(sum(d['spec']['replicas'] for d in yaml.safe_load_all(open(sys.argv[1])) if d and d.get('kind')=='Deployment' and 'frontend' not in d['metadata']['name']))" "$MAN")
+  local have=$(kubectl get pods -n $NS -l "app in (${ARM}-prefill,${ARM}-decode)" --no-headers 2>/dev/null | grep -c Running)
+  if [ "$have" -ge "$want" ] && kubectl get deployment/${ARM}-frontend -n $NS >/dev/null 2>&1; then
+    say "[$ARM] fleet already up ($have/$want workers) — resuming without redeploy"
+  else
   for cd in n3u-mnnvl-full-cd n3u-mnnvl-99-cd n3u-mnnvl-cd; do kubectl delete computedomain/$cd -n $NS --ignore-not-found --wait=false >> "$LOG" 2>&1; done
   for d in n3u-mnnvl-full-prefill n3u-mnnvl-full-decode n3u-mnnvl-full-frontend n3u-mnnvl-99-prefill n3u-mnnvl-99-decode n3u-mnnvl-99-frontend; do kubectl delete deployment/$d -n $NS --ignore-not-found --wait=false >> "$LOG" 2>&1; done
   sleep 90
   while :; do F=$(free_nodes); say "[$ARM] free np-3 nodes: $F / 18"; [ "$F" -ge 18 ] && break; sleep 300; done
   say "[$ARM] deploying"; kubectl apply -n $NS -f "$MAN" >> "$LOG" 2>&1
   for d in ${ARM}-prefill ${ARM}-decode ${ARM}-frontend; do kubectl rollout status deployment/$d -n $NS --timeout=3600s >> "$LOG" 2>&1 || { say "STACK TIMEOUT $d"; exit 1; }; done
+  fi
   for point in $PTS; do
     v=${point%%:*}; C=${point##*:}; say "=== $ARM $v c$C"
     FE="pip install -q \"ai-dynamo==1.4.2\" && exec python3 -m dynamo.frontend ${ROUTER[$v]} --request-plane nats"
@@ -38,6 +44,6 @@ ladder(){ # $1=ARM $2=manifest $3=points "kv:96 rr:48"  $4=jobprefix
   done
   for d in ${ARM}-prefill ${ARM}-decode ${ARM}-frontend; do kubectl scale deployment/$d -n $NS --replicas=0 >> "$LOG" 2>&1; done
 }
-ladder n3u-mnnvl-full $HOME/kv-cache-aware-bench/sglang/manifests/n3u-mnnvl-full.yaml "rr:48 rr:96" n3u-mnnvl
 ladder n3u-mnnvl-99   $HOME/kv-cache-aware-bench/sglang/manifests/n3u-mnnvl-99.yaml   "kv:96 kv:144" n3u-mnnvl-99
+ladder n3u-mnnvl-full $HOME/kv-cache-aware-bench/sglang/manifests/n3u-mnnvl-full.yaml "rr:48 rr:96" n3u-mnnvl
 say "N3U DISAGG REMAINDER DONE"
