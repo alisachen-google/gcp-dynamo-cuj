@@ -264,6 +264,11 @@ cache-bust, sessions shared across streams above C = 393.
 | our 900 s warm-up at conc 96 | `--warmup-requests-per-lane 10 --trajectory-start-min-ratio 0.25 --trajectory-start-max-ratio 0.75` |
 | — | `--use-server-token-count`; duration 3,600 s to match |
 
+**Status (2026-09-15): adopted.** AgentX-mode runners are queued: 9:9 KV on np-3 after the MTP
+runs, agg KV on np-1 after the new-stack sweep — ladder 48/96/192/384/768/1536 clients, 3,600 s
+per point, first point as smoke (`scripts/agentx_runner.sh`, template `manifests/perf/sgl-d72-agentx.yaml`).
+Results will be reported on the client axis alongside the busy-stream results, never mixed.
+
 **How to read the new axis.** Concurrency becomes *live agent clients*; the server load is whatever
 those clients generate. Our current knee at 48–120 busy streams will map to a much larger client
 count, so the ladder should be re-bracketed upward — proposed **48 / 96 / 192 / 384 / 768 / 1536

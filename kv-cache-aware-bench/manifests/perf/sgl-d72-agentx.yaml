@@ -94,7 +94,7 @@ spec:
           \n  mkdir -p \"$RUN_DIR\"\n\n  aiperf profile \\\n    -m \"${TARGET_MODEL}\"\
           \ \\\n    --tokenizer \"${TARGET_MODEL}\" \\\n    --tokenizer-trust-remote-code\
           \ \\\n    --public-dataset semianalysis_cc_traces_weka_062126_256k \\\n\
-          \    --scenario inferencex-agentx-mvp \\\n    --cache-bust first_turn_prefix \\\n    --system-idle-gap-cap-seconds 10 \\\n    --trajectory-start-min-ratio 0.25 \\\n    --trajectory-start-max-ratio 0.75 \\\n    --warmup-requests-per-lane 10 \\\n    --use-server-token-count \\\n    --num-dataset-entries\
+          \    --scenario inferencex-agentx-mvp \\\n    --endpoint-type chat \\\n    --cache-bust first_turn_prefix \\\n    --system-idle-gap-cap-seconds 10 \\\n    --trajectory-start-min-ratio 0.25 \\\n    --trajectory-start-max-ratio 0.75 \\\n    --warmup-requests-per-lane 10 \\\n    --use-server-token-count \\\n    --num-dataset-entries\
           \ 393 \\\n    --slice-duration 1.0 \\\n    --max-context-length 262144 \\\
           \n    --url \"http://${ENDPOINT}\" \\\n    --streaming \\\n    --extra-inputs\
           \ ignore_eos:true \\\n    --concurrency \"${C}\" \\\n    --random-seed 42\
@@ -102,8 +102,7 @@ spec:
           \ \"time_to_first_token:${TTFT_THRESHOLD_MS} inter_token_latency:${ITL_THRESHOLD_MS}\"\
           \ \\\n    --benchmark-duration \"${BENCHMARK_DURATION}\" \\\n    --benchmark-grace-period\
           \ 60 \\\n    --request-timeout-seconds 1200 \\\n    --workers-max 200 \\\
-          \n    --record-processors 8 \\\n    --profile-export-level raw \\\n    --concurrency-ramp-duration\
-          \ 60 \\\n    --export-http-trace\n\n  echo \"Concurrency ${C} complete;\
+          \n    --record-processors 8 \\\n    --profile-export-level raw \\\n    --export-http-trace\n\n  echo \"Concurrency ${C} complete;\
           \ artifacts in ${RUN_DIR}\"\n  ls -la \"${RUN_DIR}\" || true\ndone\n\necho\
           \ \"\"\necho \"All concurrencies done. Root: ${ROOT_DIR}\"\n"
         env:
