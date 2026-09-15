@@ -366,32 +366,31 @@ tier imbalance: cheap linear prefill (Mamba + 12/108 attention) leaves the
 doing both phases. (Profiling comparison to attribute this in detail —
 in progress; see §"Profiling gap analysis" when landed.)
 
-### 2b. Throughput per chip, P90 interactivity (1/ITL p90), tokens per dollar
+### 2b. Throughput per chip (total tokens), P90 interactivity (1/ITL p90), tokens per dollar
 
-Tokens per GPU-hour is exact (tok/s/chip × 3600). **Tokens per $1 is computed at an ASSUMED $10/GPU-hour** — no GB300 rate is pinned in this study; the column rescales linearly (tokens/$ = tokens/GPU-hour ÷ $/GPU-hour). Output tokens only (the study's throughput metric).
+Throughput per chip is **total tokens (input + output) served per second per GPU**, from aiperf's `Total Token Throughput` — the InferenceX convention. Total ≈ 140–150× output for this trace (ISL/OSL ≈ 150), and with ~89% cached-token share it counts prefix-served input tokens, not recomputed ones. Output tok/s/chip is kept for continuity with the rest of the report. P90 interactivity = 1/ITL p90. Tokens/GPU-hour is exact; **tokens/$ uses an ASSUMED $10/GPU-hour** (no GB300 rate is pinned; rescales linearly).
 
-| arm | point | throughput/chip (tok/s) | P90 interactivity (tok/s/user) | tokens / GPU-hour | tokens / $1 @ $10/GPU-h |
-|---|---|---|---|---|---|
-| disagg 6:12 KV | c48 | 65.1 | 32.5 | 234,200 | 23,420 |
-| disagg 6:12 KV | c96 | 66.8 | 33.0 | 240,350 | 24,035 |
-| disagg 6:12 KV | c120 (peak) | 67.8 | 32.7 | 243,900 | 24,390 |
-| disagg 6:12 KV | c144 | 63.4 | 33.7 | 228,100 | 22,810 |
-| disagg 6:12 KV | c384 | 42.8 | 40.9 | 154,100 | 15,410 |
-| disagg 6:12 KV | c512 | 48.5 | 40.5 | 174,750 | 17,475 |
-| disagg 6:12 RR | c48 | 31.8 | 44.3 | 114,300 | 11,430 |
-| disagg 6:12 RR | c96 | 34.2 | 43.9 | 123,000 | 12,300 |
-| disagg 6:12 RR | c144 | 28.9 | 42.0 | 103,900 | 10,390 |
-| disagg 9:9 KV | c48 | 63.3 | 29.9 | 227,750 | 22,775 |
-| agg 24 KV (old stack) | c16 | 51.9 | 23.5 | 186,900 | 18,690 |
-| agg 24 KV (old stack) | c32 (peak) | 69.0 | 19.4 | 248,550 | 24,855 |
-| agg 24 KV (old stack) | c64 | 85.2 | 13.7 | 306,750 | 30,675 |
-| agg 24 KV (old stack) | c128 | 80.1 | 11.5 | 288,300 | 28,830 |
-| agg 24 RR (old stack) | c32 | 41.4 | 11.7 | 148,950 | 14,895 |
-| agg 24 RR (old stack) | c64 | 47.5 | 8.2 | 171,150 | 17,115 |
+| arm | point | **total tok/s/chip** (in+out) | output tok/s/chip | P90 interactivity (tok/s/user) | total tokens / GPU-hour | tokens / $1 @ $10/GPU-h |
+|---|---|---|---|---|---|---|
+| disagg 6:12 KV | c48 | **9,914** | 65.1 | 32.5 | 35,689,850 | 3,568,985 |
+| disagg 6:12 KV | c96 | **9,359** | 66.8 | 33.0 | 33,692,150 | 3,369,215 |
+| disagg 6:12 KV | c120 (output peak) | **9,338** | 67.8 | 32.7 | 33,615,000 | 3,361,500 |
+| disagg 6:12 KV | c144 | **8,379** | 63.4 | 33.7 | 30,163,100 | 3,016,310 |
+| disagg 6:12 KV | c384 | **4,602** | 42.8 | 40.9 | 16,566,600 | 1,656,660 |
+| disagg 6:12 KV | c512 | **5,075** | 48.5 | 40.5 | 18,269,450 | 1,826,945 |
+| disagg 6:12 RR | c48 | **5,001** | 31.8 | 44.3 | 18,001,950 | 1,800,195 |
+| disagg 6:12 RR | c96 | **4,301** | 34.2 | 43.9 | 15,484,800 | 1,548,480 |
+| disagg 6:12 RR | c144 | **3,214** | 28.9 | 42.0 | 11,570,750 | 1,157,075 |
+| disagg 9:9 KV | c48 | **9,571** | 63.3 | 29.9 | 34,454,900 | 3,445,490 |
+| agg 24 KV (old stack) | c16 | **9,026** | 51.9 | 23.5 | 32,493,900 | 3,249,390 |
+| agg 24 KV (old stack) | c32 (bounded peak) | **11,800** | 69.0 | 19.4 | 42,478,650 | 4,247,865 |
+| agg 24 KV (old stack) | c64 (post-knee) | **13,194** | 85.2 | 13.7 | 47,498,100 | 4,749,810 |
+| agg 24 KV (old stack) | c128 | **9,849** | 80.1 | 11.5 | 35,457,300 | 3,545,730 |
+| agg 24 RR (old stack) | c32 | **6,925** | 41.4 | 11.7 | 24,929,550 | 2,492,955 |
+| agg 24 RR (old stack) | c64 | **7,109** | 47.5 | 8.2 | 25,593,300 | 2,559,330 |
 
-Reading: at equal tokens-per-dollar (parity throughput/chip, ~68–69 tok/s/chip → ~245k tokens/GPU-hour), disagg KV delivers ~1.7× agg's P90 interactivity; the cheapest tokens with ≥30 tok/s/user P90 are disagg KV c48–c120 (~234–244k tokens/GPU-hour); agg never reaches 30 tok/s/user P90. RR's higher raw interactivity comes with roughly half the tokens per dollar.
-
-Interactivity is the second axis of the disagg-vs-agg verdict (InferenceX's dashboard axis): at parity tokens/$, disagg KV gives ~1.7× agg's P90 interactivity because the decode tier never runs a prefill (ITL p90 ~30 ms vs 52–87 ms on agg). Method and the InferenceX comparison: [AGENTX_COMPARISON.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/AGENTX_COMPARISON.md).
+Reading: on **total** tokens per chip the bounded points are *not* parity — agg KV c32 (11,800) leads disagg KV c48 (9,914) by **1.19×**, because agg's per-chip request rate is ~10% higher and its completed mix carries longer inputs; on output tokens they are parity (69.0 vs 65.1). Disagg still delivers **~1.7× the P90 interactivity** (33 vs 19 tok/s/user). The cheapest total tokens overall are agg KV c64 (13,194/chip, post-knee, 13.7 tok/s/user, TTFT p90 12.6 s); the cheapest that clear a 30 tok/s/user P90 floor are disagg KV c48 (9,914/chip ≈ 35.7M tokens/GPU-hour). RR is ~half the tokens per dollar of KV in both arms.
+Method and the InferenceX comparison: [AGENTX_COMPARISON.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/AGENTX_COMPARISON.md).
 
 ### 3. DynoSim drift — narrowed, not closed; widens with load
 sim/MNNVL: **1.32× (c48) → 1.58× (c96)** (was 1.66×/1.70× vs host-staged).
