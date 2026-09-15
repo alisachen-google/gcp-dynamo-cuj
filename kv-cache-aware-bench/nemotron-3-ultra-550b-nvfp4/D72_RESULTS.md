@@ -360,7 +360,7 @@ i.e. ~0.35–0.5 s at the p95 rate vs ~2.4 s on host-staged (0.28–0.34 GB/s, r
 + TTFT floor). Transfer is therefore no longer the binding constraint on MNNVL — the
 prefill tier's compute queue is (see profiling at kv:144).
 
-### 2. Disagg-vs-agg — 6:12: parity on tok/s/GPU (0.98×), disagg wins interactivity (1.7×); **9:9 (2026-09-15): disagg wins outright — peak bounded 7,089 tok/s @c120 = 98.5/GPU, 1.43× agg on output, 1.24× on total tokens/chip, higher interactivity (see §4)**
+### 2. Disagg-vs-agg — 6:12: parity on tok/s/GPU (0.98×), disagg wins interactivity (1.7×); **9:9 (2026-09-15): disagg wins outright — peak bounded 7,549 tok/s @c144 = 104.8/GPU (7,089 = 98.5/GPU @c120), 1.52× old-stack agg / 1.36× new-stack agg on output, 1.32× / 1.17× on total tokens/chip, higher interactivity (see §4)**
 agg bounded reference **69.0 tok/s/GPU** (KV c32, 24 GPU); agg post-knee 85.
 - KV disagg peak bounded **49.6/GPU** vs agg **69.0** → **agg wins 1.39×**.
 - Post-knee ceilings: disagg 51.3 vs agg 85 → agg wins 1.66×.
@@ -388,6 +388,8 @@ Throughput per chip is **total tokens (input + output) served per second per GPU
 | disagg 6:12 RR | c96 | **4,301** | 34.2 | 43.9 | 15,484,800 | 1,548,480 |
 | disagg 6:12 RR | c144 | **3,214** | 28.9 | 42.0 | 11,570,750 | 1,157,075 |
 | disagg 9:9 KV | c48 | **9,571** | 63.3 | 29.9 | 34,454,900 | 3,445,490 |
+| disagg 9:9 KV | c120 | **14,682** | 98.5 | 22.4 | 52,855,200 | 5,285,520 |
+| disagg 9:9 KV | c144 (output peak) | **15,578** | 104.8 | 21.3 | 56,080,490 | 5,608,049 |
 | agg 24 KV (old stack) | c16 | **9,026** | 51.9 | 23.5 | 32,493,900 | 3,249,390 |
 | agg 24 KV (old stack) | c32 (bounded peak) | **11,800** | 69.0 | 19.4 | 42,478,650 | 4,247,865 |
 | agg 24 KV (old stack) | c64 (post-knee) | **13,194** | 85.2 | 13.7 | 47,498,100 | 4,749,810 |
@@ -407,9 +409,9 @@ Method and the InferenceX comparison: [AGENTX_COMPARISON.md](https://github.com/
 
 The engine-version delta is real and positive, so (a) part of the disagg "residual sim drift"
 attributed earlier to model optimism is engine improvement the 0.5.14-seeded sim could not know,
-and (b) the disagg-vs-agg ratios re-base to the new-stack agg: **9:9 KV c120 vs new agg c32 =
-1.27× output tokens/GPU (98.5 vs 77.3), 1.10× total tokens/chip (14,682 vs 13,320), P90
-interactivity 22.4 vs 20.3** — disagg 9:9 still wins on every axis, by less. The remaining
+and (b) the disagg-vs-agg ratios re-base to the new-stack agg: **9:9 KV c144 vs new agg c32 =
+1.36× output tokens/GPU (104.8 vs 77.3), 1.17× total tokens/chip (15,578 vs 13,320), P90
+interactivity 21.3 vs 20.3** (c120: 1.27× / 1.10× / 22.4 vs 20.3) — disagg 9:9 still wins on every axis, by less. The remaining
 new-stack agg cells (kv/rr × 16–512) replace the old-stack agg series in every table and page
 when they land.
 
@@ -438,22 +440,25 @@ by an AIC re-solve.
 |---|---|---|---|---|
 | 3:15 (12P/60D) | — | 3,619 (50.3/GPU) · p50 16.3 s · POST | — | — |
 | **6:12** (24P/48D) | 4,684 (65.1) · 1.0 s · AT/PRE | 4,807 (66.8) · 9.6 s · AT/PRE | 4,878 (67.8) · 13.9 s · AT/PRE | 4,562 (63.4) · 21.5 s · POST |
-| **9:9** (36P/36D) | 4,555 (63.3) · 0.56 s · AT/PRE | 6,560 (91.1) · 0.96 s · AT/PRE | **7,089 (98.5) · 1.5 s · p95 8.7 s · AT/PRE · 22,615 req** | re-running (bench-pod OOM) |
+| **9:9** (36P/36D) | 4,555 (63.3) · 0.56 s · AT/PRE | 6,560 (91.1) · 0.96 s · AT/PRE | 7,089 (98.5) · 1.5 s · p95 8.7 s · AT/PRE · 22,615 req | **7,549 (104.8) · 2.2 s · p95 9.8 s · AT/PRE · 23,894 req · 0 err** |
 | 12:6 (48P/24D) | 3,797 (52.7) · 0.44 s · AT/PRE | 5,667 (78.7) · 0.56 s · p95 4.5 s · AT/PRE | — | — |
 
 At c48 the splits are within 3–20% (6:12 marginally ahead of 9:9; 12:6 lowest); from c96 up the
 ranking is **9:9 > 12:6 > 6:12 > 3:15**: 9:9 gives 1.36× 6:12 at c96 and **1.45× at c120 (7,089 vs 4,878)**
 while still queue-stationary at 1.5 s p50; 12:6 is the *low-latency* split (78.7/GPU at p50 0.56 s /
-p95 4.5 s); the decode-heavy 3:15 is post-knee at c96 with 50/GPU. The kv:144 point on 9:9 is being
-re-run (the first attempt's bench pod was OOM-killed at export). This is the prediction of the kv:144 profiling on 6:12: the prefill
+p95 4.5 s); the decode-heavy 3:15 is post-knee at c96 with 50/GPU. The kv:144 point on 9:9 (re-run 2026-09-15 20:04–20:48 UTC after the first attempt's bench pod
+was OOM-killed at export) is a further peak: **7,549 tok/s = 104.8/GPU**, still queue-stationary
+(TTFT p50 2.2 s, p95 9.8 s; quarter p50 4.05 s → 1.84 s, i.e. falling), ITL p90 46.9 ms, MNNVL guard
+PASS (mooncake TE peak 1.5 GB/s) — so the 9:9 knee lies above c144 and 9:9 is 1.65× 6:12 at c144
+(7,549 vs 4,562, where 6:12 is already post-knee). This is the prediction of the kv:144 profiling on 6:12: the prefill
 tier was the binding constraint (92% busy, 10-deep queue) while 48 decode GPUs sat at 15% slot
 occupancy; moving 3 workers from decode to prefill relieves exactly that. Under host-staged
 transfer, prefill-heavy splits lost (3:15 ≫ 6:12 ≫ 9:9 direction) because every extra prefill
 worker added expensive hand-offs; on NVLink the hand-off is cheap, so the optimum moves toward
-the balanced split. **9:9 exceeds agg's bounded peak — at c120 1.43× on output tokens (98.5 vs 69.0/GPU), 1.24× on
-total tokens (14,682 vs 11,800/chip) — with higher P90 interactivity (22.4 vs 19.4 tok/s/user)**, so the §2 "parity" verdict is superseded for the
-9:9 split: *disaggregated 9:9 KV beats aggregated on every axis at c96*, pending (a) the 9:9
-knee (kv:144) and (b) the new-stack agg re-sweep for a version-consistent reference.
+the balanced split. **9:9 exceeds agg's bounded peak — at c144 1.52× on output tokens (104.8 vs 69.0/GPU), 1.32× on
+total tokens (15,578 vs 11,800/chip) — with higher P90 interactivity (21.3 vs 19.4 tok/s/user; at c120 22.4)**, so the §2 "parity" verdict is superseded for the
+9:9 split: *disaggregated 9:9 KV beats aggregated on every axis at c96*, pending only the new-stack agg re-sweep for a version-consistent reference (the 9:9 knee is above
+kv:144; an MTP/NEXTN arm and the AgentX-concurrency ladder on 9:9 are queued).
 
 Previously: 6:12 is the optimal split among all silicon-measured splits (6:12 ≫ 3:15 on
 host-staged; 6:12 complete on MNNVL). The sim-preferred 9:9 is being verified

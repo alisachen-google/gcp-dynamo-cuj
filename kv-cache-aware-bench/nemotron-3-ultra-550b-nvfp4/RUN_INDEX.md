@@ -102,6 +102,7 @@ Artifacts: each job uploads `<model>_trace_c<conc>_<ts>/profile_export_aiperf.cs
 | 2026-09-15 05:12 | disagg 9:9 MNNVL | kv | 48 | `n3u-mnnvl-99-kv-c48` | [1789449139](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789449139_alisachen-n3u-mnnvl-99-kv-c48) |
 | 2026-09-15 08:19 | disagg 9:9 MNNVL | kv | 96 | `n3u-mnnvl-99-kv-c96` | [1789460362](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789460362_alisachen-n3u-mnnvl-99-kv-c96) |
 | 2026-09-15 09:04 | agg 24 new stack | kv | 32 | `n3u-agg-ns-kv-c32` | [1789463062](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789463062_alisachen-n3u-agg-ns-kv-c32) |
-| 2026-09-15 09:12 | disagg 9:9 MNNVL | kv | 144 | `n3u-mnnvl-99-kv-c144` | [1789463572](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789463572_alisachen-n3u-mnnvl-99-kv-c144) |
+| 2026-09-15 09:12 (bench pod OOM at export; superseded) | disagg 9:9 MNNVL | kv | 144 | `n3u-mnnvl-99-kv-c144` | [1789463572](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789463572_alisachen-n3u-mnnvl-99-kv-c144) |
+| 2026-09-15 20:04 | disagg 9:9 MNNVL | kv | 144 | `n3u-mnnvl-99-kv-c144` (re-run: 7,549 tok/s, AT/PRE, guard PASS) | [1789502649](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789502649_alisachen-n3u-mnnvl-99-kv-c144) |
 
 72 jobs listed. Later runs of the same job name supersede earlier ones (fleet-instance-2 re-runs on 2026-09-15).
