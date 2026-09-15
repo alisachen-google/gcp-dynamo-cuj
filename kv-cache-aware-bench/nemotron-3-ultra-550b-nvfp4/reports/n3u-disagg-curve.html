@@ -64,7 +64,7 @@ th{color:var(--ink2);font-weight:500}
 
 <details><summary>Table view (all series)</summary><div class="tw"><table id="tbl"></table></div></details>
 
-<p class="fn">Every MNNVL point passed the transport gate (cuda_ipc on the KV data path, no tcp/rdma/host-staged fallback). Knee verdicts from per-request timestamp stationarity; no latency SLO gate. The shaded band marks c384 / 512, where the MNNVL KV sweep is running now. Fleet instance 1 (2026-09-12/13) was inconsistent (−25% at c96, +36% at c144); those two points are shown as superseded and the KV series uses the reproduced instance-2 measurements from c96 up. c12–48 and RR points are instance-1 pending re-verification. RR c288 is omitted (1.4% transfer failures). Stack: SGLang 0.5.16 · Dynamo 1.4.2 · FlashInfer 0.6.18.</p>
+<p class="fn">Every point passed the transport gate: KV moved via mooncake on MNNVL (transfer-engine throughput up to 2.0 GB/s per prefill worker, no RDMA device in the pod, no transfer failures). Knee verdicts from per-request timestamp stationarity; no latency SLO gate. The shaded band marks c384 / 512, where the MNNVL KV sweep is running now. Fleet instance 1 (2026-09-12/13) was inconsistent (−25% at c96, +36% at c144); those two points are shown as superseded and the KV series uses the reproduced instance-2 measurements from c96 up. c12–48 and RR points are instance-1 pending re-verification. RR c288 is omitted (1.4% transfer failures). Stack: SGLang 0.5.16 · Dynamo 1.4.2 · FlashInfer 0.6.18.</p>
 
 <script>
 const S={
