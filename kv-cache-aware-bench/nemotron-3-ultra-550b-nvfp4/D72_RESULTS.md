@@ -276,7 +276,11 @@ rr:96 are being re-run on instance 2 before the KV/RR ratios are re-issued. **rr
 6,985 req, guard PASS — reproduces instance-1's 2,286 within 1.5%.** So the instance-1 degradation
 that cut KV by 25–30% did not touch RR at c48, which is consistent with RR being bound by its own
 prefill-queue growth rather than by the component that was slow on instance 1; the RR c48 row and
-the c48 KV/RR gain (4,684 / 2,321 = 2.02×, both instance 2) are now clean. rr:96 is running. Sim drift
+the c48 KV/RR gain (4,684 / 2,321 = 2.02×, both instance 2) are now clean. **rr:96 on instance 2
+(22:17 UTC): 2,484 tok/s (34.5/GPU), TTFT p50 26.5 s / p99 112 s, ITL p90 23.5 ms, POST-knee (saturated),
+7,576 req, guard PASS — reproduces instance-1's 2,460 within 1%.** The c96 gain is therefore also clean:
+4,807 / 2,484 = 1.94× (both instance 2). Every RR cell that mattered for the ratios has now been
+reproduced on instance 2; only KV c12/c24 remain instance-1 (pre-knee, low-load cells). Sim drift
 at c96–144 is 0.77–0.83× (real/sim), from 0.63× on instance 1. The protocol now
 includes a cross-instance repeat of one anchor cell; the cause of instance 1's
 variance was not isolated (cache warmth excluded — both instances had 8+ prior points
@@ -530,8 +534,8 @@ with lower p95 would make it the recommended config.
 
 Output tok/s and TTFT (s) from the aiperf summaries; gain = KV/RR throughput; TTFT ratios = RR/KV
 (how many times longer RR's TTFT is). Knee from `knee_check.py`. KV c48–c512 are fleet-instance-2
-re-runs; RR c48 is now instance-2 (2,321, reproduces instance-1 within 1.5%); RR c96+ and KV c12/c24
-are instance-1 (rr:96 re-verification running) — the c96 gain still mixes instances.
+re-runs; RR c48 and c96 are instance-2 (2,321 / 2,484, reproducing instance-1 within 1.5% / 1%), so
+the c48 and c96 gains are single-instance; RR c144+ and KV c12/c24 remain instance-1.
 
 | conc | **KV** tok/s · p50 · p95 · p99 · knee | **RR** tok/s · p50 · p95 · p99 · knee | thr gain | TTFT p50 | TTFT p95 |
 |---|---|---|---|---|---|
