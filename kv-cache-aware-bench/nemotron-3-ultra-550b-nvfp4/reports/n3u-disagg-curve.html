@@ -40,12 +40,11 @@ th{color:var(--ink2);font-weight:500}
 </style>
 
 <h1>Nemotron-3-Ultra 550B — disaggregated 6:12, measured throughput vs concurrency</h1>
-<p class="sub">72 GPU (6 prefill : 12 decode, TP4/EP4), GB300 NVL72, Weka 256K agentic trace replay. Solid lines are silicon; dashed is DynoSim v1 in the same hue. Marker shape is the knee verdict on the MNNVL series.</p>
+<p class="sub">72 GPU (6 prefill : 12 decode, TP4/EP4), GB300 NVL72, Weka 256K agentic trace replay. KV transfer over NVLink (MNNVL + mooncake). Solid lines are silicon; dashed is DynoSim v1 in the same hue. Marker shape is the knee verdict.</p>
 
 <div class="row" role="group" aria-label="Chart controls">
   <div class="seg" id="unit"><button id="u-total" aria-pressed="true">Output tok/s</button><button id="u-gpu" aria-pressed="false">tok/s per GPU</button></div>
   <label class="chk"><input type="checkbox" id="showsim" checked> show DynoSim v1</label>
-  <label class="chk"><input type="checkbox" id="showhs" checked> show host-staged (broken GPUDirect)</label>
 </div>
 
 <div class="chart" id="chart"><div class="tip" id="tip" role="status" aria-live="polite"></div></div>
@@ -53,42 +52,38 @@ th{color:var(--ink2);font-weight:500}
 <div class="legend" id="legend" aria-label="Legend">
   <span><i class="ln" style="border-color:var(--s1)"></i>MNNVL KV-aware</span>
   <span><i class="ln" style="border-color:var(--s2)"></i>MNNVL round-robin</span>
-  <span><i class="ln" style="border-color:var(--s3)"></i>host-staged KV</span>
-  <span><i class="ln" style="border-color:var(--s4)"></i>host-staged RR</span>
   <span><i class="ln d" style="border-color:var(--ink3)"></i>DynoSim v1 (dashed, same hue)</span>
-  <span>● at / pre-knee &nbsp; ○ post-knee &nbsp; ■ host-staged (knee not encoded) &nbsp; ▢ fleet instance 1, superseded (not reproduced)</span>
+  <span>● at / pre-knee &nbsp; ○ post-knee &nbsp; ▢ fleet instance 1, superseded (not reproduced)</span>
 </div>
 
 <div class="tiles">
   <div class="tile"><div class="k">KV peak bounded (MNNVL)</div><div class="v">4,878 tok/s</div><div class="n">c120 · 67.7 per GPU · queue stationary · fleet instance 2</div></div>
   <div class="tile"><div class="k">Aggregated reference</div><div class="v">69.0 / GPU</div><div class="n">24-GPU agg, KV c32, bounded → parity (0.98×); agg wins post-knee 1.25×</div></div>
-  <div class="tile"><div class="k">Transport win vs host-staged</div><div class="v">+25 %</div><div class="n">KV @c48 (3,573 vs 2,853); TTFT p50 2.67 → 0.37 s @c12</div></div>
+  <div class="tile"><div class="k">Sim drift at the KV peak</div><div class="v">0.83×</div><div class="n">real / DynoSim v1 at c120 (4,878 vs ~5,870); knee matched (sim c96–144)</div></div>
 </div>
 
 <details><summary>Table view (all series)</summary><div class="tw"><table id="tbl"></table></div></details>
 
-<p class="fn">Every MNNVL point passed the transport gate (cuda_ipc on the KV data path, no tcp/rdma/host-staged fallback). Knee verdicts from per-request timestamp stationarity; no latency SLO gate. The shaded band marks c384 / 512, where the MNNVL KV sweep is running now. Fleet instance 1 (2026-09-12/13) was inconsistent (−25% at c96, +36% at c144); those two points are shown as superseded and the KV series uses the reproduced instance-2 measurements from c96 up. c12–48 and RR points are instance-1 pending re-verification. RR c288 is omitted (1.4% transfer failures). Stack: SGLang 0.5.16 · Dynamo 1.4.2 · FlashInfer 0.6.18 (MNNVL) vs 0.5.14 · 1.3.1 (host-staged).</p>
+<p class="fn">Every MNNVL point passed the transport gate (cuda_ipc on the KV data path, no tcp/rdma/host-staged fallback). Knee verdicts from per-request timestamp stationarity; no latency SLO gate. The shaded band marks c384 / 512, where the MNNVL KV sweep is running now. Fleet instance 1 (2026-09-12/13) was inconsistent (−25% at c96, +36% at c144); those two points are shown as superseded and the KV series uses the reproduced instance-2 measurements from c96 up. c12–48 and RR points are instance-1 pending re-verification. RR c288 is omitted (1.4% transfer failures). Stack: SGLang 0.5.16 · Dynamo 1.4.2 · FlashInfer 0.6.18.</p>
 
 <script>
 const S={
  mkv:{name:"MNNVL KV-aware",c:"--s1",pts:[[12,1734,"AT/PRE"],[24,2672,"AT/PRE"],[48,3573,"AT/PRE"],[96,4807,"AT/PRE"],[120,4878,"AT/PRE"],[144,4562,"POST"],[192,2707,"POST"],[288,2489,"POST"]]},
  mkv1:{name:"MNNVL KV — fleet instance 1 (superseded)",c:"--ink3",sup:true,pts:[[96,3691,"POST"],[144,6221,"AT/PRE"]]},
  mrr:{name:"MNNVL round-robin",c:"--s2",pts:[[12,1381,"AT/PRE"],[24,1980,"AT/PRE"],[48,2286,"POST"],[96,2460,"POST"],[144,2078,"POST"],[192,1931,"POST"]]},
- hkv:{name:"host-staged KV",c:"--s3",hs:true,pts:[[12,1394],[24,2043],[48,2853],[96,3423],[144,3307],[192,3263]]},
- hrr:{name:"host-staged RR",c:"--s4",hs:true,pts:[[12,1135],[24,1500],[48,1646],[96,1746],[144,1690]]},
  skv:{name:"DynoSim v1 KV",c:"--s1",sim:true,pts:[[48,4725],[96,5813],[144,5920],[192,5613],[288,4947],[384,4397],[512,3703],[768,2841]]},
  srr:{name:"DynoSim v1 RR",c:"--s2",sim:true,pts:[[48,3196],[96,3595],[144,3501],[192,3363],[288,3065],[384,2841],[512,2571],[768,2130]]}
 };
 const GPUS=72, AGG_PER_GPU=69.0, XT=[12,24,48,96,120,144,192,288,384,512,768];
 const el=id=>document.getElementById(id);
-let unit="total", showSim=true, showHS=true;
+let unit="total", showSim=true;
 const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 function val(v){return unit==="total"?v:v/GPUS}
 function fmt(v){return unit==="total"?Math.round(v).toLocaleString():v.toFixed(1)}
 function render(){
  const W=1000,H=440,m={t:26,r:150,b:44,l:66};
  const x=c=>m.l+(Math.log2(c)-Math.log2(12))/(Math.log2(768)-Math.log2(12))*(W-m.l-m.r);
- const vis=Object.entries(S).filter(([k,s])=>(!s.sim||showSim)&&(!s.hs||showHS));
+ const vis=Object.entries(S).filter(([k,s])=>(!s.sim||showSim));
  let ymax=0; vis.forEach(([k,s])=>s.pts.forEach(p=>ymax=Math.max(ymax,val(p[1]))));
  ymax=Math.max(ymax,val(AGG_PER_GPU*GPUS))*1.08;
  const y=v=>m.t+(1-v/ymax)*(H-m.t-m.b);
@@ -108,7 +103,6 @@ function render(){
   g+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="${s.sup?1.5:2}" ${s.sim?'stroke-dasharray="6 5" opacity=".8"':(s.sup?'stroke-dasharray="2 4"':'')} stroke-linejoin="round"/>`;
   if(!s.sim){s.pts.forEach(p=>{const cx=x(p[0]),cy=y(val(p[1]));
    if(s.sup)g+=`<rect x="${cx-4}" y="${cy-4}" width="8" height="8" fill="var(--bg)" stroke="${col}" stroke-width="2"/>`;
-   else if(s.hs)g+=`<rect x="${cx-4}" y="${cy-4}" width="8" height="8" fill="${col}" stroke="var(--bg)" stroke-width="2"/>`;
    else if(p[2]==="POST")g+=`<circle cx="${cx}" cy="${cy}" r="5" fill="var(--bg)" stroke="${col}" stroke-width="2.2"/>`;
    else g+=`<circle cx="${cx}" cy="${cy}" r="5" fill="${col}" stroke="var(--bg)" stroke-width="2"/>`;});
    if(!s.sup){const last=s.pts[s.pts.length-1];ends.push({y:y(val(last[1])),x:x(last[0]),t:s.name,col});}}});
@@ -136,6 +130,6 @@ function table(vis){let h=`<tr><th>conc</th>${vis.map(([k,s])=>`<th>${s.name}</t
  el("tbl").innerHTML=h;}
 el("u-total").onclick=()=>{unit="total";el("u-total").setAttribute("aria-pressed","true");el("u-gpu").setAttribute("aria-pressed","false");render()};
 el("u-gpu").onclick=()=>{unit="gpu";el("u-gpu").setAttribute("aria-pressed","true");el("u-total").setAttribute("aria-pressed","false");render()};
-el("showsim").onchange=e=>{showSim=e.target.checked;render()};el("showhs").onchange=e=>{showHS=e.target.checked;render()};
+el("showsim").onchange=e=>{showSim=e.target.checked;render()};
 render();
 </script>
