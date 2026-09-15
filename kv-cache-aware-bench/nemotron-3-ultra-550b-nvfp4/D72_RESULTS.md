@@ -386,6 +386,53 @@ nodes' IMEX channels; a node belongs to one CD); re-run with CD cleanup +
 domain-availability wait in progress.
 
 
+
+## KV vs RR — real jobs vs DynoSim v1: throughput and TTFT p50 / p99 (disagg 6:12 MNNVL)
+
+Real = aiperf summaries (instance-2 reproduced runs from c96 up; c12–48 and RR ≤c96 are
+instance-1 pending re-verification). Sim = DynoSim v1 `kv-nvda` / `rr`, 6:12 grid
+(starts at c48). TTFT in seconds. "—" = not in the sim grid. rr:288 shown but INVALID
+(83 transfer failures); rr:144 had 56 errors.
+
+| conc | **Real KV** tok/s · p50 · p99 | **Sim KV** tok/s · p50 · p99 | **Real RR** tok/s · p50 · p99 | **Sim RR** tok/s · p50 · p99 | KV/RR thr gain real · sim |
+|---|---|---|---|---|---|
+| 12 | 1,734 · 0.37 · 7.4 | — | 1,381 · 1.32 · 19.8 | — | 1.26× · — |
+| 24 | 2,672 · 0.79 · 16.3 | — | 1,980 · 3.10 · 30.7 | — | 1.35× · — |
+| 48 | 3,573 · 3.23 · 33.2 | 4,725 · 0.14 · 4.1 | 2,286 · 9.03 · 62.9 | 3,196 · 2.46 · 41.8 | 1.56× · 1.48× |
+| 96 | 4,807 · 9.57 · 47.3 | 5,813 · 0.19 · 6.1 | 2,460 · 23.9 · 132 | 3,595 · 8.48 · 75.5 | 1.95× · 1.62× |
+| 120 | **4,878 · 13.9 · 51.5** (KV peak bounded) | ~5,870 (interp.) | — | — | — |
+| 144 | 4,562 · 21.5 · 67.6 (post-knee) | 5,920 · 0.42 · 6.9 | 2,078 · 49.7 · 262 (56 err) | 3,501 · 18.8 · 105 | 2.20× · 1.69× |
+| 192 | 2,707 · 63.7 · 141 | 5,613 · 1.93 · 13.4 | 1,931 · 83.4 · 232 | 3,363 · 30.6 · 134 | 1.40× · 1.67× |
+| 288 | 2,489 · 97.5 · 247 | 4,947 · 4.07 · 20.6 | ~~1,754 · 132 · 327~~ INVALID | 3,065 · 51.1 · 187 | — · 1.61× |
+
+### What the table says
+
+1. **Throughput drift is moderate; TTFT drift is enormous, and it is KV-specific.**
+   Real/sim throughput: KV 0.76–0.83× (c48–144), RR 0.59–0.72×. But real KV TTFT p50 is
+   **23× (c48), 50× (c96), 51× (c144)** the sim's; p99 is 8–10×. For RR the p50 gap is
+   only 2.6–3.7× and p99 1.5–2.5×. The sim's KV TTFT (0.14–0.42 s through c144) is
+   essentially "prefill of the uncached suffix with no waiting" — it models the
+   placement benefit (hit rate) but not the **prefill-tier queue** that the kv:144
+   profiling measured directly (10 requests queued per prefill worker, tier 92% busy).
+   RR's TTFT is dominated by recompute, which the sim does model, so RR drifts less.
+2. **The sim therefore overstates KV's *latency* advantage and understates its
+   *throughput* advantage.** Sim RR/KV p50 ratio: 18× (c48) → 45× (c96–144); real: 2.8×
+   → 2.3×. Sim KV/RR throughput gain 1.5–1.7×; real 1.56× → **1.95× (c96) → 2.20×
+   (c144)**, growing with load as RR loses more to recompute and, from c144, to
+   transfer failures.
+3. **Real KV tail latency at the bounded peak is high**: p99 51 s at c120 (p50 13.9 s).
+   That is the price of queue-stationary operation deep in the concurrency range —
+   the study reports it and does not gate on it (no SLO gate); a deployment with a
+   TTFT SLO would pick a lower cell (c24: p50 0.8 s / p99 16 s at 2,672 tok/s).
+4. **Knee locations agree better than latencies**: sim KV p50 turns super-linear at
+   c144–192, real KV knees at c120→144 — matched within one step (see
+   `KNEE_ANALYSIS.md`), even though the absolute TTFT is off by 20–50×. The sim's
+   *shape* is right; its *queueing constant* is missing.
+
+For the sim: the v3 recalibration (from measured 0.5.16 silicon) needs a prefill-tier
+queueing term — a per-worker service model with the measured ~10-deep queue at c144 —
+not just the decode-slope and hit-rate corrections identified on agg.
+
 ## Knee points — simulation vs silicon (KV / RR, agg / disagg)
 
 Full analysis: [KNEE_ANALYSIS.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/KNEE_ANALYSIS.md). Same rule both worlds —
