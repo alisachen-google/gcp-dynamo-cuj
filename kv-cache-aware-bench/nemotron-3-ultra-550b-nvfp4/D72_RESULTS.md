@@ -427,6 +427,56 @@ domain-availability wait in progress.
 
 
 
+
+## KV vs RR (disagg 6:12, MNNVL) — same configuration, and same SLO
+
+### Same configuration (identical fleet, flags, trace; only the router differs)
+
+Output tok/s and TTFT (s) from the aiperf summaries; gain = KV/RR throughput; TTFT ratios = RR/KV
+(how many times longer RR's TTFT is). Knee from `knee_check.py`. KV c48–c512 are fleet-instance-2
+re-runs; RR (all) and KV c12/c24 are instance-1 (rr:48 / rr:96 re-verification in progress) —
+so the c48/c96 gains mix instances and are upper bounds until the RR re-runs land.
+
+| conc | **KV** tok/s · p50 · p95 · p99 · knee | **RR** tok/s · p50 · p95 · p99 · knee | thr gain | TTFT p50 | TTFT p95 |
+|---|---|---|---|---|---|
+| 12 | 1,734 · 0.37 · 2.8 · 7.4 · AT/PRE | 1,381 · 1.32 · 13.6 · 19.8 · AT/PRE | **1.26×** | 3.6× | 4.9× |
+| 24 | 2,672 · 0.79 · 8.7 · 16.3 · AT/PRE | 1,980 · 3.10 · 19.8 · 30.7 · AT/PRE | **1.35×** | 3.9× | 2.3× |
+| 48 | 4,684 · 1.01 · 10.0 · 19.3 · AT/PRE | 2,286 · 9.03 · 43.9 · 62.9 · POST | **2.05×** | 8.9× | 4.4× |
+| 96 | 4,807 · 9.57 · 33.6 · 47.3 · AT/PRE | 2,460 · 23.9 · 81.9 · 132 · POST | **1.95×** | 2.5× | 2.4× |
+| 120 | 4,878 · 13.9 · 38.6 · 51.5 · AT/PRE | — | — | — | — |
+| 144 | 4,562 · 21.5 · 49.1 · 67.7 · POST | 2,078 · 49.9 · 196 · 299 · POST (0.8% err) | 2.20× | 2.3× | 4.0× |
+| 192 | 2,707 · 63.7 · 119 · 141 · POST | 1,931 · 83.4 · 207 · 232 · POST | 1.40× | 1.3× | 1.7× |
+| 288 | 2,489 · 97.5 · 176 · 247 · POST | INVALID (1.4% transfer failures) | — | — | — |
+
+- **Both-bounded cells** (framing 1): c12 and c24 — KV 1.26× / 1.35× throughput at 3.6–3.9× lower
+  TTFT p50. **Each policy at its own knee** (framing 2): KV peak bounded 4,878 @c120 vs RR peak
+  bounded 1,980 @c24 → **2.46×**. RR knees at c24→48; KV at c120→144.
+- The gain grows with load (1.26× → 2.05× at c48) because RR's recompute cost scales with
+  concurrency while KV's placement keeps prefill mostly cached; past RR's knee the gain is
+  capped by RR's own saturation, and from c144 RR also loses requests to transfer timeouts.
+
+### Same SLO (framing 3): fix a TTFT p95 budget, compare each policy's best compliant throughput
+
+Compliant = TTFT p95 ≤ budget **and** queue-stationary (at/pre-knee) **and** 0 request errors.
+Concurrency is free per policy. (Latency is reported, never used to gate boundedness — this
+table is the deployment-facing view, as in `SLO_COMPARISON.md` for agg.)
+
+| TTFT p95 SLO | **KV** best compliant | **RR** best compliant | KV impact |
+|---|---|---|---|
+| **≤ 5 s** | **1,734 tok/s @c12** (2.8 s) | **none** — RR misses 5 s even at c12 (13.6 s) | **servable vs not servable** |
+| ≤ 10 s | **4,684 @c48** (10.0 s, at the limit; 2,672 @c24 strictly under) | none (c12 13.6 s) | servable vs not |
+| ≤ 20 s | 4,684 @c48 | 1,980 @c24 (19.8 s) | **2.37×** |
+| ≤ 40 s | **4,878 @c120** (38.6 s) | 1,980 @c24 (c48 is 43.9 s *and* post-knee) | **2.46×** |
+| ≤ 60 s | 4,878 @c120 (c144 is post-knee) | 1,980 @c24 | 2.46× |
+| ≤ 60 s, p95 only (knee gate dropped) | 4,878 @c120 | 2,286 @c48 (43.9 s) | 2.13× |
+
+Reading: under any interactive SLO (≤ 10 s p95) the router flag is binary for disagg N3U —
+KV serves the workload, RR does not, exactly as on agg. At relaxed budgets KV converts the
+same latency budget into **2.4–2.5× the tokens and 5× the concurrent streams** (c120 vs c24).
+The mechanism is the one profiled at kv:144: placement keeps the prefill queue short (89%
+cached-token share), while RR recomputes most of each turn's prefix and backs the prefill
+tier up at a quarter of the concurrency.
+
 ## KV vs RR — real jobs vs DynoSim v1: throughput and TTFT p50 / p99 (disagg 6:12 MNNVL)
 
 Real = aiperf summaries (instance-2 reproduced runs from c48 up; c12–24 and RR ≤c96 are
