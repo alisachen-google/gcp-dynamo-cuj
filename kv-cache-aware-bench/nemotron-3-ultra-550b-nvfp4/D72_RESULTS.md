@@ -244,13 +244,20 @@ vs NVLink cuda_ipc, `scripts/gdr-reproducer/`). The new-stack agg re-sweep
 
 | point | fleet instance 1 (2026-09-12/13) | fleet instance 2 (2026-09-14/15) |
 |---|---|---|
+| kv:48 | 3,573 (49.6/GPU) · AT/PRE · 3.2 s · 10,976 req | **4,684 (65.1/GPU) · TTFT p50 1.0 s · 14,823 req · 0 err** (re-verified 2026-09-15) |
 | kv:96 | 3,691 · POST-knee · TTFT 16 s growing · 11,551 req | **4,807 (66.8/GPU) · AT/PRE · 9.6 s stationary · 15,331 req · 0 err** |
 | kv:120 | — | **4,878 (67.7/GPU) · AT/PRE · 13.9 s stationary · 15,642 req · 0 err** |
 | kv:144 | 6,221 (86.4/GPU) · AT/PRE · 11.5 s — **not reproduced** | **4,562 (63.4/GPU) · POST-knee · 21.5 s (stationary, saturated) · 14,699 req · 1 err** |
+| kv:384 | — | 3,082 (42.8/GPU) · POST-knee · 108 s · 10,256 req · 0 err |
+| kv:512 | — | 3,495 (48.5/GPU) · POST-knee · 120 s · 11,792 req · 0 err |
 
-**Outcome.** Instance 1 was inconsistent in *both* directions (−25% at c96, +36% at
-c144); instance 2 gives a smooth curve: 4,807 (c96) → **4,878 (c120, peak bounded)** →
-4,562 (c144, post-knee). The 6,221 point does not reproduce and is disregarded.
+**Outcome.** Instance 1 was low across the ladder (−31% at c48, −25% at c96) and high once
+(+36% at c144); instance 2 gives a smooth, nearly flat curve: **4,684 (c48) → 4,807 (c96)
+→ 4,878 (c120, peak bounded) → 4,562 (c144, post-knee)** → 3,082 / 3,495 (c384 / c512,
+saturated). The 6,221 point does not reproduce and is disregarded. **Operating-point
+note:** KV delivers 65.1/GPU already at c48 with TTFT p50 **1.0 s**, vs 67.7/GPU at the
+c120 peak with p50 13.9 s — 96% of peak throughput at 14× lower latency; c48 is the
+sensible deployment cell.
 
 **Revised disagg-vs-agg verdict: parity at the bounded operating point.** KV disagg
 peak-bounded **67.7 tok/s/GPU (c120) vs agg 69.0 (c32) = 0.98×**. Post-knee ceilings
@@ -378,6 +385,11 @@ extrapolation above the DB's newest real point. No AIC release ships a
 by an AIC re-solve.
 
 ### 4. Topology
+**9:9 on MNNVL, kv:48 (2026-09-15): 4,555 tok/s (63.3/GPU), TTFT p50 0.56 s, 14,286 req,
+0 err — vs 6:12 kv:48 4,684 (65.1/GPU), p50 1.0 s.** At c48 the two splits are within 3%
+on throughput, with 9:9 lower-latency (more prefill workers → shorter prefill queue).
+9:9 kv:96 / kv:144 (6:12's peak region) are queued to decide the split at the peak.
+
 6:12 is the optimal split among all silicon-measured splits (6:12 ≫ 3:15 on
 host-staged; 6:12 complete on MNNVL). The sim-preferred 9:9 is being verified
 on MNNVL (KV c48/96/144, peak-bounded tok/s/GPU vs 6:12's 49.6) — first
