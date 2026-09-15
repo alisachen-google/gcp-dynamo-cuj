@@ -36,7 +36,7 @@ table{border-collapse:collapse;font:13px "IBM Plex Mono",ui-monospace,monospace;
 </div>
 <div class="tiles">
   <div class="tile"><div class="k">Best ≥ 30 tok/s/user P90</div><div class="v">9,914</div><div class="n">total tok/s/chip · disagg 6:12 KV c48 · 32.5 tok/s/user · TTFT p50 1.0 s</div></div>
-  <div class="tile"><div class="k">Best ≥ 20 tok/s/user P90</div><div class="v">9,914</div><div class="n">still disagg KV c48 — agg KV c16 gives 9,026 at 23.5</div></div>
+  <div class="tile"><div class="k">Best ≥ 20 tok/s/user P90</div><div class="v">13,729</div><div class="n">disagg 9:9 KV c96 · 24.1 tok/s/user · TTFT p50 0.96 s · beats agg's bounded peak (11,800 @19.4)</div></div>
   <div class="tile"><div class="k">Agg bounded peak</div><div class="v">11,800</div><div class="n">agg KV c32 · 19.4 tok/s/user · 1.19× disagg on tokens, 0.6× on interactivity</div></div>
 </div>
 <details><summary>Table view</summary><div class="tw"><table id="tbl"></table></div></details>
@@ -46,7 +46,7 @@ table{border-collapse:collapse;font:13px "IBM Plex Mono",ui-monospace,monospace;
 const S={
  d612kv:{name:"disagg 6:12 KV",c:"--s1",pol:"kv",pts:[[48,9914,65.1,32.5,"AT/PRE",1.0],[96,9359,66.8,33.0,"AT/PRE",9.6],[120,9338,67.8,32.7,"AT/PRE",13.9],[144,8379,63.4,33.7,"POST",21.5],[384,4602,42.8,40.9,"POST",108],[512,5075,48.5,40.5,"POST",120]]},
  d612rr:{name:"disagg 6:12 RR",c:"--s1",pol:"rr",pts:[[48,5001,31.8,44.3,"POST",9.0],[96,4301,34.2,43.9,"POST",23.9],[144,3214,28.9,42.0,"POST",49.9]]},
- d99kv:{name:"disagg 9:9 KV",c:"--s3",pol:"kv",pts:[[48,9571,63.3,29.9,"AT/PRE",0.56]]},
+ d99kv:{name:"disagg 9:9 KV",c:"--s3",pol:"kv",pts:[[48,9571,63.3,29.9,"AT/PRE",0.56],[96,13729,91.1,24.1,"AT/PRE",0.96]]},
  aggkv:{name:"agg 24 KV",c:"--s2",pol:"kv",agg:true,pts:[[16,9026,51.9,23.5,"AT/PRE",0.56],[32,11800,69.0,19.4,"AT/PRE",0.62],[64,13194,85.2,13.7,"POST",1.1],[128,9849,80.1,11.5,"POST",28.8]]},
  aggrr:{name:"agg 24 RR",c:"--s2",pol:"rr",agg:true,pts:[[32,6925,41.4,11.7,"AT/PRE",1.4],[64,7109,47.5,8.2,"POST",5.1]]}
 };

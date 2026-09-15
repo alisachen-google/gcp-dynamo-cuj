@@ -355,7 +355,7 @@ i.e. ~0.35–0.5 s at the p95 rate vs ~2.4 s on host-staged (0.28–0.34 GB/s, r
 + TTFT floor). Transfer is therefore no longer the binding constraint on MNNVL — the
 prefill tier's compute queue is (see profiling at kv:144).
 
-### 2. Disagg-vs-agg — revised verdict: PARITY on tok/s/GPU at the bounded point (0.98×); agg wins post-knee (1.25×); **disagg wins on interactivity (P90 ~33 vs 19–24 tok/s/user, see AGENTX_COMPARISON.md §4)**
+### 2. Disagg-vs-agg — 6:12: parity on tok/s/GPU (0.98×), disagg wins interactivity (1.7×); **9:9 (2026-09-15): disagg wins outright at c96 — 1.32× output, 1.16× total tokens/chip, higher interactivity (see §4)**
 agg bounded reference **69.0 tok/s/GPU** (KV c32, 24 GPU); agg post-knee 85.
 - KV disagg peak bounded **49.6/GPU** vs agg **69.0** → **agg wins 1.39×**.
 - Post-knee ceilings: disagg 51.3 vs agg 85 → agg wins 1.66×.
@@ -412,13 +412,27 @@ extrapolation above the DB's newest real point. No AIC release ships a
 **DynoSim v3 recalibration from measured 0.5.16 silicon** (agg + disagg), not
 by an AIC re-solve.
 
-### 4. Topology
-**9:9 on MNNVL, kv:48 (2026-09-15): 4,555 tok/s (63.3/GPU), TTFT p50 0.56 s, 14,286 req,
-0 err — vs 6:12 kv:48 4,684 (65.1/GPU), p50 1.0 s.** At c48 the two splits are within 3%
-on throughput, with 9:9 lower-latency (more prefill workers → shorter prefill queue).
-9:9 kv:96 / kv:144 (6:12's peak region) are queued to decide the split at the peak.
+### 4. Topology — 9:9 beats 6:12 on MNNVL (the transport shifted the optimum)
 
-6:12 is the optimal split among all silicon-measured splits (6:12 ≫ 3:15 on
+| split | kv:48 | kv:96 | kv:144 |
+|---|---|---|---|
+| **6:12** (24P/48D) | 4,684 (65.1/GPU) · p50 1.0 s · AT/PRE | 4,807 (66.8) · 9.6 s · AT/PRE | 4,562 (63.4) · 21.5 s · POST |
+| **9:9** (36P/36D) | 4,555 (63.3) · 0.56 s · AT/PRE | **6,560 (91.1) · 0.96 s · p95 8.5 s · AT/PRE · 21,125 req · 0 err** | running |
+
+At c48 the two splits are within 3% (decode-heavy 6:12 marginally ahead); at c96 **9:9 delivers
+1.36× the throughput at 10× lower TTFT p50 and is still queue-stationary** — its knee lies above
+c96 (kv:144 in progress). This is the prediction of the kv:144 profiling on 6:12: the prefill
+tier was the binding constraint (92% busy, 10-deep queue) while 48 decode GPUs sat at 15% slot
+occupancy; moving 3 workers from decode to prefill relieves exactly that. Under host-staged
+transfer, prefill-heavy splits lost (3:15 ≫ 6:12 ≫ 9:9 direction) because every extra prefill
+worker added expensive hand-offs; on NVLink the hand-off is cheap, so the optimum moves toward
+the balanced split. **9:9 at c96 also exceeds agg's bounded peak — 1.32× on output tokens
+(91.1 vs 69.0/GPU), 1.16× on total tokens (13,729 vs 11,800/chip) — with higher P90
+interactivity (24.1 vs 19.4 tok/s/user)**, so the §2 "parity" verdict is superseded for the
+9:9 split: *disaggregated 9:9 KV beats aggregated on every axis at c96*, pending (a) the 9:9
+knee (kv:144) and (b) the new-stack agg re-sweep for a version-consistent reference.
+
+Previously: 6:12 is the optimal split among all silicon-measured splits (6:12 ≫ 3:15 on
 host-staged; 6:12 complete on MNNVL). The sim-preferred 9:9 is being verified
 on MNNVL (KV c48/96/144, peak-bounded tok/s/GPU vs 6:12's 49.6) — first
 attempt failed at 0/9 prefill pods (three stale ComputeDomains held the
