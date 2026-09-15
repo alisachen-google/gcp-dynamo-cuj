@@ -23,6 +23,9 @@ say() { echo "[$(date -u +%F' '%H:%M:%S)] $*" >> "$LOG"; }
 
 say "ctx=$(kubectl config current-context) — v2 9:9 verification start"
 [ "$(kubectl config current-context)" = "<cluster>" ] || { say "WRONG CONTEXT — abort"; exit 1; }
+say "waiting for 6:12 re-verification (N3U MNNVL REPRO2 DONE) before claiming the domain"
+until grep -q "N3U MNNVL REPRO2 DONE" /tmp/resweep_mnnvl_repro2.log 2>/dev/null; do
+  grep -qE "VIOLATION|HALTING|STACK TIMEOUT" /tmp/resweep_mnnvl_repro2.log 2>/dev/null && { say "repro2 halted — proceeding to 9:9 anyway (6:12 data is banked)"; break; }; sleep 300; done
 
 # ---- pre-flight: clear OUR stale fleets + ComputeDomains (never other tenants') ----
 say "pre-flight: removing our stale fleets/CDs"

@@ -239,15 +239,26 @@ vs NVLink cuda_ipc, `scripts/gdr-reproducer/`). The new-stack agg re-sweep
 | 288 | 2,489 (34.6) · 97.5 s · POST · 0% | ~~1,754~~ **INVALID** — 83/5,782 requests failed (1.4%): `Decode transfer failed` burst at 16:31 (mooncake transfer timeouts under 78 s p50 / 294 s p99 queueing); runner halted per transport policy | 4,947 | 1.99× |
 | 384 / 512 | KV pending (queued after reproduction) | not run — RR already fails transfers at c288 | 4,397 / 3,703 | — |
 
-**The c144 KV point needs reproduction before it is banked.** 6,221 tok/s (86.4/GPU,
-above agg's 69 bounded) sits between a POST-knee c96 (3,691, TTFT 16 s) and a
-collapsed c192 (2,707) — a 1.69× rise then a 2.3× fall, with *lower* TTFT than c96
-under 1.5× the load. It is physically plausible: the live capture at c144 shows both
-tiers fully busy (prefill 92% / decode 99.6% GPU util) and an 89% cached-token share,
-and it lands within 5% of the sim (5,920). But the c96 neighbour (yesterday's fleet
-instance) contradicts it. Reproduction runs kv:96 / kv:120 / kv:144 on the current
-fleet are in progress; the disagg-vs-agg verdict in §2 stands on the c48 peak
-(49.6/GPU) until they land, and flips only if c144 reproduces.
+**Reproduction (2026-09-15, same fleet instance as c144–288): instance 1 was degraded, not c144.**
+
+| point | fleet instance 1 (2026-09-12/13) | fleet instance 2 (2026-09-14/15) |
+|---|---|---|
+| kv:96 | 3,691 · POST-knee · TTFT 16 s growing · 11,551 req | **4,807 (66.8/GPU) · AT/PRE · 9.6 s stationary · 15,331 req · 0 err** |
+| kv:120 | — | **4,878 (67.7/GPU) · AT/PRE · 13.9 s stationary · 15,642 req · 0 err** |
+| kv:144 | — | 6,221 (86.4/GPU) · AT/PRE · 11.5 s · 0 err — *re-run in progress* |
+
+Instance 1 ran ~25–30% low at c96 and mis-verdicted it as post-knee. Consequences:
+(a) the KV peak-bounded point is **at least 4,878 tok/s @c120 = 67.7/GPU — parity
+with agg's 69.0 bounded (0.98×)** — so the §2 "agg wins 1.39×" verdict, which rests
+on instance-1 cells, is **withdrawn pending re-verification**; (b) c12–48 and all RR
+points came from instance 1, so kv:48 / rr:48 / rr:96 are being re-run on the
+healthy fleet before the arm-level verdicts are re-issued. Sim drift at c96–120
+narrows to ~0.83× (real/sim), from 0.63× on instance 1. The cause of instance 1's
+under-performance is not yet isolated (candidates: an unhealthy worker, router
+state); cache warmth is excluded (both instances had 8+ prior points and 900 s
+warmups). Reported as run-to-run variance between fleet instances — the study's
+per-point protocol did not catch it because knee verdicts are intra-run; a
+cross-instance repeat of one anchor cell is being added to the protocol.
 
 **RR at deep saturation fails, not just slows.** From c144 on, RR shows request
 errors (0.8% at c144, 1.4% at c288) from KV-transfer timeouts while queued behind
@@ -292,7 +303,7 @@ c12. KV throughput +24–31% through c48, shrinking to +8% at c96 — because KV
 *grows* with load (1.22 → 1.41×): RR's poorer placement keeps it
 transfer-limited longer. Transfer tax removal is real but bounded.
 
-### 2. Disagg-vs-agg — the architecture verdict: NVLink does NOT flip it
+### 2. Disagg-vs-agg — verdict WITHDRAWN pending re-verification (see Extended concurrency → Reproduction)
 agg bounded reference **69.0 tok/s/GPU** (KV c32, 24 GPU); agg post-knee 85.
 - KV disagg peak bounded **49.6/GPU** vs agg **69.0** → **agg wins 1.39×**.
 - Post-knee ceilings: disagg 51.3 vs agg 85 → agg wins 1.66×.
