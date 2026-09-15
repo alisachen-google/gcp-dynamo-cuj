@@ -19,11 +19,12 @@ for pod in $(kubectl get pods -n $NS --no-headers 2>/dev/null | grep -E "$PAT" |
   ctr=prefill; echo "$pod" | grep -q decode && ctr=decode; checked=$((checked+1))
   log=$(kubectl logs -n $NS "$pod" -c $ctr --tail=40000 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g')
   # NEG: real transfer failures / fallback (mooncake + sglang disagg + any UCX/NIXL remnants)
-  # (mooncake's "[Staging] Falling back to per-token" is a benign buffer-sizing mode, not a transport fallback -> excluded)
-  neg=$(echo "$log" | grep -E "Decode transfer failed|Prefill transfer failed|transfer failed|REMOTE_DISCONNECT|NIXL_ERR|falling back|fallback to tcp|KVTransferError" | grep -vi "per-token")
+  # exact failure signatures only (generic "transfer failed"/"falling back" matched ~361 benign
+  # startup lines on fresh prefill pods with 0 request errors -> false halts on 2026-09-15)
+  neg=$(echo "$log" | grep -E "Decode transfer failed for request|Prefill transfer failed for request|KVTransferError|REMOTE_DISCONNECT|NIXL_ERR|fallback to tcp")
   if [ -n "$neg" ]; then
     n=$(echo "$neg" | wc -l)
-    echo "MNNVL-GUARD VIOLATION [$pod]: $n transfer-failure/fallback lines"; viol=1
+    echo "MNNVL-GUARD VIOLATION [$pod]: $n transfer-failure lines; e.g.: $(echo "$neg" | head -2 | cut -c1-160 | tr '\n' '|')"; viol=1
   fi
   # POS1: mooncake actually moved bytes (prefill side sends; decode side may report 0)
   te=$(echo "$log" | grep -oE "Transfer Engine Stats.*Throughput: [0-9.]+ MB/s" | grep -oE "[0-9.]+ MB/s" | awk '{if($1>m)m=$1} END{print m+0}')

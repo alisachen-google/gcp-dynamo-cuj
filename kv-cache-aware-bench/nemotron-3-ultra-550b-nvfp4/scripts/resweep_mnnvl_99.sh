@@ -17,21 +17,17 @@ TMPL=$HOME/kv-cache-aware-bench/manifests/perf/sgl-d72-flagsweep.yaml
 GUARD=$HOME/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/mnnvl_transport_guard.sh
 N3U_DIR=/model-cache/alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4
 N3U_SERVED=alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4
-POINTS="48 96 144"
+POINTS="${POINTS_OVERRIDE:-48 96 144}"
 NEED_NODES=18
 say() { echo "[$(date -u +%F' '%H:%M:%S)] $*" >> "$LOG"; }
 
 say "ctx=$(kubectl config current-context) — v2 9:9 verification start"
 [ "$(kubectl config current-context)" = "<cluster>" ] || { say "WRONG CONTEXT — abort"; exit 1; }
-say "waiting for 6:12 re-verification (N3U MNNVL REPRO2 DONE) before claiming the domain"
-until grep -q "N3U MNNVL REPRO2 DONE" /tmp/resweep_mnnvl_repro2.log 2>/dev/null; do
-  grep -qE "VIOLATION|HALTING|STACK TIMEOUT" /tmp/resweep_mnnvl_repro2.log 2>/dev/null && { say "repro2 halted — proceeding to 9:9 anyway (6:12 data is banked)"; break; }; sleep 300; done
-
 # ---- pre-flight: clear OUR stale fleets + ComputeDomains (never other tenants') ----
 say "pre-flight: removing our stale fleets/CDs"
 for d in n3u-mnnvl-full-prefill n3u-mnnvl-full-decode n3u-mnnvl-full-frontend \
          n3u-mnnvl-99-prefill n3u-mnnvl-99-decode n3u-mnnvl-99-frontend \
-         n3u-mnnvl-prefill n3u-mnnvl-decode n3u-mnnvl-frontend n3u-agg-ns n3u-agg-ns-frontend; do
+         n3u-mnnvl-prefill n3u-mnnvl-decode n3u-mnnvl-frontend; do
   kubectl delete deployment/$d -n $NS --ignore-not-found --wait=false >> "$LOG" 2>&1
 done
 for cd in n3u-mnnvl-full-cd n3u-mnnvl-99-cd n3u-mnnvl-cd; do
