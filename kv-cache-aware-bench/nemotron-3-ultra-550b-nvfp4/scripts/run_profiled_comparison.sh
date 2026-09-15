@@ -23,21 +23,21 @@ tps(){ kubectl logs -n $NS -l job-name=$1 2>/dev/null | grep -iE "Output Token T
 free_nodes(){ n=0; for node in $(kubectl get nodes -l cloud.google.com/gke-nodepool=np-3 -o name); do node=${node#node/}; u=$(kubectl describe node "$node" | awk '/Allocated resources/,0' | grep "nvidia.com/gpu" | awk '{print $2}'); [ "${u:-0}" = "0" ] && n=$((n+1)); done; echo $n; }
 
 say "waiting for agg re-sweep (N3U AGG NEWSTACK SWEEP DONE)"
-until grep -q "N3U AGG NEWSTACK SWEEP DONE" /tmp/resweep_agg_newstack.log 2>/dev/null; do
-  grep -qE "HALTING|STACK TIMEOUT|SMOKE FAIL" /tmp/resweep_agg_newstack.log 2>/dev/null && { say "agg re-sweep halted — not proceeding"; exit 1; }; sleep 300; done
+until [ -f /tmp/AGG_NEWSTACK_PAR_DONE ]; do
+  grep -qE "HALTING|STACK TIMEOUT|SMOKE FAIL" /tmp/resweep_agg_par.log 2>/dev/null && { say "agg re-sweep halted — not proceeding"; exit 1; }; sleep 300; done
 kubectl scale deployment -n $NS -l 'app in (n3u-agg-ns,n3u-agg-ns-frontend)' --replicas=0 >> "$LOG" 2>&1; sleep 90
 
 # ---- A: agg KV c32 ----
 say "=== A: profiled AGG KV c32"
 kubectl apply -n $NS -f $HOME/kv-cache-aware-bench/sglang/manifests/n3u-agg-prof.yaml >> "$LOG" 2>&1
-for d in n3u-agg-prof-frontend n3u-agg-prof; do kubectl rollout status deployment/$d -n $NS --timeout=3600s >> "$LOG" 2>&1 || { say "STACK TIMEOUT $d"; exit 1; }; done
+for d in n3u-agg-prof-frontend n3u-agg-prof-worker; do kubectl rollout status deployment/$d -n $NS --timeout=3600s >> "$LOG" 2>&1 || { say "STACK TIMEOUT $d"; exit 1; }; done
 register n3u-agg-prof; sleep 60
 bench n3u-agg-prof 32 alisachen-n3u-agg-prof-kv-c32
-bash "$CAP" n3u-agg-prof "$OUT/agg-kv-c32" 3300 >> "$LOG" 2>&1 &
+bash "$CAP" n3u-agg-prof-worker "$OUT/agg-kv-c32" 3300 >> "$LOG" 2>&1 &
 st=$(waitjob alisachen-n3u-agg-prof-kv-c32); ATPS=$(tps alisachen-n3u-agg-prof-kv-c32); say "A done (job=$st) tok/s=$ATPS"; wait
 [ "$st" != "Complete" ] && { say "A BENCH FAIL - HALTING"; exit 2; }
 python3 $HOME/kv-cache-aware-bench/sglang/scripts/knee_check.py n3u-agg-prof-kv-c32 >> "$LOG" 2>&1 || true
-for d in n3u-agg-prof-frontend n3u-agg-prof; do kubectl delete deployment/$d -n $NS --wait=false >> "$LOG" 2>&1; done; sleep 120
+for d in n3u-agg-prof-frontend n3u-agg-prof-worker; do kubectl delete deployment/$d -n $NS --wait=false >> "$LOG" 2>&1; done; sleep 120
 
 # ---- B: disagg 6:12 KV c48 ----
 say "=== B: profiled DISAGG 6:12 KV c48"

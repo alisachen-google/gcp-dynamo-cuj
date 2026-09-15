@@ -2,15 +2,14 @@
 # N3U 24-GPU AGG re-sweep on the latest+workable stack (SGLang 0.5.16 / Dynamo
 # 1.4.2 / FlashInfer 0.6.18, base image v0.5.19) — for a version-consistent
 # agg<->disagg comparison and old-stack (0.5.14/1.3.1) vs new-stack drift.
-# GATED behind BOTH disagg sweeps finishing (shared GPUs). SMOKE-FIRST: the new
+# PARALLEL variant: runs on np-1 immediately (agg needs 6 nodes, not the MNNVL domain). SMOKE-FIRST: the new
 # stack is validated for disagg, not agg, so a c32 smoke + hybrid-reuse probe
 # must pass before the full ladder commits ~6h. kv/rr x 16/32/64/128.
 set -u
-[ -f /tmp/AGG_NEWSTACK_PAR_DONE ] || [ -f /tmp/AGG_NEWSTACK_PAR_RUNNING ] && { echo "agg new-stack sweep already running/done in parallel on np-1 — skipping chained run"; exit 0; }
 export KUBECONFIG=$HOME/kv-cache-aware-bench/.kubeconfig-cmcs-pinned
 NS=dynamo-cloud
 ARM=n3u-agg-ns
-LOG=/tmp/resweep_agg_newstack.log
+LOG=/tmp/resweep_agg_par.log
 TMPL=$HOME/kv-cache-aware-bench/manifests/perf/sgl-d72-flagsweep.yaml
 N3U_DIR=/model-cache/alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4
 N3U_SERVED=alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4
@@ -54,14 +53,8 @@ run_point() {  # $1=policy $2=conc ; returns job status in $st
   done
 }
 
-say "waiting for both disagg sweeps to finish (N3U MNNVL 99 SWEEP DONE) to free GPUs"
-until grep -q "N3U MNNVL 99 SWEEP DONE" /tmp/resweep_mnnvl_99.log 2>/dev/null; do
-  grep -qE "VIOLATION|HALTING|STACK TIMEOUT" /tmp/resweep_mnnvl_99.log 2>/dev/null && { say "9:9 sweep HALTED — NOT proceeding (inspect first)"; exit 1; }
-  sleep 300
-done
-say "tearing down any residual disagg fleets, deploying new-stack agg"
-kubectl scale deployment -n $NS -l 'app in (n3u-mnnvl-full-prefill,n3u-mnnvl-full-decode,n3u-mnnvl-full-frontend,n3u-mnnvl-99-prefill,n3u-mnnvl-99-decode,n3u-mnnvl-99-frontend)' --replicas=0 >> "$LOG" 2>&1
-sleep 120
+touch /tmp/AGG_NEWSTACK_PAR_RUNNING
+say "PARALLEL agg new-stack sweep on np-1 (disagg chain untouched on np-3)"
 kubectl apply -n $NS -f $HOME/kv-cache-aware-bench/sglang/manifests/n3u-agg-newstack.yaml >> "$LOG" 2>&1
 for d in ${ARM}-frontend ${ARM}-worker; do
   kubectl rollout status deployment/$d -n $NS --timeout=3600s >> "$LOG" 2>&1 || { say "STACK TIMEOUT: $d — new stack may not serve N3U agg; HALTING"; exit 1; }
@@ -95,4 +88,4 @@ for point in $POINTS; do
   python3 "$HOME/kv-cache-aware-bench/sglang/scripts/knee_check.py" "${ARM}-${v}-c${C}" >> "$LOG" 2>&1 || true
 done
 kubectl scale deployment/${ARM}-frontend ${ARM}-worker -n $NS --replicas=0 >> "$LOG" 2>&1
-say "N3U AGG NEWSTACK SWEEP DONE"
+say "N3U AGG NEWSTACK SWEEP DONE"; touch /tmp/AGG_NEWSTACK_PAR_DONE; rm -f /tmp/AGG_NEWSTACK_PAR_RUNNING
