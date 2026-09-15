@@ -196,6 +196,21 @@ tail-sensitive deployments, not a throughput optimization.
 Method: substitute measured component rates into DynoSim one step at a time at
 c16/c32 and observe which substitution closes the gap.
 
+How to read the table: every cell is **simulated ÷ measured throughput** for one
+agg cell (1.00× = exact; 1.89× = sim over-predicts by 89%; 0.80× = sim
+under-predicts by 20%). The four columns are the four bounded (pre-knee)
+silicon cells used for calibration — KV-aware router at c16 and c32, round-robin
+at c16 and c32 — chosen because both sim and silicon agree they are
+queue-stationary there, so throughput is comparable without queue growth. The
+rows are successive simulator variants, each substituting one more measured
+quantity: **v1** is the untouched AIC-seeded model; **decode substituted**
+replaces only the decode-step cost (AIC 5.26 + 0.277·bs ms → measured
+8.9 + 1.73·bs ms) and nothing else; **+ prefill ×0.5 / ×0.25** keep the
+substituted decode and additionally halve / quarter the simulated prefill rate,
+to test whether prefill was also mis-modelled. Reading down a column shows
+which substitution moves the ratio toward 1.0 — decode does almost all of it;
+the prefill rows barely move, so prefill is left at its stock rate.
+
 | Sim variant | KV c16 pred/meas | RR c16 | KV c32 | RR c32 |
 |---|---|---|---|---|
 | v1 (AIC-seeded) | 1.89× | 2.24× | 2.31× | 2.82× |
