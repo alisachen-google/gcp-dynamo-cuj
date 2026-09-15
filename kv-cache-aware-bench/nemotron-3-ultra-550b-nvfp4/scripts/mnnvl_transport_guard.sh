@@ -19,8 +19,10 @@ for pod in $(kubectl get pods -n $NS --no-headers 2>/dev/null | grep -E "$PAT" |
   ctr=prefill; echo "$pod" | grep -q decode && ctr=decode; checked=$((checked+1))
   log=$(kubectl logs -n $NS "$pod" -c $ctr --tail=40000 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g')
   # NEG: real transfer failures / fallback (mooncake + sglang disagg + any UCX/NIXL remnants)
-  if echo "$log" | grep -qE "Decode transfer failed|Prefill transfer failed|transfer failed|REMOTE_DISCONNECT|NIXL_ERR|falling back|fallback to tcp|KVTransferError"; then
-    n=$(echo "$log" | grep -cE "transfer failed|REMOTE_DISCONNECT|NIXL_ERR|falling back|fallback to tcp|KVTransferError")
+  # (mooncake's "[Staging] Falling back to per-token" is a benign buffer-sizing mode, not a transport fallback -> excluded)
+  neg=$(echo "$log" | grep -E "Decode transfer failed|Prefill transfer failed|transfer failed|REMOTE_DISCONNECT|NIXL_ERR|falling back|fallback to tcp|KVTransferError" | grep -vi "per-token")
+  if [ -n "$neg" ]; then
+    n=$(echo "$neg" | wc -l)
     echo "MNNVL-GUARD VIOLATION [$pod]: $n transfer-failure/fallback lines"; viol=1
   fi
   # POS1: mooncake actually moved bytes (prefill side sends; decode side may report 0)
