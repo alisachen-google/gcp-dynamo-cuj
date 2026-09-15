@@ -10,6 +10,7 @@
 | Aggregated technical report | [AGG24_RESULTS.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/AGG24_RESULTS.md) |
 | Knee-point analysis (sim vs silicon, KV/RR, agg/disagg) | [KNEE_ANALYSIS.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/KNEE_ANALYSIS.md) |
 | GPUDirect regression + filed bug | [GPUDIRECT_REGRESSION.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/GPUDIRECT_REGRESSION.md) · [BUG_GPUDIRECT.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/BUG_GPUDIRECT.md) |
+| InferenceX AgentX (dsv4/GB300) vs our study — concurrency semantics, knee, **P90 interactivity** | [AGENTX_COMPARISON.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/AGENTX_COMPARISON.md) |
 | Profiled agg-vs-disagg gap analysis | `profiles/GAP_ANALYSIS.md` (generated when the profiled comparison lands) |
 
 
@@ -353,7 +354,7 @@ i.e. ~0.35–0.5 s at the p95 rate vs ~2.4 s on host-staged (0.28–0.34 GB/s, r
 + TTFT floor). Transfer is therefore no longer the binding constraint on MNNVL — the
 prefill tier's compute queue is (see profiling at kv:144).
 
-### 2. Disagg-vs-agg — revised verdict: PARITY at the bounded point (0.98×); agg still wins post-knee (1.25×)
+### 2. Disagg-vs-agg — revised verdict: PARITY on tok/s/GPU at the bounded point (0.98×); agg wins post-knee (1.25×); **disagg wins on interactivity (P90 ~33 vs 19–24 tok/s/user, see AGENTX_COMPARISON.md §4)**
 agg bounded reference **69.0 tok/s/GPU** (KV c32, 24 GPU); agg post-knee 85.
 - KV disagg peak bounded **49.6/GPU** vs agg **69.0** → **agg wins 1.39×**.
 - Post-knee ceilings: disagg 51.3 vs agg 85 → agg wins 1.66×.
