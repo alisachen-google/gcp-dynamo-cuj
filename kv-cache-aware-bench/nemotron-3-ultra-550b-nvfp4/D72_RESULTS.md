@@ -429,18 +429,20 @@ domain-availability wait in progress.
 
 ## KV vs RR — real jobs vs DynoSim v1: throughput and TTFT p50 / p99 (disagg 6:12 MNNVL)
 
-Real = aiperf summaries (instance-2 reproduced runs from c96 up; c12–48 and RR ≤c96 are
-instance-1 pending re-verification). Sim = DynoSim v1 `kv-nvda` / `rr`, 6:12 grid
-(starts at c48). TTFT in seconds. "—" = not in the sim grid. rr:288 shown but INVALID
+Real = aiperf summaries (instance-2 reproduced runs from c48 up; c12–24 and RR ≤c96 are
+instance-1 pending re-verification). Sim = DynoSim v1 `kv-nvda` / `rr`, 6:12; the c12/24/120
+sim points were added 2026-09-15 (`dynosim_n3u_disagg72_v1_lowconc.csv`, c48 reproduces v1
+exactly). **Pre-knee the sim is near-exact on throughput (KV c12 0.99×, c48 0.99×); the
+drift appears only as the prefill queue builds (c96–144: 0.77–0.83×).** TTFT in seconds. "—" = not in the sim grid. rr:288 shown but INVALID
 (83 transfer failures); rr:144 had 56 errors.
 
 | conc | **Real KV** tok/s · p50 · p99 | **Sim KV** tok/s · p50 · p99 | **Real RR** tok/s · p50 · p99 | **Sim RR** tok/s · p50 · p99 | KV/RR thr gain real · sim |
 |---|---|---|---|---|---|
-| 12 | 1,734 · 0.37 · 7.4 | — | 1,381 · 1.32 · 19.8 | — | 1.26× · — |
-| 24 | 2,672 · 0.79 · 16.3 | — | 1,980 · 3.10 · 30.7 | — | 1.35× · — |
-| 48 | 3,573 · 3.23 · 33.2 | 4,725 · 0.14 · 4.1 | 2,286 · 9.03 · 62.9 | 3,196 · 2.46 · 41.8 | 1.56× · 1.48× |
+| 12 | 1,734 · 0.37 · 7.4 | 1,751 · 0.12 · 3.3 | 1,381 · 1.32 · 19.8 | 1,505 · 0.69 · 10.3 | 1.26× · 1.16× |
+| 24 | 2,672 · 0.79 · 16.3 | 3,026 · 0.13 · 3.7 | 1,980 · 3.10 · 30.7 | 2,433 · 0.89 · 19.9 | 1.35× · 1.24× |
+| 48 | 4,684 · 1.01 · 33.2 (instance 2) | 4,725 · 0.14 · 4.1 | 2,286 · 9.03 · 62.9 | 3,196 · 2.46 · 41.8 | 1.56× · 1.48× |
 | 96 | 4,807 · 9.57 · 47.3 | 5,813 · 0.19 · 6.1 | 2,460 · 23.9 · 132 | 3,595 · 8.48 · 75.5 | 1.95× · 1.62× |
-| 120 | **4,878 · 13.9 · 51.5** (KV peak bounded) | ~5,870 (interp.) | — | — | — |
+| 120 | **4,878 · 13.9 · 51.5** (KV peak bounded) | 5,873 · 0.34 · 7.6 | — | 3,580 · 13.4 · 90.3 | — · 1.64× |
 | 144 | 4,562 · 21.5 · 67.6 (post-knee) | 5,920 · 0.42 · 6.9 | 2,078 · 49.7 · 262 (56 err) | 3,501 · 18.8 · 105 | 2.20× · 1.69× |
 | 192 | 2,707 · 63.7 · 141 | 5,613 · 1.93 · 13.4 | 1,931 · 83.4 · 232 | 3,363 · 30.6 · 134 | 1.40× · 1.67× |
 | 288 | 2,489 · 97.5 · 247 | 4,947 · 4.07 · 20.6 | ~~1,754 · 132 · 327~~ INVALID | 3,065 · 51.1 · 187 | — · 1.61× |

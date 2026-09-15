@@ -59,7 +59,7 @@ th{color:var(--ink2);font-weight:500}
 <div class="tiles">
   <div class="tile"><div class="k">KV peak bounded (MNNVL)</div><div class="v">4,878 tok/s</div><div class="n">c120 · 67.7 per GPU · queue stationary · fleet instance 2</div></div>
   <div class="tile"><div class="k">Aggregated reference</div><div class="v">69.0 / GPU</div><div class="n">24-GPU agg, KV c32, bounded → parity (0.98×); agg wins post-knee 1.25×</div></div>
-  <div class="tile"><div class="k">Sim drift at the KV peak</div><div class="v">0.83×</div><div class="n">real / DynoSim v1 at c120 (4,878 vs ~5,870); knee matched (sim c96–144)</div></div>
+  <div class="tile"><div class="k">Sim drift at the KV peak</div><div class="v">0.83×</div><div class="n">real / DynoSim v1 at c120 (4,878 vs 5,873); pre-knee the sim is exact (c12 0.99×, c48 0.99×)</div></div>
 </div>
 
 <details><summary>Table view (all series)</summary><div class="tw"><table id="tbl"></table></div></details>
@@ -71,8 +71,8 @@ const S={
  mkv:{name:"MNNVL KV-aware",c:"--s1",pts:[[12,1734,"AT/PRE"],[24,2672,"AT/PRE"],[48,3573,"AT/PRE"],[96,4807,"AT/PRE"],[120,4878,"AT/PRE"],[144,4562,"POST"],[192,2707,"POST"],[288,2489,"POST"]]},
  mkv1:{name:"MNNVL KV — fleet instance 1 (superseded)",c:"--ink3",sup:true,pts:[[96,3691,"POST"],[144,6221,"AT/PRE"]]},
  mrr:{name:"MNNVL round-robin",c:"--s2",pts:[[12,1381,"AT/PRE"],[24,1980,"AT/PRE"],[48,2286,"POST"],[96,2460,"POST"],[144,2078,"POST"],[192,1931,"POST"]]},
- skv:{name:"DynoSim v1 KV",c:"--s1",sim:true,pts:[[48,4725],[96,5813],[144,5920],[192,5613],[288,4947],[384,4397],[512,3703],[768,2841]]},
- srr:{name:"DynoSim v1 RR",c:"--s2",sim:true,pts:[[48,3196],[96,3595],[144,3501],[192,3363],[288,3065],[384,2841],[512,2571],[768,2130]]}
+ skv:{name:"DynoSim v1 KV",c:"--s1",sim:true,pts:[[12,1751],[24,3026],[48,4725],[96,5813],[120,5873],[144,5920],[192,5613],[288,4947],[384,4397],[512,3703],[768,2841]]},
+ srr:{name:"DynoSim v1 RR",c:"--s2",sim:true,pts:[[12,1505],[24,2433],[48,3196],[96,3595],[120,3580],[144,3501],[192,3363],[288,3065],[384,2841],[512,2571],[768,2130]]}
 };
 const GPUS=72, AGG_PER_GPU=69.0, XT=[12,24,48,96,120,144,192,288,384,512,768];
 const el=id=>document.getElementById(id);
