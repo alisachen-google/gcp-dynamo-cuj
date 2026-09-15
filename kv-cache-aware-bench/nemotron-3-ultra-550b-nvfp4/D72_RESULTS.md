@@ -303,6 +303,19 @@ c12. KV throughput +24–31% through c48, shrinking to +8% at c96 — because KV
 *grows* with load (1.22 → 1.41×): RR's poorer placement keeps it
 transfer-limited longer. Transfer tax removal is real but bounded.
 
+
+**Measured MNNVL KV transfer rate (mooncake transfer-engine metrics, `MC_TE_METRIC=true`,
+5-s windows, all 6 prefill workers, 6 h of the c96–c384 runs, 15,890 samples):**
+per prefill worker mean **0.44 GB/s**, p50 0.36, p95 **1.06**, p99 1.39, **peak 2.00 GB/s**;
+fleet aggregate ≈ 6.4 GB/s at p95, ≈ 12 GB/s at peak. These are *observed* send rates —
+demand-limited by how much KV is handed off per window — so the 2.0 GB/s peak is a
+lower bound on the cuda_ipc/NVLink path's capacity, not its ceiling (NVLink-5 per-GPU
+bandwidth is three orders of magnitude higher). Per request: mean ISL ≈ 80k tokens ×
+~6 KB/token ≈ 0.48 GB attention KV + ~0.2 GB Mamba state ≈ **0.7 GB per hand-off**,
+i.e. ~0.35–0.5 s at the p95 rate vs ~2.4 s on host-staged (0.28–0.34 GB/s, reproducer
++ TTFT floor). Transfer is therefore no longer the binding constraint on MNNVL — the
+prefill tier's compute queue is (see profiling at kv:144).
+
 ### 2. Disagg-vs-agg — verdict WITHDRAWN pending re-verification (see Extended concurrency → Reproduction)
 agg bounded reference **69.0 tok/s/GPU** (KV c32, 24 GPU); agg post-knee 85.
 - KV disagg peak bounded **49.6/GPU** vs agg **69.0** → **agg wins 1.39×**.
