@@ -201,8 +201,9 @@ domain, sidestepping the fault. Stack: **sglang 0.5.16 + dynamo 1.4.2 +
 flashinfer 0.6.18** (newest runnable pair; base image `lmsysorg/sglang:v0.5.19-cu130-runtime`;
 the old set was 0.5.14+1.3.1), `--disaggregation-transfer-backend mooncake`,
 `MC_FORCE_MNNVL=1`, ComputeDomain channel per worker, no mrdma/NET_DEVICES.
-**Every point transport-gated and PASSED**: cuda_ipc evidence 34k–71k lines per
-point, zero tcp/rdma/host-staged fallback on the data path. Knee verdicts from
+**Every point transport-gated and PASSED** (no transfer failures / fallback on the data
+path; see "Transport verification — what the evidence actually is" below for the
+corrected evidence basis). Knee verdicts from
 per-request timestamp stationarity (`knee_check.py`), zero request errors.
 NOTE: MNNVL-vs-host-staged folds in a minor version bump (0.5.14→0.5.16); the
 clean transport isolation is the same-stack reproducer A/B (0.34 GB/s staged
@@ -295,6 +296,33 @@ Drift attribution for disagg, revised with this evidence:
   happen to be fully fed (c144), real ≈ sim.
 - The AIC decode batch-slope error (agg finding) matters less here: decode runs at
   batch ~10 where the slope difference is small; decode is starved, not slow.
+
+
+### Transport verification — what the evidence actually is (corrected 2026-09-15)
+
+**The MNNVL KV path is mooncake, not UCX.** `--disaggregation-transfer-backend mooncake`
+with `MC_FORCE_MNNVL=1`; the pods contain **0 UCX and 0 NIXL log lines** and 2,812
+mooncake transfer-engine lines. The `UCX_*` variables in the manifest are inert
+carry-overs from the dsv4 recipe. Guard v1's positive check counted `cuda_ipc|mnnvl`
+lines, and the `mnnvl` half matched the deployment *name* (`n3u-mnnvl-full`) inside
+ordinary dynamo request logs — so the "cuda_ipc evidence = 34k–71k" figures reported
+earlier were not transport evidence and are withdrawn. v1's *negative* check was
+sound (it caught rr:288's real `Decode transfer failed` burst). Guard v2
+(`scripts/mnnvl_transport_guard.sh`) gates on evidence that is valid post-run:
+
+| check | evidence (live 6:12 fleet, 2026-09-15) |
+|---|---|
+| no transfer failures / fallback in the run window | 0 on all clean points; 83 on rr:288 (caught) |
+| mooncake Transfer Engine moved KV | `Transfer Engine Stats … Throughput` peak 2.0 GB/s per prefill worker |
+| RDMA path physically absent | `/dev/infiniband` **missing** in the pod (no mrdma claim) — RDMA/UCX cannot carry KV |
+| mooncake pinned to MNNVL | `MC_FORCE_MNNVL=1` in the pod env |
+
+Live physical proof during a running point (`scripts/mnnvl_live_probe.sh`, decode
+GPU0, 10 s): **NVLink Rx ≈ 3.65 GB, Tx ≈ 0.96 GB** per link (Rx ≫ Tx = a decode GPU
+*receiving* KV), **eth0 ≈ 2 MiB** (the NIC is idle — KV is not on TCP), IMEX
+`channel0` present (the cross-node cuda_ipc prerequisite), GPU Fabric GUIDs
+populated. Bytes leave prefill and arrive at decode over NVLink with the NIC idle
+and no RDMA device in the pod — that, not a log-line count, is the transport proof.
 
 ### 1. The transport win (MNNVL vs host-staged)
 NVLink beats host-staging at every point. KV TTFT p50 **2.67 → 0.37 s (7×)** at
