@@ -150,6 +150,80 @@ Proposed arm: agg-KV and disagg-KV, AgentX client semantics, c480/960/1440/1920,
 1 h per point; report throughput-vs-P90-interactivity and E2E-normalized interactivity.
 Cost ≈ 8 points × ~1.3 h ≈ 10 h on 72 GPU + 6 nodes.
 
+
+## 5b. Why our disagg throughput *falls* with concurrency while AgentX (dsv4) *rises*
+
+### What we measured (6:12 KV, instance 2)
+
+| conc | output tok/s | total tok/s served | req/s completed | mean ISL of completed | TTFT p50 | knee |
+|---|---|---|---|---|---|---|
+| 48 | 4,684 | 713,797 | 7.9 | 89.5k | 1.0 s | AT/PRE |
+| 120 | 4,878 | 672,300 | 8.4 | 79.4k | 13.9 s | AT/PRE (peak) |
+| 144 | 4,562 | 603,262 | 7.9 | 75.8k | 21.5 s | POST |
+| 384 | 3,082 | 331,332 | 5.5 | 59.9k | 108 s | POST |
+| 512 | 3,495 | 365,389 | 6.3 | 57.4k | 120 s | POST |
+
+From the c120 peak to c384 the fleet completes **35% fewer requests per second, of 25% shorter
+input**, and serves **51% fewer tokens per second** — a genuine loss of prefill-tier efficiency,
+not just a plateau. (c384 < c512 is saturation variance; both are ~50% of peak.)
+
+### Three reasons ours falls — two measured, one hypothesis to verify
+
+1. **Our load model has no throttle (measured).** aiperf `--concurrency C --no-fixed-schedule
+   --ignore-trace-delays` = C always-busy streams; each re-issues the instant its previous
+   request returns. Offered load ∝ C with no idle time, so once the prefill tier is at capacity
+   (c120–144) every extra stream only lengthens the queue: TTFT p50 13.9 s → 108 s. A plateau
+   is the best case under this model.
+2. **The binding resource is a fixed 24-GPU prefill tier (measured, profiled at kv:144).** 92%
+   busy with ~10 requests queued per worker while 48 decode GPUs ran at ~15% slot occupancy.
+   Extra concurrency cannot recruit the idle decode capacity. The 9:9 result is the proof: 3
+   more prefill workers → +36% at c96, still queue-stationary.
+3. **Under a deep queue the prefill tier does more work per token served (hypothesis).** The
+   two measured facts above explain a plateau; the *drop* needs the per-request prefill cost
+   to rise. N3U keeps two caches for prefix reuse: attention KV in the radix tree (6 KB/token,
+   ample capacity — 89% cached-token share measured at c144) and **Mamba SSM-state
+   checkpoints** at reuse boundaries (~200 MB each, a far smaller pool). With hundreds of
+   sessions interleaved, the SSM-state pool is the first to evict; a request whose attention
+   prefix is still cached but whose Mamba checkpoint is gone must recompute the prefix to
+   rebuild the state — a full-length prefill counted as a "hit" on the KV side. This is the
+   hybrid-cache granularity risk flagged in DESIGN.md. **Verification** (queued for the next
+   6:12 fleet): live capture at c384 — prefill `#new-token`/step and cached-token share, plus
+   the SSM-state cache metrics; the prediction is cached share stays high while new tokens per
+   step rise sharply.
+
+   Secondary contributors: the completed mix shifts to shorter requests (79k → 57k mean ISL),
+   whose fixed per-request costs (bootstrap, ~200 MB Mamba-state hand-off, scheduling) are
+   amortized over fewer tokens; and at C > 393 aiperf replays sessions on more than one stream
+   (no per-lane cache-bust), which distorts reuse either way.
+
+### Why AgentX's throughput keeps rising to 1,920 (from their methodology and recipe)
+
+1. **Concurrency counts agent clients, not busy streams.** "Live session trees, not in-flight
+   HTTP requests"; a closed-loop agent client idles between turns (tool execution, subagent
+   fan-out), so in-flight prefills grow sub-linearly with client count. 1,920 clients is a
+   modest server load that has not reached saturation — the analogue of our c12→c96 region,
+   where our throughput also rises monotonically.
+2. **DSpark speculative decoding (K=6, 7 draft tokens).** Verified tokens per decode step grow
+   with batch size until verification saturates, so larger batches → more tok/s. Our decode
+   runs MTP off (router parity) at ~10 running requests per worker, starved by prefill, so batch
+   never grows.
+3. **Aggregated + session affinity: no fixed prefill tier.** Each TP4 worker does its own
+   prefill and decode; more concurrency recruits the whole fleet, and there is no hand-off
+   whose queue can dominate. Our disagg is capped by the 24-GPU prefill tier regardless of
+   how idle the 48 decode GPUs are.
+4. **HiCache DRAM tiering.** dsv4's KV footprint for thousands of 142k-token sessions lives in
+   host DRAM and is paged back in, so reuse survives high concurrency; our N3U KV fits in HBM,
+   but the Mamba-state pool (hypothesis 3) is the analogous limit we do not tier.
+5. **One-hour windows** halve the fixed-window edge effect that our 1,800 s window suffers
+   when request latencies reach 2–3 minutes.
+
+**Bottom line:** the two curves are not measuring the same thing. Ours is a saturation curve of
+busy streams against a fixed prefill tier; theirs is a client-count sweep of an aggregated,
+spec-decoding, cache-tiered server that has not yet saturated. To make our high-concurrency
+points meaningful in their sense, change the *client* (honor trace think-time, per-lane
+cache-bust) and, for a topology that keeps rising, move prefill capacity with the load (9:9
+already shows the direction) — proposals in §5.
+
 ## 6. Caveats on the comparison
 - Different model class (dsv4 attention-heavy MoE vs N3U hybrid), different stack pins,
   spec-decode on vs off, HiCache on vs off, session affinity vs KV-router placement — the
