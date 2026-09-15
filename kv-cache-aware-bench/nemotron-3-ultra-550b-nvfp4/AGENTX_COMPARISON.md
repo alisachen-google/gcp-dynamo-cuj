@@ -37,7 +37,7 @@ interactivity instead of TTFT.
 not a fixed request batch … the number of live session trees, not the number of in-flight
 HTTP requests."* Clients are closed-loop session replays; a live session tree spends most
 of its time waiting (tool execution, subagent fan-out, turn boundaries), so 1,920 clients
-is far fewer than 1,920 in-flight prefills. Ours: aiperf `--concurrency C --no-fixed-schedule
+is far fewer than 1,920 in-flight prefills. Ours (today): the same aiperf `--concurrency C`, but with `--no-fixed-schedule
 --ignore-trace-delays` — **C always-busy request streams**, every stream fires its next
 request the instant the previous one returns. Our c48 is 48 saturating streams; their
 c480 is 480 mostly-idle agents. The two axes are not comparable one-to-one; ours is the
@@ -223,6 +223,55 @@ spec-decoding, cache-tiered server that has not yet saturated. To make our high-
 points meaningful in their sense, change the *client* (honor trace think-time, per-lane
 cache-bust) and, for a topology that keeps rising, move prefill capacity with the load (9:9
 already shows the direction) — proposals in §5.
+
+
+## 5c. Aligning our concurrency with AgentX — it is a flag change, not a tool change
+
+**Same tool.** InferenceX drives AgentX with aiperf, exactly as we do: `aiperf profile --scenario
+inferencex-agentx-mvp … --concurrency $CONC --benchmark-duration $DURATION` (their
+`benchmark_lib.sh` `build_replay_cmd`, lines ~3073–3110). The scenario is built into aiperf and
+is present at **v0.12.0 — the version our bench template already pins**; the corpus loader they
+use for the 256k variant, `semianalysis_cc_traces_weka_062126_256k`, is the one we use.
+
+**What the scenario changes (verbatim semantics from aiperf's `docs/tutorials/agentx-mvp.md`):**
+- *"Exactly `--concurrency` trees stay live at all times."* A slot holds one **session tree** (root
+  conversation + every subagent stream it spawns) and recycles only when the whole tree drains.
+  In-flight requests can exceed the concurrency at subagent fan-out and fall below it while a
+  tree waits.
+- *"Each turn's replay delay is the recorded idle gap from the previous response's end to the
+  next request's start."* Think-time is **kept**; a **10-second whole-system idle cap** shifts all
+  pending timers only when nothing is active or ready. Per-trajectory caps are forbidden.
+- `--cache-bust first_turn_prefix`: a unique per-conversation marker on the first user turn of
+  every play, shared by that play's warmup and profile turns — reuse survives *within* a session,
+  never across plays.
+- Warmup lanes start at a sampled point of each trace (InferenceX: 25–75%) with full prefix
+  history attached; `--warmup-requests-per-lane 10`; profile ≥ 900 s (InferenceX: 3,600 s).
+- `--use-server-token-count`, `--extra-inputs ignore_eos:true`, `--random-seed 42`,
+  `--failed-request-threshold` as the validity gate.
+
+**Our invocation today** (`manifests/perf/sgl-d72-flagsweep.yaml`): `--concurrency C
+--no-fixed-schedule --ignore-trace-delays --num-dataset-entries 393 --concurrency-ramp-duration 60`
+after a 900 s cache-warmup at concurrency 96 — C always-busy streams, no think-time, no per-play
+cache-bust, sessions shared across streams above C = 393.
+
+**The diff** (new template `manifests/perf/sgl-d72-agentx.yaml`, everything else identical):
+
+| remove | add |
+|---|---|
+| `--no-fixed-schedule --ignore-trace-delays` | `--scenario inferencex-agentx-mvp` (keeps end-to-start delays) |
+| `--concurrency-ramp-duration 60` | `--system-idle-gap-cap-seconds 10` |
+| (implicit shared prefixes across streams) | `--cache-bust first_turn_prefix` |
+| our 900 s warm-up at conc 96 | `--warmup-requests-per-lane 10 --trajectory-start-min-ratio 0.25 --trajectory-start-max-ratio 0.75` |
+| — | `--use-server-token-count`; duration 3,600 s to match |
+
+**How to read the new axis.** Concurrency becomes *live agent clients*; the server load is whatever
+those clients generate. Our current knee at 48–120 busy streams will map to a much larger client
+count, so the ladder should be re-bracketed upward — proposed **48 / 96 / 192 / 384 / 768 / 1536
+clients** on the 9:9 KV fleet (and agg KV for the same-axis comparison), 1 h per point, knee by
+the same queue-drain rule, and the InferenceX-style report of throughput/chip, TTFT and P90
+interactivity. Cost ≈ 6 points × 2 arms × ~1.3 h ≈ 16 h. Two things the change does **not**
+alter: the server (same fleet, flags, transport gate) and the trace corpus — only the client's
+load model, which is what makes the two studies' "concurrency" commensurable.
 
 ## 6. Caveats on the comparison
 - Different model class (dsv4 attention-heavy MoE vs N3U hybrid), different stack pins,
