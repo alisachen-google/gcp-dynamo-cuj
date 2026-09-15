@@ -246,20 +246,22 @@ vs NVLink cuda_ipc, `scripts/gdr-reproducer/`). The new-stack agg re-sweep
 |---|---|---|
 | kv:96 | 3,691 · POST-knee · TTFT 16 s growing · 11,551 req | **4,807 (66.8/GPU) · AT/PRE · 9.6 s stationary · 15,331 req · 0 err** |
 | kv:120 | — | **4,878 (67.7/GPU) · AT/PRE · 13.9 s stationary · 15,642 req · 0 err** |
-| kv:144 | — | 6,221 (86.4/GPU) · AT/PRE · 11.5 s · 0 err — *re-run in progress* |
+| kv:144 | 6,221 (86.4/GPU) · AT/PRE · 11.5 s — **not reproduced** | **4,562 (63.4/GPU) · POST-knee · 21.5 s (stationary, saturated) · 14,699 req · 1 err** |
 
-Instance 1 ran ~25–30% low at c96 and mis-verdicted it as post-knee. Consequences:
-(a) the KV peak-bounded point is **at least 4,878 tok/s @c120 = 67.7/GPU — parity
-with agg's 69.0 bounded (0.98×)** — so the §2 "agg wins 1.39×" verdict, which rests
-on instance-1 cells, is **withdrawn pending re-verification**; (b) c12–48 and all RR
-points came from instance 1, so kv:48 / rr:48 / rr:96 are being re-run on the
-healthy fleet before the arm-level verdicts are re-issued. Sim drift at c96–120
-narrows to ~0.83× (real/sim), from 0.63× on instance 1. The cause of instance 1's
-under-performance is not yet isolated (candidates: an unhealthy worker, router
-state); cache warmth is excluded (both instances had 8+ prior points and 900 s
-warmups). Reported as run-to-run variance between fleet instances — the study's
-per-point protocol did not catch it because knee verdicts are intra-run; a
-cross-instance repeat of one anchor cell is being added to the protocol.
+**Outcome.** Instance 1 was inconsistent in *both* directions (−25% at c96, +36% at
+c144); instance 2 gives a smooth curve: 4,807 (c96) → **4,878 (c120, peak bounded)** →
+4,562 (c144, post-knee). The 6,221 point does not reproduce and is disregarded.
+
+**Revised disagg-vs-agg verdict: parity at the bounded operating point.** KV disagg
+peak-bounded **67.7 tok/s/GPU (c120) vs agg 69.0 (c32) = 0.98×**. Post-knee ceilings
+still favour agg (85 vs ~68/GPU, 1.25×). Neither the earlier "agg wins 1.39×" (built on
+instance-1 cells) nor "disagg wins" (the unreproduced 6,221) survives. Remaining
+caveat: c12–48 and all RR cells are still instance-1 measurements — kv:48 / rr:48 /
+rr:96 are being re-run on instance 2 before the KV/RR ratios are re-issued. Sim drift
+at c96–144 is 0.77–0.83× (real/sim), from 0.63× on instance 1. The protocol now
+includes a cross-instance repeat of one anchor cell; the cause of instance 1's
+variance was not isolated (cache warmth excluded — both instances had 8+ prior points
+and 900 s warm-ups per point).
 
 **RR at deep saturation fails, not just slows.** From c144 on, RR shows request
 errors (0.8% at c144, 1.4% at c288) from KV-transfer timeouts while queued behind
@@ -344,7 +346,7 @@ i.e. ~0.35–0.5 s at the p95 rate vs ~2.4 s on host-staged (0.28–0.34 GB/s, r
 + TTFT floor). Transfer is therefore no longer the binding constraint on MNNVL — the
 prefill tier's compute queue is (see profiling at kv:144).
 
-### 2. Disagg-vs-agg — verdict WITHDRAWN pending re-verification (see Extended concurrency → Reproduction)
+### 2. Disagg-vs-agg — revised verdict: PARITY at the bounded point (0.98×); agg still wins post-knee (1.25×)
 agg bounded reference **69.0 tok/s/GPU** (KV c32, 24 GPU); agg post-knee 85.
 - KV disagg peak bounded **49.6/GPU** vs agg **69.0** → **agg wins 1.39×**.
 - Post-knee ceilings: disagg 51.3 vs agg 85 → agg wins 1.66×.

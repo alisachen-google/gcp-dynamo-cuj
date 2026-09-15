@@ -56,29 +56,30 @@ th{color:var(--ink2);font-weight:500}
   <span><i class="ln" style="border-color:var(--s3)"></i>host-staged KV</span>
   <span><i class="ln" style="border-color:var(--s4)"></i>host-staged RR</span>
   <span><i class="ln d" style="border-color:var(--ink3)"></i>DynoSim v1 (dashed, same hue)</span>
-  <span>● at / pre-knee &nbsp; ○ post-knee &nbsp; ■ host-staged (knee not encoded)</span>
+  <span>● at / pre-knee &nbsp; ○ post-knee &nbsp; ■ host-staged (knee not encoded) &nbsp; ▢ fleet instance 1, superseded (not reproduced)</span>
 </div>
 
 <div class="tiles">
-  <div class="tile"><div class="k">KV peak bounded (MNNVL)</div><div class="v">3,573 tok/s</div><div class="n">c48 · 49.6 per GPU · queue stationary</div></div>
-  <div class="tile"><div class="k">Aggregated reference</div><div class="v">69.0 / GPU</div><div class="n">24-GPU agg, KV c32, bounded → agg wins 1.39×</div></div>
+  <div class="tile"><div class="k">KV peak bounded (MNNVL)</div><div class="v">4,878 tok/s</div><div class="n">c120 · 67.7 per GPU · queue stationary · fleet instance 2</div></div>
+  <div class="tile"><div class="k">Aggregated reference</div><div class="v">69.0 / GPU</div><div class="n">24-GPU agg, KV c32, bounded → parity (0.98×); agg wins post-knee 1.25×</div></div>
   <div class="tile"><div class="k">Transport win vs host-staged</div><div class="v">+25 %</div><div class="n">KV @c48 (3,573 vs 2,853); TTFT p50 2.67 → 0.37 s @c12</div></div>
 </div>
 
 <details><summary>Table view (all series)</summary><div class="tw"><table id="tbl"></table></div></details>
 
-<p class="fn">Every MNNVL point passed the transport gate (cuda_ipc on the KV data path, no tcp/rdma/host-staged fallback). Knee verdicts from per-request timestamp stationarity; no latency SLO gate. The shaded band marks c144 / 192 / 288, where the MNNVL sweep is running now — those points land in this chart when complete. Stack: SGLang 0.5.16 · Dynamo 1.4.2 · FlashInfer 0.6.18 (MNNVL) vs 0.5.14 · 1.3.1 (host-staged).</p>
+<p class="fn">Every MNNVL point passed the transport gate (cuda_ipc on the KV data path, no tcp/rdma/host-staged fallback). Knee verdicts from per-request timestamp stationarity; no latency SLO gate. The shaded band marks c384 / 512, where the MNNVL KV sweep is running now. Fleet instance 1 (2026-09-12/13) was inconsistent (−25% at c96, +36% at c144); those two points are shown as superseded and the KV series uses the reproduced instance-2 measurements from c96 up. c12–48 and RR points are instance-1 pending re-verification. RR c288 is omitted (1.4% transfer failures). Stack: SGLang 0.5.16 · Dynamo 1.4.2 · FlashInfer 0.6.18 (MNNVL) vs 0.5.14 · 1.3.1 (host-staged).</p>
 
 <script>
 const S={
- mkv:{name:"MNNVL KV-aware",c:"--s1",pts:[[12,1734,"AT/PRE"],[24,2672,"AT/PRE"],[48,3573,"AT/PRE"],[96,3691,"POST"]]},
- mrr:{name:"MNNVL round-robin",c:"--s2",pts:[[12,1381,"AT/PRE"],[24,1980,"AT/PRE"],[48,2286,"POST"],[96,2460,"POST"]]},
+ mkv:{name:"MNNVL KV-aware",c:"--s1",pts:[[12,1734,"AT/PRE"],[24,2672,"AT/PRE"],[48,3573,"AT/PRE"],[96,4807,"AT/PRE"],[120,4878,"AT/PRE"],[144,4562,"POST"],[192,2707,"POST"],[288,2489,"POST"]]},
+ mkv1:{name:"MNNVL KV — fleet instance 1 (superseded)",c:"--ink3",sup:true,pts:[[96,3691,"POST"],[144,6221,"AT/PRE"]]},
+ mrr:{name:"MNNVL round-robin",c:"--s2",pts:[[12,1381,"AT/PRE"],[24,1980,"AT/PRE"],[48,2286,"POST"],[96,2460,"POST"],[144,2078,"POST"],[192,1931,"POST"]]},
  hkv:{name:"host-staged KV",c:"--s3",hs:true,pts:[[12,1394],[24,2043],[48,2853],[96,3423],[144,3307],[192,3263]]},
  hrr:{name:"host-staged RR",c:"--s4",hs:true,pts:[[12,1135],[24,1500],[48,1646],[96,1746],[144,1690]]},
  skv:{name:"DynoSim v1 KV",c:"--s1",sim:true,pts:[[48,4725],[96,5813],[144,5920],[192,5613],[288,4947],[384,4397],[512,3703],[768,2841]]},
  srr:{name:"DynoSim v1 RR",c:"--s2",sim:true,pts:[[48,3196],[96,3595],[144,3501],[192,3363],[288,3065],[384,2841],[512,2571],[768,2130]]}
 };
-const GPUS=72, AGG_PER_GPU=69.0, XT=[12,24,48,96,144,192,288,384,512,768];
+const GPUS=72, AGG_PER_GPU=69.0, XT=[12,24,48,96,120,144,192,288,384,512,768];
 const el=id=>document.getElementById(id);
 let unit="total", showSim=true, showHS=true;
 const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
@@ -93,8 +94,8 @@ function render(){
  const y=v=>m.t+(1-v/ymax)*(H-m.t-m.b);
  const step=unit==="total"?1000:10; const ticks=[]; for(let v=0;v<=ymax;v+=step)ticks.push(v);
  let g=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-labelledby="ct" ><title id="ct">Output throughput versus concurrency, 6:12 disaggregated Nemotron-3-Ultra</title>`;
- g+=`<rect x="${x(144)-8}" y="${m.t}" width="${x(288)-x(144)+16}" height="${H-m.t-m.b}" fill="var(--band)"/>`;
- g+=`<text x="${(x(144)+x(288))/2}" y="${m.t+14}" font-size="11" fill="var(--ink3)" text-anchor="middle">MNNVL sweep running</text>`;
+ g+=`<rect x="${x(384)-8}" y="${m.t}" width="${x(512)-x(384)+16}" height="${H-m.t-m.b}" fill="var(--band)"/>`;
+ g+=`<text x="${(x(384)+x(512))/2}" y="${m.t+14}" font-size="11" fill="var(--ink3)" text-anchor="middle">MNNVL sweep running</text>`;
  ticks.forEach(v=>{g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${m.l-8}" y="${y(v)+4}" font-size="11" fill="var(--ink2)" text-anchor="end">${unit==="total"?v.toLocaleString():v}</text>`});
  XT.forEach(c=>{g+=`<text x="${x(c)}" y="${H-m.b+18}" font-size="11" fill="var(--ink2)" text-anchor="middle">${c}</text>`});
  g+=`<text x="${(m.l+W-m.r)/2}" y="${H-6}" font-size="11.5" fill="var(--ink2)" text-anchor="middle">concurrency (log₂ scale)</text>`;
@@ -104,12 +105,13 @@ function render(){
  g+=`<text x="${W-m.r+8}" y="${ay+4}" font-size="11" fill="var(--ink2)">agg 24-GPU bounded${unit==="total"?" (×72 equiv)":""}: ${unit==="total"?"4,968":"69.0"}</text>`;
  const ends=[];
  vis.forEach(([k,s])=>{const col=`var(${s.c})`;const d=s.pts.map((p,i)=>`${i?"L":"M"}${x(p[0])},${y(val(p[1]))}`).join(" ");
-  g+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="2" ${s.sim?'stroke-dasharray="6 5" opacity=".8"':''} stroke-linejoin="round"/>`;
+  g+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="${s.sup?1.5:2}" ${s.sim?'stroke-dasharray="6 5" opacity=".8"':(s.sup?'stroke-dasharray="2 4"':'')} stroke-linejoin="round"/>`;
   if(!s.sim){s.pts.forEach(p=>{const cx=x(p[0]),cy=y(val(p[1]));
-   if(s.hs)g+=`<rect x="${cx-4}" y="${cy-4}" width="8" height="8" fill="${col}" stroke="var(--bg)" stroke-width="2"/>`;
+   if(s.sup)g+=`<rect x="${cx-4}" y="${cy-4}" width="8" height="8" fill="var(--bg)" stroke="${col}" stroke-width="2"/>`;
+   else if(s.hs)g+=`<rect x="${cx-4}" y="${cy-4}" width="8" height="8" fill="${col}" stroke="var(--bg)" stroke-width="2"/>`;
    else if(p[2]==="POST")g+=`<circle cx="${cx}" cy="${cy}" r="5" fill="var(--bg)" stroke="${col}" stroke-width="2.2"/>`;
    else g+=`<circle cx="${cx}" cy="${cy}" r="5" fill="${col}" stroke="var(--bg)" stroke-width="2"/>`;});
-   const last=s.pts[s.pts.length-1];ends.push({y:y(val(last[1])),x:x(last[0]),t:s.name,col});}});
+   if(!s.sup){const last=s.pts[s.pts.length-1];ends.push({y:y(val(last[1])),x:x(last[0]),t:s.name,col});}}});
  ends.sort((a,b)=>a.y-b.y);for(let i=1;i<ends.length;i++)if(ends[i].y-ends[i-1].y<14)ends[i].y=ends[i-1].y+14;
  ends.forEach(e=>{g+=`<text x="${e.x+9}" y="${e.y+4}" font-size="11" fill="var(--ink)">${e.t}</text>`});
  g+=`<line id="xh" x1="0" x2="0" y1="${m.t}" y2="${H-m.b}" stroke="var(--ink3)" stroke-dasharray="2 3" style="display:none"/>`;
