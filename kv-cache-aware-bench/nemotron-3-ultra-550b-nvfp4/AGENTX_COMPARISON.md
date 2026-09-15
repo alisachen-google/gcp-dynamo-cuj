@@ -278,6 +278,48 @@ interactivity. Cost ≈ 6 points × 2 arms × ~1.3 h ≈ 16 h. Two things the ch
 alter: the server (same fleet, flags, transport gate) and the trace corpus — only the client's
 load model, which is what makes the two studies' "concurrency" commensurable.
 
+
+## 5d. Simulated curve under the AgentX concurrency definition
+
+`scripts/dynosim_agentx.py` re-runs the same engine model with the AgentX load model — C live
+session lanes (one session per lane, recycled when it drains), warm-up start at a random
+25–75 % of each session with the prefix primed, **recorded think-time replayed** (start cadence
+anchored per lane, never before the previous response returns), a 10 s whole-system idle cap,
+per-play cache-bust, 1 h profile window. Output tok/s per GPU and TTFT p50 (s):
+
+| clients | 6:12 KV tok/s/GPU · p50 | 9:9 KV tok/s/GPU · p50 | agg KV tok/s/GPU · p50 | 6:12 RR · p50 | 9:9 RR · p50 |
+|---|---|---|---|---|---|
+| 48 | 12.0 · 0.13 s | 12.0 · 0.13 s | 23.6 · 0.13 s | 11.8 · 1.24 s | 11.8 · 1.84 s |
+| 96 | 23.6 · 0.18 s | 23.6 · 0.16 s | 37.1 · 0.14 s | 21.9 · 3.95 s | 22.6 · 3.16 s |
+| 192 | 46.0 · 0.76 s | 46.5 · 0.26 s | 57.8 · 0.16 s | 27.1 · 26.86 s | 34.4 · 12.70 s |
+| 384 | 68.4 · 13.03 s | 83.3 · 1.83 s | 64.3 · 0.22 s | 26.2 · 108.29 s | 34.0 · 63.29 s |
+| 768 | 60.9 · 57.13 s | 88.6 · 20.16 s | 58.4 · 0.38 s | 23.4 · 212.09 s | 30.6 · 142.59 s |
+| 1536 | 45.8 · 149.21 s | 70.6 · 59.58 s | 43.8 · 0.98 s | 11.8 · 474.39 s | 22.0 · 327.38 s |
+
+Page: [AgentX-concurrency curve](https://htmlpreview.github.io/?https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/reports/n3u-agentx-curve.html)
+(measured AgentX-mode points are overlaid as the client-axis ladders land).
+
+What the client axis changes:
+- **A client is ~¼ of a busy stream.** 6:12 KV reaches 46/GPU at 192 clients (≈ our measured 65/GPU
+  at 48 busy streams) and peaks at **68.4/GPU at 384 clients** — the same ceiling as the busy-stream
+  peak (67.8/GPU at c120), reached at ~3× the nominal concurrency. That ratio is the think-time
+  duty cycle of the trace and is exactly why AgentX sweeps 480–1,920.
+- **9:9 leads again and holds up under overload**: 88.6/GPU at 768 clients and still 70.6 at 1,536,
+  where 6:12 has fallen to 45.8. (The sim's split ranking under AgentX load agrees with silicon
+  here; its busy-stream ranking did not — the client model's smoother arrivals keep the prefill
+  tier from saturating as early.)
+- **RR knees an octave earlier on the client axis too** (6:12 RR: 27/GPU at 192 clients with a
+  27 s p50) — recompute, not placement, still sets its knee.
+- **Agg in this sim is throughput-capped by its TPOT batch model** (KV 64/GPU at 384 clients with
+  112 ms TPOT); the measured new-stack agg ladder will replace it. The sim also has agg RR ahead
+  of agg KV at ≤192 clients — an artifact of the steep agg TPOT slope penalising KV's placement
+  concentration; not a prediction we carry.
+- **Post-knee decline is milder than under busy streams** (6:12 KV: −33% from 384→1,536 clients vs
+  −49% from c120→c384 streams): idle clients throttle themselves, so the overload is bounded.
+Caveat: the corpus records request *starts*, so end-to-start delays are approximated by the start
+cadence minus simulated latency; our bench4k excerpt has 874 linear sessions (no subagent
+fan-out), so in-flight ≤ clients.
+
 ## 6. Caveats on the comparison
 - Different model class (dsv4 attention-heavy MoE vs N3U hybrid), different stack pins,
   spec-decode on vs off, HiCache on vs off, session affinity vs KV-router placement — the
