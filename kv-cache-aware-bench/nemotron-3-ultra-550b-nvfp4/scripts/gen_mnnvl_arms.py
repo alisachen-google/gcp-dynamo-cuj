@@ -56,6 +56,8 @@ def wargs(mode):
        "--watchdog-timeout","1000000","--kv-events-config",KVEV,
        "--disaggregation-mode",mode,"--disaggregation-transfer-backend","mooncake",
        "--disaggregation-bootstrap-port","30001"]
+    import os
+    a+=os.environ.get("EXTRA_WORKER_ARGS","").split()
     if mode=="prefill": a+=["--chunked-prefill-size","16384","--max-running-requests","8"]
     else: a+=["--max-running-requests","64"]
     import shlex
