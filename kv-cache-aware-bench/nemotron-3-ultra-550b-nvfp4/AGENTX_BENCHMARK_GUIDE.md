@@ -141,6 +141,7 @@ Measured so far (AgentX definition; total = input + output tokens per second per
 | agg KV | 96 | 6,844 | 75.1 | 0.67 / 3.4 / 5.36 s | 11.9 / 23.5 ms | 43 | 27.5 | stationary |
 | agg KV | 192 | 9,655 | 96.8 | 1.56 / 8.4 / 11.68 s | 23.9 / 50.6 ms | 20 | 74.5 | stationary |
 | agg KV | 384 | 8,257 | 77.7 | 82.8 / 111.9 / 119.4 s | 40.3 / 79.1 ms | 13 | 255.8 | **post-knee** (saturated; ladder stopped here) |
+| agg KV tuned (scale 3, credit 0.8) | 96 | 7,045 | 78.3 | 0.47 / 2.1 / 3.11 s | 10.9 / 18.3 ms | 55 | 24.1 | stationary (+3% total, −42% TTFT p95 vs default KV) |
 | agg KV tuned (scale 3, credit 0.8) | 192 | 11,012 | 108.9 | 0.87 / 4.2 / 6.33 s | 19.6 / 37.3 ms | 27 | 64.1 | stationary (+14% total, −46% TTFT p95 vs default KV) |
 | agg KV scale 2, credit 0.8 | 192 | 10,241 | 102.4 | 1.10 / 5.8 / 8.11 s | 22.0 / 44.8 ms | 22 | 70.0 | stationary (+6% total, −31% TTFT p95 vs default KV) |
 | agg KV temperature 0.5 | 192 | 7,816 | 79.5 | 5.0 / 18.0 / 22.1 s | 33.3 / 77.7 ms | 13 | 93.6 | stationary (−19% total, 1.9× TTFT p95 vs default KV) |
@@ -175,7 +176,7 @@ placed the agg KV knee at 1536, a 4–8× miss on the load axis (AGENTX_AGG_RESU
 | prefill-load scale 3, overlap credit 0.8 | **+14%** | 6.3 s (−46%) | adopt: relieves per-worker prefill queues without losing the prefix |
 | temperature 0.5 | −19% | 22 s (+90%) | reject: random worker choice discards the prefix; behaves like RR |
 | prefill-load scale 2, credit 0.8 | +6% | 8.1 s (−31%) | gain is monotone in the load weight (scale 1 → 2 → 3) |
-| tuned at 96 clients (fleet 2) | running | | tests whether the gain holds below the knee, where the sim predicted a loss |
+| tuned at 96 clients (below the knee) | +3% | 3.1 s (−42%) | no loss below the knee either (sim predicted −13 to −26%); P90 +28% |
 
 The sim predicted −26% for the tuned router on agg at 192; silicon says +14%. The sign flip has the same root as the
 agg decomposition (§5.3): the sim charges the KV router a decode-batch penalty for packing sessions and models the

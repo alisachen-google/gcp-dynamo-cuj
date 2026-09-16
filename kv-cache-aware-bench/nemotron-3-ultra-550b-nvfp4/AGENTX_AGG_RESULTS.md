@@ -194,6 +194,7 @@ same 192 live-session clients, same 900 s warm + 3,600 s window; runner variants
 | **kvs3c08**: prefill-load scale 3.0, overlap credit 0.8 | **11,012 (+14%)** | 2,613 (108.9) | 0.87 / **6.33** / 12.1 s | 19.6 / 37.3 → **26.8** | 64.1 (peak 107) | yes (q1 0.89 → q4 0.82 s) | [1789569414](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789569414_alisachen-n3u-agg-ns-agentx-kvs3c08-c192) |
 | kvs2c08: scale 2.0, credit 0.8 | 10,241 (+6%) | 2,458 (102.4) | 1.10 / 8.11 / 14.5 s | 22.0 / 44.8 → 22.3 | 70.0 (peak 111) | yes (q1 1.06 → q4 1.02 s) | [1789575514](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789575514_alisachen-n3u-agg-ns-agentx-kvs2c08-c192) |
 | kvt05: temperature 0.5 | 7,816 (−19%) | 1,908 (79.5) | 5.0 / 22.1 / 31.6 s | 33.3 / 77.7 → 12.9 | 93.6 (peak 131) | yes (q1 4.5 → q4 2.5 s) | [1789574468](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789574468_alisachen-n3u-agg-ns2-agentx-kvt05-c192) |
+| **kvs3c08 at 96 clients** (below the knee; fleet 2) | **7,045 (+3% vs KV 96 = 6,844)** | 1,880 (78.3) | 0.47 / **3.11** / 6.7 s | 10.9 / 18.3 → **54.6** | 24.1 (peak 50) | yes (q1 0.45 → q4 0.48 s) | [1789582550](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789582550_alisachen-n3u-agg-ns2-agentx-kvs3c08-c96) |
 | rr (reference) | 6,802 | 1,713 (71.4) | 10.9 / 60.1 / 90.1 s | 30.5 / 82.0 → 12.2 | 102.7 | at knee | [1789560983](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789560983_alisachen-n3u-agg-ns2-agentx-rr-c192) |
 
 **Reading.** Weighting prefill load 3× and crediting overlap at 0.8 lets the router move a turn off a worker whose
@@ -213,6 +214,14 @@ busy-stream sweep reached for temperature. Scale 2 / credit 0.8 sits between the
 monotone in the prefill-load weight over the range tried (scale 1 → 2 → 3 = 9,655 → 10,241 → 11,012; p95 11.7 → 8.1 →
 6.3 s). A scale-4 or scale-5 cell would tell whether it has peaked; it is not queued. Adopted setting for the agg
 recipe under AgentX load: **scale 3, credit 0.8, temperature 0**.
+
+**Below the knee the tuned router still does not lose.** At 96 clients (4 per GPU, where the sim predicted −13 to
+−26% for the tuned router on agg) it delivers 7,045 total/GPU vs 6,844 default (+3%, inside run-to-run noise), with
+TTFT p95 3.1 vs 5.4 s (−42%), P90 interactivity 54.6 vs 42.6 (+28%) and 24 vs 27.5 in flight. So the flag is a
+latency and interactivity win at every load tried and a throughput win once the prefill queues start to form; there is
+no regime on agg where the default beats it. Against RR at 96 (6,137, p95 12.6 s) the tuned router is 1.15× on tokens
+with a 4× shorter tail, and the same-SLO pair under the P90 ≥ 20 budget becomes tuned KV 96 (7,045, P90 55) vs RR 96
+(6,137, P90 34) = 1.15×.
 
 ## iv. Simulation-vs-real gap, with the apple-to-apple decomposition
 

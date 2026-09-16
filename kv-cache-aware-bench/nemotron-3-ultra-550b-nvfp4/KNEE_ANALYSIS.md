@@ -93,8 +93,8 @@ policies and the TTFT p50 ≤ 1 s column is reported alongside as the latency-bo
 Measured so far (`knee_check.py`, stationarity of TTFT p50 across quarters; updated 12:30 UTC): every finished cell is
 **stationary** — disagg 9:9 KV 48 / 96 / 192 (TTFT p95 1.50 / 1.42 / 2.03 s, in-flight 5.6 / 16 / 30), disagg 12:6 KV 96 / 192 / 384 / 480
 (p95 1.37 / 1.77 / 2.58 / 3.52 s, in-flight 17 / 33.5 / 91 / 129; 10,434 total/GPU at 480, 2.0× the sim's same-SLO cell), agg KV 48 / 96 (p95 3.83 / 5.36 s, in-flight 6.8 / 27.5), agg RR 48 / 96 (p95 8.27 / 12.56 s, in-flight
-8.5 / 33.2), agg KV 192 (p95 11.68 s, in-flight 74.5, TTFT p50 falling across quarters). Measured knees so far: agg RR at 192, agg KV at 192 (both 384 cells saturated; agg ladders stopped there). Running are
-the tuned-KV 96 cell on agg fleet 2 and the 12:6 KV ladder (768 / 1440), then 12:6 RR and the 12:6 flag sweep. Agg KV at 192 is at 9,655 total tok/s per GPU,
+8.5 / 33.2), agg KV 192 (p95 11.68 s, in-flight 74.5, TTFT p50 falling across quarters). Measured knees so far: agg RR at 192, agg KV at 192 (both 384 cells saturated; agg ladders stopped there). The agg programme is complete
+(both ladders, flag sweep at 192, tuned at 96). Running is the 12:6 KV ladder (768 / 1440), then 12:6 RR and the 12:6 flag sweep. Agg KV at 192 is at 9,655 total tok/s per GPU,
 already above the sim's agg ceiling (5,138), so the sim's agg knee (1536) is the cell to watch rather than 192.
 The measured knee will be reported as the last stationary client count once the ladders complete.
 
@@ -105,6 +105,7 @@ Measured KV-vs-RR pairs available so far (agg, same config, total tok/s per GPU,
 | 48 | 3,334 | 3,250 | **1.03×** | 0.82× | 3.83 vs 8.27 s (RR 2.2× worse) |
 | 96 | 6,844 | 6,137 | **1.12×** | 0.81× | 5.36 vs 12.56 s (RR 2.3× worse) |
 | **192** (same-config point) | **9,655** | 6,802 | **1.42×** | 0.96× | 11.7 vs 60.1 s (RR 5.1× worse) |
+| 96, tuned KV (scale 3, credit 0.8) | 7,045 | 6,137 | 1.15× | 0.67× | 3.1 vs 12.6 s (RR 4.0× worse) |
 | 192, tuned KV (scale 3, credit 0.8) | **11,012** | 6,802 | **1.62×** | 0.70× | 6.3 vs 60.1 s (RR 9.5× worse) |
 
 The sim's ordering on agg below the knee (RR ahead on tokens because KV packs sessions onto one worker) is not
