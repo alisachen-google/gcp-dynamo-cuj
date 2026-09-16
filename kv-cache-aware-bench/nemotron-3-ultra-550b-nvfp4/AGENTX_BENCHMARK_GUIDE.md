@@ -204,7 +204,8 @@ per GPU or at equal SLO (AGENTX_DISAGG_VS_AGG.md §0). Measured: agg's best stat
 with p95 7.0 s and still scaling (+44% over 480), i.e. 1.55× agg's best per GPU at a higher load per GPU. **Disagg now beats agg's best per-GPU total at a lower load per GPU
 and with a 3.3× shorter TTFT tail; agg wins per GPU only below ~5 live sessions per GPU, where its packed decode batches
 are fuller** (agg 96: 6,844 at 4 clients/GPU vs disagg 288-equivalent ≈ 6,500 interpolated). The disagg ceiling is
-still unknown (1440 running). The load-normalised verdict (clients per GPU under SLO → GPUs per 1,000 sessions) is finalised when the 12:6
+still unknown: the 1440-client cell was interrupted at 23:15 UTC on 2026-09-16 when the cluster's GPU node pools were resized
+to 0 by a GKE operation outside this project's control; it, the 12:6 RR pairs and the 12:6 flag sweep re-run when capacity returns. The load-normalised verdict (clients per GPU under SLO → GPUs per 1,000 sessions) is finalised when the 12:6
 ladder finds its knee.
 
 Analysis so far (AGENTX_D72 §iv, AGENTX_AGG §iii, AGENTX_DISAGG_VS_AGG)Analysis so far (AGENTX_D72 §iv, AGENTX_AGG §iii, AGENTX_DISAGG_VS_AGG): the disagg engine model is within ~10 %

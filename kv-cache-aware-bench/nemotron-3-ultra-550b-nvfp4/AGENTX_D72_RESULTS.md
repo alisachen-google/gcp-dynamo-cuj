@@ -131,7 +131,7 @@ the sim's RR under-counts the prefix-miss penalty (hit 0.30 vs KV 0.74).
 | 12:6 KV | 384 | 6,253 (86.8) | 8,637 | 0.43 / 2.58 / 7.1 s | 13.7 / 15.6 ms | 91.1 (peak 142) | stationary (q1 0.44 → q4 0.45 s) | PASS (mooncake TE peak 1,075 MB/s, no transfer failures; 15:48 UTC) |
 | 12:6 KV | 480 | 7,544 (104.8) | 10,434 | 0.50 / 3.52 / 9.6 s | 16.4 / 17.5 ms | 129.4 (peak 196) | stationary (q1 0.51 → q4 0.52 s) | PASS (mooncake TE peak 998 MB/s, no transfer failures; 18:10 UTC) |
 | 12:6 KV | 768 | 10,354 (143.8) | 15,004 | 0.80 / 7.00 / 14.6 s | 20.9 / 22.5 ms | 236.7 (peak 341) | stationary at p50 (q1 0.83 → q4 0.79 s); p95 drifts 6.0 → 7.8 s | PASS (mooncake TE peak 1,392 MB/s, no transfer failures; 20:57 UTC) |
-| 12:6 KV | 1440 | running (started 21:00) | | | | | | |
+| 12:6 KV | 1440 | **interrupted** — the cluster's GPU node pools (np-1, np-3, np-4) were resized to 0 by a GKE operation at 23:15–23:16 UTC while this cell was ~5 min into its profiling window; re-run when capacity returns | | | | | | |
 | 12:6 RR | 192 / 96 / 384 | queued behind 12:6 KV | | | | | | |
 
 Throughput scaled 2.57× from 48 to 96 clients and 1.84× from 96 to 192 with TTFT p50 flat at 0.31–0.36 s
