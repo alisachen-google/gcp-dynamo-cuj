@@ -1,0 +1,11 @@
+variant                                        clients  req/s out tok/s out/GPU tot/GPU ttft p95 tpot ms | sim/real: req/s  out  total  ttft
+v1 (AIC-seeded, as published)                       48   0.50       567    23.6    1466     2.85    27.4 |  0.65x  0.73x  0.44x  0.74x
+v1 (AIC-seeded, as published)                       96   0.82       890    37.1    2375     3.71    39.8 |  0.43x  0.49x  0.35x  0.69x
++ output length = measured (×0.81)                  48   0.55       517    21.5    1612     3.25    24.2 |  0.71x  0.66x  0.48x  0.85x
++ output length = measured (×0.81)                  96   1.03       939    39.1    3008     3.72    32.0 |  0.54x  0.52x  0.44x  0.69x
++ TTFT floor 0.19 s (transfer + scheduling)         48   0.55       517    21.5    1609     3.29    24.4 |  0.70x  0.66x  0.48x  0.86x
++ TTFT floor 0.19 s (transfer + scheduling)         96   0.97       869    36.2    2812     3.97    34.1 |  0.51x  0.48x  0.41x  0.74x
++ decode = measured ITL (5.8 + 1.33·bs, no cliff)      48   0.64       632    26.3    1880     3.29    14.3 |  0.82x  0.81x  0.56x  0.86x
++ decode = measured ITL (5.8 + 1.33·bs, no cliff)      96   1.24      1139    47.5    3614     3.79    18.6 |  0.64x  0.63x  0.53x  0.71x
+measured (agg KV, AgentX mode)                      48   0.78       780    32.5    3357     3.83     7.3
+measured (agg KV, AgentX mode)                      96   1.92      1811    75.5    6877     5.36    11.9

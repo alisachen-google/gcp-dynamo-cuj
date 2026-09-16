@@ -127,10 +127,62 @@ per client than 9:9 (16 at 96) because its per-request latency is ~2× longer (1
 
 ## iv. Simulation-vs-real gap, with the apple-to-apple decomposition
 
-Pending the first measured agg points. The decomposition ladder ([`scripts/dynosim_agentx_decomp.py`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/scripts/dynosim_agentx_decomp.py))
-will be run with the agg engine model: v1 → output length = measured → TTFT floor → decode = measured
-(the busy-stream agg decomposition in AGG24 §5.2 found decode to be the whole gap, 8.9 + 1.73·bs ms
-vs the AIC 5.26 + 0.277·bs; the AgentX sim already uses the refit constants). For the disagg arm the
-same ladder shows the engine model within ~10% and the residual to be trace representation
-(AGENTX_D72_RESULTS.md §iv); the agg arm is expected to share that residual since it replays the same
-4 k-request slice.
+Method (same ladder as the disagg report and AGG24 §5.2): start from the published simulator, substitute one measured
+quantity at a time, and watch which substitution moves the sim/real ratio toward 1.0. Script:
+[`scripts/dynosim_agentx_decomp_agg.py`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/scripts/dynosim_agentx_decomp_agg.py)
+(agg engine, 6 × TP4, KV policy); table saved as
+[`sim-results/agentx_decomp_agg.txt`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_decomp_agg.txt).
+Ratios are **sim ÷ measured**; **the TTFT standard is p95**. Measured request rate, output tokens and input tokens per
+request come from the profiling-phase per-request records (`inflight_from_records.py` inputs), not from the summary CSV,
+so the input side is exact. The decode substitution replaces the sim's piecewise agg curve (7 + 1.6·bs ms up to batch 7,
+then 28.4 + 5.68·bs — the busy-stream refit) with a straight line through the two measured AgentX ITL p50 points
+(5.8 + 1.33·bs ms; bs = in-flight per worker, 1.1 → 7.3 ms at 48 clients, 4.6 → 11.9 ms at 96).
+
+### At 48 clients (measured: 0.78 req/s · 780 output tok/s = 32.5/GPU · 3,357 total/GPU · TTFT p95 3.83 s (p50 0.42) · ITL p50 7.3 ms · 6.8 in flight)
+
+| sim variant | req/s | output tok/s (/GPU) | total tok/s/GPU | TTFT p95 | TPOT | sim/real: req/s · output · total · TTFT p95 |
+|---|---|---|---|---|---|---|
+| v1, AIC-seeded (as published) | 0.50 | 567 (23.6) | 1,466 | 2.85 s | 27.4 ms | 0.65× · 0.73× · **0.44×** · 0.74× |
+| + output length = measured (×0.81) | 0.55 | 517 (21.5) | 1,612 | 3.25 s | 24.2 ms | 0.71× · 0.66× · 0.48× · 0.85× |
+| + fixed 0.19 s per request (scheduling) | 0.55 | 517 (21.5) | 1,609 | 3.29 s | 24.4 ms | 0.70× · 0.66× · 0.48× · 0.86× |
+| + decode = measured ITL line (5.8 + 1.33·bs, no cliff) | 0.64 | 632 (26.3) | 1,880 | 3.29 s | 14.3 ms | 0.82× · 0.81× · 0.56× · 0.86× |
+| **residual after all substitutions** | | | | | | **0.82× requests · 0.56× total · TTFT p95 0.86× (slightly light) · TPOT still 2.0× too slow** |
+
+### At 96 clients (measured: 1.92 req/s · 1,811 output tok/s = 75.5/GPU · 6,877 total/GPU · TTFT p95 5.36 s (p50 0.67) · ITL p50 11.9 ms · 27.5 in flight)
+
+| sim variant | req/s | output tok/s (/GPU) | total tok/s/GPU | TTFT p95 | TPOT | sim/real: req/s · output · total · TTFT p95 |
+|---|---|---|---|---|---|---|
+| v1, AIC-seeded (as published) | 0.82 | 890 (37.1) | 2,375 | 3.71 s | 39.8 ms | 0.43× · 0.49× · **0.35×** · 0.69× |
+| + output length = measured (×0.78) | 1.03 | 939 (39.1) | 3,008 | 3.72 s | 32.0 ms | 0.54× · 0.52× · 0.44× · 0.69× |
+| + fixed 0.19 s per request (scheduling) | 0.97 | 869 (36.2) | 2,812 | 3.97 s | 34.1 ms | 0.51× · 0.48× · 0.41× · 0.74× |
+| + decode = measured ITL line (5.8 + 1.33·bs, no cliff) | 1.24 | 1,139 (47.5) | 3,614 | 3.79 s | 18.6 ms | 0.64× · 0.63× · 0.53× · 0.71× |
+| **residual after all substitutions** | | | | | | **0.64× requests · 0.53× total · TTFT p95 0.71× (light) · TPOT still 1.6× too slow** |
+
+### Where the gap is, in plain words
+
+1. **The decode cliff is the biggest single term on agg** (unlike disagg, where the engine model was within 10%). The
+   published sim runs agg decode at 27–40 ms per token against 7–12 ms measured, because its busy-stream refit jumps to
+   28.4 + 5.68·bs past batch 7. Removing the cliff lifts total tokens by 17–29% (0.48 → 0.56×, 0.41 → 0.53×) and is the
+   reason the sim ranked RR ahead of KV on agg below the knee: the router that packs a session's turns onto one worker
+   was being charged a decode penalty the real engine does not pay (measured: KV ahead 1.03× / 1.12×, §iii).
+2. **Even with the measured line, the sim's mean TPOT is 1.6–2.0× too slow** (14.3 / 18.6 vs 7.3 / 11.9 ms). The line is
+   right, so the sim must be running larger per-worker batches than the live fleet: it lets the KV policy pile many
+   sessions' bursts onto the worker that holds their prefix while other workers idle, whereas the live Dynamo router
+   (prefill-load scale 1, overlap credit 0) spreads bursts. This is the same over-packing that made the sim predict
+   KV interactivity below RR on agg (P90 9 vs 15 at 192 clients); measured P90 is KV 102 vs RR 91 at 48 and 43 vs 34
+   at 96.
+3. **TTFT p95 is the one axis where the sim is slightly optimistic on agg** (0.71–0.86×), the opposite of disagg
+   (2–2.7× pessimistic). On agg the prefill of a 100 k-token turn shares the worker with decode, and the sim's
+   agg engine serialises prefill before decode without the chunked-prefill interference the live engine shows
+   (measured p95 3.8–5.4 s at 0.4–0.7 s p50; sim tails are shorter because its prefill queue is per worker and
+   requests do not lengthen each other's decode).
+4. **The residual after the engine substitutions is trace representation, the same term as on disagg**: the sim's
+   slice carries ~70 k input tokens per request against 102 k (48) and 85 k (96) measured (0.68× and 0.82×), and its
+   sessions issue fewer requests per hour (0.82× and 0.64×) because the 4 k-request slice has no subagent fan-out and
+   its sessions cycle through their turns more slowly than the live replay. Requests × input length reproduces the
+   residual: 0.82 × 0.68 = 0.56 at 48, 0.64 × 0.82 = 0.53 at 96.
+
+Take-away for using the sim on agg: keep its **rankings across topologies**, but on the **KV-vs-RR ordering below
+the knee do not trust it** — the decode cliff and over-packing bias it against KV. For the sim-vs-real overlay (curve
+page and `n3u-agentx-sim-vs-real.html`) the agg markers sit 1.8–2.9× above the dashed line on total tokens for these two
+reasons in roughly equal parts.
