@@ -1,45 +1,22 @@
-<title>N3U Disagg 6:12 Throughput Curve</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<style>
-:root{color-scheme:light;--bg:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--ink3:#8a8983;--grid:#e6e5e0;--rule:#8a8983;--band:#f0efe9;--tile:#f5f4ef;
- --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--focus:#2a78d6}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#1a1a19;--ink:#ffffff;--ink2:#c3c2b7;--ink3:#8c8b84;--grid:#2e2e2c;--rule:#8c8b84;--band:#232322;--tile:#222221;
- --s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--focus:#3987e5}}
-:root[data-theme="dark"]{color-scheme:dark;--bg:#1a1a19;--ink:#ffffff;--ink2:#c3c2b7;--ink3:#8c8b84;--grid:#2e2e2c;--rule:#8c8b84;--band:#232322;--tile:#222221;
- --s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--focus:#3987e5}
-body{background:var(--bg);color:var(--ink);font:14px/1.5 "IBM Plex Sans",system-ui,sans-serif;padding-block:28px 40px;padding-inline:clamp(16px,4vw,40px);max-width:1080px;margin:0 auto}
-h1{font-size:22px;font-weight:600;margin:0 0 4px;text-wrap:balance}
-.sub{color:var(--ink2);margin:0 0 18px;max-width:70ch}
-.row{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin-bottom:10px}
-.seg{display:inline-flex;border:1px solid var(--grid);border-radius:6px;overflow:hidden}
-.seg button{background:none;border:0;color:var(--ink2);font:inherit;padding:5px 12px;cursor:pointer}
-.seg button[aria-pressed="true"]{background:var(--tile);color:var(--ink);font-weight:500}
-.seg button:focus-visible,label:focus-within{outline:2px solid var(--focus);outline-offset:1px}
-label.chk{display:inline-flex;gap:6px;align-items:center;color:var(--ink2);cursor:pointer}
-.chart{position:relative;width:100%}
-svg{width:100%;height:auto;display:block;font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
-.tip{position:absolute;pointer-events:none;background:var(--bg);border:1px solid var(--grid);border-radius:6px;padding:8px 10px;font:12px/1.45 "IBM Plex Mono",ui-monospace,monospace;box-shadow:0 2px 8px rgba(0,0,0,.12);display:none;min-width:190px}
-.tip b{display:block;margin-bottom:3px;font-weight:500}
-.tip .r{display:flex;gap:8px;align-items:center;white-space:nowrap}
-.tip .sw{width:10px;height:3px;border-radius:2px;flex:none}
-.legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin:8px 0 22px;color:var(--ink2);font-size:13px}
-.legend span{display:inline-flex;align-items:center;gap:7px}
-.legend .ln{width:22px;height:0;border-top:2px solid;flex:none}.legend .ln.d{border-top-style:dashed}
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:22px}
-.tile{background:var(--tile);border-radius:8px;padding:12px 14px}
-.tile .k{font-size:12px;color:var(--ink2);letter-spacing:.02em;text-transform:uppercase}
-.tile .v{font:500 24px/1.2 "IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;margin:4px 0 2px}
-.tile .n{font-size:12px;color:var(--ink2)}
-details{margin-top:6px}summary{cursor:pointer;color:var(--ink2)}
-.tw{overflow-x:auto;margin-top:10px}
-table{border-collapse:collapse;font:13px "IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;min-width:640px}
-th,td{text-align:right;padding:6px 10px;border-bottom:1px solid var(--grid)}th:first-child,td:first-child{text-align:left}
-th{color:var(--ink2);font-weight:500}
-.fn{color:var(--ink2);font-size:12.5px;max-width:78ch;margin-top:18px}
-@media (prefers-reduced-motion:no-preference){.tip{transition:opacity .08s}}
-</style>
-
-<h1>Nemotron-3-Ultra 550B — disaggregated, measured total throughput per GPU vs concurrency</h1>
+#!/usr/bin/env python3
+"""Regenerates reports/n3u-disagg-curve.html (throughput vs concurrency, 72-GPU disagg N3U).
+y defaults to TOTAL tokens (input+output) per second per GPU (InferenceX convention); toggles: output/GPU, fleet output.
+Measured totals = aiperf Effective Total Throughput / 72 (latest artifact per job; RR c48/c96 = fleet instance 2).
+Sim total = req/s x (mean ISL 85,056 + mean OSL 1,454 of the trace) / 72 -- see footnote on the OSL mismatch."""
+import json,pathlib
+R=pathlib.Path(__file__).resolve().parents[1]
+# [conc, output tok/s (fleet), knee, total tok/s per GPU]
+S={
+ "mkv":{"name":"MNNVL KV-aware 6:12","c":"--s1","pts":[[12,1734,"AT/PRE",4458],[24,2672,"AT/PRE",6441],[48,4684,"AT/PRE",9914],[96,4807,"AT/PRE",9359],[120,4878,"AT/PRE",9337],[144,4562,"POST",8379],[192,2707,"POST",4413],[288,2489,"POST",3619],[384,3082,"POST",4602],[512,3495,"POST",5075]]},
+ "m99":{"name":"MNNVL KV 9:9 split","c":"--s3","pts":[[48,4555,"AT/PRE",9571],[96,6560,"AT/PRE",13729],[120,7089,"AT/PRE",14682],[144,7549,"AT/PRE",15578]]},
+ "m126":{"name":"MNNVL KV 12:6 split","c":"--s4","pts":[[48,3797,"AT/PRE",8230],[96,5667,"AT/PRE",11979]]},
+ "mkv1":{"name":"MNNVL KV 6:12 — fleet instance 1 (superseded)","c":"--ink3","sup":True,"pts":[[48,3573,"AT/PRE",None],[96,3691,"POST",None],[144,6221,"AT/PRE",None]]},
+ "mrr":{"name":"MNNVL round-robin 6:12","c":"--s2","pts":[[12,1381,"AT/PRE",3280],[24,1980,"AT/PRE",4751],[48,2321,"POST",5033],[96,2484,"POST",4335],[144,2078,"POST",3214],[192,1931,"POST",2836]]},
+ "skv":{"name":"DynoSim v1 KV 6:12","c":"--s1","sim":True,"pts":[[12,1751,"",1446],[24,3026,"",2500],[48,4725,"",3903],[96,5813,"",4802],[120,5873,"",4852],[144,5920,"",4891],[192,5613,"",4638],[288,4947,"",4087],[384,4397,"",3632],[512,3703,"",3059],[768,2841,"",2347]]},
+ "srr":{"name":"DynoSim v1 RR 6:12","c":"--s2","sim":True,"pts":[[12,1505,"",1243],[24,2433,"",2010],[48,3196,"",2641],[96,3595,"",2970],[120,3580,"",2958],[144,3501,"",2893],[192,3363,"",2778],[288,3065,"",2532],[384,2841,"",2347],[512,2571,"",2124],[768,2130,"",1759]]},
+}
+head=(R/"reports/n3u-disagg-curve.html").read_text().split("<h1>")[0]
+html=head+'''<h1>Nemotron-3-Ultra 550B — disaggregated, measured total throughput per GPU vs concurrency</h1>
 <p class="sub">72 GPU, TP4/EP4 — the 6:12, 9:9 and 12:6 prefill:decode splits, GB300 NVL72, Weka 256K agentic trace replay, KV over NVLink (MNNVL + mooncake). y defaults to <b>total tokens (input + output) served per second per GPU</b>, InferenceX's convention; toggle to output tokens. Solid = silicon; dashed = DynoSim v1 in the same hue. Marker shape = knee verdict.</p>
 
 <div class="row" role="group" aria-label="Chart controls">
@@ -69,7 +46,7 @@ th{color:var(--ink2);font-weight:500}
 <p class="fn">Every point passed the transport gate (mooncake on MNNVL, transfer-engine peak up to 2.0 GB/s per prefill worker, no RDMA device in the pod, no transfer failures). Knee verdicts from per-request timestamp stationarity; no latency SLO gate. Measured totals are aiperf <i>Effective Total Throughput</i> (input tokens counted at full length, i.e. including the ~89% cached prefix, exactly as InferenceX counts them) divided by 72. KV c48–c512, the 9:9 and 12:6 series, and RR c48/c96 are fleet-instance-2 measurements (2026-09-15); KV c12/c24 and RR c12/c24/c144/c192 are instance-1. RR c288 is omitted (1.4% transfer failures). <b>Sim total is under-predicted ~2.4×</b> even where sim output matches silicon: DynoSim replays the trace's recorded output lengths (mean 1,454 tokens/request) while the engine stops at EOS after ~590 on average, so for the same output tok/s the real fleet serves ~2.5× more requests — and therefore ~2.5× more input tokens — per second. Sim total = req/s × (85,056 + 1,454). Stack: SGLang 0.5.16 · Dynamo 1.4.2 · FlashInfer 0.6.18.</p>
 
 <script>
-const S={"mkv": {"name": "MNNVL KV-aware 6:12", "c": "--s1", "pts": [[12, 1734, "AT/PRE", 4458], [24, 2672, "AT/PRE", 6441], [48, 4684, "AT/PRE", 9914], [96, 4807, "AT/PRE", 9359], [120, 4878, "AT/PRE", 9337], [144, 4562, "POST", 8379], [192, 2707, "POST", 4413], [288, 2489, "POST", 3619], [384, 3082, "POST", 4602], [512, 3495, "POST", 5075]]}, "m99": {"name": "MNNVL KV 9:9 split", "c": "--s3", "pts": [[48, 4555, "AT/PRE", 9571], [96, 6560, "AT/PRE", 13729], [120, 7089, "AT/PRE", 14682], [144, 7549, "AT/PRE", 15578]]}, "m126": {"name": "MNNVL KV 12:6 split", "c": "--s4", "pts": [[48, 3797, "AT/PRE", 8230], [96, 5667, "AT/PRE", 11979]]}, "mkv1": {"name": "MNNVL KV 6:12 \u2014 fleet instance 1 (superseded)", "c": "--ink3", "sup": true, "pts": [[48, 3573, "AT/PRE", null], [96, 3691, "POST", null], [144, 6221, "AT/PRE", null]]}, "mrr": {"name": "MNNVL round-robin 6:12", "c": "--s2", "pts": [[12, 1381, "AT/PRE", 3280], [24, 1980, "AT/PRE", 4751], [48, 2321, "POST", 5033], [96, 2484, "POST", 4335], [144, 2078, "POST", 3214], [192, 1931, "POST", 2836]]}, "skv": {"name": "DynoSim v1 KV 6:12", "c": "--s1", "sim": true, "pts": [[12, 1751, "", 1446], [24, 3026, "", 2500], [48, 4725, "", 3903], [96, 5813, "", 4802], [120, 5873, "", 4852], [144, 5920, "", 4891], [192, 5613, "", 4638], [288, 4947, "", 4087], [384, 4397, "", 3632], [512, 3703, "", 3059], [768, 2841, "", 2347]]}, "srr": {"name": "DynoSim v1 RR 6:12", "c": "--s2", "sim": true, "pts": [[12, 1505, "", 1243], [24, 2433, "", 2010], [48, 3196, "", 2641], [96, 3595, "", 2970], [120, 3580, "", 2958], [144, 3501, "", 2893], [192, 3363, "", 2778], [288, 3065, "", 2532], [384, 2841, "", 2347], [512, 2571, "", 2124], [768, 2130, "", 1759]]}};
+const S=__S__;
 const GPUS=72, AGG_TOT=13320, AGG_OUT=77.3, XT=[12,24,48,96,120,144,192,288,384,512,768];
 const el=id=>document.getElementById(id);
 let unit="tot", showSim=true;
@@ -125,3 +102,5 @@ function table(vis){let h=`<tr><th>conc</th>${vis.map(([k,s])=>`<th>${s.name}</t
 el("showsim").onchange=e=>{showSim=e.target.checked;render()};
 render();
 </script>
+'''
+out=R/"reports/n3u-disagg-curve.html"; out.write_text(html.replace("__S__",json.dumps(S))); print("wrote",out,len(html))

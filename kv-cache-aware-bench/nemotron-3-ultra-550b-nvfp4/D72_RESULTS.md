@@ -435,6 +435,17 @@ new-stack agg cells (kv/rr × 16–512) replace the old-stack agg series in ever
 when they land.
 
 ### 3. DynoSim drift — narrowed, not closed; widens with load
+
+**Total-token view (added 2026-09-16).** On the *total* tokens/s axis (input + output, InferenceX's
+metric, now the default on the curve pages) DynoSim under-predicts silicon by ~2.4× even at cells
+where its *output* tok/s matches (6:12 KV c48: sim 4,725 vs real 4,684 output; sim 3,903 vs real
+9,914 total/GPU). The cause is the request mix, not the engine model: DynoSim replays the trace's
+recorded output lengths (mean 1,454 tokens/request) whereas the served engine stops at EOS after
+~590 tokens on average (aiperf logs "OSL mismatch" on most requests), so for the same output rate the
+real fleet completes ~2.5× more requests — and prefills ~2.5× more input tokens — per second
+(measured 8.2 req/s vs sim 3.2 at c48). Output-token drift is therefore a fair engine-model test;
+total-token drift is dominated by this OSL assumption and would close by feeding the sim the
+measured OSL distribution (queued as a sim v2 change).
 sim/MNNVL: **1.32× (c48) → 1.58× (c96)** (was 1.66×/1.70× vs host-staged).
 Decomposition of the sim − host-staged gap:
 
