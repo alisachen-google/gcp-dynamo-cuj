@@ -302,7 +302,10 @@ p90 6.8 ms (P90 interactivity 147 tok/s/user), 2,887 requests, 0 errors, queue-s
 PASS (TE peak 0.50 GB/s). The sim predicted 12.0/GPU · p50 0.13 s → **sim/real 1.10× on throughput**,
 TTFT under-predicted 2.5× (the same prefill-queue term as the busy-stream sim, at much lower load).
 Confirms the client-vs-stream ratio: 48 clients drew 4.5× less output than 48 busy streams
-(4,555 tok/s). Next points: 96 (running), 192, 384, 768, 1536 clients.
+(4,555 tok/s). **96 clients (05:55 UTC): 2,019 tok/s = 28.0/GPU**, TTFT p50 0.31 s / p95 1.42 s / p99 4.3 s,
+ITL p50 7.4 / p90 8.4 ms, 7,538 requests, stationary, guard PASS — sim said 23.6/GPU (sim/real 0.84×; the
+sim is now *under*-predicting as load rises, the opposite sign from the busy-stream sim). Throughput
+scaled 2.57× for 2× clients, so the fleet is still far from its knee on this axis. Next: 192 (running), 384, 768, 1536.
 
 Page: [AgentX-concurrency curve](https://htmlpreview.github.io/?https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/reports/n3u-agentx-curve.html)
 (measured AgentX-mode points are overlaid as the client-axis ladders land).

@@ -195,7 +195,7 @@ cells:
 | 128 | 2,050 (85.4) | 33.3 / 66.6 s | 1,339 (55.8) | 32.9 s | 1.53× | both saturated | KV +7%, RR +22% |
 | 192 | 2,043 (85.1) | 63.7 / 92.5 s | 1,226 (51.1) | 75.9 s | 1.67× | both saturated | — |
 | 256 | 2,024 (84.3) | 87.1 / 131 s | 1,128 (47.0) | 112 s | 1.79× | both saturated | — |
-| 384 | 1,900 (79.2) | 135 / 176 s | running | | | KV saturated, ceiling starting to fall | — |
+| 384 | 1,900 (79.2) | 135 / 176 s | 1,059 (44.1) | 208 s | 1.79× | both saturated (RR 0.1% failed) | — |
 | 512 | running | | | | | | |
 
 ITL p90 at the bounded cells: 39.1 / 49.3 ms (KV c16 / c32) → P90 interactivity 25.6 / 20.3
