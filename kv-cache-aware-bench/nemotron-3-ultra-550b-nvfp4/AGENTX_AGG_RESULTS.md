@@ -193,7 +193,7 @@ same 192 live-session clients, same 900 s warm + 3,600 s window; runner variants
 | kv default (scale 1, credit 0, temp 0, fcfs) | 9,655 | 2,323 (96.8) | 1.56 / 11.7 / 17.5 s | 23.9 / 50.6 → 19.8 | 74.5 | yes | [1789555981](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789555981_alisachen-n3u-agg-ns-agentx-kv-c192) |
 | **kvs3c08**: prefill-load scale 3.0, overlap credit 0.8 | **11,012 (+14%)** | 2,613 (108.9) | 0.87 / **6.33** / 12.1 s | 19.6 / 37.3 → **26.8** | 64.1 (peak 107) | yes (q1 0.89 → q4 0.82 s) | [1789569414](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789569414_alisachen-n3u-agg-ns-agentx-kvs3c08-c192) |
 | kvs2c08: scale 2.0, credit 0.8 | running (started 16:13) | | | | | | |
-| kvt05: temperature 0.5 | running on fleet 2 (started 15:56) | | | | | | |
+| kvt05: temperature 0.5 | 7,816 (−19%) | 1,908 (79.5) | 5.0 / 22.1 / 31.6 s | 33.3 / 77.7 → 12.9 | 93.6 (peak 131) | yes (q1 4.5 → q4 2.5 s) | [1789574468](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789574468_alisachen-n3u-agg-ns2-agentx-kvt05-c192) |
 | rr (reference) | 6,802 | 1,713 (71.4) | 10.9 / 60.1 / 90.1 s | 30.5 / 82.0 → 12.2 | 102.7 | at knee | [1789560983](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789560983_alisachen-n3u-agg-ns2-agentx-rr-c192) |
 
 **Reading.** Weighting prefill load 3× and crediting overlap at 0.8 lets the router move a turn off a worker whose
@@ -204,6 +204,13 @@ faster decode (ITL p50 19.6 vs 23.9 ms, P90 26.8 vs 19.8) and 14% more total tok
 already found in §iv: it charges the KV router a decode cliff for packing and models the load-scale flag as pure
 prefix loss, while the live effect is queue relief. The same-SLO agg pair therefore moves to **tuned KV 192 (11,012,
 p95 6.3 s) vs RR 96 (6,137, p95 12.6 s) = 1.79×**.
+
+**Temperature 0.5 goes the other way.** Sampling the worker from a softmax over the KV scores instead of taking the
+argmax sends roughly a third of a session's turns to a worker without its prefix: throughput drops to 7,816 (0.81× of
+default KV, only 1.15× RR), TTFT p95 doubles to 22 s (outside the 20 s budget) and 94 requests sit in flight. On this
+workload the prefix is worth far more than the load smoothing a random choice buys, which is the same conclusion the
+busy-stream sweep reached for temperature. The remaining cell, scale 2 / credit 0.8 (running), will show whether the
+tuned gain is monotone in the load weight.
 
 ## iv. Simulation-vs-real gap, with the apple-to-apple decomposition
 
