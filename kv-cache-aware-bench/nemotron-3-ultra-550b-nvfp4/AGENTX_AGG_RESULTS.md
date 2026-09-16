@@ -108,12 +108,19 @@ in parallel with KV (second fleet `n3u-agg-ns2`), so both framings can be read o
 | arm | clients | output tok/s (/GPU) | total tok/s/GPU | TTFT p50 / p95 / p99 | ITL p50 / p90 | in-flight | knee | status |
 |---|---|---|---|---|---|---|---|---|
 | agg KV | 48 | 775 (32.3) | 3,334 | 0.42 / 3.83 / 7.7 s | 7.3 / 9.8 ms (P90 interactivity 102) | 6.8 (peak 18) | stationary | complete 09:18 UTC |
-| agg KV | 96 / 192 / 384 / 768 / 1536 | | | | | | | running (96 started 09:18) |
-| agg RR | 48 / 96 / 192 / 384 / 768 / 1536 | | | | | | | running in parallel on the second fleet `n3u-agg-ns2` |
+| agg KV | 96 | 1,803 (75.1) | 6,844 | 0.67 / 5.36 / 12.2 s | 11.9 / 23.5 ms (P90 42.6) | 27.5 (peak 51) | pending | complete 10:46 UTC |
+| agg KV | 192 / 384 / 768 / 1536 | | | | | | | running (192 started 10:47) |
+| agg RR | 48 | 752 (31.3) | 3,250 | 0.79 / 8.27 / 15.3 s | 7.5 / 11.0 ms (P90 90.9) | 8.5 (peak 22) | stationary | complete 10:42 UTC (second fleet `n3u-agg-ns2`) |
+| agg RR | 96 / 192 / 384 / 768 / 1536 | | | | | | | running in parallel (96 started 10:42) |
 
 An earlier agg AgentX smoke at 48 clients (2026-09-15) failed on [`--warmup-requests-per-lane`](https://github.com/SemiAnalysisAI/aiperf/blob/754356e9a39acc6cc6afb242d123bb57c3fb6f75/src/aiperf/timing/config.py#L362), a flag that
 exists only in SemiAnalysis's aiperf fork; the template was corrected and no agg AgentX result predates
-this report. First measured agg point vs the sim's agg KV cell at 48 clients: total 3,334 vs 1,474 per GPU (sim 0.44×), TTFT p50 0.42 vs 0.13 s, P90 interactivity 102 vs 22 tok/s/user — the agg simulator is far more pessimistic than the disagg one at low load (its refit decode curve 8.9 + 1.73·bs ms is a busy-stream fit; under replayed think-time the workers run near batch 1 and the real ITL is 7.3 ms). Mean in-flight 6.8 requests (peak 18) from the per-request records. Rows fill as points land; KV-vs-RR uses 192 (same config) and 192-vs-96 (TTFT budget).
+this report. First measured agg point vs the sim's agg KV cell at 48 clients: total 3,334 vs 1,474 per GPU (sim 0.44×), TTFT p50 0.42 vs 0.13 s, P90 interactivity 102 vs 22 tok/s/user — the agg simulator is far more pessimistic than the disagg one at low load (its refit decode curve 8.9 + 1.73·bs ms is a busy-stream fit; under replayed think-time the workers run near batch 1 and the real ITL is 7.3 ms). Mean in-flight 6.8 requests (peak 18) from the per-request records. Rows fill as points land; KV-vs-RR uses 192 (same config) and 192-vs-96 (TTFT budget). **First measured KV-vs-RR pair on agg
+(48 clients, same config, both stationary): KV 3,334 vs RR 3,250 total tok/s per GPU = 1.03× on tokens; TTFT p95 3.83 vs 8.27 s
+(RR 2.2× worse); P90 interactivity 102 vs 91.** The sim had predicted 0.82× on tokens and a 2.3× TTFT p95 gap at 48 clients:
+the latency ratio is right, the token ratio is not (measured KV does not lose throughput to affinity at this load). From 48 to
+96 clients agg KV scaled 2.05× on total tokens with TTFT p95 5.4 s and in-flight 27.5, i.e. agg carries more requests in flight
+per client than 9:9 (16 at 96) because its per-request latency is ~2× longer (14.3 s vs 7.7 s).
 
 ## iv. Simulation-vs-real gap, with the apple-to-apple decomposition
 

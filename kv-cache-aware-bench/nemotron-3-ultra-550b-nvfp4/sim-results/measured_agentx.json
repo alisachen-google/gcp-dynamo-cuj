@@ -38,5 +38,25 @@
   "p95": 2.03,
   "knee": "AT/PRE",
   "tot": 4600.0
+ },
+ {
+  "arm": "agg6",
+  "pol": "rr",
+  "clients": 48,
+  "tpg": 31.3,
+  "p50": 0.79,
+  "p95": 8.27,
+  "knee": "AT/PRE",
+  "tot": 3250.0
+ },
+ {
+  "arm": "agg6",
+  "pol": "kv",
+  "clients": 96,
+  "tpg": 75.1,
+  "p50": 0.67,
+  "p95": 5.36,
+  "knee": "pending",
+  "tot": 6844.0
  }
 ]

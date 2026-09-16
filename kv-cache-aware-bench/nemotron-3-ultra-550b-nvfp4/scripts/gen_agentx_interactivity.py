@@ -14,8 +14,8 @@ for r in rows:
 series=[{"name":f"{name[pd]} {PN.get(pol,pol)}","c":hue[pd],"pd":pd,"pol":pol,"pts":sorted(v)} for (pd,pol),v in sorted(S.items())]
 # measured: [clients, P90 interactivity (1000/ITL p90 ms), total tok/s/GPU, output/GPU, ttft p50]
 meas=json.load(open(R/"sim-results/measured_agentx.json")) if (R/"sim-results/measured_agentx.json").exists() else []
-MI={("9:9",48):147.1,("9:9",96):119.0,("9:9",192):101.0,("agg6",48):102.0}  # 1000/ITL p90
-M=[{"arm":m["arm"],"pol":m["pol"],"clients":m["clients"],"inter":MI.get((m["arm"],m["clients"])),"tot":m["tot"],"tpg":m["tpg"],"p50":m["p50"]} for m in meas if (m["arm"],m["clients"]) in MI]
+MI={("9:9",48):147.1,("9:9",96):119.0,("9:9",192):101.0,("agg6",48):102.0,("agg6-rr",48):90.9,("agg6",96):42.6}  # 1000/ITL p90
+M=[{"arm":m["arm"],"pol":m["pol"],"clients":m["clients"],"inter":MI.get((m["arm"]+("-rr" if m["pol"]=="rr" else ""),m["clients"])),"tot":m["tot"],"tpg":m["tpg"],"p50":m["p50"]} for m in meas if (m["arm"]+("-rr" if m["pol"]=="rr" else ""),m["clients"]) in MI]
 head=(R/"reports/n3u-agentx-curve.html").read_text().split("<h1>")[0].replace("N3U AgentX-Concurrency Curve","N3U AgentX Interactivity Frontier")
 html=head+'''<h1>Nemotron-3-Ultra 550B — P90 interactivity vs total throughput per GPU, AgentX concurrency definition (simulated)</h1>
 <p class="sub">Toggle P:D topologies (prefill:decode workers, 72 GPU) and the agg arm with the buttons; toggle routing policies with the checkboxes. Every point is one simulated cell (arm × routing policy × client count, labelled with the client count along each curve). x = P90 interactivity in tokens/s per user = 1000 / per-request TPOT p90 (the rate 90% of users exceed); y = <b>total</b> tokens (input + output) served per second per GPU, InferenceX's convention, with input tokens counted exactly per simulated request. Larger solid markers are measured AgentX-mode runs (x from aiperf ITL p90). Hue = arm; ● KV, ◆ tuned KV, ○ RR.</p>
