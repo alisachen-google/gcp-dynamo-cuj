@@ -349,14 +349,22 @@ rate is normalized against the pool that does that work: `Np` = prefill GPUs, `N
 GPUs, `Time` = the measured window only (the 10xC closed-loop phase; warmup excluded).
 
 ```
-Input Throughput  = (Total Prompt Tokens Processed)   / [Time (s) * Np]   # per prefill GPU
-Output Throughput = (Total Generation Tokens Produced) / [Time (s) * Nd]  # per decode GPU
+                    Total Prompt Tokens Processed [tokens]
+Input Throughput  = --------------------------------------      unit: tokens/s per prefill GPU
+                        Time [s] * Np [prefill GPUs]
 
-                    (Np * Input_Throughput) + (Nd * Output_Throughput)
-Total Throughput  = --------------------------------------------------    # per GPU, all GPUs
-                                        Np + Nd
+                    Total Generation Tokens Produced [tokens]
+Output Throughput = -----------------------------------------   unit: tokens/s per decode GPU
+                        Time [s] * Nd [decode GPUs]
 
-Interactivity     = 1000 / Avg_TPOT_ms                                    # tok/s per user
+                    Np [GPUs] * Input_Tput [tok/s/GPU] + Nd [GPUs] * Output_Tput [tok/s/GPU]
+Total Throughput  = -------------------------------------------------------------------------
+                                          (Np + Nd) [GPUs]
+                                                                unit: tokens/s per GPU (all GPUs)
+
+                       1000 [ms/s]
+Interactivity     = ----------------                            unit: tokens/s per user
+                    Avg_TPOT [ms/token]
 ```
 
 Input tokens are consumed only by the prefill pool and output tokens produced only by the
@@ -374,10 +382,10 @@ time-per-output-token, i.e. the token speed one user experiences.
 | Total generation tokens produced | 4,721,326 |
 | Avg TPOT | 12.70 ms |
 
-- Input Throughput = 37,770,951 / (200.27 x 24) = **7,858.4 tok/s per prefill GPU**
-- Output Throughput = 4,721,326 / (200.27 x 48) = **491.1 tok/s per decode GPU**
-- Total Throughput = (24 x 7,858.4 + 48 x 491.1) / 72 = (188,601 + 23,573) / 72 = **2,946.9 tok/s per GPU**
-- Interactivity = 1000 / 12.70 = **78.7 tok/s per user**
+- Input Throughput = 37,770,951 tokens / (200.27 s x 24 GPUs) = **7,858.4 tok/s per prefill GPU**
+- Output Throughput = 4,721,326 tokens / (200.27 s x 48 GPUs) = **491.1 tok/s per decode GPU**
+- Total Throughput = (24 GPUs x 7,858.4 + 48 GPUs x 491.1) tok/s / 72 GPUs = (188,601 + 23,573) tok/s / 72 GPUs = **2,946.9 tok/s per GPU**
+- Interactivity = 1000 ms/s / 12.70 ms/token = **78.7 tok/s per user**
 
 These are exactly the values in this point's table row (+11.1% total throughput vs
 InferenceMax); the same formulas produce every throughput/interactivity cell in this
