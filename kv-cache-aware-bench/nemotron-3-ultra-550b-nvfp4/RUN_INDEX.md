@@ -137,5 +137,6 @@ Artifacts: each job uploads `<model>_trace_c<conc>_<ts>/profile_export_aiperf.cs
 | 2026-09-16 14:37 | agg 24 new stack — AgentX flag sweep | kvs3c08 (scale 3, credit 0.8) | 192 clients | `n3u-agg-ns-agentx-kvs3c08-c192` (2,613 tok/s · AT/PRE · +14% total vs kv) | [1789569414](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789569414_alisachen-n3u-agg-ns-agentx-kvs3c08-c192) |
 | 2026-09-16 16:01 | agg 24 new stack (fleet 2) — AgentX flag sweep | kvt05 (temperature 0.5) | 192 clients | `n3u-agg-ns2-agentx-kvt05-c192` (1,908 tok/s · AT/PRE · −19% total vs kv) | [1789574468](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789574468_alisachen-n3u-agg-ns2-agentx-kvt05-c192) |
 | 2026-09-16 16:19 | agg 24 new stack — AgentX flag sweep | kvs2c08 (scale 2, credit 0.8) | 192 clients | `n3u-agg-ns-agentx-kvs2c08-c192` (2,458 tok/s · AT/PRE · +6% total vs kv) | [1789575514](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789575514_alisachen-n3u-agg-ns-agentx-kvs2c08-c192) |
+| 2026-09-16 15:56 | disagg 12:6 MNNVL — AgentX concurrency | kv | 480 clients | `n3u-mnnvl-126-agentx-kv-c480` (7,544 tok/s · AT/PRE · guard PASS) | [1789574199](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789574199_alisachen-n3u-mnnvl-126-agentx-kv-c480) |
 
-104 jobs listed. Later runs of the same job name supersede earlier ones (fleet-instance-2 re-runs on 2026-09-15).
+105 jobs listed. Later runs of the same job name supersede earlier ones (fleet-instance-2 re-runs on 2026-09-15).

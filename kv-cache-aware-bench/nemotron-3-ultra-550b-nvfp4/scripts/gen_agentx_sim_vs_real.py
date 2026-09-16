@@ -8,7 +8,7 @@ rows=list(csv.DictReader(open(R/"sim-results/dynosim_n3u_agentx_v3.csv")))
 for f in glob.glob(str(R/"sim-results/agentx_v3/norm_part*.csv")): rows+=list(csv.DictReader(open(f)))
 name={"6:12":"disagg 6:12","9:9":"disagg 9:9","12:6":"disagg 12:6","agg6":"agg 24-GPU"}; hue={"6:12":"--s1","9:9":"--s3","12:6":"--s4","agg6":"--s2"}
 # measured points: [clients, total/GPU, ttft p95, P90 interactivity, output/GPU, knee]
-MI={("9:9","kv",48):147.1,("9:9","kv",96):119.0,("9:9","kv",192):101.0,("agg6","kv",48):102.0,("agg6","rr",48):90.9,("agg6","kv",96):42.6,("12:6","kv",96):104.2,("agg6","rr",96):33.8,("agg6","kv",192):19.8,("12:6","kv",192):89.3,("agg6","rr",192):12.2,("agg6","kv",384):12.6,("12:6","kv",384):64.0,("agg6","rr",384):7.9,("agg6","kv-tuned",192):26.8}
+MI={("9:9","kv",48):147.1,("9:9","kv",96):119.0,("9:9","kv",192):101.0,("agg6","kv",48):102.0,("agg6","rr",48):90.9,("agg6","kv",96):42.6,("12:6","kv",96):104.2,("agg6","rr",96):33.8,("agg6","kv",192):19.8,("12:6","kv",192):89.3,("agg6","rr",192):12.2,("agg6","kv",384):12.6,("12:6","kv",384):64.0,("agg6","rr",384):7.9,("agg6","kv-tuned",192):26.8,("12:6","kv",480):57.1}
 meas=json.load(open(R/"sim-results/measured_agentx.json"))
 M={}
 for m in meas:

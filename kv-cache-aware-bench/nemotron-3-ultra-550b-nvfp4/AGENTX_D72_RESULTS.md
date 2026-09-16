@@ -129,7 +129,8 @@ the sim's RR under-counts the prefix-miss penalty (hit 0.30 vs KV 0.74).
 | 12:6 KV | 96 | 1,980 (27.5) | 2,471 | 0.30 / 1.37 / 3.9 s | 8.2 / 9.6 ms | 17.2 (peak 37) | stationary | PASS (first point on the sim-optimal split; 11:54 UTC) |
 | 12:6 KV | 192 | 3,217 (44.7) | 4,510 | 0.36 / 1.77 / 5.1 s | 10.0 / 11.2 ms | 33.5 (peak 63) | stationary (q1 0.33 → q4 0.37 s) | PASS (mooncake TE peak 765 MB/s, no transfer failures; 13:40 UTC) |
 | 12:6 KV | 384 | 6,253 (86.8) | 8,637 | 0.43 / 2.58 / 7.1 s | 13.7 / 15.6 ms | 91.1 (peak 142) | stationary (q1 0.44 → q4 0.45 s) | PASS (mooncake TE peak 1,075 MB/s, no transfer failures; 15:48 UTC) |
-| 12:6 KV | 480 / 768 / 1440 | running (480 started 15:52) | | | | | | |
+| 12:6 KV | 480 | 7,544 (104.8) | 10,434 | 0.50 / 3.52 / 9.6 s | 16.4 / 17.5 ms | 129.4 (peak 196) | stationary (q1 0.51 → q4 0.52 s) | PASS (mooncake TE peak 998 MB/s, no transfer failures; 18:10 UTC) |
+| 12:6 KV | 768 / 1440 | running (768 started 18:13) | | | | | | |
 | 12:6 RR | 192 / 96 / 384 | queued behind 12:6 KV | | | | | | |
 
 Throughput scaled 2.57× from 48 to 96 clients and 1.84× from 96 to 192 with TTFT p50 flat at 0.31–0.36 s
@@ -145,7 +146,11 @@ tok/s/user, 91 in flight.** This is already above the sim's disagg *ceiling* (6,
 own 384 cell, and it is the load at which the agg fleet is fully saturated (agg KV 384: TTFT p50 83 s and falling
 throughput). Per GPU, disagg at 384 clients (5.3 clients/GPU) is now 0.89× of agg's best stationary cell (9,655 at
 192 clients = 8 clients/GPU) while carrying 2× the sessions; the load-normalised comparison in AGENTX_DISAGG_VS_AGG.md
-§3 is where the two meet. The 480 / 768 / 1440 cells will locate the disagg knee. Per-user interactivity is very high in this regime (P90 147 tok/s/user at 48,
+§3 is where the two meet. **At 480 clients (the sim's same-SLO cell for disagg KV) 12:6 is still stationary: 10,434 total tok/s per GPU
+(+21% over 384), TTFT p95 3.5 s, P90 57, 129 in flight, 8.0 req/s.** The sim's cell is 5,217, so silicon is 2.0× above
+it for the third cell running. This is the first disagg cell whose per-GPU total exceeds agg's best stationary cell
+(9,655 at 192 clients) — at 6.7 clients per GPU against agg's 8 — and it does so with a TTFT tail 3.3× shorter (3.5 vs
+11.7 s p95). The 768 / 1440 cells will locate the disagg knee. Per-user interactivity is very high in this regime (P90 147 tok/s/user at 48,
 119 at 96) because decode batches are tiny. The KV-vs-RR comparison table will be filled from the
 96/384 pairs when the RR points land; the busy-stream KV/RR gains (2.02× at c48, 1.94× at c96, both
 instance-2) are the reference expectation.
