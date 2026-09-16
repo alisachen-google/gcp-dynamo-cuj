@@ -108,7 +108,7 @@ in parallel with KV (second fleet `n3u-agg-ns2`), so both framings can be read o
 | arm | clients | output tok/s (/GPU) | total tok/s/GPU | TTFT p50 / p95 / p99 | ITL p50 / p90 | in-flight | knee | status |
 |---|---|---|---|---|---|---|---|---|
 | agg KV | 48 | 775 (32.3) | 3,334 | 0.42 / 3.83 / 7.7 s | 7.3 / 9.8 ms (P90 interactivity 102) | 6.8 (peak 18) | stationary | complete 09:18 UTC |
-| agg KV | 96 | 1,803 (75.1) | 6,844 | 0.67 / 5.36 / 12.2 s | 11.9 / 23.5 ms (P90 42.6) | 27.5 (peak 51) | pending | complete 10:46 UTC |
+| agg KV | 96 | 1,803 (75.1) | 6,844 | 0.67 / 5.36 / 12.2 s | 11.9 / 23.5 ms (P90 42.6) | 27.5 (peak 51) | stationary | complete 10:46 UTC |
 | agg KV | 192 / 384 / 768 / 1536 | | | | | | | running (192 started 10:47) |
 | agg RR | 48 | 752 (31.3) | 3,250 | 0.79 / 8.27 / 15.3 s | 7.5 / 11.0 ms (P90 90.9) | 8.5 (peak 22) | stationary | complete 10:42 UTC (second fleet `n3u-agg-ns2`) |
 | agg RR | 96 / 192 / 384 / 768 / 1536 | | | | | | | running in parallel (96 started 10:42) |
