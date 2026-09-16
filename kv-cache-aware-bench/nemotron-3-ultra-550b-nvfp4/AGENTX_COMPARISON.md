@@ -307,6 +307,13 @@ ITL p50 7.4 / p90 8.4 ms, 7,538 requests, stationary, guard PASS — sim said 23
 sim is now *under*-predicting as load rises, the opposite sign from the busy-stream sim). Throughput
 scaled 2.57× for 2× clients, so the fleet is still far from its knee on this axis. Next: 192 (running), 384, 768, 1536.
 
+Bench-pod placement note (2026-09-16): the 192-client point was evicted mid-warm-up — aiperf itself
+used 59 GB (192 session lanes × 256K-token contexts plus the record processors) on a 60 GB x86 system
+node. From 192 clients up, the AgentX bench pods run on np-1's arm64 GPU nodes (953 GB; the template
+already builds aiperf's aarch64 dependency from source) with a 96 GiB request / 512 GiB limit and an
+anti-affinity preference away from our worker pods (`manifests/perf/sgl-d72-agentx.yaml`). This is
+the same reason InferenceX's AgentX recipes run aiperf inside the SLURM allocation with `mem: "0"`.
+
 Page: [AgentX-concurrency curve](https://htmlpreview.github.io/?https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/reports/n3u-agentx-curve.html)
 (measured AgentX-mode points are overlaid as the client-axis ladders land).
 
