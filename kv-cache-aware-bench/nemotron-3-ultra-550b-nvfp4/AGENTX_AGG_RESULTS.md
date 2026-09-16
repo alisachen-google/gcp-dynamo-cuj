@@ -109,7 +109,8 @@ in parallel with KV (second fleet `n3u-agg-ns2`), so both framings can be read o
 |---|---|---|---|---|---|---|---|---|
 | agg KV | 48 | 775 (32.3) | 3,334 | 0.42 / 3.83 / 7.7 s | 7.3 / 9.8 ms (P90 interactivity 102) | 6.8 (peak 18) | stationary | complete 09:18 UTC |
 | agg KV | 96 | 1,803 (75.1) | 6,844 | 0.67 / 5.36 / 12.2 s | 11.9 / 23.5 ms (P90 42.6) | 27.5 (peak 51) | stationary | complete 10:46 UTC |
-| agg KV | 192 / 384 / 768 / 1536 | | | | | | | running (192 started 10:47) |
+| agg KV | 192 | 2,323 (96.8) | 9,655 | 1.56 / 11.68 / 17.5 s | 23.9 / 50.6 ms (P90 19.8) | 74.5 (peak 116) | stationary (q1 1.63 → q4 1.13 s) | complete 12:29 UTC |
+| agg KV | 384 / 768 / 1536 | | | | | | | running (384 started 12:29) |
 | agg RR | 48 | 752 (31.3) | 3,250 | 0.79 / 8.27 / 15.3 s | 7.5 / 11.0 ms (P90 90.9) | 8.5 (peak 22) | stationary | complete 10:42 UTC (second fleet `n3u-agg-ns2`) |
 | agg RR | 96 | 1,611 (67.1) | 6,137 | 0.81 / 12.56 / 19.8 s | 12.1 / 29.6 ms (P90 33.8) | 33.2 (peak 53) | stationary | complete 12:11 UTC |
 | agg RR | 192 / 384 / 768 / 1536 | | | | | | | running (192 started 12:11) |
@@ -120,7 +121,16 @@ this report. First measured agg point vs the sim's agg KV cell at 48 clients: to
 = 1.03× on tokens, TTFT p95 3.83 vs 8.27 s (RR 2.2× worse), P90 interactivity 102 vs 91; 96 clients — KV 6,844 vs RR 6,137
 = 1.12×, TTFT p95 5.36 vs 12.56 s (RR 2.3× worse), P90 42.6 vs 33.8.** The KV advantage on tokens grows with load (1.03× →
 1.12×) as the sim's shape predicted, while the sim's absolute claim that RR is *ahead* at these loads (0.82×, 0.81×) is wrong.
-RR also carries more requests in flight per client (33 vs 27.5 at 96) because its cache-miss prefills lengthen every request. The sim had predicted 0.82× on tokens and a 2.3× TTFT p95 gap at 48 clients:
+RR also carries more requests in flight per client (33 vs 27.5 at 96) because its cache-miss prefills lengthen every request.
+
+**KV at 192 clients (the sim's same-config comparison point) is still stationary: 9,655 total tok/s per GPU, TTFT p95
+11.7 s, 74.5 requests in flight (peak 116) on 24 GPUs, ITL p50 24 ms (P90 interactivity 19.8 tok/s/user).** That is
+2.6× the sim's 3,715 for the same cell and already above the sim's agg *ceiling* (5,138 at 960 clients): the agg fleet
+under AgentX load is far from its knee at 192 (TTFT p50 falls from 1.63 s in the first quarter to 1.13 s in the last).
+The TTFT p95 budget of 20 s used for the same-SLO selection is met with margin (11.7 s); the same-SLO KV point will
+therefore move up the ladder (384 running) rather than sit at 192 as the sim suggested. Interactivity is the axis
+that has moved: P90 dropped 102 → 43 → 20 tok/s/user from 48 to 192 clients as per-worker decode batches grew
+(in flight per worker 1.1 → 4.6 → 12.4), the trade the sim predicted for KV packing on agg. The sim had predicted 0.82× on tokens and a 2.3× TTFT p95 gap at 48 clients:
 the latency ratio is right, the token ratio is not (measured KV does not lose throughput to affinity at this load). From 48 to
 96 clients agg KV scaled 2.05× on total tokens with TTFT p95 5.4 s and in-flight 27.5, i.e. agg carries more requests in flight
 per client than 9:9 (16 at 96) because its per-request latency is ~2× longer (14.3 s vs 7.7 s).
