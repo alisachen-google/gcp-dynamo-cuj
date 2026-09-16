@@ -114,7 +114,8 @@ run before that result and stay as a cross-check). On 12:6 the same rules give: 
 2,271 = 1.18×, TTFT 0.2 vs 6.5 s), both-bounded 96 (1.04×), same SLO TTFT p95 ≤ 20 s **KV 480 (5,217) vs RR 96 (1,342) = 3.9×**,
 P90 ≥ 20 tok/s/user KV 480 vs RR 384 (2,508) = 2.1×. The measured 12:6 KV ladder is 96 / 192 / 384 / 480 / 768 / 1440
 (480 and 1440 are the sim's same-SLO and peak cells) and the 12:6 RR points are **192, 96, 384**, queued in that order
-behind the last 9:9 point. Expectation from the busy-stream silicon
+behind the last 9:9 point. Re-analysis with tuned KV (KNEE_ANALYSIS.md, AgentX section) confirms these cells and adds
+that tuned KV's best cell under the same 20 s budget is 768 (6,210, +19% over KV 480) — an optional extra run. Expectation from the busy-stream silicon
 (KV/RR 2.02× at c48, 1.94× at c96) is that the measured same-config gain lands above the sim's 1.34×, because
 the sim's RR under-counts the prefix-miss penalty (hit 0.30 vs KV 0.74).
 

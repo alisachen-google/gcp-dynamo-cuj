@@ -94,13 +94,36 @@ Measured so far (`knee_check.py`, stationarity of TTFT p50 across quarters): dis
 stationary** (TTFT p50 0.32 / 0.31 s, in-flight 5.6 / 16); 192 running; agg KV 48 running; RR ladders queued.
 The measured knee will be reported as the last stationary client count once the ladders complete.
 
-### KV-vs-RR comparison points chosen from these knees
+### KV-vs-RR comparison points chosen from these knees (re-analysed 2026-09-16 09:20 UTC, sim v3 incl. tuned KV)
 
-| arm | same config (RR's knee) | both-bounded reference | same SLO, TTFT p95 ≤ 20 s | same SLO, P90 interactivity ≥ 20 tok/s/user |
+Knee = throughput-slope knee (marginal total-token gain per added client < 25% of the initial slope). RR's knee is
+earlier on every arm because its prefix hit rate is ~0.2–0.4 (each request re-prefills most of its 70 k-token context)
+versus ~0.75 for KV routing; the fewer prefill workers an arm has, the higher RR's hit rate (agg 0.40, 6:12 0.40,
+9:9 0.30, 12:6 0.23) because a session lands on the same worker more often by chance.
+
+| arm | KV knee (TTFT p50) | tuned-KV knee | RR knee (TTFT p50) | RR peak |
 |---|---|---|---|---|
-| disagg 9:9 | **192 clients**: sim KV 2,733 vs RR 2,047 total/GPU (1.34×), TTFT 0.3 vs 12.7 s | 96: 1,395 vs 1,336 (1.04×) | **KV 480 (5,501) vs RR 96 (1,336): 4.1×** | KV 480 vs RR 384 (2,062): 2.7× |
-| disagg 12:6 (measured ladder) | **192 clients**: sim KV 2,679 vs RR 2,271 (1.18×), TTFT 0.2 vs 6.5 s | 96: 1,389 vs 1,342 (1.04×) | **KV 480 (5,217) vs RR 96 (1,342): 3.9×** | KV 480 vs RR 384 (2,508): 2.1× |
-| agg 24-GPU | **192 clients**: sim KV 3,715 vs RR 3,889 (0.96×), TTFT 0.2 vs 4.4 s | 96: 2,382 vs 2,924 (0.81×) | **KV 192 (3,715) vs RR 96 (2,924): 1.27×** | RR 96 (2,924) vs KV 48 (1,474): KV loses on interactivity (session affinity → bigger decode batches) |
+| disagg 12:6 (measured ladder) | 480 (0.6 s; TTFT ≤ 1 s to 480) | 480 (0.4 s; ≤ 1 s to 1,920) | 192 (6.5 s) | 2,508 at 384 |
+| disagg 9:9 | 480 (4.1 s; ≤ 1 s to 192) | 768 (2.2 s; ≤ 1 s to 480) | 192 (12.7 s) | 2,062 at 384 |
+| disagg 6:12 | 384 (13.0 s; ≤ 1 s to 192) | 480 (5.4 s) | 96 (4.0 s) | 1,631 at 192 |
+| agg 24-GPU | 192 (0.2 s; ≤ 1 s to 1,536) | 192 (0.1 s) | 192 (4.4 s) | 4,156 at 384 |
 
-Runners: disagg measured ladder = **12:6** (KV 96/192/384/480/768/1440, then RR 192/96/384) after the 9:9 192-client
-point; 9:9 48/96/192 stay as a cross-check; agg RR = full 48 → 1536 on the second fleet, in parallel with agg KV. Rationale and the full sim tables: AGENTX_D72_RESULTS.md §ii, AGENTX_AGG_RESULTS.md §ii.
+Chosen points (total tok/s per GPU; gain = KV ÷ RR):
+
+| arm | same config at RR's knee | same config, both pre-knee | same SLO, TTFT p95 ≤ 20 s | same SLO, P90 interactivity ≥ 20 tok/s/user | where tuned KV would land |
+|---|---|---|---|---|---|
+| **disagg 12:6** | **192**: KV 2,679 vs RR 2,271 = **1.18×**, TTFT 0.2 vs 6.5 s | 96: 1,389 vs 1,342 (1.04×) | **KV 480 (5,217, p95 7 s) vs RR 96 (1,342, p95 10 s) = 3.9×** | KV 480 (P90 32) vs RR 384 (2,508, P90 34) = 2.1× | tuned 768 → 6,210 under the same 20 s budget (+19% over KV 480) |
+| disagg 9:9 (cross-check) | 192: 2,733 vs 2,047 = 1.34×, 0.3 vs 12.7 s | 96: 1.04× | KV 480 (5,501, p95 18 s) vs RR 96 (1,336) = 4.1× | KV 480 vs RR 384 (2,062) = 2.7× | tuned 768 → 7,598 (+38%) |
+| agg 24-GPU | **192**: KV 3,715 vs RR 3,889 = **0.96×**, TTFT 0.2 vs 4.4 s | 96: 2,382 vs 2,924 (0.81×, RR ahead) | **KV 192 (3,715, p95 6 s) vs RR 96 (2,924, p95 11 s) = 1.27×** | RR 96 (2,924, P90 29) vs KV 48 (1,474, P90 22) = **0.50× — KV loses** | tuned KV is *worse* on agg below 1,440 clients (−13 to −26%) |
+
+What changed versus the first pass: nothing in the chosen client counts — the finer analysis confirms 192 as the
+same-config point on every arm and 480-vs-96 (disagg) / 192-vs-96 (agg) for the TTFT-p95 budget — but two findings
+sharpen the expectation for the measured runs: (1) on agg, KV-aware routing trades interactivity for TTFT (it packs
+a session's turns onto one worker, so decode batches grow: P90 9 vs RR's 15 tok/s/user at 192), so the agg KV-vs-RR
+result will look different on the throughput and interactivity axes; (2) the tuned router only pays on disagg past
+the prefill knee, so a tuned measured point belongs on 12:6 at 768, not on agg.
+
+Runners: disagg = 12:6 KV 96 / 192 / 384 / 480 / 768 / 1440 then RR 192 / 96 / 384 (np-3, after the 9:9 192-client
+cross-check); agg = KV 48 → 1536 and RR 48 → 1536 in parallel on two fleets (np-1). Every chosen cell above is inside
+those ladders. A 12:6 tuned-KV point at 768 (`--router-prefill-load-scale 3 --router-kv-overlap-score-credit 0.8`) is
+the one extra run the analysis suggests; it is not queued.
