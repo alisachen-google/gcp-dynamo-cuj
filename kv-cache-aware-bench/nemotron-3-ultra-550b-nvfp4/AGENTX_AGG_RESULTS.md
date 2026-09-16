@@ -180,6 +180,31 @@ the latency ratio is right, the token ratio is not (measured KV does not lose th
 96 clients agg KV scaled 2.05× on total tokens with TTFT p95 5.4 s and in-flight 27.5, i.e. agg carries more requests in flight
 per client than 9:9 (16 at 96) because its per-request latency is ~2× longer (14.3 s vs 7.7 s).
 
+## v. KV-router flag sweep at the 192-client comparison point (measured)
+
+The sim (§ii) predicted that the tuned router (`--router-prefill-load-scale 3.0 --router-kv-overlap-score-credit 0.8`)
+would *lose* 26% on agg at 192 clients (2,740 vs 3,715) because it spreads a session's turns across workers and gives
+up prefix hits. Silicon says the opposite. Variants run on the same fleet (`n3u-agg-newstack.yaml`, 6 × TP4 GB300),
+same 192 live-session clients, same 900 s warm + 3,600 s window; runner variants are the `ROUTER` map in
+[`scripts/agentx_runner.sh`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/agentx_runner.sh).
+
+| router flags (192 clients, agg) | total tok/s/GPU | output tok/s (/GPU) | TTFT p50 / p95 / p99 | ITL p50 / p90 → P90 | in flight | stationary | artifact |
+|---|---|---|---|---|---|---|---|
+| kv default (scale 1, credit 0, temp 0, fcfs) | 9,655 | 2,323 (96.8) | 1.56 / 11.7 / 17.5 s | 23.9 / 50.6 → 19.8 | 74.5 | yes | [1789555981](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789555981_alisachen-n3u-agg-ns-agentx-kv-c192) |
+| **kvs3c08**: prefill-load scale 3.0, overlap credit 0.8 | **11,012 (+14%)** | 2,613 (108.9) | 0.87 / **6.33** / 12.1 s | 19.6 / 37.3 → **26.8** | 64.1 (peak 107) | yes (q1 0.89 → q4 0.82 s) | [1789569414](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789569414_alisachen-n3u-agg-ns-agentx-kvs3c08-c192) |
+| kvs2c08: scale 2.0, credit 0.8 | running (started 16:13) | | | | | | |
+| kvt05: temperature 0.5 | running on fleet 2 (started 15:56) | | | | | | |
+| rr (reference) | 6,802 | 1,713 (71.4) | 10.9 / 60.1 / 90.1 s | 30.5 / 82.0 → 12.2 | 102.7 | at knee | [1789560983](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789560983_alisachen-n3u-agg-ns2-agentx-rr-c192) |
+
+**Reading.** Weighting prefill load 3× and crediting overlap at 0.8 lets the router move a turn off a worker whose
+prefill queue is deep even when that worker holds the prefix, so bursts (subagent fan-out, back-to-back tool calls)
+stop piling onto one worker: fewer requests in flight (64 vs 75), a TTFT tail cut almost in half (p95 6.3 vs 11.7 s),
+faster decode (ITL p50 19.6 vs 23.9 ms, P90 26.8 vs 19.8) and 14% more total tokens. Against RR the tuned router is
+**1.62× on tokens with a 9.5× better TTFT p95** at the same 192 sessions. The sim got the sign wrong for the reason
+already found in §iv: it charges the KV router a decode cliff for packing and models the load-scale flag as pure
+prefix loss, while the live effect is queue relief. The same-SLO agg pair therefore moves to **tuned KV 192 (11,012,
+p95 6.3 s) vs RR 96 (6,137, p95 12.6 s) = 1.79×**.
+
 ## iv. Simulation-vs-real gap, with the apple-to-apple decomposition
 
 Method (same ladder as the disagg report and AGG24 §5.2): start from the published simulator, substitute one measured

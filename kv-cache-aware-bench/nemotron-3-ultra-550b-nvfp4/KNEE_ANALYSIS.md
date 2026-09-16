@@ -105,6 +105,7 @@ Measured KV-vs-RR pairs available so far (agg, same config, total tok/s per GPU,
 | 48 | 3,334 | 3,250 | **1.03×** | 0.82× | 3.83 vs 8.27 s (RR 2.2× worse) |
 | 96 | 6,844 | 6,137 | **1.12×** | 0.81× | 5.36 vs 12.56 s (RR 2.3× worse) |
 | **192** (same-config point) | **9,655** | 6,802 | **1.42×** | 0.96× | 11.7 vs 60.1 s (RR 5.1× worse) |
+| 192, tuned KV (scale 3, credit 0.8) | **11,012** | 6,802 | **1.62×** | 0.70× | 6.3 vs 60.1 s (RR 9.5× worse) |
 
 The sim's ordering on agg below the knee (RR ahead on tokens because KV packs sessions onto one worker) is not
 reproduced: measured KV is ahead on every axis and the gap widens with load. The sim's agg decode cliff (TPOT jumps
