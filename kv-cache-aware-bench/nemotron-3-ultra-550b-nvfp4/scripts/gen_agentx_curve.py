@@ -44,7 +44,7 @@ const S=__S__, M=__M__; const el=id=>document.getElementById(id); let Y=5, showR
 function render(){
  const W=1000,H=440,m={t:26,r:160,b:44,l:66}; const x=c=>m.l+(Math.log2(c)-Math.log2(48))/(Math.log2(1536)-Math.log2(48))*(W-m.l-m.r);
  const vis=S.filter(s=>showRR||s.pol==="kv"); const mv=M.filter(p=>showRR||p.pol==="kv");
- const vals=[...vis.flatMap(s=>s.pts.map(p=>p[Y])),...mv.map(p=>Y===5?p.tot:Y===1?p.tpg:Y===2?p.p50:p.p95)]; const log=Y>1; const lo=log?0.05:0, hi=log?Math.pow(10,Math.ceil(Math.log10(Math.max(...vals)))):Math.max(...vals)*1.08;
+ const vals=[...vis.flatMap(s=>s.pts.map(p=>p[Y])),...mv.map(p=>Y===5?p.tot:Y===1?p.tpg:Y===2?p.p50:p.p95)]; const log=(Y===2||Y===3); const lo=log?0.05:0, hi=log?Math.pow(10,Math.ceil(Math.log10(Math.max(...vals)))):Math.max(...vals)*1.08;
  const y=v=>log? m.t+(1-(Math.log10(Math.max(v,lo))-Math.log10(lo))/(Math.log10(hi)-Math.log10(lo)))*(H-m.t-m.b) : m.t+(1-v/hi)*(H-m.t-m.b);
  let g=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-labelledby="ct"><title id="ct">Throughput or TTFT versus AgentX client concurrency</title>`;
  if(log){for(let d=Math.log10(lo);d<=Math.log10(hi);d++){const v=Math.pow(10,d);g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${m.l-8}" y="${y(v)+4}" font-size="11" fill="var(--ink2)" text-anchor="end">${v>=1?v:v} s</text>`}}
