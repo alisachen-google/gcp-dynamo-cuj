@@ -132,6 +132,7 @@ Measured so far (AgentX definition; total = input + output tokens per second per
 |---|---|---|---|---|---|---|---|---|
 | disagg 9:9 KV | 48 | 1,128 | 10.9 | 0.32 / 0.9 / 1.5 s | 6.4 / 6.8 ms | 147 | 5.6 | stationary |
 | disagg 9:9 KV | 96 | 2,497 | 28.0 | 0.31 / 0.9 / 1.42 s | 7.4 / 8.4 ms | 119 | 16.1 | stationary |
+| disagg 9:9 KV | 192 | 4,600 | 45.4 | 0.36 / 1.2 / 2.03 s | 8.5 / 9.9 ms | 101 | 30.0 | stationary |
 | agg KV | 48 | 3,334 | 32.3 | 0.42 / 2.5 / 3.83 s | 7.3 / 9.8 ms | 102 | 6.8 | stationary |
 
 Analysis so far (AGENTX_D72 §iv, AGENTX_AGG §iii, AGENTX_DISAGG_VS_AGG): the disagg engine model is within ~10 %

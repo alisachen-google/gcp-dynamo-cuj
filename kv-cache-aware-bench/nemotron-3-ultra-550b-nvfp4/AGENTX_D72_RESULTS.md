@@ -125,12 +125,13 @@ the sim's RR under-counts the prefix-miss penalty (hit 0.30 vs KV 0.74).
 |---|---|---|---|---|---|---|---|---|
 | 9:9 KV | 48 | 786 (10.9) | 1,128 | 0.32 / 1.5 / 3.8 s | 6.4 / 6.8 ms | 5.6 | stationary | PASS |
 | 9:9 KV | 96 | 2,019 (28.0) | 2,497 | 0.31 / 1.42 / 4.3 s | 7.4 / 8.4 ms | 16.1 | stationary | PASS |
-| 9:9 KV | 192 | running (07:20 UTC redeploy; first attempt evicted at 59 GB, second invalidated by a transfer failure during an operator-caused ComputeDomain deletion window) | | | | | | |
-| 9:9 KV | 384 / 768 / 1536 | queued | | | | | | |
-| 9:9 RR | 96 / 384 | queued behind the KV ladder | | | | | | |
+| 9:9 KV | 192 | 3,267 (45.4) | 4,600 | 0.36 / 2.03 / 6.1 s | 8.5 / 9.9 ms | 30.0 (peak 60) | stationary | PASS (third attempt; the first was evicted at 59 GB on a system node, the second invalidated by a transfer failure during an operator-caused ComputeDomain deletion) |
+| 12:6 KV | 96 / 192 / 384 / 480 / 768 / 1440 | the measured disagg ladder moves to the sim-optimal 12:6 split (fleet deploying) | | | | | | |
+| 12:6 RR | 192 / 96 / 384 | queued behind 12:6 KV | | | | | | |
 
-Throughput scaled 2.57× for 2× clients between 48 and 96 with TTFT flat at 0.31 s, i.e. the fleet is
-still in its linear region. Per-user interactivity is very high in this regime (P90 147 tok/s/user at 48,
+Throughput scaled 2.57× from 48 to 96 clients and 1.84× from 96 to 192 with TTFT p50 flat at 0.31–0.36 s
+(p95 2.0 s at 192), so 9:9 is still pre-knee at 192 with 30 requests in flight on average; the sim's 9:9 cell at 192
+(2,733 total/GPU, TTFT p50 0.3 s, P90 93) is 0.59× real on total tokens and within 10% on latency and interactivity. Per-user interactivity is very high in this regime (P90 147 tok/s/user at 48,
 119 at 96) because decode batches are tiny. The KV-vs-RR comparison table will be filled from the
 96/384 pairs when the RR points land; the busy-stream KV/RR gains (2.02× at c48, 1.94× at c96, both
 instance-2) are the reference expectation.
