@@ -124,7 +124,7 @@ Selection rules (KNEE_ANALYSIS.md, AgentX section):
 5. **Flag sweep** at the chosen KV cells (prefill-load-scale 3 / credit 0.8, scale 2 / credit 0.8, temperature 0.5),
    because the sim says tuned routing pays only on disagg past the prefill knee.
 
-## 5. Real results and analysis (fills as points land — see RUN_INDEX.md for the authoritative list)
+## 5. Real results and analysis (updated 17:45 UTC; RUN_INDEX.md is the authoritative job list)
 
 Measured so far (AgentX definition; total = input + output tokens per second per GPU):
 
@@ -147,12 +147,65 @@ Measured so far (AgentX definition; total = input + output tokens per second per
 | agg RR | 192 | 6,802 | 71.4 | 10.87 / 44.6 / 60.1 s | 30.5 / 82.0 ms | 12 | 102.7 | stationary, at throughput knee |
 | agg RR | 384 | 5,076 | 49.6 | 78.3 / 402 / 495 s | 57.0 / 126 ms | 8 | 265.6 | **post-knee** (saturated; ladder stopped here) |
 
-Analysis so far (AGENTX_D72 §iv, AGENTX_AGG §iii, AGENTX_DISAGG_VS_AGG): the disagg engine model is within ~10 %
+### 5.1 KV-aware vs round-robin, measured (agg 24 GPU; the disagg RR ladder is queued behind 12:6 KV)
+
+Same config (192 live-session clients, the cell the sim picked as the same-config point on every arm):
+
+| | KV default | KV tuned (scale 3, credit 0.8) | RR |
+|---|---|---|---|
+| total tok/s per GPU | 9,655 (**1.42× RR**) | **11,012 (1.62× RR)** | 6,802 |
+| TTFT p50 / p95 | 1.56 / 11.7 s | 0.87 / **6.3 s** | 10.9 / 60.1 s |
+| P90 interactivity (tok/s/user) | 19.8 | 26.8 | 12.2 |
+| in flight (of 192) | 74.5 | 64.1 | 102.7 |
+| knee | scaling (+41% over 96) | scaling | **at throughput knee** (+11% over 96) |
+
+Same SLO (TTFT p95 ≤ 20 s): RR's best cell inside the budget is 96 clients (6,137, p95 12.6 s); KV meets it at 192, so
+**KV 192 vs RR 96 = 1.57×** and **tuned KV 192 vs RR 96 = 1.79×**. Under an interactivity budget (P90 ≥ 20) the pair
+inside it is KV 96 vs RR 96 = 1.12×. Below the knee the KV advantage grows with load (1.03× at 48, 1.12× at 96, 1.42× at
+192) because RR re-prefills most of each ~90 k-token turn while KV lands turns on the worker holding the prefix.
+Measured knees: **agg KV 192, agg RR 192** (both 384 cells saturated and the ladders were stopped there); the sim had
+placed the agg KV knee at 1536, a 4–8× miss on the load axis (AGENTX_AGG_RESULTS.md §iii, KNEE_ANALYSIS.md).
+
+### 5.2 Router flag sweep at the comparison point (agg, 192 clients)
+
+| flags | total/GPU vs default KV | TTFT p95 | verdict |
+|---|---|---|---|
+| prefill-load scale 3, overlap credit 0.8 | **+14%** | 6.3 s (−46%) | adopt: relieves per-worker prefill queues without losing the prefix |
+| temperature 0.5 | −19% | 22 s (+90%) | reject: random worker choice discards the prefix; behaves like RR |
+| prefill-load scale 2, credit 0.8 | running | | |
+| tuned at 96 clients (fleet 2) | running | | tests whether the gain holds below the knee, where the sim predicted a loss |
+
+The sim predicted −26% for the tuned router on agg at 192; silicon says +14%. The sign flip has the same root as the
+agg decomposition (§5.3): the sim charges the KV router a decode-batch penalty for packing sessions and models the
+load-scale flag as pure prefix loss, whereas the live effect is queue relief (AGENTX_AGG_RESULTS.md §v).
+
+### 5.3 Simulation vs silicon, apple to apple (TTFT p95 standard)
+
+Disagg (9:9 KV, 48 / 96 / 192): after substituting measured output length, a 0.19 s per-request hand-off and the
+measured decode line, the engine model is within ~10% on output tokens; the residual on total tokens (0.62×) is trace
+representation (the 4 k-request slice carries ~30% fewer input tokens per turn and no subagent fan-out) and the TTFT
+p95 is 2–2.7× too pessimistic (per-worker FCFS prefill queue). Agg (KV, 48 / 96): the largest term is the sim's decode
+cliff past batch 7 (TPOT 27–40 ms simulated vs 7–12 ms measured); removing it recovers a third of the 0.35–0.44× gap,
+the rest is the same trace residual. Full ladders: AGENTX_D72_RESULTS.md §iv, AGENTX_AGG_RESULTS.md §iv; overlay page
+`reports/n3u-agentx-sim-vs-real.html`. Rankings across topologies are the sim's reliable output; levels, and the
+KV-vs-RR ordering on agg, must come from silicon.
+
+### 5.4 Disagg or agg, so far
+
+At equal clients the 72-GPU disagg fleet is diluted 3× until it saturates, so the comparison is made at equal load
+per GPU or at equal SLO (AGENTX_DISAGG_VS_AGG.md §0). Measured: agg's best stationary cell is KV 192 (9,655 total/GPU,
+8 clients/GPU, p95 11.7 s) and its ceiling is there; disagg 12:6 KV at 384 clients (5.3 clients/GPU) is at 8,637 with
+p95 2.6 s and still scaling. **Agg wins per GPU as long as the load fits under its knee (≤ 8 live sessions per GPU);
+disagg is the arm that keeps a sub-3 s TTFT tail past that and whose ceiling is still unknown** (480 / 768 / 1440
+running). The load-normalised verdict (clients per GPU under SLO → GPUs per 1,000 sessions) is finalised when the 12:6
+ladder finds its knee.
+
+Analysis so far (AGENTX_D72 §iv, AGENTX_AGG §iii, AGENTX_DISAGG_VS_AGG)Analysis so far (AGENTX_D72 §iv, AGENTX_AGG §iii, AGENTX_DISAGG_VS_AGG): the disagg engine model is within ~10 %
 once a 0.19 s per-request hand-off is added; the agg simulator is pessimistic at low load (sim 1,474 vs 3,334
 total/GPU, P90 22 vs 102) because its refit decode curve is a busy-stream fit; at 48 clients agg's per-GPU total is
 3× disagg's because the same offered load is spread over 3× fewer GPUs (the dilution effect), which is why the agg-vs-
 disagg comparison must be made at equal SLA or equal clients per GPU, not equal clients.
 
-KV vs RR under the same config and the same SLO, when to prefer disagg or agg, and the flag-sweep result will be
-written here as the 12:6 and agg ladders complete; the busy-stream conclusions (KV/RR 2.0× at c48 on 6:12, disagg 9:9
-1.17× agg on total tokens at their bounded peaks) are in D72_RESULTS.md §2 and AGG24_RESULTS.md §4.
+The disagg KV-vs-RR pairs (12:6 RR 192 / 96 / 384) and the 12:6 flag sweep are queued behind the 12:6 KV ladder; the
+busy-stream conclusions (KV/RR 2.0× at c48 on 6:12, disagg 9:9 1.17× agg on total tokens at their bounded peaks) are in
+D72_RESULTS.md §2 and AGG24_RESULTS.md §4.
