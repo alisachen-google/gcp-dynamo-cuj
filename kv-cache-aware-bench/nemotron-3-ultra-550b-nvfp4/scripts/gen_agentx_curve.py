@@ -3,7 +3,7 @@ clients) for disagg 6:12 / 9:9 (KV, RR) and agg 6xTP4; measured AgentX-mode poin
 (sim-results/measured_agentx.json: [{arm,pol,clients,tpg,p50,knee}])."""
 import csv,json,pathlib,sys
 R=pathlib.Path(__file__).resolve().parents[1]
-rows=list(csv.DictReader(open(R/"sim-results/dynosim_n3u_agentx_v1.csv")))
+rows=list(csv.DictReader(open(R/"sim-results/dynosim_n3u_agentx_v2.csv")))
 S={}
 for r in rows:
     g=72 if r["pd"]!="agg6" else 24
@@ -12,14 +12,14 @@ for r in rows:
 for v in S.values(): v.sort()
 meas=json.load(open(R/"sim-results/measured_agentx.json")) if (R/"sim-results/measured_agentx.json").exists() else []
 series=[]
-name={"6:12":"disagg 6:12","9:9":"disagg 9:9","agg6":"agg 24-GPU"}; hue={"6:12":"--s1","9:9":"--s3","agg6":"--s2"}
+name={"3:15":"disagg 3:15","6:12":"disagg 6:12","9:9":"disagg 9:9","12:6":"disagg 12:6","15:3":"disagg 15:3","agg6":"agg 24-GPU"}; hue={"3:15":"--s5","6:12":"--s1","9:9":"--s3","12:6":"--s4","15:3":"--s6","agg6":"--s2"}
 for (pd,pol),pts in sorted(S.items()): series.append({"name":f"{name[pd]} {pol.upper()} — sim","c":hue[pd],"pol":pol,"pts":pts,"sim":True})
 html='''<title>N3U AgentX-Concurrency Curve</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-:root{color-scheme:light;--bg:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--ink3:#8a8983;--grid:#e6e5e0;--tile:#f5f4ef;--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--focus:#2a78d6}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#1a1a19;--ink:#fff;--ink2:#c3c2b7;--ink3:#8c8b84;--grid:#2e2e2c;--tile:#222221;--s1:#3987e5;--s2:#d95926;--s3:#199e70;--focus:#3987e5}}
-:root[data-theme="dark"]{color-scheme:dark;--bg:#1a1a19;--ink:#fff;--ink2:#c3c2b7;--ink3:#8c8b84;--grid:#2e2e2c;--tile:#222221;--s1:#3987e5;--s2:#d95926;--s3:#199e70;--focus:#3987e5}
+:root{color-scheme:light;--bg:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--ink3:#8a8983;--grid:#e6e5e0;--tile:#f5f4ef;--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--s5:#8e5cd9;--s6:#d63b8f;--focus:#2a78d6}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#1a1a19;--ink:#fff;--ink2:#c3c2b7;--ink3:#8c8b84;--grid:#2e2e2c;--tile:#222221;--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#9d74e0;--s6:#e05aa5;--focus:#3987e5}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#1a1a19;--ink:#fff;--ink2:#c3c2b7;--ink3:#8c8b84;--grid:#2e2e2c;--tile:#222221;--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#9d74e0;--s6:#e05aa5;--focus:#3987e5}
 body{background:var(--bg);color:var(--ink);font:14px/1.5 "IBM Plex Sans",system-ui,sans-serif;padding-block:28px 40px;padding-inline:clamp(16px,4vw,40px);max-width:1080px;margin:0 auto}
 h1{font-size:22px;font-weight:600;margin:0 0 4px;text-wrap:balance}.sub{color:var(--ink2);margin:0 0 18px;max-width:74ch}
 .row{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin-bottom:10px}.seg{display:inline-flex;border:1px solid var(--grid);border-radius:6px;overflow:hidden}.seg button{background:none;border:0;color:var(--ink2);font:inherit;padding:5px 12px;cursor:pointer}.seg button[aria-pressed="true"]{background:var(--tile);color:var(--ink);font-weight:500}.seg button:focus-visible,label:focus-within{outline:2px solid var(--focus);outline-offset:1px}
@@ -35,14 +35,14 @@ details{margin-top:6px}summary{cursor:pointer;color:var(--ink2)}.tw{overflow-x:a
 <p class="sub">Concurrency here is the SemiAnalysis AgentX definition: the number of <b>live session clients</b> replaying the Weka 256K trace with its recorded think-time (10 s whole-system idle cap, per-play cache-bust), not always-busy request streams. y defaults to <b>total</b> tokens (input + output) served per second per GPU, InferenceX's convention (sim total = req/s × mean ISL 85,056 + OSL 1,454; measured = aiperf Active Total Throughput); toggle to output tokens. Dashed = DynoSim under those semantics (1 h windows); solid markers = measured AgentX-mode runs when available. Hue = arm; KV solid-marker, RR hollow.</p>
 <div class="row" role="group" aria-label="Chart controls"><div class="seg" id="ym"><button data-y="5" aria-pressed="true">total tok/s per GPU (in+out)</button><button data-y="1" aria-pressed="false">output tok/s per GPU</button><button data-y="2" aria-pressed="false">TTFT p50 (s)</button><button data-y="3" aria-pressed="false">TTFT p95 (s)</button></div><label class="chk"><input type="checkbox" id="showrr" checked> round-robin</label></div>
 <div class="chart" id="chart"></div>
-<div class="legend" aria-label="Legend"><span><i class="ln d" style="border-color:var(--s1)"></i>disagg 6:12</span><span><i class="ln d" style="border-color:var(--s3)"></i>disagg 9:9</span><span><i class="ln d" style="border-color:var(--s2)"></i>agg 24-GPU</span><span>● KV &nbsp; ○ RR &nbsp; dashed = simulated · solid = measured</span></div>
+<div class="legend" aria-label="Legend"><span><i class="ln d" style="border-color:var(--s5)"></i>disagg 3:15</span><span><i class="ln d" style="border-color:var(--s1)"></i>disagg 6:12</span><span><i class="ln d" style="border-color:var(--s3)"></i>disagg 9:9</span><span><i class="ln d" style="border-color:var(--s4)"></i>disagg 12:6</span><span><i class="ln d" style="border-color:var(--s6)"></i>disagg 15:3</span><span><i class="ln d" style="border-color:var(--s2)"></i>agg 24-GPU</span><span>● KV &nbsp; ○ RR &nbsp; dashed = simulated · solid = measured</span></div>
 <div class="tiles" id="tiles"></div>
 <details><summary>Table view</summary><div class="tw"><table id="tbl"></table></div></details>
 <p class="fn">Client load ≠ stream load: at 48 clients the fleet serves ~1/4–1/5 of what 48 busy streams demand, so the knee moves from ~120 streams to hundreds of clients — the reason AgentX sweeps 480–1,920. Sim = scripts/dynosim_agentx.py (same engine model as the busy-stream sim; end-to-start delays approximated by the recorded start cadence anchored per lane). Measured AgentX-mode points come from manifests/perf/sgl-d72-agentx.yaml runs (aiperf --scenario inferencex-agentx-mvp).</p>
 <script>
-const S=__S__, M=__M__; const el=id=>document.getElementById(id); let Y=5, showRR=true; const XT=[48,96,192,384,768,1536];
+const S=__S__, M=__M__; const el=id=>document.getElementById(id); let Y=5, showRR=true; const XT=[48,96,192,384,480,768,960,1440,1536,1920];
 function render(){
- const W=1000,H=440,m={t:26,r:160,b:44,l:66}; const x=c=>m.l+(Math.log2(c)-Math.log2(48))/(Math.log2(1536)-Math.log2(48))*(W-m.l-m.r);
+ const W=1000,H=440,m={t:26,r:160,b:44,l:66}; const x=c=>m.l+(Math.log2(c)-Math.log2(48))/(Math.log2(1920)-Math.log2(48))*(W-m.l-m.r);
  const vis=S.filter(s=>showRR||s.pol==="kv"); const mv=M.filter(p=>showRR||p.pol==="kv");
  const vals=[...vis.flatMap(s=>s.pts.map(p=>p[Y])),...mv.map(p=>Y===5?p.tot:Y===1?p.tpg:Y===2?p.p50:p.p95)]; const log=(Y===2||Y===3); const lo=log?0.05:0, hi=log?Math.pow(10,Math.ceil(Math.log10(Math.max(...vals)))):Math.max(...vals)*1.08;
  const y=v=>log? m.t+(1-(Math.log10(Math.max(v,lo))-Math.log10(lo))/(Math.log10(hi)-Math.log10(lo)))*(H-m.t-m.b) : m.t+(1-v/hi)*(H-m.t-m.b);
@@ -54,12 +54,12 @@ function render(){
  const ends=[];
  vis.forEach(s=>{const col=`var(${s.c})`; g+=`<path d="${s.pts.map((p,i)=>`${i?"L":"M"}${x(p[0])},${y(p[Y])}`).join(" ")}" fill="none" stroke="${col}" stroke-width="2" stroke-dasharray="6 5" opacity=".85"/>`;
   s.pts.forEach(p=>{g+=`<circle cx="${x(p[0])}" cy="${y(p[Y])}" r="4" fill="${s.pol==="kv"?col:'var(--bg)'}" stroke="${s.pol==="kv"?'var(--bg)':col}" stroke-width="1.8" opacity=".9"/>`}); const l=s.pts[s.pts.length-1]; ends.push({y:y(l[Y]),x:x(l[0]),t:s.name});});
- mv.forEach(p=>{const col=`var(${({"6:12":"--s1","9:9":"--s3","agg6":"--s2"})[p.arm]})`; const v=Y===5?p.tot:Y===1?p.tpg:Y===2?p.p50:p.p95; g+=`<circle cx="${x(p.clients)}" cy="${y(v)}" r="6" fill="${p.pol==="kv"?col:'var(--bg)'}" stroke="${p.pol==="kv"?'var(--bg)':col}" stroke-width="2.4"/><text x="${x(p.clients)+8}" y="${y(v)-6}" font-size="10.5" fill="var(--ink)">${p.arm}·${p.clients}${p.knee==="POST"?" ○":""}</text>`});
+ mv.forEach(p=>{const col=`var(${({"3:15":"--s5","6:12":"--s1","9:9":"--s3","12:6":"--s4","15:3":"--s6","agg6":"--s2"})[p.arm]})`; const v=Y===5?p.tot:Y===1?p.tpg:Y===2?p.p50:p.p95; g+=`<circle cx="${x(p.clients)}" cy="${y(v)}" r="6" fill="${p.pol==="kv"?col:'var(--bg)'}" stroke="${p.pol==="kv"?'var(--bg)':col}" stroke-width="2.4"/><text x="${x(p.clients)+8}" y="${y(v)-6}" font-size="10.5" fill="var(--ink)">${p.arm}·${p.clients}${p.knee==="POST"?" ○":""}</text>`});
  ends.sort((a,b)=>a.y-b.y); for(let i=1;i<ends.length;i++)if(ends[i].y-ends[i-1].y<14)ends[i].y=ends[i-1].y+14; ends.forEach(e=>{g+=`<text x="${e.x+9}" y="${e.y+4}" font-size="10.5" fill="var(--ink)">${e.t}</text>`});
  g+=`<line id="xh" x1="0" x2="0" y1="${m.t}" y2="${H-m.b}" stroke="var(--ink3)" stroke-dasharray="2 3" style="display:none"/><rect x="${m.l}" y="${m.t}" width="${W-m.l-m.r}" height="${H-m.t-m.b}" fill="transparent" id="hit"/></svg><div class="tip" id="tip" role="status" aria-live="polite"></div>`;
  el("chart").innerHTML=g; const svg=el("chart").querySelector("svg"),tip=el("tip"),xh=svg.querySelector("#xh");
  svg.querySelector("#hit").addEventListener("mousemove",ev=>{const r=svg.getBoundingClientRect(),px=(ev.clientX-r.left)*W/r.width; let best=XT[0],bd=1e9; XT.forEach(c=>{const d=Math.abs(x(c)-px); if(d<bd){bd=d;best=c}}); xh.setAttribute("x1",x(best));xh.setAttribute("x2",x(best));xh.style.display="";
-  let h=`<b>${best} clients</b>`; vis.forEach(s=>{const p=s.pts.find(q=>q[0]===best); if(p)h+=`<div class="r"><i class="sw" style="background:var(${s.c});opacity:.6"></i>${s.name}: ${p[5].toLocaleString()} total/GPU · ${p[1]} out/GPU · p50 ${p[2]} s · p95 ${p[3]} s · hit ${p[4]}</div>`}); mv.filter(p=>p.clients===best).forEach(p=>{h+=`<div class="r"><i class="sw" style="background:var(${({"6:12":"--s1","9:9":"--s3","agg6":"--s2"})[p.arm]})"></i>measured ${p.arm} ${p.pol}: ${p.tot.toLocaleString()} total/GPU · ${p.tpg} out/GPU · p50 ${p.p50} s · ${p.knee}</div>`});
+  let h=`<b>${best} clients</b>`; vis.forEach(s=>{const p=s.pts.find(q=>q[0]===best); if(p)h+=`<div class="r"><i class="sw" style="background:var(${s.c});opacity:.6"></i>${s.name}: ${p[5].toLocaleString()} total/GPU · ${p[1]} out/GPU · p50 ${p[2]} s · p95 ${p[3]} s · hit ${p[4]}</div>`}); mv.filter(p=>p.clients===best).forEach(p=>{h+=`<div class="r"><i class="sw" style="background:var(${({"3:15":"--s5","6:12":"--s1","9:9":"--s3","12:6":"--s4","15:3":"--s6","agg6":"--s2"})[p.arm]})"></i>measured ${p.arm} ${p.pol}: ${p.tot.toLocaleString()} total/GPU · ${p.tpg} out/GPU · p50 ${p.p50} s · ${p.knee}</div>`});
   tip.innerHTML=h; tip.style.display="block"; const cr=el("chart").getBoundingClientRect(); let tx=(ev.clientX-cr.left)+14; if(tx+tip.offsetWidth>cr.width)tx-=tip.offsetWidth+28; tip.style.left=tx+"px"; tip.style.top=Math.max(0,(ev.clientY-cr.top)-10)+"px";});
  svg.querySelector("#hit").addEventListener("mouseleave",()=>{tip.style.display="none";xh.style.display="none"});
  let t=`<tr><th>clients</th>${vis.map(s=>`<th>${s.name}</th>`).join("")}</tr>`; XT.forEach(c=>{t+=`<tr><td>${c}</td>${vis.map(s=>{const p=s.pts.find(q=>q[0]===c); return `<td>${p?p[5].toLocaleString()+" total · "+p[1]+" out /GPU · "+p[2]+" s":"—"}</td>`}).join("")}</tr>`}); el("tbl").innerHTML=t;

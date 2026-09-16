@@ -12,7 +12,7 @@ say(){ echo "[$(date -u +%F' '%H:%M:%S)] $*" >> "$LOG"; }
 declare -A ROUTER=([kv]="--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs" [rr]="--router-mode round-robin")
 free_nodes(){ n=0; for node in $(kubectl get nodes -l cloud.google.com/gke-nodepool=$POOL -o name); do node=${node#node/}; u=$(kubectl describe node "$node" | awk '/Allocated resources/,0' | grep "nvidia.com/gpu" | awk '{print $2}'); [ "${u:-0}" = "0" ] && n=$((n+1)); done; echo $n; }
 say "waiting for gate '$GATE' in $GLOG"
-until grep -q "$GATE" "$GLOG" 2>/dev/null; do grep -qE "HALTING|STACK TIMEOUT" "$GLOG" 2>/dev/null && { say "gate job halted — proceeding after teardown"; break; }; sleep 300; done
+until grep -q "$GATE" "$GLOG" 2>/dev/null; do [ "${GATE_STRICT:-0}" = "0" ] && grep -qE "HALTING|STACK TIMEOUT" "$GLOG" 2>/dev/null && { say "gate job halted — proceeding after teardown"; break; }; sleep 300; done
 if [ "$POOL" = "np-3" ]; then
   for cd in n3u-mnnvl-full-cd n3u-mnnvl-99-cd n3u-mnnvl-cd n3u-mnnvl-126-cd n3u-mnnvl-315-cd n3u-mnnvl-99mtp-cd; do kubectl delete computedomain/$cd -n $NS --ignore-not-found --wait=false >> "$LOG" 2>&1; done
   for d in $(kubectl get deploy -n $NS -o name | grep -E "n3u-mnnvl-(full|99|126|315|99mtp)"); do kubectl delete $d -n $NS --wait=false >> "$LOG" 2>&1; done

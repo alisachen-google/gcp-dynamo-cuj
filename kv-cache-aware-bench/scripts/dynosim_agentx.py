@@ -102,12 +102,14 @@ def simulate_agentx(sessions, n_prefill, n_decode, policy, clients, window=3600.
         if T0 is not None and now>T0+window: break
         hid=[(st["salt"],h) for h in r["hash_ids"]]
         ttft,tpot,done,d=eng.serve(hid,r["output_length"],now); inflight+=1
-        heapq.heappush(ev,(done,'done',lane,{"ttft":ttft,"tpot":tpot,"out":r["output_length"],"done":done,"start":now,"measured":measured,"d":d}))
+        heapq.heappush(ev,(done,'done',lane,{"ttft":ttft,"tpot":tpot,"out":r["output_length"],"inp":len(hid)*dp.BLOCK_TOKENS,"done":done,"start":now,"measured":measured,"d":d}))
     win=[x for x in recs if T0 is not None and T0<=x["done"]<=T0+window]
     if not win: return None
     dur=window; tt=sorted(x["ttft"] for x in win); out=sum(x["out"] for x in win)
+    tp=sorted(x["tpot"] for x in win); inp=sum(x["inp"] for x in win)
     return {"throughput_tok_s":out/dur,"ttft_p50_s":tt[len(tt)//2],"ttft_p95_s":tt[int(len(tt)*.95)],"ttft_p99_s":tt[min(len(tt)-1,int(len(tt)*.99))],
-            "tpot_mean_ms":sum(x["tpot"] for x in win)/len(win)*1000,"hit_rate":eng.hits/max(1,eng.blocks),"req_per_s":len(win)/dur,"n":len(win)}
+            "tpot_mean_ms":sum(x["tpot"] for x in win)/len(win)*1000,"tpot_p50_ms":tp[len(tp)//2]*1000,"tpot_p90_ms":tp[min(len(tp)-1,int(len(tp)*.9))]*1000,
+            "in_tok_per_req":inp/len(win),"total_tok_s":(inp+out)/dur,"hit_rate":eng.hits/max(1,eng.blocks),"req_per_s":len(win)/dur,"n":len(win)}
 
 if __name__=="__main__":
     ap=argparse.ArgumentParser(); ap.add_argument("trace"); ap.add_argument("--splits",default="6:12,9:9,12:6"); ap.add_argument("--clients",default="48,96,192,384,768,1536")
