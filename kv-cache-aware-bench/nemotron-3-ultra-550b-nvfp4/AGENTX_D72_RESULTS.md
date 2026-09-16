@@ -59,25 +59,45 @@ one template ([`manifests/perf/sgl-d72-agentx.yaml`](https://github.com/alisache
 [`scripts/dynosim_agentx.py`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/scripts/dynosim_agentx.py) (same engine constants as the busy-stream DynoSim; lanes, warm-up at a random
 25–75% start, recorded cadence anchored per lane, 10 s idle cap, per-play cache-bust, 1 h window),
 sweep v2 = 5 splits × KV/RR × 10 client counts ([`sim-results/dynosim_n3u_agentx_v2.csv`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/dynosim_n3u_agentx_v2.csv); 12:6 and 15:3
-still computing at the time of writing). Output tok/s per GPU · TTFT p50:
+still computing at the time of writing). Total tok/s per GPU (output tok/s per GPU) · TTFT p50 · P90 interactivity:
 
-| clients | 9:9 KV tok/s/GPU · TTFT p50 | 9:9 RR tok/s/GPU · TTFT p50 | 6:12 KV tok/s/GPU · TTFT p50 | 6:12 RR tok/s/GPU · TTFT p50 | 3:15 KV tok/s/GPU · TTFT p50 | 3:15 RR tok/s/GPU · TTFT p50 |
+Cell = **total tok/s per GPU** (output tok/s per GPU) · TTFT p50 · P90 interactivity (tok/s/user = 1000 / per-request TPOT p90). Sim v3 (`sim-results/dynosim_n3u_agentx_v3.csv`): input tokens counted exactly per simulated request (len(hash_ids)×64), the InferenceX total-token convention.
+
+| clients | 9:9 KV | 9:9 RR | 6:12 KV | 6:12 RR | 12:6 KV | 12:6 RR |
 |---|---|---|---|---|---|---|
-| 48 | 12.0 · 0.13 s | 11.8 · 1.84 s | 12.0 · 0.13 s | 11.8 · 1.24 s | 12.0 · 0.15 s | 11.7 · 0.94 s |
-| 96 | 23.6 · 0.16 s | 22.6 · 3.16 s | 23.6 · 0.18 s | 21.9 · 3.95 s | 23.2 · 0.57 s | 19.5 · 8.45 s |
-| 192 | 46.5 · 0.26 s | 34.4 · 12.70 s | 46.0 · 0.76 s | 27.1 · 26.86 s | 38.4 · 10.10 s | 20.5 · 60.37 s |
-| 384 | 83.3 · 1.83 s | 34.0 · 63.29 s | 68.4 · 13.03 s | 26.2 · 108.29 s | 36.0 · 56.44 s | 19.0 · 140.26 s |
-| 480 | 92.1 · 4.09 s | 33.1 · 80.06 s | 65.6 · 25.24 s | 25.5 · 120.45 s | 34.5 · 78.68 s | 17.0 · 181.55 s |
-| 768 | 88.6 · 20.16 s | 30.6 · 142.59 s | 60.9 · 57.13 s | 23.4 · 212.09 s | 30.6 · 137.77 s | 16.3 · 285.54 s |
-| 960 | 85.1 · 29.00 s | 27.9 · 195.19 s | 57.3 · 78.59 s | 22.4 · 280.64 s | 27.9 · 182.71 s | 10.8 · 418.18 s |
-| 1440 | 71.1 · 56.62 s | 23.4 · 306.84 s | 48.2 · 126.26 s | 13.4 · 452.52 s | 22.8 · 232.11 s | 4.5 · 724.60 s |
-| 1536 | 70.6 · 59.58 s | 22.0 · 327.38 s | 45.8 · 149.21 s | 11.8 · 474.39 s | 18.7 · 302.22 s | 4.2 · 776.22 s |
-| 1920 | 61.5 · 83.76 s | 16.0 · 416.25 s | 41.3 · 171.26 s | 8.5 · 605.61 s | 9.5 · 497.30 s | 3.4 · 935.90 s |
+| 48 | **701** (12) · 0.13 s · 148 | **681** (12) · 1.84 s · 148 | **701** (12) · 0.13 s · 148 | **681** (12) · 1.24 s · 148 | **699** (12) · 0.13 s · 139 | **679** (12) · 2.34 s · 132 |
+| 96 | **1,395** (24) · 0.16 s · 125 | **1,336** (23) · 3.16 s · 114 | **1,395** (24) · 0.18 s · 132 | **1,296** (22) · 3.95 s · 125 | **1,389** (23) · 0.15 s · 109 | **1,342** (23) · 2.88 s · 100 |
+| 192 | **2,733** (47) · 0.26 s · 93 | **2,047** (34) · 12.70 s · 78 | **2,701** (46) · 0.76 s · 100 | **1,631** (27) · 26.86 s · 86 | **2,679** (45) · 0.19 s · 72 | **2,271** (38) · 6.51 s · 63 |
+| 384 | **4,937** (83) · 1.83 s · 54 | **2,062** (34) · 63.29 s · 45 | **4,064** (68) · 13.03 s · 63 | **1,577** (26) · 108.29 s · 54 | **4,657** (78) · 0.45 s · 40 | **2,508** (41) · 34.52 s · 34 |
+| 480 | **5,501** (92) · 4.09 s · 44 | **2,021** (33) · 80.06 s · 37 | **3,922** (66) · 25.24 s · 50 | **1,544** (26) · 120.45 s · 46 | **5,217** (87) · 0.63 s · 32 | **2,465** (40) · 49.34 s · 27 |
+| 768 | **5,469** (89) · 20.16 s · 27 | **1,926** (31) · 142.59 s · 25 | **3,732** (61) · 57.13 s · 33 | **1,405** (23) · 212.09 s · 32 | **5,981** (95) · 1.56 s · 19 | **2,345** (36) · 103.46 s · 18 |
+| 960 | **5,380** (85) · 29.00 s · 22 | **1,789** (28) · 195.19 s · 21 | **3,589** (57) · 78.59 s · 27 | **1,446** (22) · 280.64 s · 26 | **6,139** (94) · 2.35 s · 15 | **2,275** (33) · 130.92 s · 14 |
+| 1440 | **4,884** (71) · 56.62 s · 15 | **1,720** (23) · 306.84 s · 14 | **3,202** (48) · 126.26 s · 19 | **916** (13) · 452.52 s · 19 | **6,187** (85) · 4.74 s · 10 | **2,087** (28) · 207.30 s · 10 |
+| 1536 | **4,884** (71) · 59.58 s · 14 | **1,665** (22) · 327.38 s · 14 | **3,050** (46) · 149.21 s · 18 | **808** (12) · 474.39 s · 17 | **6,144** (82) · 5.58 s · 9 | **2,085** (27) · 230.90 s · 9 |
+| 1920 | **4,544** (61) · 83.76 s · 11 | **1,189** (16) · 416.25 s · 11 | **2,916** (41) · 171.26 s · 14 | **523** (8) · 605.61 s · 14 | **5,945** (74) · 12.26 s · 8 | **1,928** (23) · 305.91 s · 7 |
 
-Reading: under replayed think-time the fleet is nowhere near its knee below ~200 clients; the sim puts
-the 9:9 KV peak at **92/GPU around 480 clients** (TTFT p50 4 s) and 6:12 at 68/GPU around 384; RR peaks
-at ~34/GPU (9:9) / ~27 (6:12) near 192–384 and then queues. The sim also says 9:9 > 6:12 > 3:15 on this
-axis, the same ordering the busy-stream silicon gave.
+| clients | 3:15 KV | 3:15 RR | 15:3 KV | 15:3 RR |
+|---|---|---|---|---|
+| 48 | **696** (12) · 0.15 s · 157 | **677** (12) · 0.94 s · 148 | **690** (12) · 0.13 s · 114 | **669** (12) · 2.60 s · 114 |
+| 96 | **1,373** (23) · 0.57 s · 132 | **1,166** (20) · 8.45 s · 125 | **1,349** (23) · 0.15 s · 76 | **1,296** (22) · 2.77 s · 72 |
+| 192 | **2,276** (38) · 10.10 s · 100 | **1,219** (20) · 60.37 s · 93 | **2,364** (39) · 0.18 s · 41 | **2,158** (36) · 3.66 s · 39 |
+| 384 | **2,150** (36) · 56.44 s · 64 | **1,149** (19) · 140.26 s · 63 | **3,218** (51) · 0.20 s · 20 | **2,704** (43) · 7.89 s · 19 |
+| 480 | **2,074** (35) · 78.68 s · 54 | **1,027** (17) · 181.55 s · 53 | **3,370** (52) · 0.22 s · 16 | **2,760** (42) · 11.58 s · 15 |
+| 768 | **1,892** (31) · 137.77 s · 38 | **1,045** (16) · 285.54 s · 38 | **3,612** (50) · 0.23 s · 10 | **2,721** (37) · 29.16 s · 9 |
+| 960 | **1,706** (28) · 182.71 s · 32 | **715** (11) · 418.18 s · 32 | **3,695** (48) · 0.24 s · 8 | **2,637** (34) · 45.87 s · 8 |
+| 1440 | **1,646** (23) · 232.11 s · 23 | **229** (4) · 724.60 s · 23 | **3,802** (45) · 0.29 s · 5 | **2,416** (28) · 87.09 s · 5 |
+| 1536 | **1,393** (19) · 302.22 s · 21 | **197** (4) · 776.22 s · 21 | **3,809** (44) · 0.29 s · 5 | **2,379** (27) · 96.18 s · 5 |
+| 1920 | **629** (9) · 497.30 s · 17 | **124** (3) · 935.90 s · 17 | **3,803** (42) · 0.34 s · 4 | **2,235** (24) · 130.39 s · 4 |
+
+Reading (total-token axis): the prefill-heavier splits win once input tokens are counted, because
+every request carries ~70 k input tokens against ~1 k output and the prefill tier is what turns them into
+served tokens. The sim's total-token peaks: **12:6 KV 6,187 total/GPU at 1440 clients (TTFT p50 4.7 s, 85 output/GPU)**; 9:9 KV 5,501 total/GPU at 480 clients (TTFT p50 4.1 s, 92 output/GPU);
+6:12 KV 4,064 total/GPU at 384 clients (TTFT p50 13.0 s, 68 output/GPU); 3:15 KV 2,276 total/GPU at 192 clients (TTFT p50 10.1 s, 38 output/GPU); 15:3 KV 3,809 total/GPU at 1536 clients (TTFT p50 0.3 s, 44 output/GPU) — 15:3 never queues
+(TTFT p50 ≤ 0.3 s to 1,920 clients) because 15 prefill workers absorb the whole trace, but its 3 decode workers
+cap interactivity (P90 falls to 4 tok/s/user). RR peaks at 2,062 total/GPU at 384 clients (TTFT p50 63.3 s, 34 output/GPU) on 9:9 and 2,508 total/GPU at 384 clients (TTFT p50 34.5 s, 41 output/GPU) on
+12:6, then queues. On the output-token axis (the numbers in parentheses) the ordering reverts to 9:9 ≥ 12:6 >
+6:12, the same as the busy-stream silicon. Interactivity: the disagg splits hold P90 interactivity above 100
+tok/s/user up to ~200 clients and above 40 up to ~1,000 (decode batches stay small), versus agg's 20–60.
 
 Selected points (why): the measured KV ladder is 48 / 96 / 192 / 384 / 768 / 1536 (the sim's rise, peak
 and decline, plus the two we could compare with their 480–1,920 range); RR is measured at **96 and 384**

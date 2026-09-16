@@ -121,7 +121,12 @@ if __name__=="__main__":
     for (np_,nd),agg in cfgs:
         for c in map(int,a.clients.split(",")):
             for pol in a.policies.split(","):
-                m=simulate_agentx(sessions,np_,nd,pol,c,a.window,agg=agg)
+                # policy tokens: kv | rr | kv-tuned (= kv-s3.0-c0.8) | kv-s<scale>-c<credit>
+                base=pol; router=None
+                if pol=="kv-tuned": base="kv"; router={"prefill_load_scale":3.0,"overlap_credit":0.8}
+                elif pol.startswith("kv-s"):
+                    import re as _re; mm=_re.match(r"kv-s([0-9.]+)-c([0-9.]+)",pol); base="kv"; router={"prefill_load_scale":float(mm.group(1)),"overlap_credit":float(mm.group(2))}
+                m=simulate_agentx(sessions,np_,nd,base,c,a.window,agg=agg,router=router)
                 if not m: print(f"{np_}:{nd} {pol} c{c}: no measured requests"); continue
                 m.update(pd=("agg6" if agg else f"{np_}:{nd}"),clients=c,policy=pol); rows.append(m)
                 print(f"{m['pd']:>5} {pol:>2} clients={c:>5} tok/s={m['throughput_tok_s']:7.0f} ({m['throughput_tok_s']/(24 if agg else 72):5.1f}/GPU) ttft p50={m['ttft_p50_s']:6.2f} p95={m['ttft_p95_s']:6.2f} tpot={m['tpot_mean_ms']:5.1f}ms hit={m['hit_rate']:.2f} req/s={m['req_per_s']:.2f} n={m['n']}")

@@ -61,26 +61,31 @@ c64. Under the AgentX definition those knees move to hundreds of clients.
 ## ii. Simulated curve under the AgentX definition, and the selected points
 
 Same simulator and sweep as the disagg report ([`sim-results/dynosim_n3u_agentx_v2.csv`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/dynosim_n3u_agentx_v2.csv), arm [`agg6`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/scripts/dynosim_agentx.py) =
-6 × TP4 workers, 24 GPU). Output tok/s per GPU · TTFT p50:
+6 × TP4 workers, 24 GPU). Total tok/s per GPU (output tok/s per GPU) · TTFT p50 · P90 interactivity:
 
-| clients | agg6 KV tok/s/GPU · TTFT p50 | agg6 RR tok/s/GPU · TTFT p50 |
+Cell = **total tok/s per GPU** (output tok/s per GPU) · TTFT p50 · P90 interactivity (tok/s/user = 1000 / per-request TPOT p90). Sim v3 (`sim-results/dynosim_n3u_agentx_v3.csv`): input tokens counted exactly per simulated request (len(hash_ids)×64), the InferenceX total-token convention.
+
+| clients | agg6 KV | agg6 RR |
 |---|---|---|
-| 48 | 23.6 · 0.13 s | 29.8 · 0.89 s |
-| 96 | 37.1 · 0.14 s | 48.0 · 2.21 s |
-| 192 | 57.8 · 0.16 s | 59.9 · 4.43 s |
-| 384 | 64.3 · 0.22 s | 54.7 · 14.43 s |
-| 480 | 63.7 · 0.23 s | 51.3 · 24.04 s |
-| 768 | 58.4 · 0.38 s | 40.7 · 78.95 s |
-| 960 | 55.7 · 0.42 s | 35.5 · 117.82 s |
-| 1440 | 45.9 · 0.80 s | 22.7 · 238.70 s |
-| 1536 | 43.8 · 0.98 s | 21.0 · 259.49 s |
-| 1920 | 37.0 · 2.03 s | 15.5 · 369.09 s |
+| 48 | **1,474** (24) · 0.13 s · 22 | **1,792** (30) · 0.89 s · 48 |
+| 96 | **2,382** (37) · 0.14 s · 13 | **2,924** (48) · 2.21 s · 29 |
+| 192 | **3,715** (58) · 0.16 s · 9 | **3,889** (60) · 4.43 s · 15 |
+| 384 | **4,706** (64) · 0.22 s · 6 | **4,156** (55) · 14.43 s · 8 |
+| 480 | **4,863** (64) · 0.23 s · 5 | **4,091** (51) · 24.04 s · 6 |
+| 768 | **5,107** (58) · 0.38 s · 4 | **3,712** (41) · 78.95 s · 4 |
+| 960 | **5,138** (56) · 0.42 s · 3 | **3,404** (35) · 117.82 s · 3 |
+| 1440 | **4,756** (46) · 0.80 s · 2 | **2,381** (23) · 238.70 s · 2 |
+| 1536 | **4,632** (44) · 0.98 s · 2 | **2,198** (21) · 259.49 s · 2 |
+| 1920 | **4,165** (37) · 2.03 s · 2 | **1,351** (15) · 369.09 s · 2 |
 
-Reading: agg KV peaks at **64/GPU around 384–480 clients with TTFT p50 still 0.2 s** (no prefill
-hand-off, and each worker keeps its own prefix cache), then decays as decode batches grow; RR peaks at
-60/GPU at 192 clients and falls off a cliff after 480 because prefix reuse across six workers collapses
-(hit 0.4 vs 0.8). Against disagg 9:9 KV (92/GPU peak) agg's per-GPU ceiling is ~0.7× on this axis but its
-TTFT stays an order of magnitude lower up to ~1,000 clients.
+Reading (total-token axis): agg KV peaks at **5,138 total/GPU at 960 clients (TTFT p50 0.4 s, 56 output/GPU)** — the peak sits later than
+on the output axis (960 vs 384–480 clients) because input tokens keep accruing while output per GPU decays,
+and TTFT p50 is still 0.4 s there (no prefill hand-off, every worker keeps its own prefix cache). RR peaks at
+4,156 total/GPU at 384 clients (TTFT p50 14.4 s, 55 output/GPU) and falls away after 480 as prefix reuse across six workers collapses (hit 0.4 vs 0.8).
+Against disagg 9:9 KV (5,501 total/GPU at 480 clients (TTFT p50 4.1 s, 92 output/GPU)) and 12:6 KV (6,187 total/GPU at 1440 clients (TTFT p50 4.7 s, 85 output/GPU)), agg's total-token ceiling is
+0.83–0.93× per GPU but its TTFT stays an order of magnitude lower up to ~1,000 clients; on interactivity agg is
+the weak arm (P90 45–172 ms ITL → 6–22 tok/s/user at 48–384 clients) because the same workers prefill and
+decode.
 
 Selected points: KV at 48 / 96 / 192 / 384 / 768 / 1536 (same ladder as disagg, so the two arms overlay on
 one page), RR at **96 and 384** (RR still stationary at 96 in the sim; 384 is past its knee) — queued as a

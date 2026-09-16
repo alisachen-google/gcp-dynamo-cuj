@@ -6,7 +6,9 @@ R=pathlib.Path(__file__).resolve().parents[1]
 ARMS=sys.argv[1].split(",") if len(sys.argv)>1 and sys.argv[1]!="all" else None
 OUT=sys.argv[2] if len(sys.argv)>2 else "reports/n3u-agentx-curve.html"
 TITLE=sys.argv[3] if len(sys.argv)>3 else ""
-rows=[r for r in csv.DictReader(open(R/"sim-results/dynosim_n3u_agentx_v2.csv")) if ARMS is None or r["pd"] in ARMS]
+SIM=R/"sim-results/dynosim_n3u_agentx_v3.csv"
+if not SIM.exists(): SIM=R/"sim-results/dynosim_n3u_agentx_v2.csv"
+rows=[r for r in csv.DictReader(open(SIM)) if ARMS is None or r["pd"] in ARMS]
 S={}
 for r in rows:
     g=72 if r["pd"]!="agg6" else 24
@@ -16,7 +18,8 @@ for v in S.values(): v.sort()
 meas=[m for m in (json.load(open(R/"sim-results/measured_agentx.json")) if (R/"sim-results/measured_agentx.json").exists() else []) if ARMS is None or m["arm"] in ARMS]
 series=[]
 name={"3:15":"disagg 3:15","6:12":"disagg 6:12","9:9":"disagg 9:9","12:6":"disagg 12:6","15:3":"disagg 15:3","agg6":"agg 24-GPU"}; hue={"3:15":"--s5","6:12":"--s1","9:9":"--s3","12:6":"--s4","15:3":"--s6","agg6":"--s2"}
-for (pd,pol),pts in sorted(S.items()): series.append({"name":f"{name[pd]} {pol.upper()} — sim","c":hue[pd],"pol":pol,"pts":pts,"sim":True})
+PN={"kv":"KV","rr":"RR","kv-tuned":"KV tuned (scale 3, credit 0.8)"}
+for (pd,pol),pts in sorted(S.items()): series.append({"name":f"{name[pd]} {PN.get(pol,pol.upper())} — sim","c":hue[pd],"pol":pol,"pts":pts,"sim":True})
 html='''<title>N3U AgentX-Concurrency Curve__TITLE__</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -36,17 +39,17 @@ details{margin-top:6px}summary{cursor:pointer;color:var(--ink2)}.tw{overflow-x:a
 </style>
 <h1>Nemotron-3-Ultra 550B__TITLE__ — total throughput per GPU vs AgentX concurrency (live session clients)</h1>
 <p class="sub">Concurrency here is the SemiAnalysis AgentX definition: the number of <b>live session clients</b> replaying the Weka 256K trace with its recorded think-time (10 s whole-system idle cap, per-play cache-bust), not always-busy request streams. y defaults to <b>total</b> tokens (input + output) served per second per GPU, InferenceX's convention (sim total = req/s × mean ISL 85,056 + OSL 1,454; measured = aiperf Active Total Throughput); toggle to output tokens. Dashed = DynoSim under those semantics (1 h windows); solid markers = measured AgentX-mode runs when available. Hue = arm; KV solid-marker, RR hollow.</p>
-<div class="row" role="group" aria-label="Chart controls"><div class="seg" id="ym"><button data-y="5" aria-pressed="true">total tok/s per GPU (in+out)</button><button data-y="1" aria-pressed="false">output tok/s per GPU</button><button data-y="2" aria-pressed="false">TTFT p50 (s)</button><button data-y="3" aria-pressed="false">TTFT p95 (s)</button></div><label class="chk"><input type="checkbox" id="showkv" checked> KV-aware routing</label><label class="chk"><input type="checkbox" id="showrr" checked> round-robin</label></div>
+<div class="row" role="group" aria-label="Chart controls"><div class="seg" id="ym"><button data-y="5" aria-pressed="true">total tok/s per GPU (in+out)</button><button data-y="1" aria-pressed="false">output tok/s per GPU</button><button data-y="2" aria-pressed="false">TTFT p50 (s)</button><button data-y="3" aria-pressed="false">TTFT p95 (s)</button></div><label class="chk"><input type="checkbox" id="showkv" checked> KV-aware routing</label><label class="chk"><input type="checkbox" id="showkt" checked> tuned KV-aware (scale 3, credit 0.8)</label><label class="chk"><input type="checkbox" id="showrr" checked> round-robin</label></div>
 <div class="chart" id="chart"></div>
-<div class="legend" aria-label="Legend"><span><i class="ln d" style="border-color:var(--s5)"></i>disagg 3:15</span><span><i class="ln d" style="border-color:var(--s1)"></i>disagg 6:12</span><span><i class="ln d" style="border-color:var(--s3)"></i>disagg 9:9</span><span><i class="ln d" style="border-color:var(--s4)"></i>disagg 12:6</span><span><i class="ln d" style="border-color:var(--s6)"></i>disagg 15:3</span><span><i class="ln d" style="border-color:var(--s2)"></i>agg 24-GPU</span><span>● KV &nbsp; ○ RR &nbsp; dashed = simulated · solid = measured</span></div>
+<div class="legend" aria-label="Legend"><span><i class="ln d" style="border-color:var(--s5)"></i>disagg 3:15</span><span><i class="ln d" style="border-color:var(--s1)"></i>disagg 6:12</span><span><i class="ln d" style="border-color:var(--s3)"></i>disagg 9:9</span><span><i class="ln d" style="border-color:var(--s4)"></i>disagg 12:6</span><span><i class="ln d" style="border-color:var(--s6)"></i>disagg 15:3</span><span><i class="ln d" style="border-color:var(--s2)"></i>agg 24-GPU</span><span>● KV &nbsp; ◆ tuned KV &nbsp; ○ RR &nbsp; dashed = simulated · solid = measured</span></div>
 <div class="tiles" id="tiles"></div>
 <details><summary>Table view</summary><div class="tw"><table id="tbl"></table></div></details>
 <p class="fn">Client load ≠ stream load: at 48 clients the fleet serves ~1/4–1/5 of what 48 busy streams demand, so the knee moves from ~120 streams to hundreds of clients — the reason AgentX sweeps 480–1,920. Sim = scripts/dynosim_agentx.py (same engine model as the busy-stream sim; end-to-start delays approximated by the recorded start cadence anchored per lane). Measured AgentX-mode points come from manifests/perf/sgl-d72-agentx.yaml runs (aiperf --scenario inferencex-agentx-mvp).</p>
 <script>
-const S=__S__, M=__M__; const el=id=>document.getElementById(id); let Y=5, showRR=true, showKV=true; const XT=[48,96,192,384,480,768,960,1440,1536,1920];
+const S=__S__, M=__M__; const el=id=>document.getElementById(id); let Y=5, showRR=true, showKV=true, showKT=true; const XT=[48,96,192,384,480,768,960,1440,1536,1920];
 function render(){
  const W=1000,H=440,m={t:26,r:160,b:44,l:66}; const x=c=>m.l+(Math.log2(c)-Math.log2(48))/(Math.log2(1920)-Math.log2(48))*(W-m.l-m.r);
- const on=pol=>(pol==="kv"?showKV:showRR); const vis=S.filter(s=>on(s.pol)); const mv=M.filter(p=>on(p.pol));
+ const on=pol=>(pol==="kv"?showKV:pol==="kv-tuned"?showKT:showRR); const vis=S.filter(s=>on(s.pol)); const mv=M.filter(p=>on(p.pol));
  const vals=[...vis.flatMap(s=>s.pts.map(p=>p[Y])),...mv.map(p=>Y===5?p.tot:Y===1?p.tpg:Y===2?p.p50:p.p95)]; const log=(Y===2||Y===3); const lo=log?0.05:0, hi=log?Math.pow(10,Math.ceil(Math.log10(Math.max(...vals)))):Math.max(...vals)*1.08;
  const y=v=>log? m.t+(1-(Math.log10(Math.max(v,lo))-Math.log10(lo))/(Math.log10(hi)-Math.log10(lo)))*(H-m.t-m.b) : m.t+(1-v/hi)*(H-m.t-m.b);
  let g=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-labelledby="ct"><title id="ct">Throughput or TTFT versus AgentX client concurrency</title>`;
@@ -55,8 +58,8 @@ function render(){
  XT.forEach(c=>{g+=`<text x="${x(c)}" y="${H-m.b+18}" font-size="11" fill="var(--ink2)" text-anchor="middle">${c}</text>`});
  g+=`<text x="${(m.l+W-m.r)/2}" y="${H-6}" font-size="11.5" fill="var(--ink2)" text-anchor="middle">AgentX concurrency — live session clients (log₂)</text><text transform="translate(14 ${(m.t+H-m.b)/2}) rotate(-90)" font-size="11.5" fill="var(--ink2)" text-anchor="middle">${["","output tok/s per GPU","TTFT p50 (s)","TTFT p95 (s)","","total tok/s per GPU (input + output)"][Y]}</text>`;
  const ends=[];
- vis.forEach(s=>{const col=`var(${s.c})`; g+=`<path d="${s.pts.map((p,i)=>`${i?"L":"M"}${x(p[0])},${y(p[Y])}`).join(" ")}" fill="none" stroke="${col}" stroke-width="2" stroke-dasharray="6 5" opacity=".85"/>`;
-  s.pts.forEach(p=>{g+=`<circle cx="${x(p[0])}" cy="${y(p[Y])}" r="4" fill="${s.pol==="kv"?col:'var(--bg)'}" stroke="${s.pol==="kv"?'var(--bg)':col}" stroke-width="1.8" opacity=".9"/>`}); const l=s.pts[s.pts.length-1]; ends.push({y:y(l[Y]),x:x(l[0]),t:s.name});});
+ vis.forEach(s=>{const col=`var(${s.c})`; g+=`<path d="${s.pts.map((p,i)=>`${i?"L":"M"}${x(p[0])},${y(p[Y])}`).join(" ")}" fill="none" stroke="${col}" stroke-width="2" stroke-dasharray="${s.pol==="kv-tuned"?"2 4":"6 5"}" opacity=".85"/>`;
+  s.pts.forEach(p=>{const cx=x(p[0]),cy=y(p[Y]); if(s.pol==="kv-tuned")g+=`<path d="M${cx},${cy-5}L${cx+5},${cy}L${cx},${cy+5}L${cx-5},${cy}Z" fill="${col}" stroke="var(--bg)" stroke-width="1.5" opacity=".9"/>`; else g+=`<circle cx="${cx}" cy="${cy}" r="4" fill="${s.pol==="kv"?col:'var(--bg)'}" stroke="${s.pol==="kv"?'var(--bg)':col}" stroke-width="1.8" opacity=".9"/>`}); const l=s.pts[s.pts.length-1]; ends.push({y:y(l[Y]),x:x(l[0]),t:s.name});});
  mv.forEach(p=>{const col=`var(${({"3:15":"--s5","6:12":"--s1","9:9":"--s3","12:6":"--s4","15:3":"--s6","agg6":"--s2"})[p.arm]})`; const v=Y===5?p.tot:Y===1?p.tpg:Y===2?p.p50:p.p95; g+=`<circle cx="${x(p.clients)}" cy="${y(v)}" r="6" fill="${p.pol==="kv"?col:'var(--bg)'}" stroke="${p.pol==="kv"?'var(--bg)':col}" stroke-width="2.4"/><text x="${x(p.clients)+8}" y="${y(v)-6}" font-size="10.5" fill="var(--ink)">${p.arm}·${p.clients}${p.knee==="POST"?" ○":""}</text>`});
  ends.sort((a,b)=>a.y-b.y); for(let i=1;i<ends.length;i++)if(ends[i].y-ends[i-1].y<14)ends[i].y=ends[i-1].y+14; ends.forEach(e=>{g+=`<text x="${e.x+9}" y="${e.y+4}" font-size="10.5" fill="var(--ink)">${e.t}</text>`});
  g+=`<line id="xh" x1="0" x2="0" y1="${m.t}" y2="${H-m.b}" stroke="var(--ink3)" stroke-dasharray="2 3" style="display:none"/><rect x="${m.l}" y="${m.t}" width="${W-m.l-m.r}" height="${H-m.t-m.b}" fill="transparent" id="hit"/></svg><div class="tip" id="tip" role="status" aria-live="polite"></div>`;
@@ -66,9 +69,9 @@ function render(){
   tip.innerHTML=h; tip.style.display="block"; const cr=el("chart").getBoundingClientRect(); let tx=(ev.clientX-cr.left)+14; if(tx+tip.offsetWidth>cr.width)tx-=tip.offsetWidth+28; tip.style.left=tx+"px"; tip.style.top=Math.max(0,(ev.clientY-cr.top)-10)+"px";});
  svg.querySelector("#hit").addEventListener("mouseleave",()=>{tip.style.display="none";xh.style.display="none"});
  let t=`<tr><th>clients</th>${vis.map(s=>`<th>${s.name}</th>`).join("")}</tr>`; XT.forEach(c=>{t+=`<tr><td>${c}</td>${vis.map(s=>{const p=s.pts.find(q=>q[0]===c); return `<td>${p?p[5].toLocaleString()+" total · "+p[1]+" out /GPU · "+p[2]+" s":"—"}</td>`}).join("")}</tr>`}); el("tbl").innerHTML=t;
- const kv=S.filter(s=>on(s.pol)&&s.pol==="kv").concat(showKV?[]:S.filter(s=>s.pol==="rr")); let tiles=""; kv.forEach(s=>{const best=s.pts.reduce((a,b)=>b[5]>a[5]?b:a); tiles+=`<div class="tile"><div class="k">${s.name.replace(" — sim","")} · sim peak (total)</div><div class="v">${best[5].toLocaleString()}/GPU</div><div class="n">${best[0]} clients · ${best[1]} output/GPU · TTFT p50 ${best[2]} s · p95 ${best[3]} s</div></div>`}); el("tiles").innerHTML=tiles;
+ const kv=S.filter(s=>on(s.pol)&&(s.pol==="kv"||s.pol==="kv-tuned")).concat((showKV||showKT)?[]:S.filter(s=>s.pol==="rr")); let tiles=""; kv.forEach(s=>{const best=s.pts.reduce((a,b)=>b[5]>a[5]?b:a); tiles+=`<div class="tile"><div class="k">${s.name.replace(" — sim","")} · sim peak (total)</div><div class="v">${best[5].toLocaleString()}/GPU</div><div class="n">${best[0]} clients · ${best[1]} output/GPU · TTFT p50 ${best[2]} s · p95 ${best[3]} s</div></div>`}); el("tiles").innerHTML=tiles;
 }
-document.querySelectorAll("#ym button").forEach(b=>b.onclick=()=>{Y=+b.dataset.y;document.querySelectorAll("#ym button").forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));render()}); el("showrr").onchange=e=>{showRR=e.target.checked;render()}; el("showkv").onchange=e=>{showKV=e.target.checked;render()}; render();
+document.querySelectorAll("#ym button").forEach(b=>b.onclick=()=>{Y=+b.dataset.y;document.querySelectorAll("#ym button").forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));render()}); el("showrr").onchange=e=>{showRR=e.target.checked;render()}; el("showkv").onchange=e=>{showKV=e.target.checked;render()}; el("showkt").onchange=e=>{showKT=e.target.checked;render()}; render();
 </script>
 '''
 out=R/OUT; out.write_text(html.replace("__S__",json.dumps(series)).replace("__M__",json.dumps(meas)).replace("__TITLE__",TITLE)); print("wrote",out,"series:",len(series),"measured:",len(meas))
