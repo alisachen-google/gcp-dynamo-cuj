@@ -127,15 +127,19 @@ the sim's RR under-counts the prefix-miss penalty (hit 0.30 vs KV 0.74).
 | 9:9 KV | 96 | 2,019 (28.0) | 2,497 | 0.31 / 1.42 / 4.3 s | 7.4 / 8.4 ms | 16.1 | stationary | PASS |
 | 9:9 KV | 192 | 3,267 (45.4) | 4,600 | 0.36 / 2.03 / 6.1 s | 8.5 / 9.9 ms | 30.0 (peak 60) | stationary | PASS (third attempt; the first was evicted at 59 GB on a system node, the second invalidated by a transfer failure during an operator-caused ComputeDomain deletion) |
 | 12:6 KV | 96 | 1,980 (27.5) | 2,471 | 0.30 / 1.37 / 3.9 s | 8.2 / 9.6 ms | 17.2 (peak 37) | stationary | PASS (first point on the sim-optimal split; 11:54 UTC) |
-| 12:6 KV | 192 / 384 / 480 / 768 / 1440 | running (192 started 11:57) | | | | | | |
+| 12:6 KV | 192 | 3,217 (44.7) | 4,510 | 0.36 / 1.77 / 5.1 s | 10.0 / 11.2 ms | 33.5 (peak 63) | stationary (q1 0.33 → q4 0.37 s) | PASS (mooncake TE peak 765 MB/s, no transfer failures; 13:40 UTC) |
+| 12:6 KV | 384 / 480 / 768 / 1440 | running (384 started 13:43) | | | | | | |
 | 12:6 RR | 192 / 96 / 384 | queued behind 12:6 KV | | | | | | |
 
 Throughput scaled 2.57× from 48 to 96 clients and 1.84× from 96 to 192 with TTFT p50 flat at 0.31–0.36 s
 (p95 2.0 s at 192), so 9:9 is still pre-knee at 192 with 30 requests in flight on average; the sim's 9:9 cell at 192
 (2,733 total/GPU, TTFT p50 0.3 s, P90 93) is 0.59× real on total tokens and within 10% on latency and interactivity.
 **12:6 vs 9:9 at 96 clients, measured: 2,471 vs 2,497 total tok/s per GPU (0.99×), TTFT p95 1.37 vs 1.42 s, P90 104 vs 119** — the
-two splits are indistinguishable below the knee, exactly as the sim said (1,389 vs 1,395); the split only matters once the
-prefill tier saturates, which the 384–1440 points will show. Per-user interactivity is very high in this regime (P90 147 tok/s/user at 48,
+two splits are indistinguishable below the knee, exactly as the sim said (1,389 vs 1,395). **At 192 clients the same holds:
+12:6 4,510 vs 9:9 4,600 total tok/s per GPU (0.98×), TTFT p95 1.77 vs 2.03 s (12:6 better on the tail, as its four extra
+prefill workers predict), P90 89 vs 101 (9:9 better on decode, with its three extra decode workers), in flight 33.5 vs 30.0.**
+The sim's same-config 192 cell for 12:6 KV is 2,679, so silicon is 1.68× above it, the same ratio band as the 9:9 cells.
+The split only matters once the prefill tier saturates, which the 384–1440 points will show. Per-user interactivity is very high in this regime (P90 147 tok/s/user at 48,
 119 at 96) because decode batches are tiny. The KV-vs-RR comparison table will be filled from the
 96/384 pairs when the RR points land; the busy-stream KV/RR gains (2.02× at c48, 1.94× at c96, both
 instance-2) are the reference expectation.

@@ -91,10 +91,10 @@ policies and the TTFT p50 ≤ 1 s column is reported alongside as the latency-bo
 | agg 24-GPU | RR | 192 | 3,889 | 4.4 s | 48 | 4,156 (384) |
 
 Measured so far (`knee_check.py`, stationarity of TTFT p50 across quarters; updated 12:30 UTC): every finished cell is
-**stationary** — disagg 9:9 KV 48 / 96 / 192 (TTFT p95 1.50 / 1.42 / 2.03 s, in-flight 5.6 / 16 / 30), disagg 12:6 KV 96
-(p95 1.37 s), agg KV 48 / 96 (p95 3.83 / 5.36 s, in-flight 6.8 / 27.5), agg RR 48 / 96 (p95 8.27 / 12.56 s, in-flight
+**stationary** — disagg 9:9 KV 48 / 96 / 192 (TTFT p95 1.50 / 1.42 / 2.03 s, in-flight 5.6 / 16 / 30), disagg 12:6 KV 96 / 192
+(p95 1.37 / 1.77 s, in-flight 17 / 33.5; 4,510 total/GPU at 192 = 0.98× of 9:9), agg KV 48 / 96 (p95 3.83 / 5.36 s, in-flight 6.8 / 27.5), agg RR 48 / 96 (p95 8.27 / 12.56 s, in-flight
 8.5 / 33.2), agg KV 192 (p95 11.68 s, in-flight 74.5, TTFT p50 falling across quarters). No measured knee yet: running are
-agg KV 384, agg RR 192 and 12:6 KV 192, with the rest of the ladders queued. Agg KV at 192 is at 9,655 total tok/s per GPU,
+agg KV 384, agg RR 192 and 12:6 KV 384, with the rest of the ladders queued. Agg KV at 192 is at 9,655 total tok/s per GPU,
 already above the sim's agg ceiling (5,138), so the sim's agg knee (1536) is the cell to watch rather than 192.
 The measured knee will be reported as the last stationary client count once the ladders complete.
 

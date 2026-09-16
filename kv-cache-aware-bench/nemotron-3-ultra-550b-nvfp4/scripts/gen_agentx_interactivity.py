@@ -14,7 +14,7 @@ for r in rows:
 series=[{"name":f"{name[pd]} {PN.get(pol,pol)}","c":hue[pd],"pd":pd,"pol":pol,"pts":sorted(v)} for (pd,pol),v in sorted(S.items())]
 # measured: [clients, P90 interactivity (1000/ITL p90 ms), total tok/s/GPU, output/GPU, ttft p50]
 meas=json.load(open(R/"sim-results/measured_agentx.json")) if (R/"sim-results/measured_agentx.json").exists() else []
-MI={("9:9",48):147.1,("9:9",96):119.0,("9:9",192):101.0,("agg6",48):102.0,("agg6-rr",48):90.9,("agg6",96):42.6,("12:6",96):104.2,("agg6-rr",96):33.8,("agg6",192):19.8}  # 1000/ITL p90
+MI={("9:9",48):147.1,("9:9",96):119.0,("9:9",192):101.0,("agg6",48):102.0,("agg6-rr",48):90.9,("agg6",96):42.6,("12:6",96):104.2,("agg6-rr",96):33.8,("agg6",192):19.8,("12:6",192):89.3}  # 1000/ITL p90
 M=[{"arm":m["arm"],"pol":m["pol"],"clients":m["clients"],"inter":MI.get((m["arm"]+("-rr" if m["pol"]=="rr" else ""),m["clients"])),"tot":m["tot"],"tpg":m["tpg"],"p50":m["p50"]} for m in meas if (m["arm"]+("-rr" if m["pol"]=="rr" else ""),m["clients"]) in MI]
 head=(R/"reports/n3u-agentx-curve.html").read_text().split("<h1>")[0].replace("N3U AgentX-Concurrency Curve","N3U AgentX Interactivity Frontier")
 html=head+'''<h1>Nemotron-3-Ultra 550B — P90 interactivity vs total throughput per GPU, AgentX concurrency definition (simulated)</h1>

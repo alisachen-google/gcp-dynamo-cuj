@@ -134,6 +134,7 @@ Measured so far (AgentX definition; total = input + output tokens per second per
 | disagg 9:9 KV | 96 | 2,497 | 28.0 | 0.31 / 0.9 / 1.42 s | 7.4 / 8.4 ms | 119 | 16.1 | stationary |
 | disagg 9:9 KV | 192 | 4,600 | 45.4 | 0.36 / 1.2 / 2.03 s | 8.5 / 9.9 ms | 101 | 30.0 | stationary |
 | disagg 12:6 KV | 96 | 2,471 | 27.5 | 0.30 / 0.8 / 1.37 s | 8.2 / 9.6 ms | 104 | 17.2 | stationary |
+| disagg 12:6 KV | 192 | 4,510 | 44.7 | 0.36 / 1.1 / 1.77 s | 10.0 / 11.2 ms | 89 | 33.5 | stationary |
 | agg KV | 48 | 3,334 | 32.3 | 0.42 / 2.5 / 3.83 s | 7.3 / 9.8 ms | 102 | 6.8 | stationary |
 | agg KV | 96 | 6,844 | 75.1 | 0.67 / 3.4 / 5.36 s | 11.9 / 23.5 ms | 43 | 27.5 | stationary |
 | agg KV | 192 | 9,655 | 96.8 | 1.56 / 8.4 / 11.68 s | 23.9 / 50.6 ms | 20 | 74.5 | stationary |
