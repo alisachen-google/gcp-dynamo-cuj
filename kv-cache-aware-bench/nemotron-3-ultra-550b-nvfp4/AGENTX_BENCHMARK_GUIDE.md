@@ -137,6 +137,7 @@ Measured so far (AgentX definition; total = input + output tokens per second per
 | agg KV | 48 | 3,334 | 32.3 | 0.42 / 2.5 / 3.83 s | 7.3 / 9.8 ms | 102 | 6.8 | stationary |
 | agg KV | 96 | 6,844 | 75.1 | 0.67 / 3.4 / 5.36 s | 11.9 / 23.5 ms | 43 | 27.5 | stationary |
 | agg RR | 48 | 3,250 | 31.3 | 0.79 / 4.8 / 8.27 s | 7.5 / 11.0 ms | 91 | 8.5 | stationary |
+| agg RR | 96 | 6,137 | 67.1 | 0.81 / 8.8 / 12.56 s | 12.1 / 29.6 ms | 34 | 33.2 | stationary |
 
 Analysis so far (AGENTX_D72 §iv, AGENTX_AGG §iii, AGENTX_DISAGG_VS_AGG): the disagg engine model is within ~10 %
 once a 0.19 s per-request hand-off is added; the agg simulator is pessimistic at low load (sim 1,474 vs 3,334
