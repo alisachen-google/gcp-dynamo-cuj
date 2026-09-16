@@ -22,7 +22,7 @@ avail=True
 for cpg,ac,dc in pairs:
     a=c("agg6","kv",ac); d=c("12:6","kv",dc) if dc else None; n=c("9:9","kv",dc) if dc else None
     if dc and (d is None or n is None): avail=False
-    f=lambda p:(f"{p['tot']:,.0f} ({p['cl']}) · {p['p50']:.1f} s · {p['i90']:.0f}" if p else "cell pending")
+    f=lambda p:(f"{p['tot']:,.0f} ({p['cl']}) · {p['p50']:.1f} s · {p['i90']:.0f}" if p else "not simulated (beyond the 1,920-client sweep)")
     nm+=f"| {cpg} | {f(a)} | {f(d)} | {f(n)} | {('**%.2f×**'%(d['tot']/a['tot'])) if d else '—'} | {('%.2f×'%(n['tot']/a['tot'])) if n else '—'} |\n"
 def peak(pd,pol):
     pts=[c(pd,pol,cl) for cl in [48,96,192,384,480,768,960,1440,1536,1920]]; b=max(pts,key=lambda p:p['tot']); return b
@@ -44,8 +44,10 @@ Arms: agg = 6 × TP4/EP4 workers on 24 GPUs; disagg = 72 GPUs, P:D split of TP4/
   not an engine deficit: both fleets receive the same offered load, and disagg spreads it over 3× more GPUs. Per fleet,
   disagg serves 1.4–3× more tokens at every client count.
 - **Load-normalised (equal clients per GPU, which is how InferenceX scales concurrency with deployment size), disagg
-  12:6 beats agg on total tokens per GPU from ~8 clients/GPU up**, reaching **{p12['tot']/pa['tot']:.2f}× at the two peaks**
-  (12:6 {p12['tot']:,.0f} at {p12['cl']} clients vs agg {pa['tot']:,.0f} at {pa['cl']}). 9:9 peaks at {p9['tot']:,.0f} ({p9['tot']/pa['tot']:.2f}×).
+  12:6 beats agg on total tokens per GPU at every load level simulated — 1.39× at 2 clients/GPU, 1.60× at 4, 1.50× at 8,
+  1.32× at 16, 1.27× at 20 — and {p12['tot']/pa['tot']:.2f}× at the two arms' peaks**
+  (12:6 {p12['tot']:,.0f} at {p12['cl']} clients vs agg {pa['tot']:,.0f} at {pa['cl']}). 9:9 matches 12:6 up to 8 clients/GPU and
+  falls to parity with agg by 20/GPU because its prefill tier saturates (TTFT 40–57 s); it peaks at {p9['tot']:,.0f} ({p9['tot']/pa['tot']:.2f}×).
 - **Agg keeps two advantages**: TTFT (0.2–0.4 s up to ~1,000 clients, versus 0.6–5 s for 12:6 and 4–60 s for 9:9 past
   their knees) and simplicity (no KV hand-off, no ComputeDomain). **Disagg keeps interactivity**: 30–140 tok/s per user
   P90 across the range versus 2–22 for agg, because agg's workers must batch prefill and decode together.
@@ -60,7 +62,7 @@ decode batches on the shared workers grow.
 ## 3. Load-normalised comparison (equal clients per GPU)
 
 {nm}
-{"(Load-normalised disagg cells 144/288/576/1152 are still computing; the table fills in when they land.)" if not avail else ""}
+Reading: once the load is normalised the dilution disappears and the prefill-tier advantage shows at every level; the gap is widest around 4–8 clients per GPU, where agg's shared workers begin batching prefill with decode (its P90 interactivity is already 9–13 tok/s per user there) while the disagg decode tier still serves each user at 26–51.
 
 ## 4. Why disagg is worse than agg at low load — step by step
 
