@@ -142,50 +142,65 @@ Measured points are overlaid on the curve page as solid markers; the run index l
 
 Method (same as AGG24 §5.2): start from the published simulator, substitute one measured quantity at a time,
 and watch which substitution moves the sim/real ratio toward 1.0. Script: `scripts/dynosim_agentx_decomp.py`.
-Ratios are **sim ÷ measured**; 1.00× is exact, below 1 means the sim under-predicts. Each concurrency is
-decomposed separately so the two ladders are apples to apples at their own load.
+Ratios are **sim ÷ measured**; 1.00× is exact, below 1 means the sim under-predicts. **The TTFT standard for
+sim-vs-real is p95** (the tail a user sees), reported alongside the throughput terms. Each client count is
+decomposed separately so the two are apples to apples at their own load.
 
-### At 48 clients (measured: 0.80 req/s · 786 output tok/s = 10.9/GPU · 1,128 total/GPU · TTFT p50 0.32 s · ITL p50 6.4 ms)
+### At 48 clients (measured: 0.80 req/s · 786 output tok/s = 10.9/GPU · 1,128 total/GPU · TTFT p95 1.50 s (p50 0.32) · ITL p50 6.4 ms)
 
-| sim variant | req/s | output tok/s (/GPU) | total tok/s/GPU | TTFT p50 | TPOT | sim/real: req/s · output · total · TTFT |
+| sim variant | req/s | output tok/s (/GPU) | total tok/s/GPU | TTFT p95 | TPOT | sim/real: req/s · output · total · TTFT p95 |
 |---|---|---|---|---|---|---|
-| v1, AIC-seeded (as published) | 0.71 | 866 (12.0) | 691 | 0.13 s | 6.6 ms | 0.89× · **1.10×** · 0.61× · 0.42× |
-| + output length = measured (×0.81) | 0.72 | 720 (10.0) | 701 | 0.13 s | 6.5 ms | 0.90× · 0.92× · 0.62× · 0.42× |
-| + fixed 0.19 s per request (KV hand-off + scheduling) | 0.72 | 719 (10.0) | 700 | 0.32 s | 6.5 ms | 0.90× · 0.91× · 0.62× · **1.01×** |
-| + decode = measured ITL curve (5.9 + 0.8·bs ms) | 0.72 | 713 (9.9) | 695 | 0.32 s | 7.1 ms | 0.90× · 0.91× · 0.62× · 1.00× |
-| **residual after all substitutions** | | | | | | **0.90× requests · 0.62× total tokens** |
+| v1, AIC-seeded (as published) | 0.71 | 866 (12.0) | 691 | 2.92 s | 6.6 ms | 0.89× · **1.10×** · 0.61× · **1.95×** |
+| + output length = measured (×0.81) | 0.72 | 720 (10.0) | 701 | 2.91 s | 6.5 ms | 0.90× · 0.92× · 0.62× · 1.94× |
+| + fixed 0.19 s per request (KV hand-off + scheduling) | 0.72 | 719 (10.0) | 700 | 2.96 s | 6.5 ms | 0.90× · 0.91× · 0.62× · 1.97× |
+| + decode = measured ITL curve (5.9 + 0.8·bs ms) | 0.72 | 713 (9.9) | 695 | 3.13 s | 7.1 ms | 0.90× · 0.91× · 0.62× · 2.09× |
+| **residual after all substitutions** | | | | | | **0.90× requests · 0.62× total · TTFT p95 2.1× too pessimistic** |
 
-### At 96 clients (measured: 2.08 req/s · 2,019 output tok/s = 28.0/GPU · 2,497 total/GPU · TTFT p50 0.31 s · ITL p50 7.4 ms)
+### At 96 clients (measured: 2.08 req/s · 2,019 output tok/s = 28.0/GPU · 2,497 total/GPU · TTFT p95 1.42 s (p50 0.31) · ITL p50 7.4 ms)
 
-| sim variant | req/s | output tok/s (/GPU) | total tok/s/GPU | TTFT p50 | TPOT | sim/real: req/s · output · total · TTFT |
+| sim variant | req/s | output tok/s (/GPU) | total tok/s/GPU | TTFT p95 | TPOT | sim/real: req/s · output · total · TTFT p95 |
 |---|---|---|---|---|---|---|
-| v1, AIC-seeded (as published) | 1.41 | 1,699 (23.6) | 1,373 | 0.16 s | 7.2 ms | 0.68× · 0.84× · 0.55× · 0.52× |
-| + output length = measured (×0.81) | 1.43 | 1,402 (19.5) | 1,393 | 0.16 s | 7.1 ms | 0.69× · 0.69× · 0.56× · 0.52× |
-| + fixed 0.19 s per request | 1.43 | 1,400 (19.4) | 1,390 | 0.35 s | 7.1 ms | 0.69× · 0.69× · 0.56× · 1.14× |
-| + decode = measured ITL curve | 1.42 | 1,381 (19.2) | 1,375 | 0.35 s | 8.3 ms | 0.68× · 0.68× · 0.55× · 1.13× |
-| **residual after all substitutions** | | | | | | **0.69× requests · 0.55× total tokens** |
+| v1, AIC-seeded (as published) | 1.41 | 1,699 (23.6) | 1,373 | 3.52 s | 7.2 ms | 0.68× · 0.84× · 0.55× · 2.48× |
+| + output length = measured (×0.81) | 1.43 | 1,402 (19.5) | 1,393 | 3.76 s | 7.1 ms | 0.69× · 0.69× · 0.56× · 2.65× |
+| + fixed 0.19 s per request | 1.43 | 1,400 (19.4) | 1,390 | 3.90 s | 7.1 ms | 0.69× · 0.69× · 0.56× · 2.75× |
+| + decode = measured ITL curve | 1.42 | 1,381 (19.2) | 1,375 | 3.76 s | 8.3 ms | 0.68× · 0.68× · 0.55× · 2.65× |
+| **residual after all substitutions** | | | | | | **0.69× requests · 0.55× total · TTFT p95 2.7× too pessimistic** |
+
+### At 192 clients (measured: 3.50 req/s · 3,267 output tok/s = 45.4/GPU · 4,600 total/GPU · TTFT p95 2.03 s (p50 0.36) · ITL p50 8.5 ms · 30 in flight)
+
+| sim variant | req/s | output tok/s (/GPU) | total tok/s/GPU | TTFT p95 | TPOT | sim/real: req/s · output · total · TTFT p95 |
+|---|---|---|---|---|---|---|
+| v1, AIC-seeded (as published) | 2.76 | 3,349 (46.5) | 2,694 | 5.38 s | 8.7 ms | 0.79× · **1.03×** · 0.59× · **2.65×** |
+| + output length = measured (×0.78) | 2.87 | 2,717 (37.7) | 2,792 | 5.75 s | 8.3 ms | 0.82× · 0.83× · 0.61× · 2.83× |
+| + fixed 0.19 s per request | 2.85 | 2,706 (37.6) | 2,780 | 6.32 s | 8.4 ms | 0.82× · 0.83× · 0.60× · 3.11× |
+| + decode = measured ITL curve | 2.75 | 2,597 (36.1) | 2,674 | 5.52 s | 11.6 ms | 0.79× · 0.79× · 0.58× · 2.72× |
+| **residual after all substitutions** | | | | | | **0.79× requests · 0.58× total · TTFT p95 2.7× too pessimistic** |
 
 ### Where the gap is, in plain words
 
-1. **The engine model is not the gap.** Three things describe the engine: how fast it prefills, how fast it
-   decodes, and a fixed cost per request. Prefill rate needs no correction (once the fixed cost is added the
-   TTFT matches to 1%). Decode needs no correction (swapping in the measured ITL curve changes throughput by
-   under 1%). The only engine-side omission is a **constant 0.19 s per request** — the KV hand-off over NVLink
-   plus router and scheduler latency — which the sim did not model and which explains the whole TTFT gap.
-2. **The apparent 1.10× "over-prediction" at 48 clients was an artefact of output length.** The sim replays the
-   trace's recorded outputs (about 1,210 tokens per request); the real engine stops at end-of-sequence after
-   about 980. Correcting for that, the sim is *under*, not over, silicon on output tokens at both loads.
-3. **What remains is how the workload is represented, and it is the whole residual.** After every engine
-   substitution the sim still issues only 90% (48 clients) and 69% (96 clients) of the requests per second
-   that aiperf actually sends, and each simulated request carries about 69k input tokens where aiperf sends
-   85k to 101k. Multiplying those two shortfalls gives the total-token ratio of 0.62× and 0.55×. The cause is
-   the trace the sim reads: a 4,000-request slice (874 sessions) replayed one session per lane with a
-   per-lane cadence, whereas aiperf reconstructs all 393 sessions with their subagent streams and issues
-   subagent requests in parallel with the parent turn. Fan-out is why the shortfall grows with clients.
-4. **Direction and consequence.** The residual makes the sim *pessimistic* about absolute total throughput
-   (by 1.6 to 1.8×) but leaves the ordering of arms and policies intact, because every arm is fed the same
-   under-sized trace. Use the sim for ranking topologies and routers; use the measured markers for level.
-5. **The fix is data, not modelling.** Sim v4 will build its trace from aiperf's own reconstruction of a real
-   run (per-request input length and timestamps from `profile_export.jsonl`, subagent requests included), which
-   removes items 2 and 3 at once. The 0.19 s per-request cost becomes a constant in `dynosim_pd.py`.
+1. **Output tokens: the engine model is right once output length is corrected.** The sim replays the trace's recorded
+   output lengths (~1,200 tokens per request); the engine stops at end-of-sequence after ~930–995. Corrected, the
+   sim's output tok/s sits at 0.79–0.92× of silicon at every load — the apparent 1.03–1.10× "over-prediction" of
+   v1 was longer outputs, not a faster engine. Substituting the measured decode curve moves nothing material.
+2. **TTFT: the sim's distribution has the wrong shape, not the wrong level.** Real TTFT is tight: p50 0.31–0.36 s,
+   p95 1.4–2.0 s across 48–192 clients. The sim's p50 is *lower* than real (0.13–0.30 s: it lacks a constant
+   ~0.19 s per request for the NVLink KV hand-off plus router and scheduler latency) while its **p95 is 2–2.7×
+   *higher*** than real (2.9–5.4 s). Adding the constant fixes the median and makes the tail worse. The heavy
+   simulated tail comes from the prefill model: one FCFS queue per prefill worker serving whole requests at a
+   fixed token rate, so a burst of long-context arrivals on one worker stalls everything behind it. The real
+   engine chunks prefill (16 k-token chunks interleaved across requests) and the KV router's load term steers
+   arrivals away from a busy worker, which flattens the tail. On the p95 standard the sim is therefore
+   **pessimistic** on latency, which matters for the same-SLO framings (a sim-chosen SLO point is conservative).
+3. **Request rate and input tokens: workload representation, the whole throughput residual.** After every engine
+   substitution the sim still issues 90% (48), 69% (96) and 79% (192) of the requests per second that aiperf
+   sends, and each simulated request carries ~69 k input tokens against 85–101 k real; the product is the
+   0.55–0.62× total-token ratio. The sim reads a 4,000-request slice (874 sessions) with a per-lane cadence;
+   aiperf reconstructs all 393 sessions and fires subagent requests in parallel with the parent turn.
+4. **Direction and consequence.** On total throughput the sim is pessimistic by 1.6–1.8×; on TTFT p95 it is
+   pessimistic by 2–2.7×; on output tokens and interactivity it is within 10–20%. Every arm is fed the same
+   under-sized trace and the same queue model, so rankings of topologies and routers hold; absolute levels and
+   SLO thresholds must be read from the measured markers.
+5. **The fix.** Sim v4 builds its trace from aiperf's own per-request records of a real run (input length,
+   timestamps, subagent requests) — closes item 3 — and models prefill as chunked, interleaved service with the
+   router's load term — closes the tail in item 2; the 0.19 s constant becomes a parameter in `dynosim_pd.py`.
 
