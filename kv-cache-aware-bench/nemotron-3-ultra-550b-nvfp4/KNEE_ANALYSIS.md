@@ -93,8 +93,8 @@ policies and the TTFT p50 ≤ 1 s column is reported alongside as the latency-bo
 Measured so far (`knee_check.py`, stationarity of TTFT p50 across quarters; updated 12:30 UTC): every finished cell is
 **stationary** — disagg 9:9 KV 48 / 96 / 192 (TTFT p95 1.50 / 1.42 / 2.03 s, in-flight 5.6 / 16 / 30), disagg 12:6 KV 96 / 192
 (p95 1.37 / 1.77 s, in-flight 17 / 33.5; 4,510 total/GPU at 192 = 0.98× of 9:9), agg KV 48 / 96 (p95 3.83 / 5.36 s, in-flight 6.8 / 27.5), agg RR 48 / 96 (p95 8.27 / 12.56 s, in-flight
-8.5 / 33.2), agg KV 192 (p95 11.68 s, in-flight 74.5, TTFT p50 falling across quarters). First measured knee: agg RR at 192 (below). Running are
-agg KV 384, agg RR 384 and 12:6 KV 384, with the rest of the ladders queued. Agg KV at 192 is at 9,655 total tok/s per GPU,
+8.5 / 33.2), agg KV 192 (p95 11.68 s, in-flight 74.5, TTFT p50 falling across quarters). Measured knees so far: agg RR at 192, agg KV at 192 (384 saturated). Running are
+agg RR 384 and 12:6 KV 384, then the agg flag sweep at 192 and the rest of the 12:6 ladder. Agg KV at 192 is at 9,655 total tok/s per GPU,
 already above the sim's agg ceiling (5,138), so the sim's agg knee (1536) is the cell to watch rather than 192.
 The measured knee will be reported as the last stationary client count once the ladders complete.
 
@@ -113,7 +113,8 @@ curve has no such cliff (p50 7.3 → 11.9 ms from 1.1 → 4.6 in flight per work
 on silicon (1.42×, KV ahead), and the **first measured knee is in: agg RR reaches its throughput knee at 192 clients**
 (+11% total tokens for 2× clients, TTFT p50 11 s, 103 of 192 sessions in flight; stationary by the q1/q4 test, so it
 is a knee, not a collapse). Agg KV is still scaling at 192 (+41%). Same-SLO pair (TTFT p95 ≤ 20 s): KV 192 (9,655,
-11.7 s) vs RR 96 (6,137, 12.6 s) = **1.57×**, subject to the KV 384 cell moving the KV side up.
+11.7 s) vs RR 96 (6,137, 12.6 s) = **1.57×**, final: the KV 384 cell is POST-KNEE (TTFT p50 83 s, growing; total tokens fall to 8,257), so **the measured agg KV knee is 192**
+against the sim's 1536, and the agg KV ladder was stopped at 384 (768 / 1536 skipped as post-knee) to free the fleet for the flag sweep.
 
 ### KV-vs-RR comparison points chosen from these knees (re-analysed 2026-09-16 09:20 UTC, sim v3 incl. tuned KV)
 

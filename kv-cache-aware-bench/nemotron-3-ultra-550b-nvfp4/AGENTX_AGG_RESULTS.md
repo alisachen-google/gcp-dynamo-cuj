@@ -110,7 +110,7 @@ in parallel with KV (second fleet `n3u-agg-ns2`), so both framings can be read o
 | agg KV | 48 | 775 (32.3) | 3,334 | 0.42 / 3.83 / 7.7 s | 7.3 / 9.8 ms (P90 interactivity 102) | 6.8 (peak 18) | stationary | complete 09:18 UTC |
 | agg KV | 96 | 1,803 (75.1) | 6,844 | 0.67 / 5.36 / 12.2 s | 11.9 / 23.5 ms (P90 42.6) | 27.5 (peak 51) | stationary | complete 10:46 UTC |
 | agg KV | 192 | 2,323 (96.8) | 9,655 | 1.56 / 11.68 / 17.5 s | 23.9 / 50.6 ms (P90 19.8) | 74.5 (peak 116) | stationary (q1 1.63 → q4 1.13 s) | complete 12:29 UTC |
-| agg KV | 384 / 768 / 1536 | | | | | | | running (384 started 12:29) |
+| agg KV | 384 | 1,866 (77.7) | 8,257 | 82.8 / 119.4 / 134 s | 40.3 / 79.1 ms (P90 12.6) | 255.8 (peak 320) | **POST-KNEE** (TTFT p50 q1 37.9 → q4 99.6 s, growing) | complete 14:29 UTC; 768 / 1536 skipped (see below) |
 | agg RR | 48 | 752 (31.3) | 3,250 | 0.79 / 8.27 / 15.3 s | 7.5 / 11.0 ms (P90 90.9) | 8.5 (peak 22) | stationary | complete 10:42 UTC (second fleet `n3u-agg-ns2`) |
 | agg RR | 96 | 1,611 (67.1) | 6,137 | 0.81 / 12.56 / 19.8 s | 12.1 / 29.6 ms (P90 33.8) | 33.2 (peak 53) | stationary | complete 12:11 UTC |
 | agg RR | 192 | 1,713 (71.4) | 6,802 | 10.87 / 60.1 / 90.1 s | 30.5 / 82.0 ms (P90 12.2) | 102.7 (peak 154) | stationary by the q1/q4 test (9.8 → 10.4 s) but at the throughput knee: +11% tokens for 2× clients | complete 13:53 UTC |
@@ -132,6 +132,15 @@ The TTFT p95 budget of 20 s used for the same-SLO selection is met with margin (
 therefore move up the ladder (384 running) rather than sit at 192 as the sim suggested. Interactivity is the axis
 that has moved: P90 dropped 102 → 43 → 20 tok/s/user from 48 to 192 clients as per-worker decode batches grew
 (in flight per worker 1.1 → 4.6 → 12.4), the trade the sim predicted for KV packing on agg.
+
+**Measured agg KV knee: 192 clients.** At 384 the fleet is saturated: TTFT p50 climbs through the hour (38 → 100 s across
+quarters), 256 of 384 sessions are in flight at any moment and total tokens *fall* to 8,257 per GPU (0.86× of the
+192-client cell) because the KV cache churns under 43 concurrent contexts per worker and prefix hits are lost. The
+384 row is reported for the curve shape but is not a throughput point under the stationarity rule; the agg KV ladder
+was stopped there (768 / 1536 would only deepen the same queue) so that the agg flag sweep at the 192-client comparison
+point could start on the same fleet. The sim placed the agg KV knee at 1536 clients; silicon puts it between 192 and
+384, a 4–8× miss on the load axis — the largest single disagreement in the study (the sim's 4 k-request slice carries
+~30% fewer input tokens per turn and no subagent fan-out, so its prefill demand per client is far lighter, §iv).
 
 ### KV vs RR at 192 clients — the same-config comparison point, measured
 
@@ -155,7 +164,7 @@ worse on that axis too because its long prefills stall the decode loop.
 
 **Same-SLO comparison (TTFT p95 ≤ 20 s, the budget used to pick the cells):** RR's best cell inside the budget is 96
 clients (p95 12.6 s, 6,137 total/GPU; 192 fails at 60 s). KV meets the budget at 192 (11.7 s) with 9,655 → **1.57×**,
-and the 384-client KV cell (running) will show whether KV can stay inside 20 s one step higher. Under the interactivity
+and the 384-client KV cell fails the budget outright (p95 119 s), so **KV 192 vs RR 96 = 1.57× is the final same-SLO pair on agg**. Under the interactivity
 budget (P90 ≥ 20 tok/s/user) neither policy meets it at 192 on agg; KV at 96 (P90 42.6, 6,844) vs RR at 96 (33.8,
 6,137) = 1.12× is the pair inside that budget.
 
