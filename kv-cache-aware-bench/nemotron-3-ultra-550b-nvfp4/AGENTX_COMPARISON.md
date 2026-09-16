@@ -307,6 +307,25 @@ ITL p50 7.4 / p90 8.4 ms, 7,538 requests, stationary, guard PASS — sim said 23
 sim is now *under*-predicting as load rises, the opposite sign from the busy-stream sim). Throughput
 scaled 2.57× for 2× clients, so the fleet is still far from its knee on this axis. Next: 192 (running), 384, 768, 1536.
 
+**Equivalent load, measured from the per-request records (2026-09-16).** For each run, integrating
+(request_start_ns, request_end_ns) over the profiling window gives the mean number of requests in
+flight — the quantity both concurrency definitions ultimately load the server with:
+
+| run | definition | configured C | mean in-flight requests | peak in-flight | req/s | mean request latency |
+|---|---|---|---|---|---|---|
+| 9:9 KV kv:48 (busy-stream) | ours | 48 streams | **93.8** | 425 | 7.68 | 12.2 s |
+| 9:9 KV 48 clients (AgentX) | theirs | 48 sessions | **5.6** | 17 | 0.79 | 7.0 s |
+| 9:9 KV 96 clients (AgentX) | theirs | 96 sessions | **16.1** | 40 | 2.08 | 7.7 s |
+
+Two corrections to the intuition "C streams = C requests in flight": (1) even in our busy-stream
+mode a *session* slot holds ~2 requests in flight on average (94 at c48, peaks of 425), because the
+Weka trace's sessions spawn subagent requests that run concurrently with the parent turn; (2) an
+AgentX client is worth far less than a stream at low load — 96 live sessions put only 16 requests
+in flight, i.e. ~1/6 of a busy slot each — because most sessions are inside a replayed think-time.
+So "AgentX 480 clients" is roughly the in-flight load of our busy-stream **c40–c50**, and their
+1,920 ≈ our c150–c200, which is exactly the band where our 9:9 knee sits. This is the bridge between
+the two axes; the AgentX page will carry mean in-flight as a second x-axis once the 192+ points land.
+
 Bench-pod placement note (2026-09-16): the 192-client point was evicted mid-warm-up — aiperf itself
 used 59 GB (192 session lanes × 256K-token contexts plus the record processors) on a 60 GB x86 system
 node. From 192 clients up, the AgentX bench pods run on np-1's arm64 GPU nodes (953 GB; the template
