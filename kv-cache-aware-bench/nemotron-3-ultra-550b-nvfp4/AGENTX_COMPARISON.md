@@ -296,6 +296,14 @@ per-play cache-bust, 1 h profile window. Output tok/s per GPU and TTFT p50 (s):
 | 768 | 60.9 · 57.13 s | 88.6 · 20.16 s | 58.4 · 0.38 s | 23.4 · 212.09 s | 30.6 · 142.59 s |
 | 1536 | 45.8 · 149.21 s | 70.6 · 59.58 s | 43.8 · 0.98 s | 11.8 · 474.39 s | 22.0 · 327.38 s |
 
+**First measured AgentX-mode point (2026-09-16 02:18 UTC, 9:9 KV, 48 clients, 1 h profile window):**
+786 output tok/s = **10.9/GPU**, TTFT p50 0.32 s / p90 0.9 s / p95 1.5 s / p99 3.8 s, ITL p50 6.4 ms /
+p90 6.8 ms (P90 interactivity 147 tok/s/user), 2,887 requests, 0 errors, queue-stationary, MNNVL guard
+PASS (TE peak 0.50 GB/s). The sim predicted 12.0/GPU · p50 0.13 s → **sim/real 1.10× on throughput**,
+TTFT under-predicted 2.5× (the same prefill-queue term as the busy-stream sim, at much lower load).
+Confirms the client-vs-stream ratio: 48 clients drew 4.5× less output than 48 busy streams
+(4,555 tok/s). Next points: 96 (running), 192, 384, 768, 1536 clients.
+
 Page: [AgentX-concurrency curve](https://htmlpreview.github.io/?https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/reports/n3u-agentx-curve.html)
 (measured AgentX-mode points are overlaid as the client-axis ladders land).
 
@@ -339,6 +347,17 @@ Traced on InferenceX `2f4201c` (2026-09-15), srt-slurm submodule `984180e5`, aip
 | 11. steady state | [`src/aiperf/timing/strategies/agentic_replay.py`](https://github.com/SemiAnalysisAI/aiperf/blob/754356e9a39acc6cc6afb242d123bb57c3fb6f75/src/aiperf/timing/strategies/agentic_replay.py) | WARMUP replays each lane's last pre-t* turn to prime the cache; PROFILING dispatches all N lanes at once, then each turn waits its recorded inter-turn `delay_ms` (capped by the 10 s idle gap). When a tree drains, `_dispatch_recycled_on_lane` draws the next root from the sampler so occupancy stays "at exactly the configured concurrency". |
 
 What this means for the number itself: in AgentX, `conc = 480` is **480 live Claude-Code session trees**, each mostly idle between turns (the think-time is replayed), never 480 requests in flight. Our `--concurrency C` with `--no-fixed-schedule --ignore-trace-delays` is C always-busy request streams — the scenario lock forbids exactly that flag combination. Both go through the same aiperf `--concurrency` option; the difference is the timing mode the scenario selects (step 7) and the slot rule (step 10).
+
+## 5f. MTP on our side — measured (the analog of their DSpark / synthetic acceptance)
+
+Their AgentX recipes run DeepSeek-V4 with DSpark speculative decoding at a *synthetic* acceptance
+length of 3.77. We ran Nemotron-3's native NEXTN draft (1 step, 2 draft tokens) on the 9:9 disagg
+split with real verification — three points, all clean (0 restarts, transport guard PASS). Result:
+per-stream decode got 1.4–2.0× faster (ITL p50 8.6–9.1 ms; P90 interactivity 43–48 tok/s/user vs
+21–30), but output throughput fell 44–67% (2,542 / 2,581 / 2,473 tok/s at c48 / c96 / c144 vs
+4,555 / 6,560 / 7,549) and every point went post-knee because the prefill tier saturated
+(effective prefill throughput 0.25–0.6× of MTP-off). On this trace (ISL ≈ 87 k, 89% cached) MTP
+accelerates the tier that had slack. Full table and mechanism: D72_RESULTS.md §4b.
 
 ## 6. Caveats on the comparison
 - Different model class (dsv4 attention-heavy MoE vs N3U hybrid), different stack pins,

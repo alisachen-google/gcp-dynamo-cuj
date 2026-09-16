@@ -410,7 +410,7 @@ Reading: on **total** tokens per chip the bounded points are *not* parity — ag
 Method and the InferenceX comparison: [AGENTX_COMPARISON.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/AGENTX_COMPARISON.md).
 
 
-### 2c. Agg on the new stack (version-consistent reference) — 6 of 16 points landed, ladder in progress
+### 2c. Agg on the new stack (version-consistent reference) — 13 of 16 points landed, ladder in progress
 
 | cell | old stack (SGLang 0.5.14 / Dynamo 1.3.1) | **new stack (0.5.16 / 1.4.2 / FI 0.6.18)** | delta |
 |---|---|---|---|
@@ -420,7 +420,11 @@ Method and the InferenceX comparison: [AGENTX_COMPARISON.md](https://github.com/
 | agg RR c32 | 993 · 41.4/GPU · 6,925 total/chip · p50 1.45 s | **1,233 · 51.4/GPU · 8,214 total/chip · p50 0.98 s · ITL p90 68.4 ms** · AT/PRE · 3,901 req | **+24%** |
 | agg KV c64 (post-knee) | 2,045 · 85.2/GPU · 13,194 total/chip · p50 1.09 s | **2,060 · 85.8/GPU · 13,526 total/chip · p50 1.05 s · p90 12.1 s · ITL p90 72.4 ms** · POST · 6,919 req | +1% (ceiling unchanged) |
 | agg RR c64 (post-knee) | 1,141 · 47.5/GPU · 7,109 total/chip · p50 5.13 s | **1,319 · 55.0/GPU · 8,832 total/chip · p50 3.73 s · ITL p90 98.2 ms** · POST · 4,433 req | +16% |
-| agg kv/rr c128–512 | old: KV c128 1,922 (80.1) · RR c128 1,096 | running (kv:128 started 22:07 UTC) | — |
+| agg KV c128 (saturated) | 1,922 · 80.1/GPU · 9,849 total/chip · p50 28.8 s | **2,050 · 85.4/GPU · 10,829 total/chip · p50 33.3 s · ITL p90 79.3 ms** · POST | +7% |
+| agg RR c128 (saturated) | 1,096 · 45.7/GPU · p50 34.3 s | **1,339 · 55.8/GPU · 6,966 total/chip · p50 32.9 s · ITL p90 124 ms** · POST | +22% |
+| agg KV c192 / c256 / c384 | — | **2,043 (85.1) · 2,024 (84.3) · 1,900 (79.2)** · p50 64 / 87 / 135 s · POST saturated | ceiling ≈ 85/GPU, falling from c384 |
+| agg RR c192 / c256 | — | **1,226 (51.1) · 1,128 (47.0)** · p50 76 / 112 s · POST saturated | ceiling ≈ 55/GPU at c128 |
+| agg rr:384, kv/rr:512 | | running | |
 
 The bounded cells (c16, c32) gain 9–24% on the new stack, the knees do not move (KV knees between c32 and c64, RR between c32 and c64 — same as the old stack), and the post-knee KV ceiling is unchanged at ~86/GPU, so the new stack raises the bounded region rather than the saturation ceiling. **The bounded agg reference for every disagg ratio is now 77.3/GPU (new-stack KV c32).** The engine-version delta is real and positive, so (a) part of the disagg "residual sim drift"
 attributed earlier to model optimism is engine improvement the 0.5.14-seeded sim could not know,
@@ -485,6 +489,63 @@ domain-availability wait in progress.
 
 
 
+
+### 4b. MTP / NEXTN speculative decoding on the 9:9 split (2026-09-16) — measured, and it loses
+
+Goal: add multi-token prediction (Nemotron-3's native NEXTN draft layer, `num_nextn_predict_layers: 1`)
+to the winning disagg split and collect three points. Fleet = the 9:9 MNNVL manifest plus
+`--speculative-algorithm NEXTN --speculative-num-steps 1 --speculative-eagle-topk 1
+--speculative-num-draft-tokens 2 --mem-fraction-static 0.80` on both tiers
+([n3u-mnnvl-99mtp.yaml](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/manifests/n3u-mnnvl-99mtp.yaml)).
+Attempt 1 (2026-09-15 19:10 UTC) killed every decode worker on its first speculative batch:
+SGLang 0.5.16's `fast_prefill_plan` passes 19 arguments to FlashInfer's paged-prefill `plan`, but
+FlashInfer 0.6.18 (our pinned build; SGLang 0.5.16 targets 0.6.14) takes 20 (`uniform_q_len`).
+The manifest now appends the 20th argument at container start; attempt 2 ran all three points
+with 0 worker restarts and the MNNVL guard passing at each (mooncake TE peak 0.98–1.02 GB/s).
+The decode tier published `spec decode runtime metadata: {'nextn': 1, 'method': 'EAGLE'}` and loaded
+the 6.3 GB `NemotronHForCausalLMMTP` draft next to the 79.3 GB target.
+
+| 9:9 KV | c48 MTP-off → **MTP-on** | c96 MTP-off → **MTP-on** | c144 MTP-off → **MTP-on** |
+|---|---|---|---|
+| output tok/s (/GPU) | 4,555 (63.3) → **2,542 (35.3)** −44% | 6,560 (91.1) → **2,581 (35.8)** −61% | 7,549 (104.8) → **2,473 (34.3)** −67% |
+| total tok/s/chip (in+out) | 9,571 → **5,774** | 13,729 → **4,643** | 15,578 → **3,958** |
+| requests / s | 7.64 → **4.33** | 11.30 → **4.34** | 12.85 → **4.20** |
+| prefill tok/s (aiperf effective) | 684 k → **411 k** | 982 k → **332 k** | 1,114 k → **283 k** |
+| TTFT p50 / p90 | 0.56 / — s → **9.7 / 26.6 s** | 0.96 / — → **26.5 / 52.0 s** | 2.20 / 9.8 → **56.1 / 82.9 s** |
+| ITL p50 / p90 (ms) | 12.9 / 33.5 → **9.1 / 23.0** | 16.2 / 41.5 → **8.9 / 21.2** | 17.6 / 46.9 → **8.6 / 21.0** |
+| P90 interactivity (tok/s/user) | 29.9 → **43.5** | 24.1 → **47.2** | 21.3 → **47.6** |
+| output tok/s per user (avg) | 71.2 → **104.7** | 56.7 → **108.5** | 51.0 → **113.0** |
+| knee | AT/PRE → **POST** (q1 5.2 s → q4 22.2 s) | AT/PRE → **POST, saturated** | AT/PRE → **POST, saturated** |
+
+Reading. Speculative decoding did what it is supposed to do *per stream*: inter-token latency
+fell 1.4–2.0× (ITL p50 12.9–17.6 ms → 8.6–9.1 ms) and per-user output rate rose to 105–113 tok/s,
+which implies a mean accepted length of roughly 1.5–2 tokens per step with the 1-step / 2-draft-token
+configuration (the decode logs do not print `accept_length` in this build, so this is inferred from
+the ITL ratio, not read out). But the *system* lost 44–67% of its output throughput and every point
+went post-knee, with TTFT growing across the window (c48: 5.2 s → 22.2 s quarter-to-quarter) — the
+signature of a saturated prefill tier, not of decode. The request rate flat-lines at ~4.3 req/s
+regardless of concurrency, and aiperf's effective prefill throughput drops to 0.6× (c48) → 0.25×
+(c144) of MTP-off on the same 9 prefill workers. Two mechanisms are consistent with that and the
+data cannot yet separate them: (1) the prefill workers are slower per token with NEXTN on
+(in SGLang PD-disaggregation the prefill side must also run the draft layer's extend pass to
+produce the draft state that ships with the KV, and it does so without CUDA graphs and under
+`--mem-fraction-static 0.80`), so the tier's capacity fell; (2) faster decode turns the 48–144
+closed-loop streams over faster, raising prefill demand on a tier that was already 92% busy at
+kv:144 without MTP — but this alone would predict *more* requests per second, not fewer, so (1) is
+the dominant term. Either way, on this workload (ISL ≈ 87 k, OSL ≈ 590, 89% cached prefix) the
+prefill tier is the binding constraint and MTP only accelerates the tier that had slack.
+
+What it means for the comparison: MTP is not a throughput lever for N3U on this trace at this
+split; it is an *interactivity* lever (P90 interactivity 43–48 vs 21–30 tok/s/user) that costs
+half the throughput. It would pay only where decode is the bottleneck — low concurrency at a
+decode-heavy split, or a short-context workload. Next diagnostics, in order: (a) re-run kv:48
+with the profile capture on the prefill tier to measure the per-token prefill cost with NEXTN on;
+(b) a decode-heavier MTP split (6:12 or 3:15) where the prefill tier is not the constraint;
+(c) `--speculative-num-draft-tokens 3` on decode only if SGLang allows asymmetric spec args in
+PD (to be checked in the 0.5.16 source). Run index rows: `n3u-mnnvl-99mtp-kv-c48/96/144`.
+Contrast with InferenceX: their DeepSeek-V4 AgentX recipe runs DSpark (block 6, 7 draft tokens)
+with *synthetic* acceptance pinned at 3.77 (`SGLANG_SIMULATE_ACC_LEN`), so their MTP numbers
+measure the engine at an assumed acceptance rate; ours measure real NEXTN acceptance.
 
 ## KV-router flag configuration and sweep for the disagg selected points
 

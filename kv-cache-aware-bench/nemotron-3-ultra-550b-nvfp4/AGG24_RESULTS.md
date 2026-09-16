@@ -192,7 +192,11 @@ cells:
 | 16 | **1,418 (59.1)** | 0.36 / 2.3 s | 963 (40.1) | 0.89 s | 1.47× | both stationary | KV +14%, RR +9% |
 | 32 | **1,854 (77.3)** | 0.35 / — (p95 3.8 s) | 1,233 (51.4) | 0.98 s | 1.50× | both stationary | KV +12%, RR +24% |
 | 64 | 2,060 (85.8) | 1.05 / 12.1 s | 1,319 (55.0) | 3.73 s | 1.56× | both growing (post) | KV +1%, RR +16% |
-| 128–512 | running | | | | | | |
+| 128 | 2,050 (85.4) | 33.3 / 66.6 s | 1,339 (55.8) | 32.9 s | 1.53× | both saturated | KV +7%, RR +22% |
+| 192 | 2,043 (85.1) | 63.7 / 92.5 s | 1,226 (51.1) | 75.9 s | 1.67× | both saturated | — |
+| 256 | 2,024 (84.3) | 87.1 / 131 s | 1,128 (47.0) | 112 s | 1.79× | both saturated | — |
+| 384 | 1,900 (79.2) | 135 / 176 s | running | | | KV saturated, ceiling starting to fall | — |
+| 512 | running | | | | | | |
 
 ITL p90 at the bounded cells: 39.1 / 49.3 ms (KV c16 / c32) → P90 interactivity 25.6 / 20.3
 tok/s/user; RR 49.7 / 68.4 ms → 20.1 / 14.6. Total tokens per chip at KV c32: 13,320 (old 11,800).
