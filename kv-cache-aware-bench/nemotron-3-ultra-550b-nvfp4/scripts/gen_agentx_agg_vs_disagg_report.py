@@ -36,6 +36,44 @@ Sim: `scripts/dynosim_agentx.py` v3 ([dynosim_n3u_agentx_v3.csv]({N}/sim-results
 Arms: agg = 6 × TP4/EP4 workers on 24 GPUs; disagg = 72 GPUs, P:D split of TP4/EP4 workers, KV over NVLink. Throughput is
 **total tokens (input + output) per second per GPU**, the InferenceX convention.
 
+## 0. How to compare disaggregated with aggregated — the method
+
+The two fleets differ in GPU count (72 vs 24), in where a request's work happens (two tiers vs one), and in how
+their latency behaves with load. Four framings are defensible; they answer different questions, and only the first
+two are how the published benchmarks rank architectures.
+
+| framing | input held equal | what it answers | pitfall |
+|---|---|---|---|
+| **A. SLA-anchored best throughput** (InferenceX, NVIDIA AIConfigurator) | the SLO — e.g. TTFT p95 ≤ X and P90 interactivity ≥ Y | "for the latency users will accept, which fleet serves more tokens per GPU (and per dollar)?" | needs the SLO from the product; each arm sits at its own client count |
+| **B. Pareto frontier overlay** | nothing — full sweep of each arm | the whole trade-off curve; shows where one arm dominates | needs the whole ladder; a curve, not a number |
+| **C. Equal clients per GPU** | offered load per GPU | capacity comparison at the same utilisation, how InferenceX scales conc with fleet size | still says nothing about latency; per-GPU scaling assumes agg scales linearly |
+| **D. Equal clients (raw)** | the client count | only a per-fleet view ("this many users on this fleet") | per-GPU numbers are diluted by the 3× fleet-size difference — never use it per GPU |
+
+Two derived views make A concrete for capacity planning:
+- **Best total tok/s per GPU under the SLO** (the InferenceX/NVIDIA number; §1 and the tables below).
+- **Clients per GPU under the SLO**, i.e. GPUs needed per 1,000 concurrent Claude-Code sessions — the inverse
+  question ops teams ask. From sim v3 (KV routing; tuned KV in parentheses):
+
+| SLO | agg 24-GPU | disagg 12:6 | disagg 9:9 |
+|---|---|---|---|
+| TTFT p95 ≤ 5 s | 4.0 clients/GPU → 250 GPUs per 1,000 sessions | 4.0 → 250 (tuned 5.3 → 188) | 2.0 → 500 (tuned 4.0 → 250) |
+| TTFT p95 ≤ 10 s | 8.0 → 125 | 6.7 → 150 (tuned 10.7 → 94) | 4.0 → 250 (tuned 8.0 → 125) |
+| TTFT p95 ≤ 20 s | 8.0 → 125 | 8.0 → 125 (tuned 10.7 → 94) | 6.7 → 150 (tuned 10.7 → 94) |
+| P90 interactivity ≥ 20 tok/s/user | 2.0 → 500 | 8.0 → 125 | 13.3 → 75 |
+| TTFT p95 ≤ 10 s **and** P90 ≥ 20 | 2.0 → 500 | 6.7 → 150 (tuned 8.0 → 125) | 4.0 → 250 (tuned 8.0 → 125) |
+
+Reading: on a TTFT-only SLO agg and disagg 12:6 need about the same GPUs per session (agg even edges it at 10 s),
+and disagg's advantage is the 1.4–1.5× more tokens it serves per GPU while doing so; the moment the SLO includes
+a per-user speed floor, agg needs 3–4× the GPUs of disagg because its shared workers cannot keep decode fast
+under load. The tuned router adds 25–60% capacity to disagg and nothing to agg.
+
+Practical recipe used in this report: (1) sweep both arms over clients under the AgentX definition; (2) pick the
+product SLO (we use TTFT p95 ≤ 10–20 s and P90 ≥ 20 tok/s/user as the two candidates); (3) report each arm's best
+total tok/s per GPU and clients per GPU under it (framing A); (4) show the frontier (framing B) so the reader can
+move the SLO; (5) use clients per GPU (framing C) only for the "why is disagg worse at low load" diagnosis; (6) never
+quote per-GPU numbers at equal raw clients (framing D); (7) cost = the framing-A throughput × the price per GPU-hour
+(the 72-GPU fleet costs 3× per hour, which the per-GPU normalisation already absorbs).
+
 ## 1. Verdict
 
 - **Optimal disagg topology under this load model: 12:6** (12 prefill : 6 decode workers) on total tokens per GPU and on
