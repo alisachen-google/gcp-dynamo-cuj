@@ -87,9 +87,21 @@ Against disagg 9:9 KV (5,501 total/GPU at 480 clients (TTFT p50 4.1 s, 92 output
 the weak arm (P90 45–172 ms ITL → 6–22 tok/s/user at 48–384 clients) because the same workers prefill and
 decode.
 
-Selected points: KV at 48 / 96 / 192 / 384 / 768 / 1536 (same ladder as disagg, so the two arms overlay on
-one page), RR at **96 and 384** (RR still stationary at 96 in the sim; 384 is past its knee) — queued as a
-follow-up runner behind the KV ladder.
+Selected points (from the v3 sim knees):
+
+| framing | rule | agg KV | agg RR | sim gain (total tok/s/GPU) |
+|---|---|---|---|---|
+| knees | throughput-slope knee | ≈ 192 clients (TTFT p50 0.2 s; throughput keeps creeping to 960) | ≈ 192 clients (TTFT p50 4.4 s) | — |
+| **same config** | both knees coincide at 192 | 192 → 3,715 (p50 0.2 s, P90 9 tok/s/user) | 192 → 3,889 (p50 4.4 s, P90 15) | 0.96× on tokens, KV 22× lower TTFT, RR better interactivity |
+| **same SLO (TTFT p95 ≤ 20 s)** | best throughput under the budget | 192 → 3,715 (p95 6 s) | 96 → 2,924 (p95 11 s) | **1.27×** |
+| same SLO (TTFT p95 ≤ 60 s) | | 480 → 4,863 | 192 → 3,889 | 1.25× |
+
+Agg is the arm where the sim says KV-aware routing barely pays on tokens: with six independent prefix caches and
+no prefill hand-off, RR's cache misses cost latency (4.4 s vs 0.2 s TTFT at 192) more than throughput, and KV's
+session affinity concentrates decode batches on fewer workers, which is why its simulated P90 interactivity is
+*lower* than RR's (9 vs 15 tok/s/user at 192). The measured agg RR ladder therefore runs the full 48 → 1536
+in parallel with KV (second fleet `n3u-agg-ns2`), so both framings can be read off the same client counts:
+**192** for same-config and **96 (RR) vs 192 (KV)** for the 20 s TTFT-p95 SLO.
 
 ## iii. Real runs: performance, curve, and the KV-vs-RR points
 

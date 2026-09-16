@@ -99,11 +99,21 @@ cap interactivity (P90 falls to 4 tok/s/user). RR peaks at 2,062 total/GPU at 38
 6:12, the same as the busy-stream silicon. Interactivity: the disagg splits hold P90 interactivity above 100
 tok/s/user up to ~200 clients and above 40 up to ~1,000 (decode batches stay small), versus agg's 20–60.
 
-Selected points (why): the measured KV ladder is 48 / 96 / 192 / 384 / 768 / 1536 (the sim's rise, peak
-and decline, plus the two we could compare with their 480–1,920 range); RR is measured at **96 and 384**
-only — 96 is the last client count where the sim has RR still stationary, 384 is where KV peaks and RR
-is already deep in its queue, so the pair brackets the KV-vs-RR gap without spending 8 h on a full RR
-ladder.
+Selected points (from the v3 sim knees; `scripts/dynosim_agentx.py` + the knee/SLO scan below):
+
+| framing | rule | 9:9 KV | 9:9 RR | sim gain (total tok/s/GPU) |
+|---|---|---|---|---|
+| knees | throughput-slope knee (marginal gain < 25% of the initial slope) | ≈ 480 clients (TTFT p50 4.1 s) | ≈ 192 clients (TTFT p50 12.7 s, RR's cache-miss prefill saturates) | — |
+| **same config** | RR's knee, the highest client count where RR still scales | 192 → 2,733 (p50 0.3 s) | 192 → 2,047 (p50 12.7 s) | **1.34×**, and 42× lower TTFT |
+| same config, both bounded | last count where both are pre-knee | 96 → 1,395 (0.2 s) | 96 → 1,336 (3.2 s) | 1.04× (parity on tokens; KV wins only TTFT) |
+| **same SLO (TTFT p95 ≤ 20 s)** | each policy's best throughput under the budget | 480 → 5,501 (p95 18 s) | 96 → 1,336 (p95 16 s) | **4.1×** |
+| same SLO (P90 interactivity ≥ 20 tok/s/user) | each policy's best throughput above the floor | 480 → 5,501 (P90 44) | 384 → 2,062 (P90 45) | 2.7× |
+
+So the measured KV ladder is 48 / 96 / 192 / 384 / 768 / 1536 and the measured RR points are **192** (same-config
+at RR's knee), **96** (RR's best under the 20 s TTFT-p95 budget, and the both-bounded config) and **384** (RR's best
+under the interactivity floor); the runner is queued in that order. Expectation from the busy-stream silicon
+(KV/RR 2.02× at c48, 1.94× at c96) is that the measured same-config gain lands above the sim's 1.34×, because
+the sim's RR under-counts the prefix-miss penalty (hit 0.30 vs KV 0.74).
 
 ## iii. Real runs: performance, curve, and the KV-vs-RR points
 
