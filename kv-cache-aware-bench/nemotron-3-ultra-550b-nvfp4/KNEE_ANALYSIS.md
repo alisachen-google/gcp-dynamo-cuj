@@ -99,7 +99,8 @@ The measured knee will be reported as the last stationary client count once the 
 | arm | same config (RR's knee) | both-bounded reference | same SLO, TTFT p95 ≤ 20 s | same SLO, P90 interactivity ≥ 20 tok/s/user |
 |---|---|---|---|---|
 | disagg 9:9 | **192 clients**: sim KV 2,733 vs RR 2,047 total/GPU (1.34×), TTFT 0.3 vs 12.7 s | 96: 1,395 vs 1,336 (1.04×) | **KV 480 (5,501) vs RR 96 (1,336): 4.1×** | KV 480 vs RR 384 (2,062): 2.7× |
+| disagg 12:6 (measured ladder) | **192 clients**: sim KV 2,679 vs RR 2,271 (1.18×), TTFT 0.2 vs 6.5 s | 96: 1,389 vs 1,342 (1.04×) | **KV 480 (5,217) vs RR 96 (1,342): 3.9×** | KV 480 vs RR 384 (2,508): 2.1× |
 | agg 24-GPU | **192 clients**: sim KV 3,715 vs RR 3,889 (0.96×), TTFT 0.2 vs 4.4 s | 96: 2,382 vs 2,924 (0.81×) | **KV 192 (3,715) vs RR 96 (2,924): 1.27×** | RR 96 (2,924) vs KV 48 (1,474): KV loses on interactivity (session affinity → bigger decode batches) |
 
-Runners: 9:9 RR = 192, 96, 384 (queued behind the KV ladder); agg RR = full 48 → 1536 on the second fleet, in
-parallel with agg KV. Rationale and the full sim tables: AGENTX_D72_RESULTS.md §ii, AGENTX_AGG_RESULTS.md §ii.
+Runners: disagg measured ladder = **12:6** (KV 96/192/384/480/768/1440, then RR 192/96/384) after the 9:9 192-client
+point; 9:9 48/96/192 stay as a cross-check; agg RR = full 48 → 1536 on the second fleet, in parallel with agg KV. Rationale and the full sim tables: AGENTX_D72_RESULTS.md §ii, AGENTX_AGG_RESULTS.md §ii.

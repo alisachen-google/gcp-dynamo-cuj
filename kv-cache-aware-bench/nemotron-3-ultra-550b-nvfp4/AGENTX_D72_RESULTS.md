@@ -109,9 +109,12 @@ Selected points (from the v3 sim knees; `scripts/dynosim_agentx.py` + the knee/S
 | **same SLO (TTFT p95 ≤ 20 s)** | each policy's best throughput under the budget | 480 → 5,501 (p95 18 s) | 96 → 1,336 (p95 16 s) | **4.1×** |
 | same SLO (P90 interactivity ≥ 20 tok/s/user) | each policy's best throughput above the floor | 480 → 5,501 (P90 44) | 384 → 2,062 (P90 45) | 2.7× |
 
-So the measured KV ladder is 48 / 96 / 192 / 384 / 768 / 1536 and the measured RR points are **192** (same-config
-at RR's knee), **96** (RR's best under the 20 s TTFT-p95 budget, and the both-bounded config) and **384** (RR's best
-under the interactivity floor); the runner is queued in that order. Expectation from the busy-stream silicon
+**Topology for the measured ladder: 12:6**, the sim's optimum on total tokens per GPU (the 9:9 points at 48 / 96 / 192 were
+run before that result and stay as a cross-check). On 12:6 the same rules give: same config **192** (sim KV 2,679 vs RR
+2,271 = 1.18×, TTFT 0.2 vs 6.5 s), both-bounded 96 (1.04×), same SLO TTFT p95 ≤ 20 s **KV 480 (5,217) vs RR 96 (1,342) = 3.9×**,
+P90 ≥ 20 tok/s/user KV 480 vs RR 384 (2,508) = 2.1×. The measured 12:6 KV ladder is 96 / 192 / 384 / 480 / 768 / 1440
+(480 and 1440 are the sim's same-SLO and peak cells) and the 12:6 RR points are **192, 96, 384**, queued in that order
+behind the last 9:9 point. Expectation from the busy-stream silicon
 (KV/RR 2.02× at c48, 1.94× at c96) is that the measured same-config gain lands above the sim's 1.34×, because
 the sim's RR under-counts the prefix-miss penalty (hit 0.30 vs KV 0.74).
 

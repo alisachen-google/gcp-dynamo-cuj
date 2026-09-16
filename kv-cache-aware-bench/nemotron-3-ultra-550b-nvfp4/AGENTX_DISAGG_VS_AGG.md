@@ -89,8 +89,9 @@ TTFT p95 ≤ 20 s the sim's best cells are agg 3,715 (192 clients) versus 12:6 5
 
 Measured AgentX-mode points so far: disagg 9:9 KV at 48 clients (1,128 total/GPU, TTFT p50 0.32 s) and 96 clients
 (2,497, 0.31 s); the 9:9 ladder continues to 1,536 and the agg ladder (48 → 1,536, KV and RR in parallel on two
-fleets) started 2026-09-16 08:00 UTC. No 12:6 point exists under this definition yet; a 12:6 run at 480 and 768
-clients is the verification that would confirm the simulated optimum and is queued after the 9:9 ladders.
+fleets) started 2026-09-16 08:00 UTC. No 12:6 point exists under this definition yet; the disagg ladder switches to 12:6 after the running 9:9
+192-client point (KV 96 / 192 / 384 / 480 / 768 / 1440, then RR 192 / 96 / 384), which verifies the simulated
+optimum directly.
 The sim under-predicts absolute totals ~1.6–2× (trace representation; AGENTX_D72_RESULTS.md §iv) on both arms alike,
 so the ratios above are the claim, not the absolute levels. Busy-stream (always-busy streams) results for the same
 arms are in D72_RESULTS.md §2 (disagg 9:9 beats agg 1.17× on total, 1.36× on output at their bounded peaks).
