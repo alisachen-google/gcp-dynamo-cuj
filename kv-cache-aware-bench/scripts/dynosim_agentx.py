@@ -107,7 +107,7 @@ def simulate_agentx(sessions, n_prefill, n_decode, policy, clients, window=3600.
     if not win: return None
     dur=window; tt=sorted(x["ttft"] for x in win); out=sum(x["out"] for x in win)
     tp=sorted(x["tpot"] for x in win); inp=sum(x["inp"] for x in win)
-    return {"throughput_tok_s":out/dur,"ttft_p50_s":tt[len(tt)//2],"ttft_p95_s":tt[int(len(tt)*.95)],"ttft_p99_s":tt[min(len(tt)-1,int(len(tt)*.99))],
+    return {"throughput_tok_s":out/dur,"ttft_p50_s":tt[len(tt)//2],"ttft_p90_s":tt[min(len(tt)-1,int(len(tt)*.9))],"ttft_p95_s":tt[int(len(tt)*.95)],"ttft_p99_s":tt[min(len(tt)-1,int(len(tt)*.99))],
             "tpot_mean_ms":sum(x["tpot"] for x in win)/len(win)*1000,"tpot_p50_ms":tp[len(tp)//2]*1000,"tpot_p90_ms":tp[min(len(tp)-1,int(len(tp)*.9))]*1000,
             "in_tok_per_req":inp/len(win),"total_tok_s":(inp+out)/dur,"hit_rate":eng.hits/max(1,eng.blocks),"req_per_s":len(win)/dur,"n":len(win)}
 
