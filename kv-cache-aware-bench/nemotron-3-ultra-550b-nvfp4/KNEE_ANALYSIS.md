@@ -96,25 +96,25 @@ The measured knee will be reported as the last stationary client count once the 
 
 ### KV-vs-RR comparison points chosen from these knees (re-analysed 2026-09-16 09:20 UTC, sim v3 incl. tuned KV)
 
-Knee = throughput-slope knee (marginal total-token gain per added client < 25% of the initial slope). RR's knee is
+Knee = throughput-slope knee (marginal total-token gain per added client < 25% of the initial slope); TTFT in these tables is **p95** (the busy-stream reports use p95 budgets too). RR's knee is
 earlier on every arm because its prefix hit rate is ~0.2–0.4 (each request re-prefills most of its 70 k-token context)
 versus ~0.75 for KV routing; the fewer prefill workers an arm has, the higher RR's hit rate (agg 0.40, 6:12 0.40,
 9:9 0.30, 12:6 0.23) because a session lands on the same worker more often by chance.
 
-| arm | KV knee (TTFT p50) | tuned-KV knee | RR knee (TTFT p50) | RR peak |
-|---|---|---|---|---|
-| disagg 12:6 (measured ladder) | 480 (0.6 s; TTFT ≤ 1 s to 480) | 480 (0.4 s; ≤ 1 s to 1,920) | 192 (6.5 s) | 2,508 at 384 |
-| disagg 9:9 | 480 (4.1 s; ≤ 1 s to 192) | 768 (2.2 s; ≤ 1 s to 480) | 192 (12.7 s) | 2,062 at 384 |
-| disagg 6:12 | 384 (13.0 s; ≤ 1 s to 192) | 480 (5.4 s) | 96 (4.0 s) | 1,631 at 192 |
-| agg 24-GPU | 192 (0.2 s; ≤ 1 s to 1,536) | 192 (0.1 s) | 192 (4.4 s) | 4,156 at 384 |
-
-Chosen points (total tok/s per GPU; gain = KV ÷ RR):
-
-| arm | same config at RR's knee | same config, both pre-knee | same SLO, TTFT p95 ≤ 20 s | same SLO, P90 interactivity ≥ 20 tok/s/user | where tuned KV would land |
+| arm | KV knee (TTFT p95) | tuned-KV knee (TTFT p95) | RR knee (TTFT p95) | RR peak (TTFT p95) | last count with KV TTFT p95 ≤ 5 s |
 |---|---|---|---|---|---|
-| **disagg 12:6** | **192**: KV 2,679 vs RR 2,271 = **1.18×**, TTFT 0.2 vs 6.5 s | 96: 1,389 vs 1,342 (1.04×) | **KV 480 (5,217, p95 7 s) vs RR 96 (1,342, p95 10 s) = 3.9×** | KV 480 (P90 32) vs RR 384 (2,508, P90 34) = 2.1× | tuned 768 → 6,210 under the same 20 s budget (+19% over KV 480) |
-| disagg 9:9 (cross-check) | 192: 2,733 vs 2,047 = 1.34×, 0.3 vs 12.7 s | 96: 1.04× | KV 480 (5,501, p95 18 s) vs RR 96 (1,336) = 4.1× | KV 480 vs RR 384 (2,062) = 2.7× | tuned 768 → 7,598 (+38%) |
-| agg 24-GPU | **192**: KV 3,715 vs RR 3,889 = **0.96×**, TTFT 0.2 vs 4.4 s | 96: 2,382 vs 2,924 (0.81×, RR ahead) | **KV 192 (3,715, p95 6 s) vs RR 96 (2,924, p95 11 s) = 1.27×** | RR 96 (2,924, P90 29) vs KV 48 (1,474, P90 22) = **0.50× — KV loses** | tuned KV is *worse* on agg below 1,440 clients (−13 to −26%) |
+| disagg 12:6 (measured ladder) | 480 (7 s) | 480 (5 s) | 192 (32 s) | 2,508 at 384 (89 s) | 192 |
+| disagg 9:9 | 480 (18 s) | 768 (14 s) | 192 (52 s) | 2,062 at 384 (128 s) | 96 |
+| disagg 6:12 | 384 (32 s) | 480 (22 s) | 96 (25 s) | 1,631 at 192 (91 s) | 96 |
+| agg 24-GPU | 192 (6 s) | 192 (8 s) | 192 (34 s) | 4,156 at 384 (83 s) | 96 |
+
+Chosen points (total tok/s per GPU; gain = KV ÷ RR; all TTFT figures are **p95** from the sim):
+
+| arm | same config at RR's knee (TTFT p95 KV vs RR) | both pre-knee | same SLO, TTFT p95 ≤ 20 s | same SLO, P90 interactivity ≥ 20 tok/s/user | where tuned KV would land (same 20 s p95 budget) |
+|---|---|---|---|---|---|
+| **disagg 12:6 (measured ladder)** | **192**: KV 2,679 vs RR 2,271 = **1.18×**, TTFT p95 4 vs 32 s | 96: 1,389 vs 1,342 (1.04×), p95 3 vs 10 s | **KV 480 → 5,217 (p95 7 s) vs RR 96 → 1,342 (p95 10 s) = 3.89×** | KV 480 → 5,217 (p95 7 s) vs RR 384 → 2,508 (p95 89 s) = 2.08× | tuned 768 → 6,210 (p95 8 s) (+19% over KV) |
+| disagg 9:9 (cross-check) | **192**: KV 2,733 vs RR 2,047 = **1.34×**, TTFT p95 5 vs 52 s | 96: 1,395 vs 1,336 (1.04×), p95 4 vs 16 s | **KV 480 → 5,501 (p95 18 s) vs RR 96 → 1,336 (p95 16 s) = 4.12×** | KV 480 → 5,501 (p95 18 s) vs RR 384 → 2,062 (p95 128 s) = 2.67× | tuned 768 → 7,598 (p95 14 s) (+38% over KV) |
+| **agg 24-GPU** | **192**: KV 3,715 vs RR 3,889 = **0.96×**, TTFT p95 6 vs 34 s | 96: 2,382 vs 2,924 (0.81×), p95 4 vs 11 s | **KV 192 → 3,715 (p95 6 s) vs RR 96 → 2,924 (p95 11 s) = 1.27×** | KV 48 → 1,474 (p95 3 s) vs RR 96 → 2,924 (p95 11 s) = 0.50× | tuned 192 → 2,740 (p95 8 s) (-26% over KV) |
 
 What changed versus the first pass: nothing in the chosen client counts — the finer analysis confirms 192 as the
 same-config point on every arm and 480-vs-96 (disagg) / 192-vs-96 (agg) for the TTFT-p95 budget — but two findings
