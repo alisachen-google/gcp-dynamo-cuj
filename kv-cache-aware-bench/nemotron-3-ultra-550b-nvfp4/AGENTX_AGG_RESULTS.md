@@ -107,12 +107,13 @@ in parallel with KV (second fleet `n3u-agg-ns2`), so both framings can be read o
 
 | arm | clients | output tok/s (/GPU) | total tok/s/GPU | TTFT p50 / p95 / p99 | ITL p50 / p90 | in-flight | knee | status |
 |---|---|---|---|---|---|---|---|---|
-| agg KV | 48 / 96 / 192 / 384 / 768 / 1536 | | | | | | | queued ([`agentx_runner.sh n3u-agg-ns`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/agentx_runner.sh), starts when the busy-stream agg ladder writes its DONE marker) |
-| agg RR | 96 / 384 | | | | | | | queued behind agg KV |
+| agg KV | 48 | 775 (32.3) | 3,334 | 0.42 / 3.83 / 7.7 s | 7.3 / 9.8 ms (P90 interactivity 102) | 6.8 (peak 18) | stationary | complete 09:18 UTC |
+| agg KV | 96 / 192 / 384 / 768 / 1536 | | | | | | | running (96 started 09:18) |
+| agg RR | 48 / 96 / 192 / 384 / 768 / 1536 | | | | | | | running in parallel on the second fleet `n3u-agg-ns2` |
 
 An earlier agg AgentX smoke at 48 clients (2026-09-15) failed on [`--warmup-requests-per-lane`](https://github.com/SemiAnalysisAI/aiperf/blob/754356e9a39acc6cc6afb242d123bb57c3fb6f75/src/aiperf/timing/config.py#L362), a flag that
 exists only in SemiAnalysis's aiperf fork; the template was corrected and no agg AgentX result predates
-this report. Rows are filled as points land; the KV-vs-RR table uses the 96 / 384 pairs.
+this report. First measured agg point vs the sim's agg KV cell at 48 clients: total 3,334 vs 1,474 per GPU (sim 0.44×), TTFT p50 0.42 vs 0.13 s, P90 interactivity 102 vs 22 tok/s/user — the agg simulator is far more pessimistic than the disagg one at low load (its refit decode curve 8.9 + 1.73·bs ms is a busy-stream fit; under replayed think-time the workers run near batch 1 and the real ITL is 7.3 ms). Mean in-flight 6.8 requests (peak 18) from the per-request records. Rows fill as points land; KV-vs-RR uses 192 (same config) and 192-vs-96 (TTFT budget).
 
 ## iv. Simulation-vs-real gap, with the apple-to-apple decomposition
 

@@ -9,7 +9,7 @@ NS=dynamo-cloud; TMPL=$HOME/kv-cache-aware-bench/manifests/perf/sgl-d72-agentx.y
 GUARD=$HOME/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/mnnvl_transport_guard.sh
 N3U_DIR=/model-cache/alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4; N3U_SERVED=alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4
 say(){ echo "[$(date -u +%F' '%H:%M:%S)] $*" >> "$LOG"; }
-declare -A ROUTER=([kv]="--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs" [rr]="--router-mode round-robin")
+declare -A ROUTER=([kv]="--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs" [rr]="--router-mode round-robin" [kvs3c08]="--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-prefill-load-scale 3.0 --router-kv-overlap-score-credit 0.8" [kvs2c08]="--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-prefill-load-scale 2.0 --router-kv-overlap-score-credit 0.8" [kvt05]="--router-mode kv --router-temperature 0.5 --router-queue-policy fcfs" [kvwspt]="--router-mode kv --router-temperature 0.0 --router-queue-policy wspt")
 free_nodes(){ n=0; for node in $(kubectl get nodes -l cloud.google.com/gke-nodepool=$POOL -o name); do node=${node#node/}; u=$(kubectl describe node "$node" | awk '/Allocated resources/,0' | grep "nvidia.com/gpu" | awk '{print $2}'); [ "${u:-0}" = "0" ] && n=$((n+1)); done; echo $n; }
 say "waiting for gate '$GATE' in $GLOG"
 until grep -q "$GATE" "$GLOG" 2>/dev/null; do [ "${GATE_STRICT:-0}" = "0" ] && grep -qE "HALTING|STACK TIMEOUT" "$GLOG" 2>/dev/null && { say "gate job halted — proceeding after teardown"; break; }; sleep 300; done
