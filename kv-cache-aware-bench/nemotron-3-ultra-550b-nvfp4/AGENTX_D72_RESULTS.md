@@ -135,45 +135,52 @@ Measured points are overlaid on the curve page as solid markers; the run index l
 
 ## iv. Simulation-vs-real gap, with the apple-to-apple decomposition
 
-Headline (9:9 KV): on **output tokens** the sim is 1.10× real at 48 clients and 0.84× at 96; on
-**total tokens per GPU** it is 0.61× / 0.55×; on **request rate** 0.89× / 0.68×; TTFT p50 is
-under-predicted 2.4× (0.13 vs 0.32 s). Substituting measured quantities one at a time
-([`scripts/dynosim_agentx_decomp.py`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/scripts/dynosim_agentx_decomp.py), same method as [AGG24 §5.2](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/AGG24_RESULTS.md#52-where-the-1928-absolute-gap-lives-apple-to-apple-decomposition)):
+Method (same as AGG24 §5.2): start from the published simulator, substitute one measured quantity at a time,
+and watch which substitution moves the sim/real ratio toward 1.0. Script: `scripts/dynosim_agentx_decomp.py`.
+Ratios are **sim ÷ measured**; 1.00× is exact, below 1 means the sim under-predicts. Each concurrency is
+decomposed separately so the two ladders are apples to apples at their own load.
 
-| sim variant | clients | req/s | output tok/s (/GPU) | total/GPU | TTFT p50 | TPOT | sim/real: req/s · output · total · TTFT |
-|---|---|---|---|---|---|---|---|
-| v1 (AIC-seeded, as published) | 48 | 0.71 | 866 (12.0) | 691 | 0.13 s | 6.6 ms | 0.89× · **1.10×** · 0.61× · 0.42× |
-| v1 | 96 | 1.41 | 1,699 (23.6) | 1,373 | 0.16 s | 7.2 ms | 0.68× · 0.84× · 0.55× · 0.52× |
-| + output length = measured (×0.81) | 48 | 0.72 | 720 (10.0) | 701 | 0.13 s | 6.5 ms | 0.90× · 0.92× · 0.62× · 0.42× |
-| + output length = measured | 96 | 1.43 | 1,402 (19.5) | 1,393 | 0.16 s | 7.1 ms | 0.69× · 0.69× · 0.56× · 0.52× |
-| + TTFT floor 0.19 s (transfer + scheduling) | 48 | 0.72 | 719 (10.0) | 700 | 0.32 s | 6.5 ms | 0.90× · 0.91× · 0.62× · **1.01×** |
-| + TTFT floor 0.19 s | 96 | 1.43 | 1,400 (19.4) | 1,390 | 0.35 s | 7.1 ms | 0.69× · 0.69× · 0.56× · 1.14× |
-| + decode = measured ITL (5.9 + 0.8·bs ms) | 48 | 0.72 | 713 (9.9) | 695 | 0.32 s | 7.1 ms | 0.90× · 0.91× · 0.62× · 1.00× |
-| + decode = measured ITL | 96 | 1.42 | 1,381 (19.2) | 1,375 | 0.35 s | 8.3 ms | 0.68× · 0.68× · 0.55× · 1.13× |
-| **measured** | 48 | 0.80 | 786 (10.9) | 1,128 | 0.32 s | 6.4 ms | |
-| **measured** | 96 | 2.08 | 2,019 (28.0) | 2,497 | 0.31 s | 7.4 ms | |
+### At 48 clients (measured: 0.80 req/s · 786 output tok/s = 10.9/GPU · 1,128 total/GPU · TTFT p50 0.32 s · ITL p50 6.4 ms)
 
-What the ladder says, step by step:
-1. **Output length.** The sim's requests emit 1,205–1,218 output tokens on average, the engine emits
-   971–995 (it stops at EOS earlier than the recorded length). Scaling the sim's outputs to the measured
-   mean removes the apparent 1.10× "over-prediction" at 48 clients — it was longer outputs, not a faster
-   engine — and leaves a clean 0.92× / 0.69×.
-2. **TTFT.** A fixed 0.19 s per request closes the TTFT gap exactly at 48 clients (1.01×) and to 1.14× at
-   96. The engine's prefill *rate* is right; what the sim lacks is a constant per-request cost
-   (KV hand-off over NVLink plus router/scheduler latency, ≈ the 0.13 s TTFT floor aiperf sees on every
-   run plus transfer). This is a model omission, not an engine surprise.
-3. **Decode.** Substituting the measured ITL curve changes nothing material (TPOT 6.5 → 7.1 ms); the
-   decode model is already right at these batch sizes.
-4. **What remains is the workload representation, not the engine.** After all three substitutions the sim
-   still issues only 0.90× (48) / 0.69× (96) of the measured *requests per second*, and its requests carry
-   ~69 k input tokens versus the ~85–101 k aiperf actually sends, which is why the total-token ratio stays
-   at 0.55–0.62×. The sim replays a 4,000-request slice of the trace (874 sessions) with a per-lane cadence
-   anchored at the lane start; aiperf reconstructs all 393 sessions with their subagent streams and issues
-   parallel subagent requests inside a turn. Both effects grow with clients (0.90× → 0.69×), which is
-   consistent with subagent fan-out being the missing term. Fix queued as sim v3: build the sim trace from
-   aiperf's own reconstruction ([`inputs.json`](https://github.com/SemiAnalysisAI/aiperf/blob/754356e9a39acc6cc6afb242d123bb57c3fb6f75/src/aiperf/common/environment.py#L312) / per-request ISL and timestamps of a real run) instead of the
-   4 k slice.
+| sim variant | req/s | output tok/s (/GPU) | total tok/s/GPU | TTFT p50 | TPOT | sim/real: req/s · output · total · TTFT |
+|---|---|---|---|---|---|---|
+| v1, AIC-seeded (as published) | 0.71 | 866 (12.0) | 691 | 0.13 s | 6.6 ms | 0.89× · **1.10×** · 0.61× · 0.42× |
+| + output length = measured (×0.81) | 0.72 | 720 (10.0) | 701 | 0.13 s | 6.5 ms | 0.90× · 0.92× · 0.62× · 0.42× |
+| + fixed 0.19 s per request (KV hand-off + scheduling) | 0.72 | 719 (10.0) | 700 | 0.32 s | 6.5 ms | 0.90× · 0.91× · 0.62× · **1.01×** |
+| + decode = measured ITL curve (5.9 + 0.8·bs ms) | 0.72 | 713 (9.9) | 695 | 0.32 s | 7.1 ms | 0.90× · 0.91× · 0.62× · 1.00× |
+| **residual after all substitutions** | | | | | | **0.90× requests · 0.62× total tokens** |
 
-Bottom line: the engine-side model (prefill rate, decode curve) is within ~10% under the AgentX definition
-once a 0.19 s per-request floor is added; the remaining 30–45% gap on requests and total tokens is the
-trace representation, and it under-predicts silicon rather than flattering it.
+### At 96 clients (measured: 2.08 req/s · 2,019 output tok/s = 28.0/GPU · 2,497 total/GPU · TTFT p50 0.31 s · ITL p50 7.4 ms)
+
+| sim variant | req/s | output tok/s (/GPU) | total tok/s/GPU | TTFT p50 | TPOT | sim/real: req/s · output · total · TTFT |
+|---|---|---|---|---|---|---|
+| v1, AIC-seeded (as published) | 1.41 | 1,699 (23.6) | 1,373 | 0.16 s | 7.2 ms | 0.68× · 0.84× · 0.55× · 0.52× |
+| + output length = measured (×0.81) | 1.43 | 1,402 (19.5) | 1,393 | 0.16 s | 7.1 ms | 0.69× · 0.69× · 0.56× · 0.52× |
+| + fixed 0.19 s per request | 1.43 | 1,400 (19.4) | 1,390 | 0.35 s | 7.1 ms | 0.69× · 0.69× · 0.56× · 1.14× |
+| + decode = measured ITL curve | 1.42 | 1,381 (19.2) | 1,375 | 0.35 s | 8.3 ms | 0.68× · 0.68× · 0.55× · 1.13× |
+| **residual after all substitutions** | | | | | | **0.69× requests · 0.55× total tokens** |
+
+### Where the gap is, in plain words
+
+1. **The engine model is not the gap.** Three things describe the engine: how fast it prefills, how fast it
+   decodes, and a fixed cost per request. Prefill rate needs no correction (once the fixed cost is added the
+   TTFT matches to 1%). Decode needs no correction (swapping in the measured ITL curve changes throughput by
+   under 1%). The only engine-side omission is a **constant 0.19 s per request** — the KV hand-off over NVLink
+   plus router and scheduler latency — which the sim did not model and which explains the whole TTFT gap.
+2. **The apparent 1.10× "over-prediction" at 48 clients was an artefact of output length.** The sim replays the
+   trace's recorded outputs (about 1,210 tokens per request); the real engine stops at end-of-sequence after
+   about 980. Correcting for that, the sim is *under*, not over, silicon on output tokens at both loads.
+3. **What remains is how the workload is represented, and it is the whole residual.** After every engine
+   substitution the sim still issues only 90% (48 clients) and 69% (96 clients) of the requests per second
+   that aiperf actually sends, and each simulated request carries about 69k input tokens where aiperf sends
+   85k to 101k. Multiplying those two shortfalls gives the total-token ratio of 0.62× and 0.55×. The cause is
+   the trace the sim reads: a 4,000-request slice (874 sessions) replayed one session per lane with a
+   per-lane cadence, whereas aiperf reconstructs all 393 sessions with their subagent streams and issues
+   subagent requests in parallel with the parent turn. Fan-out is why the shortfall grows with clients.
+4. **Direction and consequence.** The residual makes the sim *pessimistic* about absolute total throughput
+   (by 1.6 to 1.8×) but leaves the ordering of arms and policies intact, because every arm is fed the same
+   under-sized trace. Use the sim for ranking topologies and routers; use the measured markers for level.
+5. **The fix is data, not modelling.** Sim v4 will build its trace from aiperf's own reconstruction of a real
+   run (per-request input length and timestamps from `profile_export.jsonl`, subagent requests included), which
+   removes items 2 and 3 at once. The 0.19 s per-request cost becomes a constant in `dynosim_pd.py`.
+
