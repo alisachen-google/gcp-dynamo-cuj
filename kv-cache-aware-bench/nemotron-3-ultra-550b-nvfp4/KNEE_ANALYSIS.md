@@ -90,9 +90,24 @@ policies and the TTFT p50 ≤ 1 s column is reported alongside as the latency-bo
 | agg 24-GPU | KV tuned (s3/c0.8) | 192 | 2,740 | 0.1 s | 1920 | 4,947 (960) |
 | agg 24-GPU | RR | 192 | 3,889 | 4.4 s | 48 | 4,156 (384) |
 
-Measured so far (`knee_check.py`, stationarity of TTFT p50 across quarters): disagg 9:9 KV **48 and 96 clients
-stationary** (TTFT p50 0.32 / 0.31 s, in-flight 5.6 / 16); 192 running; agg KV 48 running; RR ladders queued.
+Measured so far (`knee_check.py`, stationarity of TTFT p50 across quarters; updated 12:30 UTC): every finished cell is
+**stationary** — disagg 9:9 KV 48 / 96 / 192 (TTFT p95 1.50 / 1.42 / 2.03 s, in-flight 5.6 / 16 / 30), disagg 12:6 KV 96
+(p95 1.37 s), agg KV 48 / 96 (p95 3.83 / 5.36 s, in-flight 6.8 / 27.5), agg RR 48 / 96 (p95 8.27 / 12.56 s, in-flight
+8.5 / 33.2). No measured knee yet: running are agg KV 192, agg RR 192 and 12:6 KV 192, with 384 / 480 / 768 / 1440 queued.
 The measured knee will be reported as the last stationary client count once the ladders complete.
+
+Measured KV-vs-RR pairs available so far (agg, same config, total tok/s per GPU, TTFT p95):
+
+| clients | KV | RR | KV/RR measured | KV/RR sim v3 | TTFT p95 KV vs RR |
+|---|---|---|---|---|---|
+| 48 | 3,334 | 3,250 | **1.03×** | 0.82× | 3.83 vs 8.27 s (RR 2.2× worse) |
+| 96 | 6,844 | 6,137 | **1.12×** | 0.81× | 5.36 vs 12.56 s (RR 2.3× worse) |
+
+The sim's ordering on agg below the knee (RR ahead on tokens because KV packs sessions onto one worker) is not
+reproduced: measured KV is ahead on every axis and the gap widens with load. The sim's agg decode cliff (TPOT jumps
+from 7 + 1.6·bs to 28 + 5.7·bs ms past batch 7) penalises the KV router's larger per-worker batches; the measured ITL
+curve has no such cliff (p50 7.3 → 11.9 ms from 1.1 → 4.6 in flight per worker). The 192-client cells will show whether
+the sim's same-config verdict (0.96×) holds at the agg knee.
 
 ### KV-vs-RR comparison points chosen from these knees (re-analysed 2026-09-16 09:20 UTC, sim v3 incl. tuned KV)
 
