@@ -184,8 +184,7 @@ tail-sensitive deployments, not a throughput optimization.
 
 Same manifest shape (24 GPU, TP4/EP4, 6 workers), same bench template, same trace; only the
 engine image pair changes (base `lmsysorg/sglang:v0.5.19-cu130-runtime` + `ai-dynamo[sglang]==1.4.2`
-→ effective SGLang 0.5.16, `flashinfer-python==0.6.18`). Ladder kv/rr × 16–512 in progress; landed
-cells:
+→ effective SGLang 0.5.16, `flashinfer-python==0.6.18`). Ladder kv/rr × 16–512 complete (2026-09-16 07:29 UTC):
 
 | conc | KV tok/s (/GPU) — new | KV TTFT p50 / p90 | RR tok/s (/GPU) — new | RR TTFT p50 | gain | knee (new stack) | vs old stack |
 |---|---|---|---|---|---|---|---|
@@ -196,7 +195,7 @@ cells:
 | 192 | 2,043 (85.1) | 63.7 / 92.5 s | 1,226 (51.1) | 75.9 s | 1.67× | both saturated | — |
 | 256 | 2,024 (84.3) | 87.1 / 131 s | 1,128 (47.0) | 112 s | 1.79× | both saturated | — |
 | 384 | 1,900 (79.2) | 135 / 176 s | 1,059 (44.1) | 208 s | 1.79× | both saturated (RR 0.1% failed) | — |
-| 512 | running | | | | | | |
+| 512 | 2,028 (84.5) | 175 / 221 s | 1,140 (47.5) | 264 s | 1.78× | both saturated (RR 0.1% failed) | — |
 
 ITL p90 at the bounded cells: 39.1 / 49.3 ms (KV c16 / c32) → P90 interactivity 25.6 / 20.3
 tok/s/user; RR 49.7 / 68.4 ms → 20.1 / 14.6. Total tokens per chip at KV c32: 13,320 (old 11,800).

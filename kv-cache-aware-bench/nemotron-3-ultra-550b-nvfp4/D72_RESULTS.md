@@ -410,7 +410,7 @@ Reading: on **total** tokens per chip the bounded points are *not* parity — ag
 Method and the InferenceX comparison: [AGENTX_COMPARISON.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/AGENTX_COMPARISON.md).
 
 
-### 2c. Agg on the new stack (version-consistent reference) — 13 of 16 points landed, ladder in progress
+### 2c. Agg on the new stack (version-consistent reference) — ladder complete (kv/rr × 16–512)
 
 | cell | old stack (SGLang 0.5.14 / Dynamo 1.3.1) | **new stack (0.5.16 / 1.4.2 / FI 0.6.18)** | delta |
 |---|---|---|---|
@@ -422,9 +422,8 @@ Method and the InferenceX comparison: [AGENTX_COMPARISON.md](https://github.com/
 | agg RR c64 (post-knee) | 1,141 · 47.5/GPU · 7,109 total/chip · p50 5.13 s | **1,319 · 55.0/GPU · 8,832 total/chip · p50 3.73 s · ITL p90 98.2 ms** · POST · 4,433 req | +16% |
 | agg KV c128 (saturated) | 1,922 · 80.1/GPU · 9,849 total/chip · p50 28.8 s | **2,050 · 85.4/GPU · 10,829 total/chip · p50 33.3 s · ITL p90 79.3 ms** · POST | +7% |
 | agg RR c128 (saturated) | 1,096 · 45.7/GPU · p50 34.3 s | **1,339 · 55.8/GPU · 6,966 total/chip · p50 32.9 s · ITL p90 124 ms** · POST | +22% |
-| agg KV c192 / c256 / c384 | — | **2,043 (85.1) · 2,024 (84.3) · 1,900 (79.2)** · p50 64 / 87 / 135 s · POST saturated | ceiling ≈ 85/GPU, falling from c384 |
-| agg RR c192 / c256 / c384 | — | **1,226 (51.1) · 1,128 (47.0) · 1,059 (44.1)** · p50 76 / 112 / 208 s · POST saturated | ceiling ≈ 55/GPU at c128, falling |
-| agg kv/rr:512 | | running | |
+| agg KV c192 / c256 / c384 / c512 | — | **2,043 (85.1) · 2,024 (84.3) · 1,900 (79.2) · 2,028 (84.5)** · p50 64 / 87 / 135 / 175 s · POST saturated | ceiling ≈ 85/GPU, flat to c512 |
+| agg RR c192 / c256 / c384 / c512 | — | **1,226 (51.1) · 1,128 (47.0) · 1,059 (44.1) · 1,140 (47.5)** · p50 76 / 112 / 208 / 264 s · POST saturated | ceiling ≈ 47–55/GPU |
 
 The bounded cells (c16, c32) gain 9–24% on the new stack, the knees do not move (KV knees between c32 and c64, RR between c32 and c64 — same as the old stack), and the post-knee KV ceiling is unchanged at ~86/GPU, so the new stack raises the bounded region rather than the saturation ceiling. **The bounded agg reference for every disagg ratio is now 77.3/GPU (new-stack KV c32).** The engine-version delta is real and positive, so (a) part of the disagg "residual sim drift"
 attributed earlier to model optimism is engine improvement the 0.5.14-seeded sim could not know,
