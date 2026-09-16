@@ -137,6 +137,7 @@ Measured so far (AgentX definition; total = input + output tokens per second per
 | disagg 12:6 KV | 192 | 4,510 | 44.7 | 0.36 / 1.1 / 1.77 s | 10.0 / 11.2 ms | 89 | 33.5 | stationary |
 | disagg 12:6 KV | 384 | 8,637 | 86.8 | 0.43 / 1.5 / 2.58 s | 13.7 / 15.6 ms | 64 | 91.1 | stationary |
 | disagg 12:6 KV | 480 | 10,434 | 104.8 | 0.50 / 2.0 / 3.52 s | 16.4 / 17.5 ms | 57 | 129.4 | stationary |
+| disagg 12:6 KV | 768 | 15,004 | 143.8 | 0.80 / 4.3 / 7.00 s | 20.9 / 22.5 ms | 45 | 236.7 | stationary at p50; p95 drifting 6.0 → 7.8 s |
 | agg KV | 48 | 3,334 | 32.3 | 0.42 / 2.5 / 3.83 s | 7.3 / 9.8 ms | 102 | 6.8 | stationary |
 | agg KV | 96 | 6,844 | 75.1 | 0.67 / 3.4 / 5.36 s | 11.9 / 23.5 ms | 43 | 27.5 | stationary |
 | agg KV | 192 | 9,655 | 96.8 | 1.56 / 8.4 / 11.68 s | 23.9 / 50.6 ms | 20 | 74.5 | stationary |
@@ -199,11 +200,11 @@ KV-vs-RR ordering on agg, must come from silicon.
 
 At equal clients the 72-GPU disagg fleet is diluted 3× until it saturates, so the comparison is made at equal load
 per GPU or at equal SLO (AGENTX_DISAGG_VS_AGG.md §0). Measured: agg's best stationary cell is KV 192 (9,655 total/GPU,
-8 clients/GPU, p95 11.7 s) and its ceiling is there; disagg 12:6 KV at 480 clients (6.7 clients/GPU) is at **10,434**
-with p95 3.5 s and still scaling (+21% over 384). **Disagg now beats agg's best per-GPU total at a lower load per GPU
+8 clients/GPU, p95 11.7 s) and its ceiling is there; disagg 12:6 KV at 768 clients (10.7 clients/GPU) is at **15,004**
+with p95 7.0 s and still scaling (+44% over 480), i.e. 1.55× agg's best per GPU at a higher load per GPU. **Disagg now beats agg's best per-GPU total at a lower load per GPU
 and with a 3.3× shorter TTFT tail; agg wins per GPU only below ~5 live sessions per GPU, where its packed decode batches
 are fuller** (agg 96: 6,844 at 4 clients/GPU vs disagg 288-equivalent ≈ 6,500 interpolated). The disagg ceiling is
-still unknown (768 / 1440 running). The load-normalised verdict (clients per GPU under SLO → GPUs per 1,000 sessions) is finalised when the 12:6
+still unknown (1440 running). The load-normalised verdict (clients per GPU under SLO → GPUs per 1,000 sessions) is finalised when the 12:6
 ladder finds its knee.
 
 Analysis so far (AGENTX_D72 §iv, AGENTX_AGG §iii, AGENTX_DISAGG_VS_AGG)Analysis so far (AGENTX_D72 §iv, AGENTX_AGG §iii, AGENTX_DISAGG_VS_AGG): the disagg engine model is within ~10 %
