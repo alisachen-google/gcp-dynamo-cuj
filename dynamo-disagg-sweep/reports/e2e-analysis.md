@@ -342,6 +342,47 @@ stamps them SUSPECT (a conservative floor, re-recordable cheaply against the sta
 deployment); 8–9 make harvesting rotation-proof and archive every artifact; 10 turns slims
 into the tables, curves, and per-cell provenance links in this document.
 
+### Metric definitions: how the throughputs and interactivity are calculated
+
+Disaggregated serving runs prefill and decode on **separate GPU pools**, so each per-GPU
+rate is normalized against the pool that does that work: `Np` = prefill GPUs, `Nd` = decode
+GPUs, `Time` = the measured window only (the 10xC closed-loop phase; warmup excluded).
+
+```
+Input Throughput  = (Total Prompt Tokens Processed)   / [Time (s) * Np]   # per prefill GPU
+Output Throughput = (Total Generation Tokens Produced) / [Time (s) * Nd]  # per decode GPU
+
+                    (Np * Input_Throughput) + (Nd * Output_Throughput)
+Total Throughput  = --------------------------------------------------    # per GPU, all GPUs
+                                        Np + Nd
+
+Interactivity     = 1000 / Avg_TPOT_ms                                    # tok/s per user
+```
+
+Input tokens are consumed only by the prefill pool and output tokens produced only by the
+decode pool, hence the per-pool divisors; the total-throughput formula reconstructs the
+absolute rates (`Np x` / `Nd x`) and re-divides by all GPUs — equivalent to
+`(input + output tokens) / [Time * (Np + Nd)]`. Interactivity is the reciprocal of the mean
+time-per-output-token, i.e. the token speed one user experiences.
+
+**Worked example — DSR1-FP4, RDMA KV, 24P/48D, concurrency 512** (`Np=24`, `Nd=48`,
+`Time = 200.27 s`, 5,120 requests = 10x512; values from the run's result JSON):
+
+| Quantity | Value |
+|---|---|
+| Total prompt tokens processed | 37,770,951 |
+| Total generation tokens produced | 4,721,326 |
+| Avg TPOT | 12.70 ms |
+
+- Input Throughput = 37,770,951 / (200.27 x 24) = **7,858.4 tok/s per prefill GPU**
+- Output Throughput = 4,721,326 / (200.27 x 48) = **491.1 tok/s per decode GPU**
+- Total Throughput = (24 x 7,858.4 + 48 x 491.1) / 72 = (188,601 + 23,573) / 72 = **2,946.9 tok/s per GPU**
+- Interactivity = 1000 / 12.70 = **78.7 tok/s per user**
+
+These are exactly the values in this point's table row (+11.1% total throughput vs
+InferenceMax); the same formulas produce every throughput/interactivity cell in this
+document.
+
 ### What our Pareto curves consist of
 
 Each plotted point is **one fully isolated deployment** — a (topology, concurrency) pair
