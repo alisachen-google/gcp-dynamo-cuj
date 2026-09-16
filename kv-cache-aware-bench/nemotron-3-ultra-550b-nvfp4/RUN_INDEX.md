@@ -130,5 +130,6 @@ Artifacts: each job uploads `<model>_trace_c<conc>_<ts>/profile_export_aiperf.cs
 | 2026-09-16 10:47 | agg 24 new stack (fleet 2) — AgentX concurrency | rr | 96 clients | `n3u-agg-ns2-agentx-rr-c96` (1,611 tok/s · AT/PRE) | [1789555623](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789555623_alisachen-n3u-agg-ns2-agentx-rr-c96) |
 | 2026-09-16 10:53 | agg 24 new stack — AgentX concurrency | kv | 192 clients | `n3u-agg-ns-agentx-kv-c192` (2,323 tok/s · AT/PRE) | [1789555981](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789555981_alisachen-n3u-agg-ns-agentx-kv-c192) |
 | 2026-09-16 12:02 | disagg 12:6 MNNVL — AgentX concurrency | kv | 192 clients | `n3u-mnnvl-126-agentx-kv-c192` (3,217 tok/s · AT/PRE · guard PASS) | [1789560095](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789560095_alisachen-n3u-mnnvl-126-agentx-kv-c192) |
+| 2026-09-16 12:16 | agg 24 new stack (fleet 2) — AgentX concurrency | rr | 192 clients | `n3u-agg-ns2-agentx-rr-c192` (1,713 tok/s · stationary, at throughput knee) | [1789560983](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789560983_alisachen-n3u-agg-ns2-agentx-rr-c192) |
 
-97 jobs listed. Later runs of the same job name supersede earlier ones (fleet-instance-2 re-runs on 2026-09-15).
+98 jobs listed. Later runs of the same job name supersede earlier ones (fleet-instance-2 re-runs on 2026-09-15).

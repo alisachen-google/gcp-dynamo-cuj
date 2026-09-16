@@ -93,8 +93,8 @@ policies and the TTFT p50 ≤ 1 s column is reported alongside as the latency-bo
 Measured so far (`knee_check.py`, stationarity of TTFT p50 across quarters; updated 12:30 UTC): every finished cell is
 **stationary** — disagg 9:9 KV 48 / 96 / 192 (TTFT p95 1.50 / 1.42 / 2.03 s, in-flight 5.6 / 16 / 30), disagg 12:6 KV 96 / 192
 (p95 1.37 / 1.77 s, in-flight 17 / 33.5; 4,510 total/GPU at 192 = 0.98× of 9:9), agg KV 48 / 96 (p95 3.83 / 5.36 s, in-flight 6.8 / 27.5), agg RR 48 / 96 (p95 8.27 / 12.56 s, in-flight
-8.5 / 33.2), agg KV 192 (p95 11.68 s, in-flight 74.5, TTFT p50 falling across quarters). No measured knee yet: running are
-agg KV 384, agg RR 192 and 12:6 KV 384, with the rest of the ladders queued. Agg KV at 192 is at 9,655 total tok/s per GPU,
+8.5 / 33.2), agg KV 192 (p95 11.68 s, in-flight 74.5, TTFT p50 falling across quarters). First measured knee: agg RR at 192 (below). Running are
+agg KV 384, agg RR 384 and 12:6 KV 384, with the rest of the ladders queued. Agg KV at 192 is at 9,655 total tok/s per GPU,
 already above the sim's agg ceiling (5,138), so the sim's agg knee (1536) is the cell to watch rather than 192.
 The measured knee will be reported as the last stationary client count once the ladders complete.
 
@@ -104,12 +104,16 @@ Measured KV-vs-RR pairs available so far (agg, same config, total tok/s per GPU,
 |---|---|---|---|---|---|
 | 48 | 3,334 | 3,250 | **1.03×** | 0.82× | 3.83 vs 8.27 s (RR 2.2× worse) |
 | 96 | 6,844 | 6,137 | **1.12×** | 0.81× | 5.36 vs 12.56 s (RR 2.3× worse) |
+| **192** (same-config point) | **9,655** | 6,802 | **1.42×** | 0.96× | 11.7 vs 60.1 s (RR 5.1× worse) |
 
 The sim's ordering on agg below the knee (RR ahead on tokens because KV packs sessions onto one worker) is not
 reproduced: measured KV is ahead on every axis and the gap widens with load. The sim's agg decode cliff (TPOT jumps
 from 7 + 1.6·bs to 28 + 5.7·bs ms past batch 7) penalises the KV router's larger per-worker batches; the measured ITL
-curve has no such cliff (p50 7.3 → 11.9 ms from 1.1 → 4.6 in flight per worker). The 192-client cells will show whether
-the sim's same-config verdict (0.96×) holds at the agg knee.
+curve has no such cliff (p50 7.3 → 11.9 ms from 1.1 → 4.6 in flight per worker). At 192 the sim's same-config verdict (0.96×, RR ahead) is reversed
+on silicon (1.42×, KV ahead), and the **first measured knee is in: agg RR reaches its throughput knee at 192 clients**
+(+11% total tokens for 2× clients, TTFT p50 11 s, 103 of 192 sessions in flight; stationary by the q1/q4 test, so it
+is a knee, not a collapse). Agg KV is still scaling at 192 (+41%). Same-SLO pair (TTFT p95 ≤ 20 s): KV 192 (9,655,
+11.7 s) vs RR 96 (6,137, 12.6 s) = **1.57×**, subject to the KV 384 cell moving the KV side up.
 
 ### KV-vs-RR comparison points chosen from these knees (re-analysed 2026-09-16 09:20 UTC, sim v3 incl. tuned KV)
 
