@@ -44,16 +44,16 @@ decode batches on the shared workers grow.
 
 | clients per GPU | agg (clients) total/GPU · TTFT p50 · P90 | disagg 12:6 (clients) | disagg 9:9 (clients) | 12:6 ÷ agg | 9:9 ÷ agg |
 |---|---|---|---|---|---|
-| 2 | 1,474 (48) · 0.1 s · 22 | cell pending | cell pending | — | — |
-| 4 | 2,382 (96) · 0.1 s · 13 | cell pending | cell pending | — | — |
-| 8 | 3,715 (192) · 0.2 s · 9 | cell pending | cell pending | — | — |
-| 16 | 4,706 (384) · 0.2 s · 6 | cell pending | cell pending | — | — |
+| 2 | 1,474 (48) · 0.1 s · 22 | 2,053 (144) · 0.2 s · 86 | 2,075 (144) · 0.2 s · 104 | **1.39×** | 1.41× |
+| 4 | 2,382 (96) · 0.1 s · 13 | 3,822 (288) · 0.3 s · 51 | 3,978 (288) · 0.7 s · 68 | **1.60×** | 1.67× |
+| 8 | 3,715 (192) · 0.2 s · 9 | 5,580 (576) · 1.0 s · 26 | 5,689 (576) · 8.3 s · 36 | **1.50×** | 1.53× |
+| 16 | 4,706 (384) · 0.2 s · 6 | 6,219 (1152) · 2.9 s · 13 | 5,155 (1152) · 40.0 s · 18 | **1.32×** | 1.10× |
 | 20 | 4,863 (480) · 0.2 s · 5 | 6,187 (1440) · 4.7 s · 10 | 4,884 (1440) · 56.6 s · 15 | **1.27×** | 1.00× |
 | 40 | 5,138 (960) · 0.4 s · 3 | cell pending | cell pending | — | — |
 | 64 | 4,632 (1536) · 1.0 s · 2 | cell pending | cell pending | — | — |
 | 80 | 4,165 (1920) · 2.0 s · 2 | cell pending | cell pending | — | — |
 
-(Load-normalised disagg cells 144/288/576/1152 are still computing; the table fills in when they land.)
+
 
 ## 4. Why disagg is worse than agg at low load — step by step
 
@@ -89,9 +89,8 @@ TTFT p95 ≤ 20 s the sim's best cells are agg 3,715 (192 clients) versus 12:6 5
 
 Measured AgentX-mode points so far: disagg 9:9 KV at 48 clients (1,128 total/GPU, TTFT p50 0.32 s) and 96 clients
 (2,497, 0.31 s); the 9:9 ladder continues to 1,536 and the agg ladder (48 → 1,536, KV and RR in parallel on two
-fleets) started 2026-09-16 08:00 UTC. No 12:6 point exists under this definition yet; the disagg ladder switches to 12:6 after the running 9:9
-192-client point (KV 96 / 192 / 384 / 480 / 768 / 1440, then RR 192 / 96 / 384), which verifies the simulated
-optimum directly.
+fleets) started 2026-09-16 08:00 UTC. No 12:6 point exists under this definition yet; a 12:6 run at 480 and 768
+clients is the verification that would confirm the simulated optimum and is queued after the 9:9 ladders.
 The sim under-predicts absolute totals ~1.6–2× (trace representation; AGENTX_D72_RESULTS.md §iv) on both arms alike,
 so the ratios above are the claim, not the absolute levels. Busy-stream (always-busy streams) results for the same
 arms are in D72_RESULTS.md §2 (disagg 9:9 beats agg 1.17× on total, 1.36× on output at their bounded peaks).
