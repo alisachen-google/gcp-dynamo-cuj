@@ -128,7 +128,8 @@ the sim's RR under-counts the prefix-miss penalty (hit 0.30 vs KV 0.74).
 | 9:9 KV | 192 | 3,267 (45.4) | 4,600 | 0.36 / 2.03 / 6.1 s | 8.5 / 9.9 ms | 30.0 (peak 60) | stationary | PASS (third attempt; the first was evicted at 59 GB on a system node, the second invalidated by a transfer failure during an operator-caused ComputeDomain deletion) |
 | 12:6 KV | 96 | 1,980 (27.5) | 2,471 | 0.30 / 1.37 / 3.9 s | 8.2 / 9.6 ms | 17.2 (peak 37) | stationary | PASS (first point on the sim-optimal split; 11:54 UTC) |
 | 12:6 KV | 192 | 3,217 (44.7) | 4,510 | 0.36 / 1.77 / 5.1 s | 10.0 / 11.2 ms | 33.5 (peak 63) | stationary (q1 0.33 → q4 0.37 s) | PASS (mooncake TE peak 765 MB/s, no transfer failures; 13:40 UTC) |
-| 12:6 KV | 384 / 480 / 768 / 1440 | running (384 started 13:43) | | | | | | |
+| 12:6 KV | 384 | 6,253 (86.8) | 8,637 | 0.43 / 2.58 / 7.1 s | 13.7 / 15.6 ms | 91.1 (peak 142) | stationary (q1 0.44 → q4 0.45 s) | PASS (mooncake TE peak 1,075 MB/s, no transfer failures; 15:48 UTC) |
+| 12:6 KV | 480 / 768 / 1440 | running (480 started 15:52) | | | | | | |
 | 12:6 RR | 192 / 96 / 384 | queued behind 12:6 KV | | | | | | |
 
 Throughput scaled 2.57× from 48 to 96 clients and 1.84× from 96 to 192 with TTFT p50 flat at 0.31–0.36 s
@@ -139,7 +140,12 @@ two splits are indistinguishable below the knee, exactly as the sim said (1,389 
 12:6 4,510 vs 9:9 4,600 total tok/s per GPU (0.98×), TTFT p95 1.77 vs 2.03 s (12:6 better on the tail, as its four extra
 prefill workers predict), P90 89 vs 101 (9:9 better on decode, with its three extra decode workers), in flight 33.5 vs 30.0.**
 The sim's same-config 192 cell for 12:6 KV is 2,679, so silicon is 1.68× above it, the same ratio band as the 9:9 cells.
-The split only matters once the prefill tier saturates, which the 384–1440 points will show. Per-user interactivity is very high in this regime (P90 147 tok/s/user at 48,
+**At 384 clients 12:6 KV is still stationary: 8,637 total tok/s per GPU (+92% over 192), TTFT p95 2.58 s, P90 64
+tok/s/user, 91 in flight.** This is already above the sim's disagg *ceiling* (6,187 at 1440 clients) and 2.0× the sim's
+own 384 cell, and it is the load at which the agg fleet is fully saturated (agg KV 384: TTFT p50 83 s and falling
+throughput). Per GPU, disagg at 384 clients (5.3 clients/GPU) is now 0.89× of agg's best stationary cell (9,655 at
+192 clients = 8 clients/GPU) while carrying 2× the sessions; the load-normalised comparison in AGENTX_DISAGG_VS_AGG.md
+§3 is where the two meet. The 480 / 768 / 1440 cells will locate the disagg knee. Per-user interactivity is very high in this regime (P90 147 tok/s/user at 48,
 119 at 96) because decode batches are tiny. The KV-vs-RR comparison table will be filled from the
 96/384 pairs when the RR points land; the busy-stream KV/RR gains (2.02× at c48, 1.94× at c96, both
 instance-2) are the reference expectation.

@@ -132,5 +132,7 @@ Artifacts: each job uploads `<model>_trace_c<conc>_<ts>/profile_export_aiperf.cs
 | 2026-09-16 12:02 | disagg 12:6 MNNVL — AgentX concurrency | kv | 192 clients | `n3u-mnnvl-126-agentx-kv-c192` (3,217 tok/s · AT/PRE · guard PASS) | [1789560095](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789560095_alisachen-n3u-mnnvl-126-agentx-kv-c192) |
 | 2026-09-16 12:16 | agg 24 new stack (fleet 2) — AgentX concurrency | rr | 192 clients | `n3u-agg-ns2-agentx-rr-c192` (1,713 tok/s · stationary, at throughput knee) | [1789560983](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789560983_alisachen-n3u-agg-ns2-agentx-rr-c192) |
 | 2026-09-16 12:34 | agg 24 new stack — AgentX concurrency | kv | 384 clients | `n3u-agg-ns-agentx-kv-c384` (1,866 tok/s · **POST-KNEE**, saturated) | [1789562076](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789562076_alisachen-n3u-agg-ns-agentx-kv-c384) |
+| 2026-09-16 13:48 | disagg 12:6 MNNVL — AgentX concurrency | kv | 384 clients | `n3u-mnnvl-126-agentx-kv-c384` (6,253 tok/s · AT/PRE · guard PASS) | [1789566460](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789566460_alisachen-n3u-mnnvl-126-agentx-kv-c384) |
+| 2026-09-16 13:58 | agg 24 new stack (fleet 2) — AgentX concurrency | rr | 384 clients | `n3u-agg-ns2-agentx-rr-c384` (1,192 tok/s · **POST-KNEE**, saturated) | [1789567077](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789567077_alisachen-n3u-agg-ns2-agentx-rr-c384) |
 
-99 jobs listed. Later runs of the same job name supersede earlier ones (fleet-instance-2 re-runs on 2026-09-15).
+101 jobs listed. Later runs of the same job name supersede earlier ones (fleet-instance-2 re-runs on 2026-09-15).

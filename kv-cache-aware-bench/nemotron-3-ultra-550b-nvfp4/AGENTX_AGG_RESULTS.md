@@ -114,7 +114,7 @@ in parallel with KV (second fleet `n3u-agg-ns2`), so both framings can be read o
 | agg RR | 48 | 752 (31.3) | 3,250 | 0.79 / 8.27 / 15.3 s | 7.5 / 11.0 ms (P90 90.9) | 8.5 (peak 22) | stationary | complete 10:42 UTC (second fleet `n3u-agg-ns2`) |
 | agg RR | 96 | 1,611 (67.1) | 6,137 | 0.81 / 12.56 / 19.8 s | 12.1 / 29.6 ms (P90 33.8) | 33.2 (peak 53) | stationary | complete 12:11 UTC |
 | agg RR | 192 | 1,713 (71.4) | 6,802 | 10.87 / 60.1 / 90.1 s | 30.5 / 82.0 ms (P90 12.2) | 102.7 (peak 154) | stationary by the q1/q4 test (9.8 → 10.4 s) but at the throughput knee: +11% tokens for 2× clients | complete 13:53 UTC |
-| agg RR | 384 / 768 / 1536 | | | | | | | running (384 started 13:53) |
+| agg RR | 384 | 1,192 (49.6) | 5,076 | 78.3 / 495 / 600 s | 57.0 / 126 ms (P90 7.9) | 265.6 (peak 366) | **POST-KNEE** (saturated; TTFT p50 74 s in q1) | complete 15:53 UTC; 768 / 1536 skipped |
 
 An earlier agg AgentX smoke at 48 clients (2026-09-15) failed on [`--warmup-requests-per-lane`](https://github.com/SemiAnalysisAI/aiperf/blob/754356e9a39acc6cc6afb242d123bb57c3fb6f75/src/aiperf/timing/config.py#L362), a flag that
 exists only in SemiAnalysis's aiperf fork; the template was corrected and no agg AgentX result predates
@@ -141,6 +141,11 @@ was stopped there (768 / 1536 would only deepen the same queue) so that the agg 
 point could start on the same fleet. The sim placed the agg KV knee at 1536 clients; silicon puts it between 192 and
 384, a 4–8× miss on the load axis — the largest single disagreement in the study (the sim's 4 k-request slice carries
 ~30% fewer input tokens per turn and no subagent fan-out, so its prefill demand per client is far lighter, §iv).
+
+**Agg RR at 384 collapses harder than KV**: total tokens fall to 5,076 per GPU (0.75× of its 192-client cell, vs KV's
+0.86×), TTFT p95 reaches 495 s (KV 119 s) and 266 of 384 sessions sit in flight. Both agg ladders therefore end at
+384: the measured agg knees are **KV 192 / RR 192** (RR at its throughput knee, KV still scaling there), and every
+cell above is saturated. The remaining agg runs are the flag sweep at 192.
 
 ### KV vs RR at 192 clients — the same-config comparison point, measured
 
