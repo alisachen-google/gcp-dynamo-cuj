@@ -183,10 +183,12 @@ load-scale flag as pure prefix loss, whereas the live effect is queue relief (AG
 
 ### 5.3 Simulation vs silicon, apple to apple (TTFT p95 standard)
 
-Disagg (9:9 KV, 48 / 96 / 192): after substituting measured output length, a 0.19 s per-request hand-off and the
-measured decode line, the engine model is within ~10% on output tokens; the residual on total tokens (0.62×) is trace
-representation (the 4 k-request slice carries ~30% fewer input tokens per turn and no subagent fan-out) and the TTFT
-p95 is 2–2.7× too pessimistic (per-worker FCFS prefill queue). Agg (KV, 48 / 96): the largest term is the sim's decode
+Disagg (12:6 KV, 96 / 192 / 384 / 480, and 9:9 at 48 / 96 / 192): the engine substitutions (output length, 0.19 s
+hand-off, measured decode line) barely move the ratios — total tokens stay at 0.53–0.59× and TTFT p95 at 2.3–2.7× too
+pessimistic. The gap is (1) **prefix hit rate**: sim 0.74–0.78 vs 0.83–0.93 backed out of the measured records, so the
+sim prefills 2.5–4× more tokens per turn, which sets its tail, its early knee (768) and its low ceiling (6,187 vs 10,434
+measured and still rising); (2) **trace representation**: 70 k input tokens per request vs 86–94 k measured and a
+0.69–0.80× request rate from the 4 k-request slice. Requests × input length reproduces the residual exactly. Agg (KV, 48 / 96): the largest term is the sim's decode
 cliff past batch 7 (TPOT 27–40 ms simulated vs 7–12 ms measured); removing it recovers a third of the 0.35–0.44× gap,
 the rest is the same trace residual. Full ladders: AGENTX_D72_RESULTS.md §iv, AGENTX_AGG_RESULTS.md §iv; overlay page
 `reports/n3u-agentx-sim-vs-real.html`. Rankings across topologies are the sim's reliable output; levels, and the

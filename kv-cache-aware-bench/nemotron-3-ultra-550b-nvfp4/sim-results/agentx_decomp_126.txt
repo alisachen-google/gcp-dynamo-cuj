@@ -1,0 +1,21 @@
+v1 (AIC-seeded, as published)                       96   1.40      1689    23.5    1366     3.48     7.9 |  0.68x  0.85x  0.55x  2.54x
+v1 (AIC-seeded, as published)                      192   2.70      3274    45.5    2640     4.21    10.5 |  0.78x  1.01x  0.58x  2.38x
+v1 (AIC-seeded, as published)                      384   4.72      5636    78.3    4603     5.49    18.8 |  0.71x  0.90x  0.53x  2.13x
+v1 (AIC-seeded, as published)                      480   5.33      6238    86.6    5178     6.88    24.3 |  0.67x  0.82x  0.49x  1.95x
++ output length = measured (×0.81)                  96   1.43      1402    19.5    1389     3.46     7.6 |  0.70x  0.70x  0.56x  2.53x
++ output length = measured (×0.81)                 192   2.84      2695    37.4    2764     4.71     9.7 |  0.82x  0.83x  0.61x  2.66x
++ output length = measured (×0.81)                 384   5.19      4933    68.5    5054     5.90    16.6 |  0.78x  0.79x  0.58x  2.29x
++ output length = measured (×0.81)                 480   6.02      5677    78.8    5851     6.79    21.4 |  0.75x  0.75x  0.56x  1.93x
++ TTFT floor 0.19 s (transfer + scheduling)         96   1.43      1399    19.4    1385     3.65     7.6 |  0.70x  0.70x  0.56x  2.66x
++ TTFT floor 0.19 s (transfer + scheduling)        192   2.83      2687    37.3    2756     4.74     9.8 |  0.82x  0.83x  0.61x  2.68x
++ TTFT floor 0.19 s (transfer + scheduling)        384   5.17      4912    68.2    5034     5.92    16.7 |  0.78x  0.78x  0.58x  2.30x
++ TTFT floor 0.19 s (transfer + scheduling)        480   5.98      5645    78.4    5812     7.95    21.6 |  0.75x  0.75x  0.56x  2.26x
++ decode = measured ITL (6.9 + 0.44·bs ms)          96   1.41      1371    19.0    1369     3.72     8.9 |  0.69x  0.69x  0.55x  2.71x
++ decode = measured ITL (6.9 + 0.44·bs ms)         192   2.76      2616    36.3    2688     4.35    11.5 |  0.80x  0.81x  0.59x  2.46x
++ decode = measured ITL (6.9 + 0.44·bs ms)         384   4.95      4694    65.2    4823     6.12    19.8 |  0.75x  0.75x  0.56x  2.37x
++ decode = measured ITL (6.9 + 0.44·bs ms)         480   5.69      5319    73.9    5527     8.12    25.5 |  0.71x  0.70x  0.53x  2.31x
+measured (12:6 KV, AgentX mode)                     96   2.05      1998    27.8    2493     1.37     8.2
+measured (12:6 KV, AgentX mode)                    192   3.45      3231    44.9    4530     1.77    10.0
+measured (12:6 KV, AgentX mode)                    384   6.63      6276    87.2    8669     2.58    13.7
+measured (12:6 KV, AgentX mode)                    480   7.98      7566   105.1   10464     3.52    16.4
+

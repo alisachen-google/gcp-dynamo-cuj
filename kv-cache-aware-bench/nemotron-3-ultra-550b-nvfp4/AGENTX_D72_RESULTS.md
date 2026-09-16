@@ -195,6 +195,46 @@ decomposed separately so the two are apples to apples at their own load.
 | + decode = measured ITL curve | 2.75 | 2,597 (36.1) | 2,674 | 5.52 s | 11.6 ms | 0.79× · 0.79× · 0.58× · 2.72× |
 | **residual after all substitutions** | | | | | | **0.79× requests · 0.58× total · TTFT p95 2.7× too pessimistic** |
 
+### The 12:6 ladder (96 / 192 / 384 / 480 clients), same substitutions, run 2026-09-16 19:05 UTC
+
+Script [`scripts/dynosim_agentx_decomp_126.py`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/scripts/dynosim_agentx_decomp_126.py);
+table [`sim-results/agentx_decomp_126.txt`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_decomp_126.txt).
+Measured inputs come from the profiling-phase per-request records (request rate, input and output tokens per request);
+the decode line 6.9 + 0.44·bs ms is fitted through the four measured ITL p50 points (bs = in flight per decode worker).
+
+| sim variant → sim ÷ real (req/s · output · total · TTFT p95) | 96 | 192 | 384 | 480 |
+|---|---|---|---|---|
+| v1, AIC-seeded (as published) | 0.68 · 0.85 · **0.55** · **2.54** | 0.78 · 1.01 · **0.58** · **2.38** | 0.71 · 0.90 · **0.53** · **2.13** | 0.67 · 0.82 · **0.49** · **1.95** |
+| + output length = measured (×0.79–0.81) | 0.70 · 0.70 · 0.56 · 2.53 | 0.82 · 0.83 · 0.61 · 2.66 | 0.78 · 0.79 · 0.58 · 2.29 | 0.75 · 0.75 · 0.56 · 1.93 |
+| + fixed 0.19 s per request (KV hand-off + scheduling) | 0.70 · 0.70 · 0.56 · 2.66 | 0.82 · 0.83 · 0.61 · 2.68 | 0.78 · 0.78 · 0.58 · 2.30 | 0.75 · 0.75 · 0.56 · 2.26 |
+| + decode = measured ITL line (6.9 + 0.44·bs ms) | 0.69 · 0.69 · 0.55 · 2.71 | 0.80 · 0.81 · 0.59 · 2.46 | 0.75 · 0.75 · 0.56 · 2.37 | 0.71 · 0.70 · 0.53 · 2.31 |
+| **residual** | **0.69× requests · 0.55× total · p95 2.7× heavy** | **0.80× · 0.59× · 2.5×** | **0.75× · 0.56× · 2.4×** | **0.71× · 0.53× · 2.3×** |
+| sim TPOT after the decode substitution vs measured ITL p50 | 8.9 vs 8.2 ms | 11.5 vs 10.0 | 19.8 vs 13.7 | 25.5 vs 16.4 |
+
+Measured cells: 2.05 / 3.45 / 6.63 / 7.98 req/s · 1,998 / 3,231 / 6,276 / 7,566 output tok/s · 2,493 / 4,530 / 8,669 /
+10,464 total/GPU · TTFT p95 1.37 / 1.77 / 2.58 / 3.52 s · ITL p50 8.2 / 10.0 / 13.7 / 16.4 ms.
+
+**The engine substitutions barely move the 12:6 ratios** (total 0.55 → 0.55, 0.58 → 0.59, 0.53 → 0.56, 0.49 → 0.53), so
+on this topology the engine constants are not the gap. Two terms that the ladder cannot substitute are:
+
+1. **Prefix hit rate.** The sim's 12:6 cells run at hit 0.78 → 0.74 (96 → 480 clients), i.e. ~15–18 k uncached tokens
+   per turn. Backing the hit rate out of the measured records (uncached ≈ (TTFT − 0.19 s) × 19.7 k tok/s per worker)
+   gives **0.93 → 0.83**, i.e. 2–6 k uncached tokens per turn; turns over 150 k tokens return a first token in 0.5–0.8 s
+   at the median, which is only possible with near-complete cache reuse. Per request the sim therefore does 2.5–4×
+   the prefill work at low load and ~1.5× at 480. This is the TTFT-tail term (2.3–2.7× after every other
+   substitution), it is why the sim's disagg knee lands at 768 and its ceiling at 6,187 total/GPU (silicon is at
+   10,434 and still stationary at 480), and it inflates the sim's in-flight count so that even the measured decode
+   line still yields a TPOT 1.4–1.6× too slow at 384 / 480.
+2. **Trace representation.** Input tokens per request 70 k (sim) vs 86–94 k (measured) = 0.75–0.81×, and request rate
+   0.69–0.80× (the 4 k-request slice cuts sessions before their longest turns and carries no subagent fan-out).
+   Requests × input length reproduces the residual: 0.80 × 0.75 = 0.60 at 192 (observed 0.59), 0.71 × 0.79 = 0.56 at
+   480 (observed 0.53).
+
+Calibration order for the disagg sim, by payoff: replay the full trace (fixes term 2 and part of term 1), calibrate
+the cache model to the measured 0.83–0.93 hit rate (fixes the tail and the knee), then halve the decode slope. Until
+then, read the disagg sim as: total tokens ≈ 0.5–0.6× silicon, TTFT p95 ≈ 2–2.7× silicon, knee and ceiling not
+predictive; topology ranking and cell selection are still sound (12:6 vs 9:9 came out in the sim's order on silicon).
+
 ### Where the gap is, in plain words
 
 1. **Output tokens: the engine model is right once output length is corrected.** The sim replays the trace's recorded
