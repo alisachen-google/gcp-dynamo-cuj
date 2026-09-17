@@ -18,7 +18,7 @@ OSL_SCALE = 1.0  # raw dataset out field matches the engine count (root 1,131 vs
 
 def load_stream_trace(path): return [json.loads(l) for l in open(path)]
 
-def simulate_v5(traces, n_prefill, n_decode, policy, clients, window=3600.0, warm_s=900.0, idle_cap=10.0, start=(0.25, 0.75), agg=False, seed=42, router=None):
+def simulate_v5(traces, n_prefill, n_decode, policy, clients, window=3600.0, warm_s=900.0, idle_cap=10.0, start=(0.25, 0.75), agg=False, seed=42, router=None, recycle_at_zero=False):
     rnd = random.Random(seed); eng = da.Engine(n_prefill, n_decode, policy, agg, router)
     ev = []; play = [0]; T0 = None; recs = []; inflight = 0; now = 0.0; lanes = {}
     def prime(hid, t):
@@ -27,7 +27,7 @@ def simulate_v5(traces, n_prefill, n_decode, policy, clients, window=3600.0, war
     def new_play(L, t):
         tr = traces[rnd.randrange(len(traces))]; salt = play[0]; play[0] += 1
         # first play of a lane is a trajectory snapshot at t*; every recycle starts a fresh trace at turn 0 (aiperf: "lane recycles: a fresh session starting at turn 0")
-        ts = (start[0] + rnd.random() * (start[1] - start[0])) * tr["duration_s"] if L not in lanes else 0.0
+        ts = (start[0] + rnd.random() * (start[1] - start[0])) * tr["duration_s"] if (L not in lanes or not recycle_at_zero) else 0.0
         if not lanes.get(L, {}).get("first_done", False): pass
         st = {"tr": tr, "salt": salt, "ts": ts, "streams": [], "live": 0, "first_done": True, "started": set(), "children_running": 0}
         lanes[L] = st

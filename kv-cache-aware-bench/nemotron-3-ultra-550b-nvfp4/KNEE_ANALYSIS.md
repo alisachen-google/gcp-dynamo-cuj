@@ -152,3 +152,64 @@ Runners: disagg = 12:6 KV 96 / 192 / 384 / 480 / 768 / 1440 then RR 192 / 96 / 3
 cross-check); agg = KV 48 → 1536 and RR 48 → 1536 in parallel on two fleets (np-1). Every chosen cell above is inside
 those ladders. A 12:6 tuned-KV point at 768 (`--router-prefill-load-scale 3 --router-kv-overlap-score-credit 0.8`) is
 the one extra run the analysis suggests; it is not queued.
+
+## 64-GPU disagg under AgentX (np-2 footprint: 16 × TP4 workers) — topology, knees and KV-vs-RR points (sim, 2026-09-17)
+
+Simulator: the stream-level trajectory-tree replay ([`scripts/dynosim_agentx_v5.py`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/scripts/dynosim_agentx_v5.py),
+rule v5b, which tracked 12:6 silicon within 4 % on total tokens at 768 clients) with the engine constants measured on
+silicon (prefill 24 k tok/s per TP4 worker, decode 6.9 + 0.44·batch ms); sweep driver
+[`scripts/dynosim_agentx_v5_sweep.py`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/scripts/dynosim_agentx_v5_sweep.py),
+rows in [`sim-results/dynosim_n3u_agentx_d64_v5.csv`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/dynosim_n3u_agentx_d64_v5.csv).
+Cells are total tok/s per GPU · TTFT p95 · P90 interactivity (tok/s/user). Caveats: single seed (load-limited cells
+below the knee vary ±20 % with the sampled sessions), and this sim issues subagent turns ~2× too fast, so read client
+counts at the knee as ±40 %; rankings of splits and policies are the reliable output.
+
+**Topology scan, KV routing**
+
+| split P:D | 192 | 576 | 768 | 1,152 |
+|---|---|---|---|---|
+| 12:4 | 3,614 · 1.1 s · 82 | 11,495 · 1.9 s · **14** | | 13,113 · 1.9 s · 4.6 |
+| 11:5 | 3,483 · 1.0 s · 96 | 12,177 · 2.1 s · 19.6 | | 16,507 · 2.4 s · 5.8 |
+| 10:6 | 3,407 · 1.1 s · 105 | 12,313 · 2.4 s · 25 | | rerunning |
+| **8:8** | 3,329 · 1.1 s · 110 | 12,148 · 2.9 s · **36** | running | **24,663** · 12.8 s · 9.3 |
+| 7:9 | | 13,256 · 4.7 s · 34 | 19,946 · 7.7 s · 18.4 | 23,036 · **47.7 s** · 9.6 |
+| 6:10 | | 13,891 · 6.9 s · 33 | 20,497 · **21.8 s** · 19 | 17,247 · 89 s · 10 (collapsed) |
+
+**Selected split: 8:8.** With a 90–95 % prefix hit rate the prefill tier is lightly loaded under KV routing, so
+prefill-heavy splits starve decode (12:4 and 11:5 drop under 20 tok/s/user already at 576 clients and cap at 13–16 k per
+GPU), while decode-heavy splits run out of prefill (6:10 crosses TTFT p95 20 s at 768, 7:9 at 1,152). 8:8 holds both
+budgets longest and has the highest ceiling (24.7 k at 1,152 with p95 12.8 s). This reverses the prefill-heavy 12:6
+choice made from the 4 k-slice sim: that sim's 0.74 hit rate overstated prefill demand 2–3×.
+
+**Policies on 8:8**
+
+| clients | default KV | tuned KV (scale 3, credit 0.8) | RR |
+|---|---|---|---|
+| 96 | 2,131 · 0.7 s · 116 | | 2,322 · 5.4 s · 110 |
+| 192 | 3,329 · 1.1 s · 110 | 3,325 · 1.7 s · 116 | 4,083 · 8.6 s · 96 |
+| 384 | 8,379 · 2.9 s · 70 | 8,124 · 2.4 s · 72 | **9,079 · 82 s** · 30 (RR peak) |
+| 576 | 12,148 · 2.9 s · 36 | 12,311 · 2.3 s · 36 | 7,075 · 223 s · 18 (collapsing) |
+| 768 | running | **18,004 · 2.3 s · 20.2** | 5,769 · 368 s · 13 |
+| 1,152 | 24,663 · 12.8 s · 9.3 | 24,834 · 3.2 s · 9.5 | 4,694 · 532 s · 7.8 |
+
+**Knees.** RR: throughput knee and peak at 384 clients (6 per GPU), with the TTFT tail already at 82 s there; it leaves
+the 20 s budget between 192 and 384. KV (default and tuned): no throughput knee up to 1,152 clients; the binding limit
+is interactivity, which crosses 20 tok/s/user at ≈ 768 clients (12 per GPU). Tuned KV's benefit on 8:8 is the tail at
+high load (p95 3.2 vs 12.8 s at 1,152), not tokens.
+
+**KV-vs-RR comparison points for the 64-GPU run**
+
+| rule | cell | expectation from the sim |
+|---|---|---|
+| same config | **384 clients** (RR's peak) | tokens ≈ equal (both load-limited: KV 8,379 vs RR 9,079, within seed noise); TTFT p95 2.9 s vs 82 s; P90 70 vs 30 |
+| same config, both inside the TTFT budget | 192 clients | tokens ≈ equal; TTFT p95 1.1 s vs 8.6 s |
+| same SLO (TTFT p95 ≤ 20 s and P90 ≥ 20) | **tuned KV 768 vs RR 192** | 18,004 vs 4,083 = **4.4×** (default KV's cell is 576 → 12,148 = 3.0×, or 768 if its pending cell holds P90 ≥ 20) |
+| flag sweep | 768 (same-SLO cell) and 384 (same-config cell) | scale 3 / credit 0.8, scale 2 / credit 0.8, temperature 0.5 at 768; scale 3 at 384 |
+
+**Recipes (ready, not launched — np-2's 16 nodes belong to other tenants today).** Fleet manifest
+[`sglang/manifests/n3u-mnnvl-88.yaml`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/sglang/manifests/n3u-mnnvl-88.yaml)
+(8 prefill + 8 decode TP4 workers, one 16-node MNNVL ComputeDomain, pinned to np-2); chain
+[`scripts/run_agentx_88_np2.sh`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/run_agentx_88_np2.sh):
+KV 192 / 384 / 576 / 768 / 960 → RR 192 / 384 / 96 → flags, each stage gated on the previous DONE marker, first point a
+smoke, MNNVL transport guard after every cell (`MNNVL_GUARD=1`), aiperf pod co-located on np-2 (`BENCH_POOL=np-2`). The
+KV runner waits until 16 np-2 nodes are free and never deletes anything it did not create. Wall time ≈ 24 h for the 12 cells.
