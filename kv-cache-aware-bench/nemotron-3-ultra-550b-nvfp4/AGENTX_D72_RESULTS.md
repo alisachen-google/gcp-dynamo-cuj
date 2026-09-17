@@ -304,6 +304,41 @@ because the real lanes start part-way through sessions and cap idle gaps. Those 
 terms, not engine terms. At 768 the sim's decode (TPOT 39 ms vs 21 ms measured) also re-enters because its slower
 request cycle keeps more requests in flight per decode worker.
 
+### Workload-parity check and the v4 trajectory-replay attempt (2026-09-17)
+
+Parity of the five workload dimensions between the sim and the real replay (real = 12:6 KV 192-client records and
+engine counters; stream kinds from `source_kind`):
+
+| dimension | real replay | v3 sim (published) | v4 sim | parity |
+|---|---|---|---|---|
+| input length per request | 93.6 k mean (root streams 134 k, subagent 59 k, flat 114 k) | 70 k (4 k slice) | 149 k | no, both ways |
+| reusable prefix (hit rate) | 0.94 | 0.76 | 0.95 | v4 yes |
+| output length per request | 936 counted by the engine (root 1,240, subagent 694) | 1,200 (trace field) | 1,211 | no: trace field is 1.3× the engine's count |
+| think time between turns | replayed gaps: root p50 2.4 s / mean 35 s, subagent p50 1.7 s / mean 7 s | raw timestamps: p50 13 s / mean 618 s | measured all-stream CDF (mean 22 s) | v4 close, kinds mixed |
+| session position at start | uniform over the session, previous turn primed (turn index p50 12) | 25–75 %, history replayed into the window | uniform, previous turn primed | v4 yes |
+| lane structure | root stream + subagent chains; 51 % of requests are subagent turns (5 turns, 59 k each) | one sequential session | S identical streams | no |
+
+v4 ([`scripts/dynosim_agentx_v4.py`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/scripts/dynosim_agentx_v4.py),
+gap CDF [`sim-results/agentx_gap_cdf.json`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_gap_cdf.json),
+results [`sim-results/agentx_v4_sim.txt`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_v4_sim.txt)),
+12:6 KV, engine model unchanged:
+
+| variant | clients | hit | req/s | ISL/req | total/GPU | TTFT p50 / p95 | TPOT | P90 |
+|---|---|---|---|---|---|---|---|---|
+| v4, 1 stream per lane | 192 | 0.954 | 5.73 | 149 k | 11,943 | 0.11 / 3.69 s | 11.8 ms | 78 |
+| silicon | 192 | 0.937 | 3.45 | 94 k | 4,510 | 0.36 / 1.77 s | 10.0 ms | 89 |
+| v4, 1 stream per lane | 768 | 0.941 | 10.69 | 145 k | 21,741 | 0.14 / 5.41 s | 43.7 ms | 22 |
+| silicon | 768 | 0.880 | 11.27 | 95 k | 15,004 | 0.80 / 7.0 s | 20.9 ms | 45 |
+
+Reading: with the measured gap distribution the request rate is right at 768 (10.7 vs 11.3) and 1.7× high at 192,
+but every request is 1.5× too large (149 k vs 94 k) because the sim samples whole root-like sessions while half of the
+real requests are short-context subagent turns. Fixing three dimensions without stream-kind parity therefore
+overshoots total tokens (2.6× at 192, 1.45× at 768). **The remaining gap is stream-kind parity**, and the right input
+is the one aiperf replays: the loader's stream-level trace (root and subagent chains as separate streams with their
+own turns, hash ids, recorded `delay_ms`, and the engine-counted output length), replayed as trajectory trees. That
+conversion is the next step; the engine terms measured so far (prefill 20–33 % slow, decode line right below 200
+clients) are second order next to it.
+
 ### Reading the measured tail itself (independent of the simulator)
 
 [`scripts/agentx_ttft_tail.py`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/agentx_ttft_tail.py)

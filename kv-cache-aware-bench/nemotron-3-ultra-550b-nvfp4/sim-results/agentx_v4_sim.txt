@@ -1,0 +1,5 @@
+variant                        clients    hit  req/s ISL/req   OSL  tot/GPU out/GPU ttft p50 ttft p95 wait p95   tpot    P90
+v4 S=1 streams/lane                192  0.954   5.73  148755  1211    11943    96.5     0.11     3.69     1.93   11.8   78.3
+v4 S=2 streams/lane                192  0.950   8.79  150619  1147    18538   140.1     0.12     4.66     3.16   20.8   46.4
+v4 S=1 streams/lane                768  0.941  10.69  145334  1127    21741   167.3     0.14     5.41     4.12   43.7   22.3
+v4 S=2 streams/lane                768  0.937  12.13  139125  1030    23615   173.6     0.15     5.70     4.62   92.4   10.6
