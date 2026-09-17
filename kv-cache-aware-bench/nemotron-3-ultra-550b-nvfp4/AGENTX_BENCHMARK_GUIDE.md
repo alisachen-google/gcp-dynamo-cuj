@@ -187,8 +187,10 @@ load-scale flag as pure prefix loss, whereas the live effect is queue relief (AG
 
 Disagg (12:6 KV, 96 / 192 / 384 / 480, and 9:9 at 48 / 96 / 192): the engine substitutions (output length, 0.19 s
 hand-off, measured decode line) barely move the ratios — total tokens stay at 0.53–0.59× and TTFT p95 at 2.3–2.7× too
-pessimistic. The gap is (1) **prefix hit rate**: sim 0.73–0.78 vs **0.88–0.94 reported by the engine's cached-token counter**, so the
-sim prefills 1.6–3× more tokens per turn, which sets its tail, its early knee (768) and its low ceiling (6,187 vs 10,434
+pessimistic. The gap is (1) **prefix hit rate**: sim 0.73–0.78 vs **0.88–0.94 reported by the engine's cached-token counter** — proven
+to be the 4 k trace slice (hit ceiling 0.846 vs 0.969 for the full trace; re-simulating on the full trace gives 0.95 and,
+with an aiperf-style warm-up, a TTFT p95 of 1.58 s vs 1.77 s measured at 192; AGENTX_D72_RESULTS.md §iv) — so the
+published sim prefills 1.6–3× more tokens per turn, which sets its tail, its early knee (768) and its low ceiling (6,187 vs 10,434
 measured and still rising); (2) **trace representation**: 70 k input tokens per request vs 86–94 k measured and a
 0.69–0.80× request rate from the 4 k-request slice. Requests × input length reproduces the residual exactly. Agg (KV 48 / 96 / 192 and RR 48 / 96 / 192): the largest
 term is the sim's decode cliff past batch 7 (TPOT 27–61 ms simulated vs 7–24 ms measured), which it applies to the deep

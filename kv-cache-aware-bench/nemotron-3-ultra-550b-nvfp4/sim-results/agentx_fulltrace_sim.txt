@@ -1,0 +1,5 @@
+variant                            clients    hit  req/s  tot/GPU ttft p50 ttft p95 wait p50 wait p95  svc p50  svc p95  unc/req   tpot
+4k slice + 0 s warm-up                 192  0.763   2.70     2679     0.19     4.21     0.00     2.87     0.13     2.56     9024   10.5
+variant                            clients    hit  req/s  tot/GPU ttft p50 ttft p95 wait p50 wait p95  svc p50  svc p95  unc/req   tpot
+full trace + 900 s warm-up             192  0.953   1.64     3674     0.09     1.58     0.00     0.45     0.08     0.64     4177    8.9
+full trace + 900 s warm-up             768  0.931   4.07     8264     0.10     2.37     0.00     1.40     0.09     0.83     4805   38.9

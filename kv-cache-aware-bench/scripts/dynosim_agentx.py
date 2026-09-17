@@ -50,6 +50,7 @@ class Engine:
         new=(tb-ov)*dp.BLOCK_TOKENS
         rate=dp.AGG_PREFILL_TOKRATE if (self.agg and hasattr(dp,"AGG_PREFILL_TOKRATE")) else dp.PREFILL_TOKRATE
         svc=max(0.005,new/rate); start=max(now,P[w].free_at); pf=start+svc
+        self.last=(start-now, svc, new)  # (queue wait s, service s, uncached tokens) for the last served request
         P[w].free_at=pf; P[w].queued.append((pf,tb-ov)); P[w].insert(hid)
         if self.agg: d=w
         else: d=min(range(len(self.D)),key=lambda i:self.D[i])
@@ -59,7 +60,8 @@ class Engine:
         return pf-now, tpot, done, d
     def release(self,d): self.D[d]-=1
 
-def simulate_agentx(sessions, n_prefill, n_decode, policy, clients, window=3600.0, idle_cap=10.0, agg=False, seed=42, router=None):
+def simulate_agentx(sessions, n_prefill, n_decode, policy, clients, window=3600.0, idle_cap=10.0, agg=False, seed=42, router=None, warm_s=0.0):
+    """warm_s: like aiperf's warm-up, the measurement window opens warm_s seconds after the first measurable request instead of at it (default 0 = published behaviour)."""
     rnd=random.Random(seed); eng=Engine(n_prefill,n_decode,policy,agg,router)
     order=list(range(len(sessions))); rnd.shuffle(order); nxt=[0]
     def take():
@@ -98,18 +100,19 @@ def simulate_agentx(sessions, n_prefill, n_decode, policy, clients, window=3600.
         st=lanes[lane]; i=st["i"]; r=st["s"][i]
         if i>=st["k"] and st["t0"] is None: st["t0"]=now; st["ts0"]=r["timestamp"]
         measured = i>=st["k"]
-        if measured and T0 is None: T0=now
+        if measured and T0 is None: T0=now+warm_s
         if T0 is not None and now>T0+window: break
         hid=[(st["salt"],h) for h in r["hash_ids"]]
         ttft,tpot,done,d=eng.serve(hid,r["output_length"],now); inflight+=1
-        heapq.heappush(ev,(done,'done',lane,{"ttft":ttft,"tpot":tpot,"out":r["output_length"],"inp":len(hid)*dp.BLOCK_TOKENS,"done":done,"start":now,"measured":measured,"d":d}))
+        heapq.heappush(ev,(done,'done',lane,{"ttft":ttft,"tpot":tpot,"out":r["output_length"],"inp":len(hid)*dp.BLOCK_TOKENS,"done":done,"start":now,"measured":measured,"d":d,"wait":eng.last[0],"svc":eng.last[1],"unc":eng.last[2]}))
     win=[x for x in recs if T0 is not None and T0<=x["done"]<=T0+window]
     if not win: return None
     dur=window; tt=sorted(x["ttft"] for x in win); out=sum(x["out"] for x in win)
     tp=sorted(x["tpot"] for x in win); inp=sum(x["inp"] for x in win)
     return {"throughput_tok_s":out/dur,"ttft_p50_s":tt[len(tt)//2],"ttft_p90_s":tt[min(len(tt)-1,int(len(tt)*.9))],"ttft_p95_s":tt[int(len(tt)*.95)],"ttft_p99_s":tt[min(len(tt)-1,int(len(tt)*.99))],
             "tpot_mean_ms":sum(x["tpot"] for x in win)/len(win)*1000,"tpot_p50_ms":tp[len(tp)//2]*1000,"tpot_p90_ms":tp[min(len(tp)-1,int(len(tp)*.9))]*1000,
-            "in_tok_per_req":inp/len(win),"total_tok_s":(inp+out)/dur,"hit_rate":eng.hits/max(1,eng.blocks),"req_per_s":len(win)/dur,"n":len(win)}
+            "in_tok_per_req":inp/len(win),"total_tok_s":(inp+out)/dur,"hit_rate":eng.hits/max(1,eng.blocks),"req_per_s":len(win)/dur,"n":len(win),
+            "wait_p50_s":sorted(x["wait"] for x in win)[len(win)//2],"wait_p95_s":sorted(x["wait"] for x in win)[int(len(win)*.95)],"svc_p50_s":sorted(x["svc"] for x in win)[len(win)//2],"svc_p95_s":sorted(x["svc"] for x in win)[int(len(win)*.95)],"unc_mean":sum(x["unc"] for x in win)/len(win)}
 
 if __name__=="__main__":
     ap=argparse.ArgumentParser(); ap.add_argument("trace"); ap.add_argument("--splits",default="6:12,9:9,12:6"); ap.add_argument("--clients",default="48,96,192,384,768,1536")

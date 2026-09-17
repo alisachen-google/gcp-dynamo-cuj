@@ -1,0 +1,8 @@
+variant                                      clients    hit  req/s  tot/GPU ttft p95 tpot ms
+A. as published (4k slice, cap 100M)             192  0.763   2.70     2679     4.21    10.5
+B. + infinite KV capacity                        192  0.763   2.70     2679     4.21    10.5
+C. + full trace (28k requests)                   192  0.950   1.83     3609     5.08    10.9
+D. + full trace + infinite capacity              192  0.950   1.83     3609     5.08    10.9
+A. as published (4k slice, cap 100M)             768  0.725   6.22     5981    30.00    43.0
+B. + infinite KV capacity                        768  0.725   6.22     5981    30.00    43.0
+C. + full trace (28k requests)                   768  0.926   3.71     6013    45.05    43.2

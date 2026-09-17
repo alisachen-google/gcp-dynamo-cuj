@@ -231,10 +231,10 @@ on this topology the engine constants are not the gap. Two terms that the ladder
    earlier TTFT-based estimate of 0.93 → 0.83 was right at low load and too low at high load, where queueing was being
    counted as prefill). Per request the sim therefore does **3× the prefill work at low load and 1.6× at 768**. The
    router's estimated KV hand-off latency is 0.19–0.21 s up to 192 clients and grows to 0.26 / 0.37 s at 480 / 768, which
-   is the fixed per-request term the ladder adds and the reason it should scale with load rather than stay constant. This is the TTFT-tail term (2.3–2.7× after every other
-   substitution), it is why the sim's disagg knee lands at 768 and its ceiling at 6,187 total/GPU (silicon is at
-   10,434 and still stationary at 480), and it inflates the sim's in-flight count so that even the measured decode
-   line still yields a TPOT 1.4–1.6× too slow at 384 / 480.
+   is the fixed per-request term the ladder adds and the reason it should scale with load rather than stay constant. It is why the sim's disagg knee lands at 768 and its ceiling at 6,187 total/GPU (silicon is at 15,004 at 768 and
+   still pre-knee). The TTFT-tail term (2.3–2.7× after every other substitution) turned out to be the warm-up-storm
+   artifact plus the slice rather than the cache model itself — see the re-simulation below, where the tail lands at
+   0.9× of silicon once both are fixed.
 2. **Trace representation.** Input tokens per request 70 k (sim) vs 86–94 k (measured) = 0.75–0.81×, and request rate
    0.69–0.80× (the 4 k-request slice cuts sessions before their longest turns and carries no subagent fan-out).
    Requests × input length reproduces the residual: 0.80 × 0.75 = 0.60 at 192 (observed 0.59), 0.71 × 0.79 = 0.56 at
@@ -244,6 +244,65 @@ Calibration order for the disagg sim, by payoff: replay the full trace (fixes te
 the cache model to the measured 0.88–0.94 hit rate (fixes the tail and the knee), then halve the decode slope. Until
 then, read the disagg sim as: total tokens ≈ 0.5–0.6× silicon, TTFT p95 ≈ 2–2.7× silicon, knee and ceiling not
 predictive; topology ranking and cell selection are still sound (12:6 vs 9:9 came out in the sim's order on silicon).
+
+### Finding the cache gap, and re-simulating on the full trace (2026-09-17)
+
+**How the gap was found.** (1) The engine's own counter, `dynamo_frontend_cached_tokens ÷ input_sequence_tokens`
+scraped by aiperf during every window, gives the measured hit rate: **0.94 / 0.94 / 0.92 / 0.91 / 0.88** at 96 / 192 /
+384 / 480 / 768 on 12:6 ([`sim-results/agentx_server_metrics.txt`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_server_metrics.txt)).
+The sim's `hit_rate` column says 0.78 → 0.73. (2) [`scripts/trace_hit_ceiling.py`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/scripts/trace_hit_ceiling.py)
+computes the best hit rate a trace can give with an infinite cache and perfect routing (same prefix-stop rule as the
+sim's worker and the engine counter, sessions grouped as the sim groups them):
+
+| trace | requests | sessions | turns per session (mean / median) | cold first-turn token share | **hit ceiling** | mean ISL |
+|---|---|---|---|---|---|---|
+| 4 k slice the sim replays (`weka_256k_bench4k.jsonl`) | 4,000 | 874 | 4.6 / 1 | 8.8 % | **0.846** | 70,114 |
+| full trace the silicon runs replay (`weka_256k_aiperf.jsonl`) | 28,444 | 1,558 | 18.3 / 1 | 0.8 % | **0.969** | 137,232 |
+
+The silicon value (0.94) is above the slice's ceiling, so no cache model could match it on the slice: the slice
+truncates sessions (median one turn), and hit rate is a property of session length. (3)
+[`scripts/dynosim_agentx_hitrate_attrib.py`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/scripts/dynosim_agentx_hitrate_attrib.py)
+then re-ran the sim substituting one step at a time
+([`sim-results/agentx_hitrate_attrib.txt`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_hitrate_attrib.txt)):
+
+| 12:6 KV variant | 192: hit · req/s · total/GPU · TTFT p95 | 768: hit · req/s · total/GPU · TTFT p95 |
+|---|---|---|---|
+| A. as published (4 k slice, 100 M-token cache) | 0.763 · 2.70 · 2,679 · 4.21 s | 0.725 · 6.22 · 5,981 · 30.0 s |
+| B. A + infinite cache (no eviction) | 0.763 · 2.70 · 2,679 · 4.21 s | 0.725 · 6.22 · 5,981 · 30.0 s |
+| C. A + full trace | **0.950** · 1.83 · 3,609 · 5.08 s | **0.926** · 3.71 · 6,013 · 45.0 s |
+| silicon (engine counter) | 0.937 · 3.45 · 4,510 · 1.77 s | 0.880 · 11.27 · 15,004 · 7.0 s |
+
+Eviction changes nothing (the sim's LRU only ever drops blocks of finished replays); routing loses 2 points against
+the ceiling, the same as the real router's 3. **The trace slice is the whole cause of the hit-rate gap.**
+
+**Why fixing the hit rate did not fix the tail at first.** Variant C still had TTFT p95 5–45 s. The sim opened its
+measurement window at the first measurable request, while every lane was still replaying its back-to-back warm-up
+turns (with 18-turn sessions that storm lasts minutes), so the window contained a queueing burst the real scenario
+never measures (aiperf ramps the lanes and waits 900 s). The sim's prefill tier was only 16 % utilised in that
+variant, which ruled out compute. `simulate_agentx` now takes `warm_s` (0 keeps the published behaviour) and reports
+the TTFT split into prefill-queue wait and prefill service
+([`scripts/dynosim_agentx_fulltrace.py`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/scripts/dynosim_agentx_fulltrace.py),
+[`sim-results/agentx_fulltrace_sim.txt`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_fulltrace_sim.txt)):
+
+| 12:6 KV | clients | hit | req/s | total/GPU | TTFT p50 / p95 | queue wait p50 / p95 | prefill service p50 / p95 | uncached tok/req |
+|---|---|---|---|---|---|---|---|---|
+| 4 k slice, no warm-up (published) | 192 | 0.763 | 2.70 | 2,679 | 0.19 / 4.21 s | 0.00 / **2.87 s** | 0.13 / 2.56 s | 9,024 |
+| **full trace + 900 s warm-up** | 192 | 0.953 | 1.64 | 3,674 | 0.09 / **1.58 s** | 0.00 / 0.45 s | 0.08 / 0.64 s | 4,177 |
+| silicon | 192 | 0.937 | 3.45 | 4,510 | 0.36 / **1.77 s** | | | ≈ 5,900 |
+| **full trace + 900 s warm-up** | 768 | 0.931 | 4.07 | 8,264 | 0.10 / **2.37 s** | 0.00 / 1.40 s | 0.09 / 0.83 s | 4,805 |
+| silicon | 768 | 0.880 | 11.27 | 15,004 | 0.80 / **7.0 s** | | | ≈ 11,400 |
+
+**Result of the re-simulation.** With the full trace and a warm-up the sim's TTFT p95 lands at 1.58 s against 1.77 s
+measured at 192 clients (0.9×, from 2.4× too heavy), and its hit rate matches the engine within a point at both
+cells. The published tail pessimism was therefore two artifacts, the slice and the warm-up storm, not the prefill
+service model; the queue-wait p95 fell from 2.9 s to 0.45 s. Total tokens per GPU improve from 0.59× to 0.81× of
+silicon at 192 and from 0.40× to 0.55× at 768. **What remains is the request rate: the sim issues 1.64 / 4.07 req/s
+where silicon issues 3.45 / 11.27** (0.48× / 0.36×), i.e. its lanes replay the recorded think-time about twice as
+slowly as aiperf's agentic-replay mode does, and its full-trace ISL (137 k) overshoots the 93 k aiperf actually sent
+because the real lanes start part-way through sessions and cap idle gaps. Those two are the next calibration targets
+(the lane cadence rule and the lane start/idle semantics of `inferencex_agentx_mvp`), and they are workload-replay
+terms, not engine terms. At 768 the sim's decode (TPOT 39 ms vs 21 ms measured) also re-enters because its slower
+request cycle keeps more requests in flight per decode worker.
 
 ### Where the gap is, in plain words
 
