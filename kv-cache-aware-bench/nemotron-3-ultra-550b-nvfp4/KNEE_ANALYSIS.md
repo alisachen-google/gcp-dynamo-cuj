@@ -189,7 +189,7 @@ choice made from the 4 k-slice sim: that sim's 0.74 hit rate overstated prefill 
 | 192 | 3,329 · 1.1 s · 110 | 3,325 · 1.7 s · 116 | 4,083 · 8.6 s · 96 |
 | 384 | 8,379 · 2.9 s · 70 | 8,124 · 2.4 s · 72 | **9,079 · 82 s** · 30 (RR peak) |
 | 576 | 12,148 · 2.9 s · 36 | 12,311 · 2.3 s · 36 | 7,075 · 223 s · 18 (collapsing) |
-| 768 | running | **18,004 · 2.3 s · 20.2** | 5,769 · 368 s · 13 |
+| 768 | 19,034 · 4.4 s · **17.9** | **18,004 · 2.3 s · 20.2** | 5,769 · 368 s · 13 |
 | 1,152 | 24,663 · 12.8 s · 9.3 | 24,834 · 3.2 s · 9.5 | 4,694 · 532 s · 7.8 |
 
 **Knees.** RR: throughput knee and peak at 384 clients (6 per GPU), with the TTFT tail already at 82 s there; it leaves
@@ -203,13 +203,14 @@ high load (p95 3.2 vs 12.8 s at 1,152), not tokens.
 |---|---|---|
 | same config | **384 clients** (RR's peak) | tokens ≈ equal (both load-limited: KV 8,379 vs RR 9,079, within seed noise); TTFT p95 2.9 s vs 82 s; P90 70 vs 30 |
 | same config, both inside the TTFT budget | 192 clients | tokens ≈ equal; TTFT p95 1.1 s vs 8.6 s |
-| same SLO (TTFT p95 ≤ 20 s and P90 ≥ 20) | **tuned KV 768 vs RR 192** | 18,004 vs 4,083 = **4.4×** (default KV's cell is 576 → 12,148 = 3.0×, or 768 if its pending cell holds P90 ≥ 20) |
+| same SLO (TTFT p95 ≤ 20 s and P90 ≥ 20) | **tuned KV 768 vs RR 192** | 18,004 vs 4,083 = **4.4×**; default KV falls just under the interactivity budget at 768 (P90 17.9), so its cell is 576 → 12,148 = 3.0× — the router flags decide the same-SLO point |
 | flag sweep | 768 (same-SLO cell) and 384 (same-config cell) | scale 3 / credit 0.8, scale 2 / credit 0.8, temperature 0.5 at 768; scale 3 at 384 |
 
-**Recipes (ready, not launched — np-2's 16 nodes belong to other tenants today).** Fleet manifest
+**Recipes (chain launched 2026-09-17 06:04 UTC; stage 1 is waiting at its capacity gate — np-2's 16 nodes belong to other tenants today).** Fleet manifest
 [`sglang/manifests/n3u-mnnvl-88.yaml`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/sglang/manifests/n3u-mnnvl-88.yaml)
 (8 prefill + 8 decode TP4 workers, one 16-node MNNVL ComputeDomain, pinned to np-2); chain
 [`scripts/run_agentx_88_np2.sh`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/run_agentx_88_np2.sh):
-KV 192 / 384 / 576 / 768 / 960 → RR 192 / 384 / 96 → flags, each stage gated on the previous DONE marker, first point a
+KV 192 / 384 / 576 / 768 / 960 → RR 192 / 384 / 96 → measured point selection
+([`scripts/select_agentx_points.py`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/select_agentx_points.py): same config = RR's peak cell; same SLO = best stationary cell per policy with TTFT p95 ≤ 20 s and P90 ≥ 20; validated on the agg ladder) → flag sweep at the selected cells (sim's 768 / 384 as fallback), each stage gated on the previous DONE marker, first point a
 smoke, MNNVL transport guard after every cell (`MNNVL_GUARD=1`), aiperf pod co-located on np-2 (`BENCH_POOL=np-2`). The
 KV runner waits until 16 np-2 nodes are free and never deletes anything it did not create. Wall time ≈ 24 h for the 12 cells.

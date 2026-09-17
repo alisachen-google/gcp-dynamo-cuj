@@ -2,7 +2,7 @@
 # agentx_runner.sh <ARM> <manifest> "<points e.g. kv:48 kv:96>" <gate-marker> <gate-log> <done-marker> <log> <need-free-nodes> <pool> <jobprefix> <worker-labels-csv>
 # AgentX-mode client (aiperf --scenario inferencex-agentx-mvp, template sgl-d72-agentx.yaml): concurrency = live session trees,
 # end-to-start think-time replayed, per-play first_turn_prefix cache-bust, 3600 s per point. First point = smoke (halts on failure).
-# env: GATE_STRICT=1 (gate opens only on the DONE marker), BENCH_POOL=<pool for the aiperf pod, default np-1>, MNNVL_GUARD=1 (run the transport guard on pools other than np-3).
+# env: GATE_STRICT=1 (gate opens only on the DONE marker), BENCH_POOL=<pool for the aiperf pod, default np-1>, MNNVL_GUARD=1 (run the transport guard on pools other than np-3), JOB_WAIT_ITERS=<n x 120 s per cell, default 100>. Only Ready nodes count as free.
 set -u
 export KUBECONFIG=$HOME/kv-cache-aware-bench/.kubeconfig-cmcs-pinned
 ARM=$1; MAN=$2; PTS=$3; GATE=$4; GLOG=$5; DONE=$6; LOG=$7; NEED=$8; POOL=$9; JP=${10}; WL=${11}
@@ -11,7 +11,7 @@ GUARD=$HOME/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/mnnvl_trans
 N3U_DIR=/model-cache/alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4; N3U_SERVED=alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4
 say(){ echo "[$(date -u +%F' '%H:%M:%S)] $*" >> "$LOG"; }
 declare -A ROUTER=([kv]="--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs" [rr]="--router-mode round-robin" [kvs3c08]="--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-prefill-load-scale 3.0 --router-kv-overlap-score-credit 0.8" [kvs2c08]="--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-prefill-load-scale 2.0 --router-kv-overlap-score-credit 0.8" [kvt05]="--router-mode kv --router-temperature 0.5 --router-queue-policy fcfs" [kvwspt]="--router-mode kv --router-temperature 0.0 --router-queue-policy wspt")
-free_nodes(){ n=0; for node in $(kubectl get nodes -l cloud.google.com/gke-nodepool=$POOL -o name); do node=${node#node/}; u=$(kubectl describe node "$node" | awk '/Allocated resources/,0' | grep "nvidia.com/gpu" | awk '{print $2}'); [ "${u:-0}" = "0" ] && n=$((n+1)); done; echo $n; }
+free_nodes(){ n=0; for node in $(kubectl get nodes -l cloud.google.com/gke-nodepool=$POOL --no-headers | awk '$2=="Ready"{print $1}'); do u=$(kubectl describe node "$node" | awk '/Allocated resources/,0' | grep "nvidia.com/gpu" | awk '{print $2}'); [ "${u:-0}" = "0" ] && n=$((n+1)); done; echo $n; }
 say "waiting for gate '$GATE' in $GLOG"
 until grep -q "$GATE" "$GLOG" 2>/dev/null; do [ "${GATE_STRICT:-0}" = "0" ] && grep -qE "HALTING|STACK TIMEOUT" "$GLOG" 2>/dev/null && { say "gate job halted — proceeding after teardown"; break; }; sleep 300; done
 if [ "$POOL" = "np-3" ]; then
@@ -38,7 +38,7 @@ for point in $PTS; do
       -e "s|cloud.google.com/gke-nodepool: np-1|cloud.google.com/gke-nodepool: ${BENCH_POOL:-np-1}|" \
       -e "/name: CONCURRENCIES/{n;s/value: .*/value: \"${C}\"/}" -e "/name: BENCHMARK_DURATION/{n;s/value: .*/value: \"3600\"/}" \
       "$TMPL" | kubectl apply -n $NS -f - >> "$LOG" 2>&1
-  st=""; for i in $(seq 1 100); do st=$(kubectl get jobs -n $NS "$JOB" --no-headers 2>/dev/null | awk '{print $2}'); [ "$st" = "Complete" ] && break; [ "$st" = "Failed" ] && break; sleep 120; done
+  st=""; for i in $(seq 1 ${JOB_WAIT_ITERS:-100}); do st=$(kubectl get jobs -n $NS "$JOB" --no-headers 2>/dev/null | awk '{print $2}'); [ "$st" = "Complete" ] && break; [ "$st" = "Failed" ] && break; sleep 120; done
   say "$ARM AgentX $v c$C done (job=$st)"
   [ "$st" != "Complete" ] && { say "$([ $first = 1 ] && echo 'AGENTX SMOKE FAIL' || echo 'BENCH VIOLATION') on $v c$C - HALTING"; kubectl logs -n $NS -l job-name=$JOB --tail=30 2>/dev/null | grep -iE "error|scenario|unknown" | tail -8 >> "$LOG"; exit 2; }
   if [ "$POOL" = "np-3" ] || [ "${MNNVL_GUARD:-0}" = "1" ]; then bash "$GUARD" "$ARM" >> "$LOG" 2>&1 || { say "MNNVL TRANSPORT VIOLATION - HALTING"; exit 2; }; say "MNNVL gate PASS"; fi
