@@ -98,7 +98,9 @@ def simulate_v5(traces, n_prefill, n_decode, policy, clients, window=3600.0, war
     P = lambda a, p: a[min(len(a) - 1, int(len(a) * p))]
     return {"n": len(win), "req_per_s": len(win) / dur, "throughput_tok_s": out / dur, "total_tok_s": (inp + out) / dur, "in_tok_per_req": inp / len(win), "out_per_req": out / len(win),
             "sub_share": sum(1 for x in win if x["kind"] == "subagent") / len(win), "ttft_p50_s": P(tt, .5), "ttft_p95_s": P(tt, .95), "tpot_mean_ms": sum(tp) / len(tp) * 1000, "tpot_p90_ms": P(tp, .9) * 1000,
-            "hit_rate": eng.hits / max(1, eng.blocks), "wait_p95_s": P(sorted(x["wait"] for x in win), .95), "svc_p95_s": P(sorted(x["svc"] for x in win), .95), "unc_mean": sum(x["unc"] for x in win) / len(win)}
+            "hit_rate": eng.hits / max(1, eng.blocks), "wait_p95_s": P(sorted(x["wait"] for x in win), .95), "svc_p95_s": P(sorted(x["svc"] for x in win), .95), "unc_mean": sum(x["unc"] for x in win) / len(win),
+            "root_rps": sum(1 for x in win if x["kind"] == "root") / dur, "sub_rps": sum(1 for x in win if x["kind"] == "subagent") / dur,
+            "lat_mean_s": sum(x["done"] - x["start"] for x in win) / len(win), "root_isl": (sum(x["inp"] for x in win if x["kind"] == "root") / max(1, sum(1 for x in win if x["kind"] == "root"))), "sub_isl": (sum(x["inp"] for x in win if x["kind"] == "subagent") / max(1, sum(1 for x in win if x["kind"] == "subagent")))}
 
 if __name__ == "__main__":
     traces = load_stream_trace(sys.argv[1]); cl = [int(c) for c in sys.argv[2].split(",")]

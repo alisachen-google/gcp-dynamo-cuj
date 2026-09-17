@@ -1,0 +1,3 @@
+v5d (recycle at turn 0)            req/s= 4.92 (root 1.44 sub 3.48) tok/req=  88777 (root ISL 130820 sub ISL  70188 OSL  837) tot/GPU=  6062 lat=  7.9s ttft95=1.49 tpot= 9.1
+v5d + ideal engine (lat ~ 0)       req/s= 4.49 (root 1.52 sub 2.97) tok/req=  90703 (root ISL 134257 sub ISL  67046 OSL  897) tot/GPU=  5660 lat=  0.0s ttft95=0.01 tpot= 0.0
+v5d + measured decode/prefill      req/s= 4.98 (root 1.43 sub 3.55) tok/req=  88186 (root ISL 129992 sub ISL  70125 OSL  836) tot/GPU=  6100 lat=  9.3s ttft95=1.20 tpot=10.8

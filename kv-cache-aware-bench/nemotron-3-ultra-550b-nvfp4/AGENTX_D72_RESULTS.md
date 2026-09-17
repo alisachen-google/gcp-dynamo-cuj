@@ -377,6 +377,28 @@ At 768 the engine terms re-enter: with the request rate within 15 % (v5b) and to
 in-flight population than silicon carries (its requests last longer, so more overlap), and its TTFT p95 is 0.45–0.55×
 of silicon because the size-driven tail (long turns that miss, see the record analysis below) is not in the cache model.
 
+**Total tokens per GPU, step by step (192 clients; total = req/s × tokens per request ÷ 72).**
+[`scripts/dynosim_agentx_v5_decomp.py`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/scripts/dynosim_agentx_v5_decomp.py),
+[`sim-results/agentx_v5_decomp.txt`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_v5_decomp.txt):
+
+| | req/s (root · subagent) | tokens/request (root ISL · sub ISL · OSL) | total/GPU | request latency |
+|---|---|---|---|---|
+| silicon | 3.45 (1.69 · 1.76) | 94.5 k (134 k · 59 k · 936) | 4,510 | 9.7 s |
+| published sim (4 k slice) | 2.70 (0.78×) | 71.4 k (0.76×) | 2,679 (0.59×) | — |
+| v5b (recycle at t*) | 2.52 (0.71 · 1.81) = 0.73× | 85.3 k (0.90×) | 2,981 (0.66×) | — |
+| v5d (recycle at turn 0) | 4.92 (1.44 · 3.48) = 1.43× | 88.8 k (131 k · 70 k · 837) = 0.94× | 6,062 (1.34×) | 7.9 s |
+| v5d + **ideal engine** (zero prefill/decode time) | 4.49 (1.52 · 2.97) | 90.7 k | 5,660 | 0.0 s |
+| v5d + measured engine constants (24 k tok/s prefill, 6.9 + 0.44·bs decode) | 4.98 (1.43 · 3.55) | 88.2 k | 6,100 | 9.3 s |
+
+The engine control settles the question: replacing the engine by an infinitely fast one moves total tokens by −7 %
+(6,062 → 5,660) and replacing it by the measured constants by +1 %, so **at 192 clients the engine accounts for under
+10 % of the total-token gap; the rest is dataset replay**, and specifically the request rate. Tokens per request is
+already within 6 % (root ISL 131 k vs 134 k measured; subagent 70 k vs 59 k; OSL 837 vs 936). Within the request rate,
+root turns are issued at 0.85× of silicon and subagent turns at 1.98×: the converter keeps all 23 inner requests of each
+subagent entry where aiperf's chain splitting yields ~5 per conversation, so the sim runs twice the subagent traffic.
+Halving the subagent rate would put v5d at ≈ 3.2 req/s and ≈ 4,000 total/GPU, i.e. within 10 % of silicon on every
+axis at 192. At 768 the engine re-enters through decode (TPOT 35–59 ms vs 21), which is the in-flight feedback item.
+
 **Calibration status.** Published sim → v5: hit 0.76 → 0.94 (silicon 0.94), TTFT p95 4.2 → 1.5 s (1.8), interactivity
 72 → 90 (89), total tokens 0.59× → 1.34× / 0.66× (bracket) at 192, and 0.40× → 1.04–1.21× at 768. The next step is
 the subagent chain-splitting rule in the converter; after it, the remaining disagreement should be the decode
