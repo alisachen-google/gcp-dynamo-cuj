@@ -124,7 +124,7 @@ Selection rules (KNEE_ANALYSIS.md, AgentX section):
 5. **Flag sweep** at the chosen KV cells (prefill-load-scale 3 / credit 0.8, scale 2 / credit 0.8, temperature 0.5),
    because the sim says tuned routing pays only on disagg past the prefill knee.
 
-## 5. Real results and analysis (updated 2026-09-17 21:00 UTC; RUN_INDEX.md is the authoritative job list)
+## 5. Real results and analysis (updated 2026-09-17 23:05 UTC; RUN_INDEX.md is the authoritative job list)
 
 Measured so far (AgentX definition; total = input + output tokens per second per GPU):
 
@@ -139,6 +139,7 @@ Measured so far (AgentX definition; total = input + output tokens per second per
 | disagg 12:6 KV | 480 | 10,434 | 104.8 | 0.50 / 2.0 / 3.52 s | 16.4 / 17.5 ms | 57 | 129.4 | stationary |
 | disagg 12:6 KV | 768 | 15,004 | 143.8 | 0.80 / 4.3 / 7.00 s | 20.9 / 22.5 ms | 45 | 236.7 | stationary at p50; p95 drifting 6.0 → 7.8 s |
 | disagg 8:8 KV (64 GPU) | 192 | 5,142 | 50.7 | 0.38 / 1.4 / 2.40 s | 8.9 / 10.0 ms | 100 | 31.1 | stationary ([artifact](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789672351_alisachen-n3u-mnnvl-88-agentx-kv-c192); hit rate 0.93; guard PASS) |
+| disagg 8:8 KV (64 GPU) | 384 | 9,993 | 100.0 | 0.56 / 2.9 / 4.83 s | 11.7 / 12.9 ms | 78 | 82.4 | stationary ([artifact](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789678827_alisachen-n3u-mnnvl-88-agentx-kv-c384); hit rate 0.91; guard PASS) |
 | agg KV | 48 | 3,334 | 32.3 | 0.42 / 2.5 / 3.83 s | 7.3 / 9.8 ms | 102 | 6.8 | stationary |
 | agg KV | 96 | 6,844 | 75.1 | 0.67 / 3.4 / 5.36 s | 11.9 / 23.5 ms | 43 | 27.5 | stationary |
 | agg KV | 192 | 9,655 | 96.8 | 1.56 / 8.4 / 11.68 s | 23.9 / 50.6 ms | 20 | 74.5 | stationary |

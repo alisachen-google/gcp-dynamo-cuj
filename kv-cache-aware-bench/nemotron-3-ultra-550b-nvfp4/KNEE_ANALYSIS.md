@@ -240,3 +240,4 @@ largest KV cell's KNEE-CHECK is not POST-KNEE; [`scripts/agentx_88_kv_knee_exten
 | policy | clients | total/GPU | TTFT p50 / p95 | ITL p50 / p90 | P90 interactivity | in-flight | hit rate | knee check | guard | sim v5 total/GPU · TTFT p95 | artifact |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | KV | 192 | 5,142 | 0.38 / 2.40 s | 8.9 / 10.0 ms | 100 | 31.1 | 0.926 | AT/PRE-KNEE (stationary, q1 0.36 s → q4 0.39 s) | PASS | 3,329 · 1.07 s | [1789672351](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789672351_alisachen-n3u-mnnvl-88-agentx-kv-c192) |
+| KV | 384 | 9,993 | 0.56 / 4.83 s | 11.7 / 12.9 ms | 78 | 82.4 | 0.906 | AT/PRE-KNEE (stationary, q1 0.64 s → q4 0.55 s) | PASS | 8,379 · 2.93 s | [1789678827](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789678827_alisachen-n3u-mnnvl-88-agentx-kv-c384) |
