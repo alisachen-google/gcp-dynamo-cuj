@@ -1,4 +1,4 @@
-"""DynoSim v0: trace-driven P:D + routing-policy simulator for GB300 24-GPU disagg.
+"""Custom study model v0, not upstream DynoSim: P:D and routing on GB300.
 
 Simulates closed-loop replay of the Weka trace through a disaggregated stack:
   - Router: EXACT worker-scoring formula from dynamo v1.3.1

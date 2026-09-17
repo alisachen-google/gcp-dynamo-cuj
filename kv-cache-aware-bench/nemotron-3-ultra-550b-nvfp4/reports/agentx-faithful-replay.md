@@ -6,8 +6,14 @@ Completed 2026-09-17. Study base commit:
 **The previous simulation did not replay the real AgentX workload faithfully.**
 The initial two selected agg cells ran through aiperf 0.12.0 itself, with simulated
 serving and an accelerated clock. Both completed a full 3,600-second profiling
-window after the actual trajectory warmup. The current DynoSim engine constants
+window after the actual trajectory warmup. The custom Python serving-model constants
 were held fixed; no engine parameters were fitted to these results.
+
+**Engine identity correction:** these results use our local `dynosim_agentx.py::Engine`,
+not NVIDIA's upstream DynoSim. AIPerf 0.12.0 supplies the real workload replay;
+our code supplies approximate serving latency and cache behavior. The scheduling
+limitation below is a local modeling issue, not an established upstream bug.
+See the [source-version audit and executable example](agentx-serving-model-audit.md).
 
 The replay checks pass. This establishes agreement on the audited replay
 inputs and rules, not identical hardware timing or a calibrated GPU model.
@@ -149,7 +155,7 @@ Two additional full-window RR replays change only `--cache-capacity-tokens 28396
 
 All six workers reach the configured block limit, and both runs pass the hardware replay audit. **Correcting full-KV capacity alone does not resolve the gap.** It reduces the C384 cache fraction by only 4.30 percentage points; the corrected simulation still overstates reuse by 32.59 points. This refutes the idea that shrinking the plain LRU pool is sufficient.
 
-The configured SGLang release's [hybrid cache matcher](https://github.com/sgl-project/sglang/blob/0bcd822377da7b5718e674eaf9c870d349424dd1/python/sglang/srt/mem_cache/mamba_radix_cache.py) requires a usable Mamba-state checkpoint as well as an attention-KV prefix. The current simulator counts every matching 64-token prefix as reusable and inserts it at admission. It has no separate Mamba-state capacity, checkpoint eligibility, pinned state, or eviction timing. These are concrete missing mechanisms; their quantitative contribution still needs worker-level measurements. The existing frontend exports do not reveal the actual Mamba-state pool size.
+SGLang 0.5.16's [hybrid cache matcher](https://github.com/sgl-project/sglang/blob/fdebc938f7f4d16fe6b9f55dcd9a767cf0899ea1/python/sglang/srt/mem_cache/mamba_radix_cache.py) requires a usable Mamba-state checkpoint as well as an attention-KV prefix. This is the version pinned by `ai-dynamo[sglang]==1.4.2`; the recipe's initial image tag says 0.5.19, so the installed worker version must still be verified. The current simulator counts every matching 64-token prefix as reusable and inserts it at admission. It has no separate Mamba-state capacity, checkpoint eligibility, pinned state, or eviction timing. These are concrete missing mechanisms; their quantitative contribution still needs worker-level measurements. The existing frontend exports do not reveal the actual Mamba-state pool size.
 
 To resolve the remaining mismatch, retain the verified replay and model the actual hybrid-cache eligibility/eviction events, max-running admission queues, 16,384-token chunk scheduling, and evolving decode batches. For disagg, also measure and model Mooncake transfer and handoff. Use per-worker cache-hit, active-state, queue, and service telemetry to constrain those changes, then validate a held-out AgentX point. A global throughput multiplier would not reproduce the policy or latency behavior.
 

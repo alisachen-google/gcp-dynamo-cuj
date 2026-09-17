@@ -1,6 +1,6 @@
 # Current AgentX simulation performance — AIPerf replay
 
-**Effective 2026-09-17, the actual AIPerf replay replaces handwritten v3/v5 simulation performance for this study.** Use the following audited results for new comparisons, curves and topology decisions.
+**Effective 2026-09-17, actual AIPerf workload replay replaces the handwritten v3/v5 load generator.** The serving engine is still our custom Python approximation, **not NVIDIA's upstream DynoSim**. The audit covers replay semantics; performance and topology rankings remain unvalidated predictions. See the [serving-model identity and scheduling audit](agentx-serving-model-audit.md).
 
 | Scope | Current report | Audited artifacts |
 |---|---|---|

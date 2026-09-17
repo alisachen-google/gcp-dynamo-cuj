@@ -1,6 +1,7 @@
-"""DynoSim's serving engine and historical approximate AgentX load generator.
+"""Local analytical serving model and historical approximate AgentX load generator.
 
-The faithful replay adapter imports only Engine and runs the actual aiperf
+This is custom study code, not NVIDIA's upstream DynoSim. The replay adapter
+imports only Engine and runs the actual aiperf
 loader/scheduler. The custom load generator below is retained for historical
 results; its assumptions do NOT describe the complete current Weka dataset.
 

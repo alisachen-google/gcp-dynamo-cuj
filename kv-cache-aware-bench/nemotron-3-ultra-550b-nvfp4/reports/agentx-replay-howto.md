@@ -1,9 +1,12 @@
-# Run the actual AgentX replay against DynoSim
+# Run actual AgentX replay against the custom Python serving model
 
 The adapter is [`dynosim_aiperf_replay.py`](../../scripts/dynosim_aiperf_replay.py).
 It runs aiperf's CLI, loader, session manager, trajectory sampler, dependency
 barriers, branch lifecycle, and metrics exporter. Its in-process transport uses
-the aggregated or disaggregated DynoSim engine. An accelerated asyncio clock advances
+our custom aggregated or disaggregated Python engine. It does not invoke NVIDIA's
+upstream DynoSim; the `dynosim_*.py` filenames are historical study names. See the
+[engine identity and scheduling audit](agentx-serving-model-audit.md).
+An accelerated asyncio clock advances
 both aiperf and simulated serving; there is no live GPU endpoint.
 
 The two reference cells are **6 × TP4 / 24 GB300 GPUs: RR96 and default KV192**.
@@ -262,7 +265,7 @@ Replay fidelity and serving-model fidelity need separate evidence:
 | Decode scheduling | Max-running-requests 64 per D worker; admission, memory pressure, batching as requests enter/leave | Not implemented: static TPOT based on admitted request count, including requests still in prefill |
 | KV transfer | Mooncake over MNNVL; bootstrap/handoff, bytes, buffers, bandwidth contention, cancellation | Not implemented: zero transfer time |
 | Cache | 64-token pages plus hybrid/Mamba reuse rules, finite capacity, actual insertion/eviction events | Idealized large prefix cache; insert at admission; hybrid checkpoints not modeled |
-| Software | Recipe requests Dynamo 1.4.2, SGLang image `v0.5.19-cu130-runtime`, FlashInfer 0.6.18 | Recipe captured; actual installed package versions and image digest should be checked in future hardware artifacts |
+| Software | Recipe starts from SGLang image `v0.5.19-cu130-runtime`, then installs `ai-dynamo[sglang]==1.4.2`, whose dependency pins SGLang **0.5.16**; FlashInfer 0.6.18 | Image tag alone does not identify the installed SGLang version. Actual package versions and image digest remain to be captured from the worker. |
 | Initialization | Actual completed warmups and cache lifetime across points | Trajectory warmup reproduced; no invented 900 s prewarm; prior persistent GPU cache unknown |
 
 Dynamo's [prefill activation](https://github.com/ai-dynamo/dynamo/blob/2ecbdfdf192c69c02c6d21e931d20d3b4a0bb64a/lib/llm/src/kv_router/prefill_router/activation.rs#L261)
