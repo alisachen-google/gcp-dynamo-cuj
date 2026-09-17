@@ -1,7 +1,7 @@
 #!/bin/bash
 # 64-GPU disagg AgentX programme on np-2 (16 x a4x-maxgpu-4g = 8 prefill + 8 decode TP4 workers, one MNNVL ComputeDomain).
-#   stage 1  concurrency sweep, KV-aware : kv 192 / 384 / 576 / 768 / 960          (first point = smoke)
-#   stage 2  concurrency sweep, RR       : rr 192 / 384 / 96
+#   stage 1  concurrency sweep, KV-aware : kv 192 / 384 / 672 / 768 / 1152  (first = smoke; 672 default-KV SLO cell, 768 tuned SLO cell, 1152 KV throughput knee)
+#   stage 2  concurrency sweep, RR       : rr 192 / 384 / 240 / 96          (192 last RR cell inside TTFT p95 <= 20 s, 240 first outside, 384 RR peak)
 #   stage 3  pick the KV-vs-RR comparison cells from the MEASURED ladders (select_agentx_points.py: same config = RR's peak
 #            cell, same SLO = best cell per policy with TTFT p95 <= 20 s, P90 >= 20, stationary) -> /tmp/agentx_88_points.md
 #   stage 4  KV-router flag sweep at the selected cells (scale 3 / scale 2 credit 0.8, temperature 0.5 at the KV same-SLO
@@ -13,7 +13,7 @@ set -u
 D=$HOME/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts; S=$D/agentx_runner.sh
 M=$HOME/kv-cache-aware-bench/sglang/manifests/n3u-mnnvl-88.yaml; W=n3u-mnnvl-88-prefill,n3u-mnnvl-88-decode
 export GATE_STRICT=1 BENCH_POOL=np-2 MNNVL_GUARD=1 JOB_WAIT_ITERS=160
-KV="192 384 576 768 960"; RR="192 384 96"
+KV="192 384 672 768 1152"; RR="192 384 240 96"
 echo "N3U AGENTX 88 GATE $(date -u '+%F %T')" > /tmp/agentx_88_gate.log
 nohup bash "$S" n3u-mnnvl-88 "$M" "$(for c in $KV; do printf 'kv:%s ' $c; done)" "N3U AGENTX 88 GATE" /tmp/agentx_88_gate.log "N3U AGENTX 88 KV DONE" /tmp/agentx_88.log 16 np-2 n3u-mnnvl-88 "$W" > /tmp/agentx_88.nohup 2>&1 &
 echo "stage 1 (KV ladder) pid=$!"
