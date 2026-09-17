@@ -228,4 +228,15 @@ Real-run ladders derived from this: **KV 192 / 384 / 672 / 768 / 1,152, RR 192 /
 KV 192 / 384 / 672 / 768 / 1,152 → RR 192 / 384 / 240 / 96 → measured point selection
 ([`scripts/select_agentx_points.py`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/select_agentx_points.py): same config = RR's peak cell; same SLO = best stationary cell per policy with TTFT p95 ≤ 20 s and P90 ≥ 20; validated on the agg ladder) → flag sweep at the selected cells (sim's 768 / 384 as fallback), each stage gated on the previous DONE marker, first point a
 smoke, MNNVL transport guard after every cell (`MNNVL_GUARD=1`), aiperf pod co-located on np-2 (`BENCH_POOL=np-2`). The
-KV runner waits until 16 np-2 nodes are free and never deletes anything it did not create. Wall time ≈ 30 h for the 13 cells.
+KV runner waits until 16 np-2 nodes are free and never deletes anything it did not create. Wall time ≈ 30 h for the original 13 cells (the chain was later extended, see the measured-ladder section below).
+
+### 64-GPU 8:8 measured ladder (np-2, started 2026-09-17 19:07 UTC)
+
+Chain as extended on 2026-09-17: KV 192 / 384 / 672 / 768 / 1,152 → KV knee extension (1,536 / 2,048 / 2,560, run only while the
+largest KV cell's KNEE-CHECK is not POST-KNEE; [`scripts/agentx_88_kv_knee_extend.sh`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/agentx_88_kv_knee_extend.sh))
+→ RR 192 / 384 / 240 / 96 → KV 240 / 96 (so every RR cell has a KV cell at the same client count) → point selection → flag sweep
+→ RR 672 / 768 (RR at the KV same-SLO client counts). Same-config pairs: 96, 192, 240, 384, 672, 768 clients.
+
+| policy | clients | total/GPU | TTFT p50 / p95 | ITL p50 / p90 | P90 interactivity | in-flight | hit rate | knee check | guard | sim v5 total/GPU · TTFT p95 | artifact |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| KV | 192 | 5,142 | 0.38 / 2.40 s | 8.9 / 10.0 ms | 100 | 31.1 | 0.926 | AT/PRE-KNEE (stationary, q1 0.36 s → q4 0.39 s) | PASS | 3,329 · 1.07 s | [1789672351](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789672351_alisachen-n3u-mnnvl-88-agentx-kv-c192) |
