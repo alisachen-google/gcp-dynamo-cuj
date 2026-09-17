@@ -1,0 +1,340 @@
+{
+  "metric_basis": "aiperf summary metrics; compare identical statistics and normalization, not Active Total Throughput or differently windowed record-derived estimates",
+  "points": [
+    {
+      "id": "agg6-rr-c96",
+      "replay_checks": {
+        "initial_lanes": 96,
+        "all_initial_lane_snapshots_match": true,
+        "dependency_fingerprint": {
+          "requests": 68266,
+          "gated_turns": 34015,
+          "join_widths": "{1: 26371, 2: 5215, 3: 1416, 4: 473, 5: 151, 6: 80, 7: 62, 8: 91, 9: 72, 10: 51, 11: 20, 12: 9, 13: 2, 14: 2}"
+        },
+        "dependency_fingerprint_matches": true,
+        "real_warmup_requests": 91,
+        "simulation_warmup_requests": 91,
+        "warmup_conversations_and_turns_match": true,
+        "warmup_input_and_output_tokens_match": true,
+        "warmup_token_error_counts": {
+          "(0, 0)": 91
+        },
+        "matched_initial_tree_profile_requests": 1798,
+        "initial_tree_profile_input_token_error_counts": {
+          "0": 1798
+        },
+        "initial_tree_profile_output_token_error_counts": {
+          "0": 1798
+        },
+        "actual_profiling_send_window_s": 3600.0,
+        "max_request_elapsed_s": 1155.7064990860001
+      },
+      "performance": {
+        "total_tokens_s_gpu": {
+          "real": 6137.320473879631,
+          "simulation": 6105.687159400543,
+          "error_pct": -0.5154254957634885
+        },
+        "output_tokens_s_gpu": {
+          "real": 67.11020337655773,
+          "simulation": 66.31249999999999,
+          "error_pct": -1.1886469365646302
+        },
+        "requests_s": {
+          "real": 1.7474110638031493,
+          "simulation": 1.7433242506811988,
+          "error_pct": -0.23387817592591675
+        },
+        "ttft_p95_s": {
+          "real": 12.557413355399982,
+          "simulation": 7.533730160349993,
+          "error_pct": -40.005716566538666
+        },
+        "itl_mean_ms": {
+          "real": 19.466066356730504,
+          "simulation": 20.405392310274944,
+          "error_pct": 4.8254533624337625
+        },
+        "itl_p50_ms": {
+          "real": 12.117948179516686,
+          "simulation": 19.279999999999998,
+          "error_pct": 59.10284244810959
+        },
+        "mean_input_tokens": {
+          "real": 83371.93778262903,
+          "simulation": 83142.87589871835,
+          "error_pct": -0.2747469832210192
+        },
+        "mean_output_tokens": {
+          "real": 921.7321066583502,
+          "simulation": 912.9110659581119,
+          "error_pct": -0.957006991133047
+        },
+        "cached_input_percent": {
+          "real": 69.7303118854385,
+          "simulation": 73.93896382226146,
+          "error_pct": 6.035613240533677
+        }
+      },
+      "profile_request_kinds": {
+        "real": {
+          "weka_subagent": 3588,
+          "weka_main": 2294,
+          "weka_flat": 531
+        },
+        "simulation": {
+          "weka_subagent": 3609,
+          "weka_main": 2262,
+          "weka_flat": 527
+        }
+      },
+      "profile_duration_config_s": 3600.0,
+      "reported_benchmark_duration": {
+        "unit": "sec",
+        "avg": 3646.4260326400004
+      },
+      "simulation_error_summary": [],
+      "simulation_branch_stats": {
+        "children_spawned": 1265,
+        "children_completed": 961,
+        "children_truncated": 16,
+        "children_delayed": 1030,
+        "parents_suspended": 52,
+        "parents_resumed": 48
+      },
+      "simulation_provenance": {
+        "aiperf_version": "0.12.0",
+        "aiperf_source_sha256": {
+          "timing/strategies/agentic_replay.py": "dfed34b23b6636d592d2ed546212454076a177e429ea9a3f9e72cda323217803",
+          "timing/trajectory_source.py": "46b3de73f682903eba71b1827c3b951be457f6375926fbdf14907157c1ff3a3b",
+          "timing/branch_orchestrator.py": "178766d13de718b37623b819d76c895231e49d4c1429a2c328a9ac39adfd59f0",
+          "timing/replay_dependencies.py": "a1a14ba1348b269e458b5dee22ae9acc262d38ac49523285ef00d54587b6c72c",
+          "timing/session_tree.py": "d858e8ba0bc6c2007b1c5d630d67b5d003b8bec2d31a0301eb337ac68c61b25a",
+          "dataset/loader/weka_trace.py": "ffda228c45887376fcfb4efde0dda0570ccd9eaf3db70d7a9b92fc06520a73b7",
+          "dataset/loader/weka_agent_chains.py": "2476c52ec0b371172bed68a91d4983588a1b6d08e6b47d223a1435cc4200384a"
+        },
+        "dataset_snapshot": "8fecd2fc56694469f758f0afbbb6335ad3043740",
+        "arrow_sha256": {
+          "cc-traces-weka-062126-256k-train-00000-of-00002.arrow": "6978cce33448b0c089adbab462899279ba3b82a70a3094eab80d7c0ffa4b4fb0",
+          "cc-traces-weka-062126-256k-train-00001-of-00002.arrow": "a9985755aca0500a6f5f1ca54cf713566d10219ab4e3e12a6d9c2a4eacf8d250"
+        },
+        "tokenizer_sha256": {
+          "tokenizer.json": "623c34567aebb18582765289fbe23d901c62704d6518d71866e0e58db892b5b7",
+          "config.json": "0c939f324c8910f5ebdafbe2a56d7e4e074c50042a3b4f26326bf71a3fe33929",
+          "special_tokens_map.json": "e9435fefd6d838fd9fcbbc44b97a8e3ff322be7f6dfb7e4fd2468586574bb52b",
+          "chat_template.jinja": "82753bef5cedc4932c1ed509b5c9a12be680fd86d1adb65bc3f7398d11c8eebc",
+          "tokenizer_config.json": "10f93eabcb9b1602fbb991d6308e787ce1df28ee9cd7a1c6d1e8c3f338b957bc"
+        },
+        "point": "agg6-rr-c96",
+        "engine": "original",
+        "virtual_clock": true,
+        "benchmark_id": "6f6efc4b908d",
+        "engine_source_sha256": {
+          "dynosim_agentx.py": "d6e5b434ce3535f82f0c997fd0ddb6e86fc907cea3781fbefcf914dd25a9d660",
+          "dynosim_pd.py": "1a4d61de9cf7d7fdb9950f9bccbe7bdc3327f10c26ba830d0ab94f0ce581095e"
+        },
+        "duration_s": 3600,
+        "entries": 393,
+        "adaptations": [
+          "cached Arrow download source",
+          "in-process service manager and message bus",
+          "simulated serving transport",
+          "unified virtual asyncio/time clock",
+          "logical workers report zero host CPU load",
+          "reuse hardware benchmark ID for identical cache-bust markers",
+          "memoize tokenization at explicit special-token boundaries, with full-encoding parity checks"
+        ],
+        "initial_cache": "empty before aiperf's actual trajectory warmup; no completed separate prewarm exists for these hardware artifacts; persistent GPU cache state from earlier jobs is not captured",
+        "request_timeout_seconds": 1200.0
+      },
+      "simulation_stats": {
+        "requests": 6491,
+        "completed": 6489,
+        "tokenization_seconds": 136.71366644930094,
+        "wall_seconds": 338.007106912788,
+        "tokenization_full_parity_checks": 163,
+        "tokenization_cache": {
+          "hits": 215849,
+          "misses": 15705,
+          "maxsize": 8192,
+          "currsize": 8192
+        }
+      }
+    },
+    {
+      "id": "agg6-kv-c192",
+      "replay_checks": {
+        "initial_lanes": 192,
+        "all_initial_lane_snapshots_match": true,
+        "dependency_fingerprint": {
+          "requests": 68266,
+          "gated_turns": 34015,
+          "join_widths": "{1: 26371, 2: 5215, 3: 1416, 4: 473, 5: 151, 6: 80, 7: 62, 8: 91, 9: 72, 10: 51, 11: 20, 12: 9, 13: 2, 14: 2}"
+        },
+        "dependency_fingerprint_matches": true,
+        "real_warmup_requests": 185,
+        "simulation_warmup_requests": 185,
+        "warmup_conversations_and_turns_match": true,
+        "warmup_input_and_output_tokens_match": true,
+        "warmup_token_error_counts": {
+          "(0, 0)": 185
+        },
+        "matched_initial_tree_profile_requests": 3956,
+        "initial_tree_profile_input_token_error_counts": {
+          "0": 3956
+        },
+        "initial_tree_profile_output_token_error_counts": {
+          "0": 3956
+        },
+        "actual_profiling_send_window_s": 3600.0,
+        "max_request_elapsed_s": 1200.0000000000005
+      },
+      "performance": {
+        "total_tokens_s_gpu": {
+          "real": 9654.845403825839,
+          "simulation": 6983.445776566757,
+          "error_pct": -27.669004686501875
+        },
+        "output_tokens_s_gpu": {
+          "real": 96.80592651877136,
+          "simulation": 69.71706403269754,
+          "error_pct": -27.982648852414115
+        },
+        "requests_s": {
+          "real": 2.593730234677929,
+          "simulation": 1.9822888283378743,
+          "error_pct": -23.57382422293346
+        },
+        "ttft_p95_s": {
+          "real": 11.65726274620001,
+          "simulation": 1.7873631505999985,
+          "error_pct": -84.66738556456886
+        },
+        "itl_mean_ms": {
+          "real": 30.605941456514323,
+          "simulation": 51.42321919692397,
+          "error_pct": 68.01711285368349
+        },
+        "itl_p50_ms": {
+          "real": 23.85452343548116,
+          "simulation": 33.12,
+          "error_pct": 38.84159157309925
+        },
+        "mean_input_tokens": {
+          "real": 88441.3283958399,
+          "simulation": 83706.01030927835,
+          "error_pct": -5.3541914989873485
+        },
+        "mean_output_tokens": {
+          "real": 895.7532303813426,
+          "simulation": 844.079587628866,
+          "error_pct": -5.768736410861508
+        },
+        "cached_input_percent": {
+          "real": 74.38365790099185,
+          "simulation": 93.15441061128318,
+          "error_pct": 25.235049256754884
+        }
+      },
+      "profile_request_kinds": {
+        "real": {
+          "weka_main": 3699,
+          "weka_subagent": 5013,
+          "weka_flat": 807
+        },
+        "simulation": {
+          "weka_main": 2596,
+          "weka_subagent": 4041,
+          "weka_flat": 638
+        }
+      },
+      "profile_duration_config_s": 3600.0,
+      "reported_benchmark_duration": {
+        "unit": "sec",
+        "avg": 3659.817053184
+      },
+      "simulation_error_summary": [
+        {
+          "error_details": {
+            "type": "TimeoutError",
+            "message": "TimeoutError()",
+            "cause": "CancelledError()",
+            "cause_chain": [
+              "TimeoutError",
+              "CancelledError"
+            ]
+          },
+          "count": 6
+        }
+      ],
+      "simulation_branch_stats": {
+        "children_spawned": 1981,
+        "children_completed": 1025,
+        "children_errored": 2,
+        "children_truncated": 84,
+        "children_delayed": 775,
+        "parents_suspended": 86,
+        "parents_resumed": 79,
+        "joins_suppressed": 4
+      },
+      "simulation_provenance": {
+        "aiperf_version": "0.12.0",
+        "aiperf_source_sha256": {
+          "timing/strategies/agentic_replay.py": "dfed34b23b6636d592d2ed546212454076a177e429ea9a3f9e72cda323217803",
+          "timing/trajectory_source.py": "46b3de73f682903eba71b1827c3b951be457f6375926fbdf14907157c1ff3a3b",
+          "timing/branch_orchestrator.py": "178766d13de718b37623b819d76c895231e49d4c1429a2c328a9ac39adfd59f0",
+          "timing/replay_dependencies.py": "a1a14ba1348b269e458b5dee22ae9acc262d38ac49523285ef00d54587b6c72c",
+          "timing/session_tree.py": "d858e8ba0bc6c2007b1c5d630d67b5d003b8bec2d31a0301eb337ac68c61b25a",
+          "dataset/loader/weka_trace.py": "ffda228c45887376fcfb4efde0dda0570ccd9eaf3db70d7a9b92fc06520a73b7",
+          "dataset/loader/weka_agent_chains.py": "2476c52ec0b371172bed68a91d4983588a1b6d08e6b47d223a1435cc4200384a"
+        },
+        "dataset_snapshot": "8fecd2fc56694469f758f0afbbb6335ad3043740",
+        "arrow_sha256": {
+          "cc-traces-weka-062126-256k-train-00000-of-00002.arrow": "6978cce33448b0c089adbab462899279ba3b82a70a3094eab80d7c0ffa4b4fb0",
+          "cc-traces-weka-062126-256k-train-00001-of-00002.arrow": "a9985755aca0500a6f5f1ca54cf713566d10219ab4e3e12a6d9c2a4eacf8d250"
+        },
+        "tokenizer_sha256": {
+          "tokenizer.json": "623c34567aebb18582765289fbe23d901c62704d6518d71866e0e58db892b5b7",
+          "config.json": "0c939f324c8910f5ebdafbe2a56d7e4e074c50042a3b4f26326bf71a3fe33929",
+          "special_tokens_map.json": "e9435fefd6d838fd9fcbbc44b97a8e3ff322be7f6dfb7e4fd2468586574bb52b",
+          "chat_template.jinja": "82753bef5cedc4932c1ed509b5c9a12be680fd86d1adb65bc3f7398d11c8eebc",
+          "tokenizer_config.json": "10f93eabcb9b1602fbb991d6308e787ce1df28ee9cd7a1c6d1e8c3f338b957bc"
+        },
+        "point": "agg6-kv-c192",
+        "engine": "original",
+        "virtual_clock": true,
+        "benchmark_id": "eab78ed17c62",
+        "engine_source_sha256": {
+          "dynosim_agentx.py": "d6e5b434ce3535f82f0c997fd0ddb6e86fc907cea3781fbefcf914dd25a9d660",
+          "dynosim_pd.py": "1a4d61de9cf7d7fdb9950f9bccbe7bdc3327f10c26ba830d0ab94f0ce581095e"
+        },
+        "duration_s": 3600,
+        "entries": 393,
+        "adaptations": [
+          "cached Arrow download source",
+          "in-process service manager and message bus",
+          "simulated serving transport",
+          "unified virtual asyncio/time clock",
+          "logical workers report zero host CPU load",
+          "reuse hardware benchmark ID for identical cache-bust markers",
+          "memoize tokenization at explicit special-token boundaries, with full-encoding parity checks"
+        ],
+        "initial_cache": "empty before aiperf's actual trajectory warmup; no completed separate prewarm exists for these hardware artifacts; persistent GPU cache state from earlier jobs is not captured",
+        "request_timeout_seconds": 1200.0
+      },
+      "simulation_stats": {
+        "requests": 7522,
+        "completed": 7460,
+        "tokenization_seconds": 180.91413635388017,
+        "wall_seconds": 552.6404943759553,
+        "tokenization_full_parity_checks": 174,
+        "tokenization_cache": {
+          "hits": 249444,
+          "misses": 23777,
+          "maxsize": 8192,
+          "currsize": 8192
+        }
+      }
+    }
+  ]
+}

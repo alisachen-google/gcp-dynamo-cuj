@@ -33,8 +33,11 @@ def load_sessions(path, limit=4000):
 
 class Engine:
     """disagg P:D or agg engine; serve(hash_ids, out_len, now) -> (ttft_s, tpot_s, done_t)"""
-    def __init__(self, n_prefill, n_decode, policy, agg=False, router=None):
+    def __init__(self, n_prefill, n_decode, policy, agg=False, router=None, decode_policy="least_inflight"):
+        if decode_policy not in ("least_inflight", "round_robin"):
+            raise ValueError(f"Unknown decode policy: {decode_policy}")
         self.agg=agg; self.policy=policy; self.router=router or dp.ROUTER
+        self.decode_policy=decode_policy; self.decode_rr=0
         self.P=[dp.PrefillWorker() for _ in range(n_prefill)]; self.D=[0]*(n_prefill if agg else n_decode)
         self.rr=0; self.hits=0; self.blocks=0
     def serve(self, hid, out_len, now):
@@ -53,6 +56,8 @@ class Engine:
         self.last=(start-now, svc, new)  # (queue wait s, service s, uncached tokens) for the last served request
         P[w].free_at=pf; P[w].queued.append((pf,tb-ov)); P[w].insert(hid)
         if self.agg: d=w
+        elif self.decode_policy == "round_robin":
+            d=self.decode_rr%len(self.D); self.decode_rr+=1
         else: d=min(range(len(self.D)),key=lambda i:self.D[i])
         self.D[d]+=1
         tpot=(dp.agg_tpot_ms(self.D[d]) if self.agg and hasattr(dp,"agg_tpot_ms") else dp.TPOT_BASE_MS+dp.TPOT_SLOPE_MS*self.D[d])/1000.0

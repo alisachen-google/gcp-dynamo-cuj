@@ -1,0 +1,15 @@
+# Python 3.12; also install tests/aiperf_mock_server from the matching source tag.
+aiperf==0.12.0
+transformers==4.57.3
+tokenizers==0.22.2
+datasets==5.0.1
+looptime==0.7
+numpy==2.5.3
+orjson==3.11.9
+xxhash==4.0.1
+psutil==7.0.0
+tiktoken==0.14.0
+blobfile==3.3.0
+protobuf==7.36.1
+pytest==9.1.1
+pytest-asyncio==1.4.0

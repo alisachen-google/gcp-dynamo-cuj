@@ -1,0 +1,560 @@
+{
+  "status": "Measured hardware reference data for the actual-aiperf replay calibration",
+  "inspected_repo_commit": "96a019d8922002de91f4f9acc68005c7aac4ea21",
+  "aiperf_source_commit": "be53bf2953d30e46c500e6a80fc1f8b6f84bc718",
+  "aiperf_source_tag": "v0.12.0",
+  "metric_basis": "aiperf summary metrics; compare identical statistics and normalization, not Active Total Throughput or differently windowed record-derived estimates",
+  "points": [
+    {
+      "id": "agg6-rr-c96",
+      "role": "engine calibration",
+      "arm": "agg6",
+      "gpus": 24,
+      "workers": 6,
+      "tp": 4,
+      "policy": "rr",
+      "clients": 96,
+      "source": "gs://alisachen-models/perf/1789555623_alisachen-n3u-agg-ns2-agentx-rr-c96/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c96_20260916_104719/profile_export_aiperf.json",
+      "aiperf_version": "0.12.0",
+      "input_config": {
+        "models": {
+          "items": [
+            {
+              "name": "alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4"
+            }
+          ]
+        },
+        "endpoint": {
+          "urls": [
+            "http://n3u-agg-ns2-frontend:8000"
+          ],
+          "type": "chat",
+          "timeout": 1200.0,
+          "streaming": true,
+          "use_server_token_count": true,
+          "extra": {
+            "ignore_eos": true
+          }
+        },
+        "datasets": [
+          {
+            "name": "main",
+            "type": "public",
+            "dataset": "semianalysis_cc_traces_weka_062126_256k",
+            "entries": 393,
+            "random_seed": 42,
+            "max_context_length": 262144,
+            "cache_bust": {
+              "target": "first_turn_prefix"
+            }
+          }
+        ],
+        "phases": [
+          {
+            "name": "profiling",
+            "kind": "profiling",
+            "type": "concurrency",
+            "duration": 3600.0,
+            "concurrency": 96,
+            "grace_period": 60.0,
+            "timing_mode": "agentic_replay",
+            "trajectory_start_min_ratio": 0.25,
+            "trajectory_start_max_ratio": 0.75,
+            "system_idle_gap_cap_seconds": 10.0
+          }
+        ],
+        "artifacts": {
+          "dir": "/model-cache/perf/1789555623_alisachen-n3u-agg-ns2-agentx-rr-c96/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c96_20260916_104719",
+          "records": [
+            "jsonl"
+          ],
+          "raw": true,
+          "slice_duration": 1.0,
+          "auto_plot": false,
+          "plot_required": false
+        },
+        "slos": {
+          "time_to_first_token": 5000.0,
+          "inter_token_latency": 10.0
+        },
+        "tokenizer": {
+          "name": "alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4",
+          "trust_remote_code": true
+        },
+        "gpu_telemetry": {
+          "enabled": true
+        },
+        "server_metrics": {
+          "enabled": true,
+          "urls": [],
+          "formats": [
+            "json",
+            "csv"
+          ]
+        },
+        "network_latency": {
+          "enabled": false
+        },
+        "otel": {},
+        "mlflow": {},
+        "wandb": {},
+        "runtime": {
+          "ui": "simple",
+          "workers": 200,
+          "record_processors": 8
+        },
+        "scenario": "inferencex-agentx-mvp"
+      },
+      "summary_metrics": {
+        "request_count": {
+          "unit": "requests",
+          "avg": 6413.0
+        },
+        "request_throughput": {
+          "unit": "requests/sec",
+          "avg": 1.7474110638031493
+        },
+        "total_token_throughput": {
+          "unit": "tokens/sec",
+          "avg": 147295.69137311116
+        },
+        "output_token_throughput": {
+          "unit": "tokens/sec",
+          "avg": 1610.6448810373856
+        },
+        "input_sequence_length": {
+          "unit": "tokens",
+          "avg": 83371.93778262903,
+          "p1": 670.0,
+          "p5": 2974.0,
+          "p10": 8731.0,
+          "p25": 34469.0,
+          "p50": 68825.0,
+          "p75": 119685.0,
+          "p90": 179679.6,
+          "p95": 213844.2,
+          "p99": 244714.52000000002,
+          "min": 158.0,
+          "max": 256424.0,
+          "std": 62573.590765782246,
+          "count": 6413,
+          "sum": 534664237.0
+        },
+        "output_sequence_length": {
+          "unit": "tokens",
+          "avg": 921.7321066583502,
+          "p1": 14.0,
+          "p5": 84.0,
+          "p10": 116.0,
+          "p25": 191.0,
+          "p50": 411.0,
+          "p75": 981.0,
+          "p90": 1988.2000000000007,
+          "p95": 3337.599999999995,
+          "p99": 7457.3200000000015,
+          "min": 2.0,
+          "max": 59903.0,
+          "std": 1934.2364673539423,
+          "count": 6413,
+          "sum": 5911068.0
+        },
+        "time_to_first_token": {
+          "unit": "ms",
+          "avg": 2839.694754737408,
+          "p1": 161.41332484,
+          "p5": 189.4851448,
+          "p10": 217.21850719999998,
+          "p25": 323.813898,
+          "p50": 811.374185,
+          "p75": 3158.320085,
+          "p90": 8796.548473800001,
+          "p95": 12557.413355399982,
+          "p99": 19769.79390268001,
+          "min": 133.612204,
+          "max": 43800.375366,
+          "std": 4497.5823428037265,
+          "count": 6413,
+          "sum": 18210962.462130997
+        },
+        "inter_token_latency": {
+          "unit": "ms",
+          "avg": 19.466066356730504,
+          "p1": 6.601532244402624,
+          "p5": 7.5031332041208785,
+          "p10": 8.38138730696629,
+          "p25": 9.881126234890699,
+          "p50": 12.117948179516686,
+          "p75": 17.632459276030747,
+          "p90": 29.591078272281962,
+          "p95": 48.436459107154285,
+          "p99": 136.95769823975098,
+          "min": 2.7851559999999997,
+          "max": 1307.2017306363637,
+          "std": 38.81892605213985,
+          "count": 6413,
+          "sum": 124835.88354571273
+        },
+        "output_token_throughput_per_user": {
+          "unit": "tokens/sec/user",
+          "avg": 79.60456758785215,
+          "p1": 7.301549209124095,
+          "p5": 20.645736025300167,
+          "p10": 33.793988967873176,
+          "p25": 56.7135862527913,
+          "p50": 82.52222118677885,
+          "p75": 101.20303862417578,
+          "p90": 119.3119921072145,
+          "p95": 133.27765855457358,
+          "p99": 151.47998419273623,
+          "min": 0.7649928672548392,
+          "max": 359.0463155385192,
+          "std": 32.88432580237472,
+          "count": 6413,
+          "sum": 510504.09194089577
+        },
+        "request_latency": {
+          "unit": "ms",
+          "avg": 18864.226502971618,
+          "p1": 374.11747463999995,
+          "p5": 1350.4234842000003,
+          "p10": 1823.0824757999999,
+          "p25": 3513.6511739999996,
+          "p50": 8697.142791999999,
+          "p75": 21241.908005999998,
+          "p90": 45506.2325642,
+          "p95": 68932.37231379999,
+          "p99": 138239.84672728,
+          "min": 224.644017,
+          "max": 1090447.4655519999,
+          "std": 35028.970418904864,
+          "count": 6413,
+          "sum": 120976284.563557
+        },
+        "error_request_count": null,
+        "benchmark_duration": {
+          "unit": "sec",
+          "avg": 3648.4378373120003
+        }
+      },
+      "derived": {
+        "total_tok_s_per_gpu": 6137.320473879631,
+        "output_tok_s_per_gpu": 67.11020337655773,
+        "p90_interactivity_tok_s_user": 33.793988967873176
+      },
+      "reported_frontend_prefix_hit_rate": 0.697,
+      "prefix_hit_source": "sim-results/agentx_server_metrics.txt",
+      "branch_stats": {
+        "children_spawned": 1261,
+        "children_completed": 968,
+        "children_errored": 0,
+        "children_truncated": 12,
+        "children_delayed": 1026,
+        "parents_suspended": 53,
+        "parents_resumed": 49,
+        "parents_failed_due_to_child_error": 0,
+        "joins_suppressed": 0
+      },
+      "trajectory_warmup_output_tokens": {
+        "unit": "tokens",
+        "avg": 1.0,
+        "p1": 1.0,
+        "p5": 1.0,
+        "p10": 1.0,
+        "p25": 1.0,
+        "p50": 1.0,
+        "p75": 1.0,
+        "p90": 1.0,
+        "p95": 1.0,
+        "p99": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "std": 0.0,
+        "count": 91,
+        "sum": 91.0
+      },
+      "benchmark_id": "6f6efc4b908d"
+    },
+    {
+      "id": "agg6-kv-c192",
+      "role": "KV routing validation and calibration",
+      "arm": "agg6",
+      "gpus": 24,
+      "workers": 6,
+      "tp": 4,
+      "policy": "kv",
+      "clients": 192,
+      "source": "gs://alisachen-models/perf/1789555981_alisachen-n3u-agg-ns-agentx-kv-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260916_105318/profile_export_aiperf.json",
+      "aiperf_version": "0.12.0",
+      "input_config": {
+        "models": {
+          "items": [
+            {
+              "name": "alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4"
+            }
+          ]
+        },
+        "endpoint": {
+          "urls": [
+            "http://n3u-agg-ns-frontend:8000"
+          ],
+          "type": "chat",
+          "timeout": 1200.0,
+          "streaming": true,
+          "use_server_token_count": true,
+          "extra": {
+            "ignore_eos": true
+          }
+        },
+        "datasets": [
+          {
+            "name": "main",
+            "type": "public",
+            "dataset": "semianalysis_cc_traces_weka_062126_256k",
+            "entries": 393,
+            "random_seed": 42,
+            "max_context_length": 262144,
+            "cache_bust": {
+              "target": "first_turn_prefix"
+            }
+          }
+        ],
+        "phases": [
+          {
+            "name": "profiling",
+            "kind": "profiling",
+            "type": "concurrency",
+            "duration": 3600.0,
+            "concurrency": 192,
+            "grace_period": 60.0,
+            "timing_mode": "agentic_replay",
+            "trajectory_start_min_ratio": 0.25,
+            "trajectory_start_max_ratio": 0.75,
+            "system_idle_gap_cap_seconds": 10.0
+          }
+        ],
+        "artifacts": {
+          "dir": "/model-cache/perf/1789555981_alisachen-n3u-agg-ns-agentx-kv-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260916_105318",
+          "records": [
+            "jsonl"
+          ],
+          "raw": true,
+          "slice_duration": 1.0,
+          "auto_plot": false,
+          "plot_required": false
+        },
+        "slos": {
+          "time_to_first_token": 5000.0,
+          "inter_token_latency": 10.0
+        },
+        "tokenizer": {
+          "name": "alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4",
+          "trust_remote_code": true
+        },
+        "gpu_telemetry": {
+          "enabled": true
+        },
+        "server_metrics": {
+          "enabled": true,
+          "urls": [],
+          "formats": [
+            "json",
+            "csv"
+          ]
+        },
+        "network_latency": {
+          "enabled": false
+        },
+        "otel": {},
+        "mlflow": {},
+        "wandb": {},
+        "runtime": {
+          "ui": "simple",
+          "workers": 200,
+          "record_processors": 8
+        },
+        "scenario": "inferencex-agentx-mvp"
+      },
+      "summary_metrics": {
+        "request_count": {
+          "unit": "requests",
+          "avg": 9519.0
+        },
+        "request_throughput": {
+          "unit": "requests/sec",
+          "avg": 2.593730234677929
+        },
+        "total_token_throughput": {
+          "unit": "tokens/sec",
+          "avg": 231716.28969182013
+        },
+        "output_token_throughput": {
+          "unit": "tokens/sec",
+          "avg": 2323.3422364505127
+        },
+        "input_sequence_length": {
+          "unit": "tokens",
+          "avg": 88441.3283958399,
+          "p1": 480.0,
+          "p5": 2975.0,
+          "p10": 18073.2,
+          "p25": 40026.5,
+          "p50": 73637.0,
+          "p75": 129557.0,
+          "p90": 181906.0,
+          "p95": 216290.60000000003,
+          "p99": 247331.51999999996,
+          "min": 157.0,
+          "max": 255612.0,
+          "std": 62612.0816520583,
+          "count": 9519,
+          "sum": 841873005.0
+        },
+        "output_sequence_length": {
+          "unit": "tokens",
+          "avg": 895.7532303813426,
+          "p1": 14.0,
+          "p5": 83.0,
+          "p10": 109.0,
+          "p25": 181.0,
+          "p50": 388.0,
+          "p75": 889.0,
+          "p90": 2001.6000000000022,
+          "p95": 3466.300000000001,
+          "p99": 8136.87999999999,
+          "min": 1.0,
+          "max": 27988.0,
+          "std": 1648.123906415416,
+          "count": 9519,
+          "sum": 8526675.0
+        },
+        "time_to_first_token": {
+          "unit": "ms",
+          "avg": 3139.281094366845,
+          "p1": 185.3691498,
+          "p5": 237.813332,
+          "p10": 302.486804,
+          "p25": 568.7131325,
+          "p50": 1556.367024,
+          "p75": 4201.745336,
+          "p90": 8357.824432800002,
+          "p95": 11657.26274620001,
+          "p99": 17407.164796079993,
+          "min": 137.98973999999998,
+          "max": 32510.190681,
+          "std": 3836.232224181877,
+          "count": 9519,
+          "sum": 29882816.737278
+        },
+        "inter_token_latency": {
+          "unit": "ms",
+          "avg": 30.605941456514323,
+          "p1": 10.828473676764004,
+          "p5": 12.371750776319747,
+          "p10": 13.142500090976535,
+          "p25": 16.630225226333113,
+          "p50": 23.85452343548116,
+          "p75": 34.30104613010399,
+          "p90": 50.598490402769634,
+          "p95": 65.54397882983558,
+          "p99": 130.33454748169444,
+          "min": 6.114716,
+          "max": 1458.4261999999999,
+          "std": 36.239425585905515,
+          "count": 9516,
+          "sum": 291246.1389001903
+        },
+        "output_token_throughput_per_user": {
+          "unit": "tokens/sec/user",
+          "avg": 45.101484890555604,
+          "p1": 7.672568430523462,
+          "p5": 15.256932486386244,
+          "p10": 19.76343626681635,
+          "p25": 29.1536298236268,
+          "p50": 41.920770446182374,
+          "p75": 60.131477089487504,
+          "p90": 76.08902497624553,
+          "p95": 80.82930364428539,
+          "p99": 92.34912169529085,
+          "min": 0.6856706222090634,
+          "max": 163.53989294024447,
+          "std": 20.872646327159103,
+          "count": 9516,
+          "sum": 429185.73021852714
+        },
+        "request_latency": {
+          "unit": "ms",
+          "avg": 28082.697202653533,
+          "p1": 794.28771956,
+          "p5": 2281.2261009,
+          "p10": 3348.0926489999997,
+          "p25": 6641.8769105,
+          "p50": 14405.711175999999,
+          "p75": 29425.291863,
+          "p90": 61728.4772558,
+          "p95": 102100.485102,
+          "p99": 223972.72650479988,
+          "min": 242.89459599999998,
+          "max": 836335.282794,
+          "std": 46845.687042708145,
+          "count": 9519,
+          "sum": 267319194.672059
+        },
+        "error_request_count": {
+          "unit": "requests",
+          "avg": 3.0
+        },
+        "benchmark_duration": {
+          "unit": "sec",
+          "avg": 3637.6356300800003
+        }
+      },
+      "derived": {
+        "total_tok_s_per_gpu": 9654.845403825839,
+        "output_tok_s_per_gpu": 96.80592651877136,
+        "p90_interactivity_tok_s_user": 19.76343626681635
+      },
+      "reported_frontend_prefix_hit_rate": 0.743,
+      "prefix_hit_source": "sim-results/agentx_server_metrics.txt",
+      "branch_stats": {
+        "children_spawned": 2298,
+        "children_completed": 1227,
+        "children_errored": 3,
+        "children_truncated": 40,
+        "children_delayed": 1065,
+        "parents_suspended": 130,
+        "parents_resumed": 122,
+        "parents_failed_due_to_child_error": 0,
+        "joins_suppressed": 4
+      },
+      "trajectory_warmup_output_tokens": {
+        "unit": "tokens",
+        "avg": 1.0,
+        "p1": 1.0,
+        "p5": 1.0,
+        "p10": 1.0,
+        "p25": 1.0,
+        "p50": 1.0,
+        "p75": 1.0,
+        "p90": 1.0,
+        "p95": 1.0,
+        "p99": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "std": 0.0,
+        "count": 185,
+        "sum": 185.0
+      },
+      "benchmark_id": "eab78ed17c62"
+    }
+  ],
+  "prewarm_audit": {
+    "status": "The separate 900-second prewarm did not complete for either selected hardware point.",
+    "evidence": [
+      "Only empty cache-warmup directory marker objects exist in both GCS artifact roots.",
+      "The profiling artifact timestamp is only 16 seconds (RR96) / 17 seconds (KV192) after the job epoch.",
+      "agentx_runner.sh derives the job from sgl-d72-agentx.yaml, whose prewarm repeats --no-fixed-schedule and --ignore-trace-delays.",
+      "Reproducing that prewarm command with aiperf 0.12.0 fails immediately: Parameter --no-fixed-schedule specified multiple times."
+    ],
+    "scope": "The actual one-token AgentX trajectory warmup did run and is included in the simulation; persistent server cache from earlier benchmark jobs is not reconstructed."
+  }
+}

@@ -1,0 +1,158 @@
+{
+  "agg6-rr-c96": {
+    "warmup": [
+      {
+        "worker": 0,
+        "completed_requests": 16,
+        "mean_itl_ms": 10.954375,
+        "cached_input_percent": 0.0
+      },
+      {
+        "worker": 1,
+        "completed_requests": 15,
+        "mean_itl_ms": 10.745333333333335,
+        "cached_input_percent": 0.0
+      },
+      {
+        "worker": 2,
+        "completed_requests": 15,
+        "mean_itl_ms": 10.976,
+        "cached_input_percent": 0.0
+      },
+      {
+        "worker": 3,
+        "completed_requests": 15,
+        "mean_itl_ms": 10.860666666666667,
+        "cached_input_percent": 0.0
+      },
+      {
+        "worker": 4,
+        "completed_requests": 15,
+        "mean_itl_ms": 10.63,
+        "cached_input_percent": 0.0
+      },
+      {
+        "worker": 5,
+        "completed_requests": 15,
+        "mean_itl_ms": 10.976,
+        "cached_input_percent": 0.0
+      }
+    ],
+    "profiling": [
+      {
+        "worker": 0,
+        "completed_requests": 1064,
+        "mean_itl_ms": 20.77749060150376,
+        "cached_input_percent": 74.00384733609019
+      },
+      {
+        "worker": 1,
+        "completed_requests": 1067,
+        "mean_itl_ms": 19.774517338331773,
+        "cached_input_percent": 74.07543243388962
+      },
+      {
+        "worker": 2,
+        "completed_requests": 1067,
+        "mean_itl_ms": 19.80208059981256,
+        "cached_input_percent": 73.391983023767
+      },
+      {
+        "worker": 3,
+        "completed_requests": 1067,
+        "mean_itl_ms": 20.136082474226804,
+        "cached_input_percent": 73.22845983672704
+      },
+      {
+        "worker": 4,
+        "completed_requests": 1067,
+        "mean_itl_ms": 19.935032802249296,
+        "cached_input_percent": 74.27299218391951
+      },
+      {
+        "worker": 5,
+        "completed_requests": 1066,
+        "mean_itl_ms": 22.00969981238274,
+        "cached_input_percent": 74.60518094273698
+      }
+    ]
+  },
+  "agg6-kv-c192": {
+    "warmup": [
+      {
+        "worker": 0,
+        "completed_requests": 110,
+        "mean_itl_ms": 10.771545454545455,
+        "cached_input_percent": 0.0
+      },
+      {
+        "worker": 1,
+        "completed_requests": 23,
+        "mean_itl_ms": 11.758260869565218,
+        "cached_input_percent": 0.0
+      },
+      {
+        "worker": 2,
+        "completed_requests": 16,
+        "mean_itl_ms": 12.035625,
+        "cached_input_percent": 0.0
+      },
+      {
+        "worker": 3,
+        "completed_requests": 16,
+        "mean_itl_ms": 12.7925,
+        "cached_input_percent": 4.708384453258591
+      },
+      {
+        "worker": 4,
+        "completed_requests": 12,
+        "mean_itl_ms": 13.801666666666668,
+        "cached_input_percent": 0.0
+      },
+      {
+        "worker": 5,
+        "completed_requests": 8,
+        "mean_itl_ms": 12.7925,
+        "cached_input_percent": 0.0
+      }
+    ],
+    "profiling": [
+      {
+        "worker": 0,
+        "completed_requests": 2101,
+        "mean_itl_ms": 109.15271775345074,
+        "cached_input_percent": 91.07846611114736
+      },
+      {
+        "worker": 1,
+        "completed_requests": 1844,
+        "mean_itl_ms": 39.04646963123644,
+        "cached_input_percent": 92.13614207145892
+      },
+      {
+        "worker": 2,
+        "completed_requests": 1436,
+        "mean_itl_ms": 26.35059192200557,
+        "cached_input_percent": 94.77024622239324
+      },
+      {
+        "worker": 3,
+        "completed_requests": 744,
+        "mean_itl_ms": 18.89168010752688,
+        "cached_input_percent": 93.05260438271405
+      },
+      {
+        "worker": 4,
+        "completed_requests": 490,
+        "mean_itl_ms": 15.16330612244898,
+        "cached_input_percent": 94.79224257379785
+      },
+      {
+        "worker": 5,
+        "completed_requests": 660,
+        "mean_itl_ms": 20.394015151515152,
+        "cached_input_percent": 97.12153357841615
+      }
+    ]
+  }
+}
