@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
-"""AgentX simulator v5: trajectory-TREE replay on the stream-level trace (agentx_stream_trace.py output), following
-aiperf agentic_replay (inferencex-agentx-mvp as launched by manifests/perf/sgl-d72-agentx.yaml):
-  * lane = one trace sampled uniformly; t* = U(start_min, start_max) x trace duration  (job flags: 0.25-0.75)
-  * every stream (root + each subagent chain) whose turns extend past t* is live: turns before t* are history; the
-    last one before t* is PRIMED into the router-chosen worker's cache (warm-up); the first turn at/after t* fires at
-    its recorded offset from t*; later turns fire at previous completion + recorded end-to-start delay
-  * subagent streams spawned after t* start at spawn offset; when the root finishes and all children drained, the lane
-    recycles a fresh trace at turn 0 (cold, salted = cache-bust)
-  * output length = trace 'out' scaled by OSL_SCALE (engine-counted 0.81x of the trace field, from the records)
-  * whole-system idle cap 10 s; window opens warm_s after the first profiled request
-Engine unchanged: dynosim_agentx.Engine with dynosim_pd constants."""
+"""Historical handwritten AgentX v5 workload model; not the current AIPerf replay.
+
+Retained for old stream-trace experiments. By default recycle_at_zero=False
+samples a fresh trajectory boundary on every recycle; warm_s defaults to 900.
+The optional turn-zero variant still reimplements trajectory and branch logic.
+Use dynosim_aiperf_replay.py for current performance and audited workload rules.
+Engine: dynosim_agentx.Engine with dynosim_pd constants.
+"""
 import sys, json, random, heapq, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import dynosim_agentx as da

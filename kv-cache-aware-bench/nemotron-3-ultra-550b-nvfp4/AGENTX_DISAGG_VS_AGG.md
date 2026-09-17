@@ -1,5 +1,7 @@
 # Nemotron-3-Ultra 550B — disaggregated vs aggregated under the AgentX concurrency definition (simulation, with measured anchors)
 
+Simulation status, 2026-09-17: v3/v5 curves and simulated comparisons in this document are historical and superseded by the [actual AIPerf replay results](reports/agentx-aiperf-results.md). Use that index for current performance and topology decisions. Measured hardware points retain their original provenance.
+
 Companion to [AGENTX_D72_RESULTS.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/AGENTX_D72_RESULTS.md) and [AGENTX_AGG_RESULTS.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/AGENTX_AGG_RESULTS.md).
 Page: [agg vs disagg curve](https://htmlpreview.github.io/?https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/reports/n3u-agentx-agg-vs-disagg.html)
 (three panels: throughput per GPU, TTFT, P90 interactivity; x = clients or clients per GPU; disagg split selector; KV / tuned KV / RR).

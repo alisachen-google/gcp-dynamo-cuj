@@ -4,7 +4,7 @@ Second model of the KV-cache-aware routing study: agg + disagg KV-vs-RR on
 GB300 NVL72, sglang backend, replaying `semianalysisai/cc-traces-weka-062126-256k`
 (same dataset as the Kimi-K2.5 study for cross-model comparability).
 
-Current AgentX work (2026-09-17): [64-GPU KV/RR topology curves](reports/agentx-64gpu-topology.md), [replay audit and simulation-vs-hardware gaps](reports/agentx-faithful-replay.md), and [reproduction commands](reports/agentx-replay-howto.md).
+Current AgentX simulation performance (2026-09-17) uses the **new AIPerf replay** for agg and disagg; v3/v5 results are historical. Start with the [current result index](reports/agentx-aiperf-results.md): [64-GPU KV/RR topology curves](reports/agentx-64gpu-topology.md), [replay audit and simulation-vs-hardware gaps](reports/agentx-faithful-replay.md), and [reproduction commands](reports/agentx-replay-howto.md).
 
 Why this model is the interesting second datapoint: hybrid Mamba-2/LatentMoE
 with only 12/108 attention layers — 6 KB/token KV (6x smaller than Kimi),
@@ -18,7 +18,7 @@ abundant (pure placement value) — see `DESIGN.md` for the full walkthrough.
 |---|---|
 | `DESIGN.md` | experiment design walkthrough (stage-0 gates, AIC/DynoSim plan, silicon plan) |
 | `stage-weights-job.yaml` | weight staging job (ungated nvidia NVFP4 checkpoint, 352 GB) |
-| `sim-results/` | AIC SILICON solves + DynoSim sweep CSVs (`dynosim_n3u_*.csv`) |
+| `sim-results/` | Current audited AIPerf replay archives and targets; historical AIC/DynoSim CSVs |
 | `manifests/` | serving arms + bench jobs (generated; GPUDirect bypass baked in) |
 | `scripts/` | arm generation, sweep sequencers, verification |
 | `results/silicon/` | per-point measured summaries (KV/RR per conc) |

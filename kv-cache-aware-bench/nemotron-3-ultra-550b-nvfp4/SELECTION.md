@@ -1,5 +1,7 @@
 # N3U — Sim-Selected Operating Points (agg first; disagg72 pending sweep)
 
+Historical busy-stream v1 selection. For current AgentX simulation performance and 64-GPU topology selection, use the [AIPerf results](reports/agentx-aiperf-results.md). The old cache and topology conclusions below are not current AgentX findings.
+
 Selection per methodology revision 3: boundedness by queue-drain stationarity
 (cross-conc latency slope on sim data; latency reported, never gated). Source:
 `sim-results/dynosim_n3u_agg_v1.csv` (n3u-sim v1 constants, AIC 0.11.0 NVFP4 fit).

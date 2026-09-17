@@ -1,5 +1,7 @@
 # SemiAnalysis InferenceX AgentX (DeepSeek-V4 on GB300) vs our N3U KV study — concurrency, knee, interactivity
 
+Simulation status, 2026-09-17: v3/v5 curves and simulated comparisons in this document are historical and superseded by the [actual AIPerf replay results](reports/agentx-aiperf-results.md). Use that index for current performance and topology decisions. Measured hardware points retain their original provenance.
+
 Source run: https://github.com/SemiAnalysisAI/InferenceX/actions/runs/33933793466
 ("Run Sweep — [NV] Refresh GB300 DeepSeek-V4-Pro AgentX with SGLang DSpark6", PR #2623,
 merged 2026-09-10, 11 h 50 min). Recipe: `benchmarks/multi_node/srt-slurm-recipes/sglang/deepseek-v4/agentic/agg-gb300-tp4-mtp-lowlatency.yaml` (+ `tp8`). Methodology: inferencex.semianalysis.com/agentx, /about.

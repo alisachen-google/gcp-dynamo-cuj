@@ -142,4 +142,5 @@ The sim under-predicts absolute totals ~1.6–2× (trace representation; AGENTX_
 so the ratios above are the claim, not the absolute levels. Busy-stream (always-busy streams) results for the same
 arms are in D72_RESULTS.md §2 (disagg 9:9 beats agg 1.17× on total, 1.36× on output at their bounded peaks).
 '''
+doc = doc.replace("\n\n", "\n\n" + 'Simulation status, 2026-09-17: these v3 curves are historical and superseded by the [actual AIPerf replay results](reports/agentx-aiperf-results.md). Use that index for current performance and topology decisions.\n\n', 1)
 (R/"AGENTX_DISAGG_VS_AGG.md").write_text(doc); print("report written; normalised cells complete:",avail)

@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
-"""Sweep the v5 stream-level AgentX replay over P:D splits x policies x client counts for a given GPU budget.
-Engine constants = silicon-measured disagg values (prefill 24k tok/s per TP4 worker, decode 6.9 + 0.44*batch ms),
-replay rule = v5b (lane recycles at a fresh trajectory snapshot), which matched 12:6 silicon within 4 % on total tokens
-at 768 clients.  Appends one CSV row per cell.
-usage: dynosim_agentx_v5_sweep.py <stream_trace.jsonl> <out.csv> <splits e.g. 12:4,10:6> <policies kv,rr,kv-tuned> <clients 192,576>"""
+"""Historical v5 sweep; superseded by sweep_aiperf_replay.py for AgentX performance.
+
+This handwritten scheduler recycles at sampled trajectory boundaries, uses a
+900-second simulated prewarm, and does not implement actual AIPerf branch/join
+semantics. Its rates, cache capacity and decode routing also differ from the
+current AIPerf experiments. Retained only to reproduce historical CSVs.
+
+Current workflow: nemotron-3-ultra-550b-nvfp4/reports/agentx-replay-howto.md
+usage: dynosim_agentx_v5_sweep.py <stream_trace.jsonl> <out.csv> <splits e.g. 12:4,10:6> <policies kv,rr,kv-tuned> <clients 192,576>
+"""
 import sys, csv, os, pathlib, time
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import dynosim_agentx_v5 as v5, dynosim_agentx as da
 dp = da.dp
+print("HISTORICAL v5 workload model: use sweep_aiperf_replay.py for current AgentX performance.", file=sys.stderr)
 trace, out, splits, pols, clients = sys.argv[1], sys.argv[2], sys.argv[3].split(","), sys.argv[4].split(","), [int(c) for c in sys.argv[5].split(",")]
 traces = v5.load_stream_trace(trace)
 ROUTERS = {"kv": None, "rr": None, "kv-tuned": {"prefill_load_scale": 3.0, "overlap_credit": 0.8}}
