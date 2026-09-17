@@ -71,16 +71,54 @@ For each policy, select the **highest-throughput measured cell that passes the s
 
 Default KV 384 fails the threshold; RR 192 and 384 fail it. Therefore **default KV192 versus RR96 gives 1.57×**, or **57.3% more total throughput/GPU**, under this SLO. No interpolation supplies an unmeasured passing point. The RR latency-budget crossing lies somewhere between 96 and 192; the KV crossing lies between 192 and 384.
 
-The tuned-KV row is a separate measured variant, using prefill-load scale 3, overlap credit 0.8 and temperature 0. It gives **1.79× RR throughput** under the same SLO, but has only been measured at 96 and 192 clients; its knee is unestablished. Other collected tuning points are:
+The tuned-KV row is a separate measured variant, using prefill-load scale 3, overlap credit 0.8 and temperature 0. It gives **1.79× RR throughput** under the same SLO, but has only been measured at 96 and 192 clients; its knee is unestablished. The flag sweep below provides the measurements behind this row.
 
-| KV variant | Clients | Total tok/s/GPU | TTFT p95 (s) |
-| --- | --- | --- | --- |
-| kvs3c08 | 96 | 7,045 | 3.11 |
-| kvs2c08 | 192 | 10,241 | 8.11 |
-| kvs3c08 | 192 | 11,012 | 6.33 |
-| kvt05 | 192 | 7,816 | 22.15 |
+### 2.3 Real KV-router flag sweep
 
-Tuning details and artifact links are in [hardware report section v](../AGENTX_AGG_RESULTS.md#v-kv-router-flag-sweep-at-the-192-client-comparison-point-measured). These variants are not silently substituted into the default-KV curve.
+**Yes: four additional real AgentX jobs were collected**—three KV variants at **192 clients**, plus the best measured variant at **96 clients**. The default-KV and RR comparisons reuse the baseline jobs above. All use the same 24-GPU serving shape and 3,600-second AgentX profiling configuration. These are measured hardware results; no new hardware jobs were launched to generate this report.
+
+The settings below come from the preserved [runner recipe](agentx-agg-kv-rr-data/hardware/agentx_runner.sh.txt), which installs Dynamo 1.4.2 and changes the frontend router arguments for each named variant. “Not explicitly set” means the recipe inherits the frontend's defaults; the table does not infer a numeric value from a variant name.
+
+| Recipe variant | Prefill-load scale | Overlap credit | Temperature | Queue policy | Measured clients |
+| --- | --- | --- | --- | --- | --- |
+| `kv` | not explicitly set | not explicitly set | 0.0 | FCFS | 48, 96, 192, 384 |
+| `kvs2c08` | 2.0 | 0.8 | 0.0 | FCFS | 192 |
+| `kvs3c08` | 3.0 | 0.8 | 0.0 | FCFS | 96, 192 |
+| `kvt05` | not explicitly set | not explicitly set | 0.5 | FCFS | 192 |
+
+The explicit flag names are `--router-prefill-load-scale`, `--router-kv-overlap-score-credit`, `--router-temperature` and `--router-queue-policy`. All four KV recipes use `--router-mode kv`. The RR reference uses `--router-mode round-robin`.
+
+![Measured agg KV-router flags at 192 AgentX clients](agentx-agg-kv-rr-report-flag-sweep.png)
+
+[Flag-sweep SVG](agentx-agg-kv-rr-report-flag-sweep.svg) · [PDF](agentx-agg-kv-rr-report-flag-sweep.pdf) · [settings, metrics and deltas (CSV)](agentx-agg-kv-rr-report-flag-sweep.csv)
+
+| 192-client setting / artifacts | Total tok/s/GPU | Change vs default KV | TTFT p95 (s) | TTFT change vs default KV | Cached input |
+| --- | --- | --- | --- | --- | --- |
+| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789555981_alisachen-n3u-agg-ns-agentx-kv-c192) | 9,655 | +0.0% | 11.66 | +0.0% | 74.4% |
+| [KV: scale 2, credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789575514_alisachen-n3u-agg-ns-agentx-kvs2c08-c192) | 10,241 | +6.1% | 8.11 | -30.4% | 77.5% |
+| [KV: scale 3, credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789569414_alisachen-n3u-agg-ns-agentx-kvs3c08-c192) | 11,012 | +14.1% | 6.33 | -45.7% | 81.8% |
+| [KV: temperature 0.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789574468_alisachen-n3u-agg-ns2-agentx-kvt05-c192) | 7,816 | -19.0% | 22.15 | +90.0% | 61.0% |
+| [RR reference](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789560983_alisachen-n3u-agg-ns2-agentx-rr-c192) | 6,802 | -29.5% | 60.08 | +415.4% | 56.2% |
+
+At **192 clients**, `kvs3c08` is the **best measured setting**: **11,012 total tok/s/GPU** and **6.33 s p95 TTFT**, versus default KV's **9,655** and **11.66 s**. That is **14.1% more throughput** and **45.7% lower p95 TTFT**. Output-only throughput also rises from **96.81 to 108.87 tok/s/GPU**. Relative to RR at the same 192 clients, this setting gives **1.62× total throughput** and **9.49× shorter p95 TTFT**.
+
+The lower scale of 2 with the same 0.8 credit improves throughput by **6.1%** and p95 TTFT by **30.4%** versus default KV. Temperature 0.5 reduces throughput by **19.0%** and increases p95 TTFT by **90.0%**, to **22.15 s**, which misses the 20-second SLO. All five 192-client rows have **three exported request errors**; TTFT percentiles cover successful requests.
+
+At **96 clients**, [the same scale-3/credit-0.8 variant](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789582550_alisachen-n3u-agg-ns2-agentx-kvs3c08-c96) delivers **7,045 total tok/s/GPU** versus [6,844 for default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789550601_alisachen-n3u-agg-ns-agentx-kv-c96), a **2.9%** increase. P95 TTFT falls **5.36 → 3.11 s** (**41.9% lower**). Both jobs have zero exported errors. There are no repeat trials to determine the statistical significance of the small throughput difference.
+
+The exact best measured router arguments are:
+
+```text
+--router-mode kv
+--router-temperature 0.0
+--router-queue-policy fcfs
+--router-prefill-load-scale 3.0
+--router-kv-overlap-score-credit 0.8
+```
+
+**Scope of the conclusion:** this is a small flag sweep, not a full factorial search. Scale and overlap credit change together versus default KV, so their individual contributions cannot be separated; scale 2 versus scale 3 does hold credit at 0.8. A `kvwspt` queue-policy recipe exists, but no completed agg AgentX measurement for it is present in the collected run set. There are no measured scale-4/5 variants, independent overlap-credit sweep, or tuned runs above 192 clients. Each cell has one trial on one of the two equivalent deployments. Thus this selects the best **observed** setting without establishing a global optimum or tuned knee.
+
+The higher cached-input share and lower latency are consistent with a better balance between cache reuse and queued work, but the aggregate summaries do not isolate that mechanism. The earlier fixed-rate custom model predicted the wrong direction for this tuning; neither simulation curve in section 3 includes a validated replay of these flag variants. The measured flag improvement must not be treated as proof that the current simulator models these knobs correctly. The [original tuning analysis](../AGENTX_AGG_RESULTS.md#v-kv-router-flag-sweep-at-the-192-client-comparison-point-measured) is retained as background; the tables here are regenerated from the full AIPerf summaries and keep the tuned points separate from the default-KV concurrency curve.
 
 ## 3. Simulation method, curves and knee selection
 
@@ -155,7 +193,7 @@ Both custom-model throughput curves still rise at 384: **the knee is not reached
 
 ### Reproduce this report
 
-The [manifest](agentx-agg-kv-rr-data/manifest.json) preserves exact source hashes and original locations. The input ZIP contains summaries, native configurations/build identity, the native matrix, calibration evidence, and the separate custom-model audit/source. The [original native experiment notes](agentx-agg-kv-rr-data/native-v10/original-calibration-report.txt) preserve the detailed method and source locations as a text snapshot. Full hardware request records remain in the linked GCS artifacts. Temporary source paths are recorded for provenance; regeneration uses the preserved report inputs. The command below rebuilds the report; it does not rerun hardware jobs or native simulations.
+The [manifest](agentx-agg-kv-rr-data/manifest.json) preserves exact source hashes and original locations. The input ZIP contains hardware summaries and the router-flag recipe, native configurations/build identity, the native matrix, calibration evidence, and the separate custom-model audit/source. The [original native experiment notes](agentx-agg-kv-rr-data/native-v10/original-calibration-report.txt) preserve the detailed method and source locations as a text snapshot. Full hardware request records remain in the linked GCS artifacts. Temporary source paths are recorded for provenance; regeneration uses the preserved report inputs. The command below rebuilds the report; it does not rerun hardware jobs or native simulations.
 
 From the study directory, with Python 3.12, Matplotlib 3.11.2 and markdown-it-py 4.2.0 available:
 

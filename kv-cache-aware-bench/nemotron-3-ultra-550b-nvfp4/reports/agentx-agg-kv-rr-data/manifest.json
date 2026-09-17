@@ -354,6 +354,10 @@
     "hardware/original-run-index.txt": {
       "sha256": "9b62c2a4f710966f09e5040180dc1d408476c8a74b23426ed48321f1820d547d",
       "source": "/home/alisachen_google_com/gcp-dynamo-cuj/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/RUN_INDEX.md"
+    },
+    "hardware/agentx_runner.sh.txt": {
+      "source": "/home/alisachen_google_com/gcp-dynamo-cuj/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/agentx_runner.sh",
+      "sha256": "3ecc596a3bfb84d71ff6a95a819cb0f2bc11b44f508eab1ee09ef94716c67103"
     }
   }
 }

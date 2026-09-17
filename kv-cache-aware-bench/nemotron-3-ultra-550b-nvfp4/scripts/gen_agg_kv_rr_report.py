@@ -9,6 +9,7 @@ import csv
 import hashlib
 import json
 import re
+import shlex
 import zipfile
 from pathlib import Path
 
@@ -24,6 +25,14 @@ STEM = "agentx-agg-kv-rr-report"
 COLORS = {"kv": "#2463b3", "rr": "#d65b29"}
 MARKERS = {"kv": "o", "rr": "s"}
 CLIENTS = [48, 96, 192, 384]
+FLAG_ORDER = ["kv", "kvs2c08", "kvs3c08", "kvt05", "rr"]
+FLAG_LABELS = {
+    "kv": "Default KV",
+    "kvs2c08": "KV: scale 2, credit 0.8",
+    "kvs3c08": "KV: scale 3, credit 0.8",
+    "kvt05": "KV: temperature 0.5",
+    "rr": "RR reference",
+}
 
 
 def read(path):
@@ -65,6 +74,9 @@ def load_inputs(folder):
     manifest = read(folder / "manifest.json")
     for name, metadata in manifest["files"].items():
         assert digest(folder / name) == metadata["sha256"], name
+    recipe = (folder / "hardware/agentx_runner.sh.txt").read_text()
+    router_flags = dict(re.findall(r'\[(\w+)\]="(--router-mode [^"]+)"', recipe))
+    assert set(router_flags) == set(FLAG_ORDER) | {"kvwspt"}
     hardware = []
     for entry in manifest["hardware"]:
         summary = read(folder / entry["summary"])
@@ -72,13 +84,20 @@ def load_inputs(folder):
         hardware.append(
             entry
             | metrics(summary)
-            | {"kind": "hardware", "benchmark_id": summary["benchmark_id"]}
+            | {
+                "kind": "hardware",
+                "benchmark_id": summary["benchmark_id"],
+                "router_flags": router_flags[entry["policy"]],
+            }
         )
     baseline = [p for p in hardware if p["policy"] in COLORS]
     assert {(p["policy"], p["clients"]) for p in baseline} == {
         (p, c) for p in COLORS for c in CLIENTS
     }
     reference = {(p["policy"], p["clients"]): p for p in baseline}
+    assert {
+        (p["policy"], p["clients"]) for p in hardware if p["policy"] not in COLORS
+    } == {("kvs2c08", 192), ("kvs3c08", 192), ("kvt05", 192), ("kvs3c08", 96)}
 
     matrix = read(folder / "native-v10/matrix.json")
     assert (
@@ -323,6 +342,10 @@ def plot_pair(output, name, points, title, subtitle, caption, mode, hardware=())
         fontsize=9,
     )
     fig.text(0.075, 0.045, caption, fontsize=9.2, color="#53667a", linespacing=1.6)
+    save_figure(fig, output, name)
+
+
+def save_figure(fig, output, name):
     for ext in ("png", "svg", "pdf"):
         fig.savefig(
             output / f"{STEM}-{name}.{ext}",
@@ -337,6 +360,107 @@ def plot_pair(output, name, points, title, subtitle, caption, mode, hardware=())
                 + "\n"
             )
     plt.close(fig)
+
+
+def flag_sweep_points(hardware):
+    get = {(p["policy"], p["clients"]): p for p in hardware}
+    result = []
+    for policy, clients in [(p, 192) for p in FLAG_ORDER] + [
+        ("kv", 96),
+        ("kvs3c08", 96),
+    ]:
+        point = get[(policy, clients)]
+        default = get[("kv", clients)]
+        tokens = shlex.split(point["router_flags"])
+        flags = dict(zip(tokens[::2], tokens[1::2], strict=True))
+        result.append(
+            point
+            | {
+                "label": FLAG_LABELS[policy],
+                "prefill_load_scale": flags.get(
+                    "--router-prefill-load-scale", "not explicitly set"
+                ),
+                "overlap_score_credit": flags.get(
+                    "--router-kv-overlap-score-credit", "not explicitly set"
+                ),
+                "temperature": flags.get("--router-temperature", "not applicable"),
+                "queue_policy": flags.get("--router-queue-policy", "not applicable"),
+                "throughput_change_vs_default_kv_pct": 100
+                * (point["total_tok_s_gpu"] / default["total_tok_s_gpu"] - 1),
+                "ttft_change_vs_default_kv_pct": 100
+                * (point["ttft_p95_s"] / default["ttft_p95_s"] - 1),
+            }
+        )
+    return result
+
+
+def plot_flag_sweep(output, points):
+    selected = [p for p in points if p["clients"] == 192]
+    colors = [COLORS["kv"], "#5f8fbd", "#16836b", "#bf923e", COLORS["rr"]]
+    fig, axes = plt.subplots(1, 2, figsize=(12.6, 5.5), sharey=True)
+    fig.subplots_adjust(left=0.20, right=0.97, bottom=0.23, top=0.75, wspace=0.20)
+    fig.text(
+        0.045,
+        0.94,
+        "Real KV-router flag sweep · 192 AgentX clients",
+        fontsize=18,
+        weight="bold",
+    )
+    fig.text(
+        0.045,
+        0.885,
+        "24 GB300 GPUs · 6 × TP4/EP4 · three tested variants, with default KV and RR references",
+        fontsize=10.5,
+        color="#53667a",
+    )
+    for ax, metric, title, limit in zip(
+        axes,
+        ["total_tok_s_gpu", "ttft_p95_s"],
+        ["Throughput · higher is better", "P95 TTFT · lower is better"],
+        [13000, 72],
+    ):
+        values = [p[metric] for p in selected]
+        ax.barh(range(len(selected)), values, color=colors, height=0.58, zorder=3)
+        ax.set_yticks(
+            range(len(selected)), [FLAG_LABELS[p["policy"]] for p in selected]
+        )
+        ax.set_ylim(len(selected) - 0.45, -0.65)
+        ax.set_xlim(0, limit)
+        ax.set_title(title, loc="left", fontsize=12, weight="bold", pad=13)
+        ax.spines[["top", "right", "left"]].set_visible(False)
+        ax.spines["bottom"].set_color("#cbd5e1")
+        ax.tick_params(length=0, pad=9)
+        ax.grid(axis="x", color="#dde4ec", linewidth=0.7)
+        ax.set_axisbelow(True)
+        for index, value in enumerate(values):
+            label = f"{value:,.0f}" if metric == "total_tok_s_gpu" else f"{value:.2f} s"
+            ax.text(
+                value + limit * 0.02,
+                index,
+                label,
+                va="center",
+                fontsize=10,
+                bbox={"facecolor": "white", "edgecolor": "none", "pad": 1},
+                weight="bold" if selected[index]["policy"] == "kvs3c08" else "normal",
+            )
+        if metric == "total_tok_s_gpu":
+            ax.set_xlabel("Input + output tokens/s/GPU", labelpad=10)
+            ax.set_xticks([0, 4000, 8000, 12000])
+            ax.xaxis.set_major_formatter(FuncFormatter(lambda x, pos: f"{x:,.0f}"))
+        else:
+            ax.set_xlabel("Seconds", labelpad=10)
+            ax.set_xticks([0, 20, 40, 60])
+            ax.axvline(20, color="#687b8f", linestyle=(0, (4, 3)), linewidth=1.2)
+            ax.text(21.1, -0.48, "20 s SLO", fontsize=9, color="#53667a")
+    fig.text(
+        0.045,
+        0.045,
+        "Best measured: scale 3, credit 0.8, temperature 0, FCFS. Versus default KV: +14.1% throughput, −45.7% p95 TTFT.\nOne run per setting. The same variant was also tested at 96 clients; its knee has not been measured.",
+        fontsize=9.2,
+        color="#53667a",
+        linespacing=1.6,
+    )
+    save_figure(fig, output, "flag-sweep")
 
 
 def table(headers, rows):
@@ -411,16 +535,58 @@ def report(hardware, native, custom, data_name):
             ]
         ],
     )
-    tune_rows = [
+    flags = flag_sweep_points(hardware)
+    flags192 = [p for p in flags if p["clients"] == 192]
+    settings_table = table(
         [
-            p["policy"],
-            p["clients"],
-            f"{p['total_tok_s_gpu']:,.0f}",
-            f"{p['ttft_p95_s']:.2f}",
-        ]
-        for p in sorted(hardware, key=lambda p: (p["clients"], p["policy"]))
-        if p["policy"] not in COLORS
-    ]
+            "Recipe variant",
+            "Prefill-load scale",
+            "Overlap credit",
+            "Temperature",
+            "Queue policy",
+            "Measured clients",
+        ],
+        [
+            [
+                f"`{p['policy']}`",
+                p["prefill_load_scale"],
+                p["overlap_score_credit"],
+                p["temperature"],
+                p["queue_policy"].upper(),
+                ", ".join(
+                    str(c)
+                    for c in sorted(
+                        q["clients"] for q in hardware if q["policy"] == p["policy"]
+                    )
+                ),
+            ]
+            for p in flags192
+            if p["policy"] != "rr"
+        ],
+    )
+    flags_table = table(
+        [
+            "192-client setting / artifacts",
+            "Total tok/s/GPU",
+            "Change vs default KV",
+            "TTFT p95 (s)",
+            "TTFT change vs default KV",
+            "Cached input",
+        ],
+        [
+            [
+                f"[{p['label']}]({p['gcs_console']})",
+                f"{p['total_tok_s_gpu']:,.0f}",
+                f"{p['throughput_change_vs_default_kv_pct']:+.1f}%",
+                f"{p['ttft_p95_s']:.2f}",
+                f"{p['ttft_change_vs_default_kv_pct']:+.1f}%",
+                f"{p['cache_pct']:.1f}%",
+            ]
+            for p in flags192
+        ],
+    )
+    flags96 = {p["policy"]: p for p in flags if p["clients"] == 96}
+    tuned96, default96 = flags96["kvs3c08"], flags96["kv"]
     comparison = []
     for p in sorted(native, key=lambda p: (p["policy"], p["clients"])):
         h = get[(p["policy"], p["clients"])]
@@ -539,11 +705,43 @@ For each policy, select the **highest-throughput measured cell that passes the s
 
 Default KV 384 fails the threshold; RR 192 and 384 fail it. Therefore **default KV192 versus RR96 gives 1.57×**, or **57.3% more total throughput/GPU**, under this SLO. No interpolation supplies an unmeasured passing point. The RR latency-budget crossing lies somewhere between 96 and 192; the KV crossing lies between 192 and 384.
 
-The tuned-KV row is a separate measured variant, using prefill-load scale 3, overlap credit 0.8 and temperature 0. It gives **1.79× RR throughput** under the same SLO, but has only been measured at 96 and 192 clients; its knee is unestablished. Other collected tuning points are:
+The tuned-KV row is a separate measured variant, using prefill-load scale 3, overlap credit 0.8 and temperature 0. It gives **1.79× RR throughput** under the same SLO, but has only been measured at 96 and 192 clients; its knee is unestablished. The flag sweep below provides the measurements behind this row.
 
-{table(["KV variant", "Clients", "Total tok/s/GPU", "TTFT p95 (s)"], tune_rows)}
+### 2.3 Real KV-router flag sweep
 
-Tuning details and artifact links are in [hardware report section v](../AGENTX_AGG_RESULTS.md#v-kv-router-flag-sweep-at-the-192-client-comparison-point-measured). These variants are not silently substituted into the default-KV curve.
+**Yes: four additional real AgentX jobs were collected**—three KV variants at **192 clients**, plus the best measured variant at **96 clients**. The default-KV and RR comparisons reuse the baseline jobs above. All use the same 24-GPU serving shape and 3,600-second AgentX profiling configuration. These are measured hardware results; no new hardware jobs were launched to generate this report.
+
+The settings below come from the preserved [runner recipe]({data_name}/hardware/agentx_runner.sh.txt), which installs Dynamo 1.4.2 and changes the frontend router arguments for each named variant. “Not explicitly set” means the recipe inherits the frontend's defaults; the table does not infer a numeric value from a variant name.
+
+{settings_table}
+
+The explicit flag names are `--router-prefill-load-scale`, `--router-kv-overlap-score-credit`, `--router-temperature` and `--router-queue-policy`. All four KV recipes use `--router-mode kv`. The RR reference uses `--router-mode round-robin`.
+
+![Measured agg KV-router flags at 192 AgentX clients]({STEM}-flag-sweep.png)
+
+[Flag-sweep SVG]({STEM}-flag-sweep.svg) · [PDF]({STEM}-flag-sweep.pdf) · [settings, metrics and deltas (CSV)]({STEM}-flag-sweep.csv)
+
+{flags_table}
+
+At **192 clients**, `kvs3c08` is the **best measured setting**: **11,012 total tok/s/GPU** and **6.33 s p95 TTFT**, versus default KV's **9,655** and **11.66 s**. That is **14.1% more throughput** and **45.7% lower p95 TTFT**. Output-only throughput also rises from **96.81 to 108.87 tok/s/GPU**. Relative to RR at the same 192 clients, this setting gives **1.62× total throughput** and **9.49× shorter p95 TTFT**.
+
+The lower scale of 2 with the same 0.8 credit improves throughput by **6.1%** and p95 TTFT by **30.4%** versus default KV. Temperature 0.5 reduces throughput by **19.0%** and increases p95 TTFT by **90.0%**, to **22.15 s**, which misses the 20-second SLO. All five 192-client rows have **three exported request errors**; TTFT percentiles cover successful requests.
+
+At **96 clients**, [the same scale-3/credit-0.8 variant]({tuned96["gcs_console"]}) delivers **{tuned96["total_tok_s_gpu"]:,.0f} total tok/s/GPU** versus [{default96["total_tok_s_gpu"]:,.0f} for default KV]({default96["gcs_console"]}), a **{tuned96["throughput_change_vs_default_kv_pct"]:.1f}%** increase. P95 TTFT falls **{default96["ttft_p95_s"]:.2f} → {tuned96["ttft_p95_s"]:.2f} s** (**{-tuned96["ttft_change_vs_default_kv_pct"]:.1f}% lower**). Both jobs have zero exported errors. There are no repeat trials to determine the statistical significance of the small throughput difference.
+
+The exact best measured router arguments are:
+
+```text
+--router-mode kv
+--router-temperature 0.0
+--router-queue-policy fcfs
+--router-prefill-load-scale 3.0
+--router-kv-overlap-score-credit 0.8
+```
+
+**Scope of the conclusion:** this is a small flag sweep, not a full factorial search. Scale and overlap credit change together versus default KV, so their individual contributions cannot be separated; scale 2 versus scale 3 does hold credit at 0.8. A `kvwspt` queue-policy recipe exists, but no completed agg AgentX measurement for it is present in the collected run set. There are no measured scale-4/5 variants, independent overlap-credit sweep, or tuned runs above 192 clients. Each cell has one trial on one of the two equivalent deployments. Thus this selects the best **observed** setting without establishing a global optimum or tuned knee.
+
+The higher cached-input share and lower latency are consistent with a better balance between cache reuse and queued work, but the aggregate summaries do not isolate that mechanism. The earlier fixed-rate custom model predicted the wrong direction for this tuning; neither simulation curve in section 3 includes a validated replay of these flag variants. The measured flag improvement must not be treated as proof that the current simulator models these knobs correctly. The [original tuning analysis](../AGENTX_AGG_RESULTS.md#v-kv-router-flag-sweep-at-the-192-client-comparison-point-measured) is retained as background; the tables here are regenerated from the full AIPerf summaries and keep the tuned points separate from the default-KV concurrency curve.
 
 ## 3. Simulation method, curves and knee selection
 
@@ -608,7 +806,7 @@ Both custom-model throughput curves still rise at 384: **the knee is not reached
 
 ### Reproduce this report
 
-The [manifest]({data_name}/manifest.json) preserves exact source hashes and original locations. The input ZIP contains summaries, native configurations/build identity, the native matrix, calibration evidence, and the separate custom-model audit/source. The [original native experiment notes]({data_name}/native-v10/original-calibration-report.txt) preserve the detailed method and source locations as a text snapshot. Full hardware request records remain in the linked GCS artifacts. Temporary source paths are recorded for provenance; regeneration uses the preserved report inputs. The command below rebuilds the report; it does not rerun hardware jobs or native simulations.
+The [manifest]({data_name}/manifest.json) preserves exact source hashes and original locations. The input ZIP contains hardware summaries and the router-flag recipe, native configurations/build identity, the native matrix, calibration evidence, and the separate custom-model audit/source. The [original native experiment notes]({data_name}/native-v10/original-calibration-report.txt) preserve the detailed method and source locations as a text snapshot. Full hardware request records remain in the linked GCS artifacts. Temporary source paths are recorded for provenance; regeneration uses the preserved report inputs. The command below rebuilds the report; it does not rerun hardware jobs or native simulations.
 
 From the study directory, with Python 3.12, Matplotlib 3.11.2 and markdown-it-py 4.2.0 available:
 
@@ -625,7 +823,7 @@ The generator checks input hashes, all expected policy/concurrency pairs, the 3,
 def html_report(markdown, output):
     parser = MarkdownIt("commonmark").enable("table")
     body = parser.render(markdown)
-    for name in ["hardware", "native-simulation", "custom-simulation"]:
+    for name in ["hardware", "flag-sweep", "native-simulation", "custom-simulation"]:
         svg = (output / f"{STEM}-{name}.svg").read_bytes()
         body = body.replace(
             f'src="{STEM}-{name}.png"',
@@ -665,6 +863,7 @@ def html_report(markdown, output):
         types = {
             ".svg": "image/svg+xml",
             ".pdf": "application/pdf",
+            ".csv": "text/csv",
             ".json": "application/json",
             ".txt": "text/plain",
         }
@@ -701,7 +900,7 @@ li{margin:9px 0}.eyebrow{font-size:12px;letter-spacing:1.6px;text-transform:uppe
 @media(max-width:800px){main{margin:0;padding:24px 18px;border-radius:0}h1{font-size:29px}table{display:block;overflow-x:auto;font-size:12px}th,td{padding:8px}h2{font-size:23px}}
 @media print{body{background:#fff}main{border:0;max-width:none;margin:0;padding:0}nav{display:none}h2,h3{break-after:avoid}img,table{break-inside:avoid}a{color:inherit}}
 </style></head><body><main><div class="eyebrow">Nemotron-3-Ultra 550B · AgentX · 24 GB300 GPUs</div>
-<nav><a href="#1-real-data-sweep-and-knee">1. Real sweep</a><a href="#2-kv-versus-rr-at-equal-configuration-and-equal-slo">2. Comparisons</a><a href="#3-simulation-method-curves-and-knee-selection">3. Simulation</a></nav>
+<nav><a href="#1-real-data-sweep-and-knee">1. Real sweep</a><a href="#2-kv-versus-rr-at-equal-configuration-and-equal-slo">2. Comparisons</a><a href="#2-3-real-kv-router-flag-sweep">KV flag sweep</a><a href="#3-simulation-method-curves-and-knee-selection">3. Simulation</a></nav>
 """
         + body
         + "</main></body></html>\n"
@@ -748,6 +947,8 @@ def main():
         "Both modeled throughput curves are still rising at 384: no knee is established within this range.\nThis custom model is not NVIDIA DynoSim; its missing saturation and optimistic latency limit hardware/SLO decisions.",
         "custom",
     )
+    flag_points = flag_sweep_points(hardware)
+    plot_flag_sweep(output, flag_points)
     all_points = hardware + native + custom
     fields = [
         "kind",
@@ -761,6 +962,7 @@ def main():
         "cache_pct",
         "successful_requests",
         "request_errors",
+        "router_flags",
     ]
     with (output / f"{STEM}.csv").open("w") as f:
         writer = csv.DictWriter(
@@ -768,11 +970,38 @@ def main():
         )
         writer.writeheader()
         writer.writerows(all_points)
+    flag_fields = [
+        "id",
+        "policy",
+        "clients",
+        "label",
+        "prefill_load_scale",
+        "overlap_score_credit",
+        "temperature",
+        "queue_policy",
+        "total_tok_s_gpu",
+        "output_tok_s_gpu",
+        "throughput_change_vs_default_kv_pct",
+        "ttft_p95_s",
+        "ttft_change_vs_default_kv_pct",
+        "cache_pct",
+        "request_errors",
+        "router_flags",
+        "gcs_summary",
+        "gcs_console",
+    ]
+    with (output / f"{STEM}-flag-sweep.csv").open("w") as f:
+        writer = csv.DictWriter(
+            f, fieldnames=flag_fields, extrasaction="ignore", lineterminator="\n"
+        )
+        writer.writeheader()
+        writer.writerows(flag_points)
     exported = {
         "metric_basis": "AIPerf total input+output tokens/s / 24; p95 TTFT in seconds",
         "slo_ttft_p95_s": 20,
         "source_manifest_sha256": digest(args.data_dir / "manifest.json"),
         "points": all_points,
+        "flag_sweep": flag_points,
     }
     (output / f"{STEM}.json").write_text(json.dumps(exported, indent=2) + "\n")
     with zipfile.ZipFile(
@@ -787,10 +1016,25 @@ def main():
     markdown = report(hardware, native, custom, args.data_dir.name)
     (output / f"{STEM}.md").write_text(markdown)
     html_report(markdown, output)
+    best_flag = max(
+        (p for p in flag_points if p["clients"] == 192),
+        key=lambda p: p["total_tok_s_gpu"],
+    )
+    assert best_flag["policy"] == "kvs3c08"
     validation = {
         "all_checks_passed": True,
         "hardware_summaries": len(hardware),
         "baseline_hardware_points": len(baseline),
+        "additional_flag_sweep_jobs": len(hardware) - len(baseline),
+        "flag_csv_rows_including_references": len(flag_points),
+        "router_arguments_parsed_from_preserved_recipe": True,
+        "best_measured_flag_at_192": best_flag["policy"],
+        "best_flag_throughput_change_vs_default_kv_pct": best_flag[
+            "throughput_change_vs_default_kv_pct"
+        ],
+        "best_flag_ttft_change_vs_default_kv_pct": best_flag[
+            "ttft_change_vs_default_kv_pct"
+        ],
         "native_v10_points": len(native),
         "custom_python_points": len(custom),
         "verified_input_files": len(manifest["files"]),

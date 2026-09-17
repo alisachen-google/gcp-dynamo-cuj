@@ -1,7 +1,7 @@
 {
   "metric_basis": "AIPerf total input+output tokens/s / 24; p95 TTFT in seconds",
   "slo_ttft_p95_s": 20,
-  "source_manifest_sha256": "0c85a428b1f3bbe448a742265bcc9df309aa1fc730ba6310bfbd0cded074037c",
+  "source_manifest_sha256": "3de86ff5dd56fba4fa1ff0df9cbbe3c23184a4ece0d8f7e991e782b159d99d47",
   "points": [
     {
       "id": "n3u-agg-ns-agentx-kv-c48",
@@ -18,7 +18,8 @@
       "successful_requests": 2843,
       "request_errors": 0,
       "kind": "hardware",
-      "benchmark_id": "ca2226c0c51a"
+      "benchmark_id": "ca2226c0c51a",
+      "router_flags": "--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs"
     },
     {
       "id": "n3u-agg-ns-agentx-kv-c96",
@@ -35,7 +36,8 @@
       "successful_requests": 6978,
       "request_errors": 0,
       "kind": "hardware",
-      "benchmark_id": "e708f0863767"
+      "benchmark_id": "e708f0863767",
+      "router_flags": "--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs"
     },
     {
       "id": "n3u-agg-ns2-agentx-rr-c48",
@@ -52,7 +54,8 @@
       "successful_requests": 2775,
       "request_errors": 0,
       "kind": "hardware",
-      "benchmark_id": "13d4f1744dbd"
+      "benchmark_id": "13d4f1744dbd",
+      "router_flags": "--router-mode round-robin"
     },
     {
       "id": "n3u-agg-ns2-agentx-rr-c96",
@@ -69,7 +72,8 @@
       "successful_requests": 6413,
       "request_errors": 0,
       "kind": "hardware",
-      "benchmark_id": "6f6efc4b908d"
+      "benchmark_id": "6f6efc4b908d",
+      "router_flags": "--router-mode round-robin"
     },
     {
       "id": "n3u-agg-ns-agentx-kv-c192",
@@ -86,7 +90,8 @@
       "successful_requests": 9519,
       "request_errors": 3,
       "kind": "hardware",
-      "benchmark_id": "eab78ed17c62"
+      "benchmark_id": "eab78ed17c62",
+      "router_flags": "--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs"
     },
     {
       "id": "n3u-agg-ns2-agentx-rr-c192",
@@ -103,7 +108,8 @@
       "successful_requests": 7206,
       "request_errors": 3,
       "kind": "hardware",
-      "benchmark_id": "0e8eaffb64d4"
+      "benchmark_id": "0e8eaffb64d4",
+      "router_flags": "--router-mode round-robin"
     },
     {
       "id": "n3u-agg-ns-agentx-kv-c384",
@@ -120,7 +126,8 @@
       "successful_requests": 8069,
       "request_errors": 7,
       "kind": "hardware",
-      "benchmark_id": "1b7935db42a8"
+      "benchmark_id": "1b7935db42a8",
+      "router_flags": "--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs"
     },
     {
       "id": "n3u-agg-ns2-agentx-rr-c384",
@@ -137,7 +144,8 @@
       "successful_requests": 4994,
       "request_errors": 14,
       "kind": "hardware",
-      "benchmark_id": "93688aa828ac"
+      "benchmark_id": "93688aa828ac",
+      "router_flags": "--router-mode round-robin"
     },
     {
       "id": "n3u-agg-ns-agentx-kvs3c08-c192",
@@ -154,7 +162,8 @@
       "successful_requests": 10687,
       "request_errors": 3,
       "kind": "hardware",
-      "benchmark_id": "6edbd7f57a3e"
+      "benchmark_id": "6edbd7f57a3e",
+      "router_flags": "--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-prefill-load-scale 3.0 --router-kv-overlap-score-credit 0.8"
     },
     {
       "id": "n3u-agg-ns2-agentx-kvt05-c192",
@@ -171,7 +180,8 @@
       "successful_requests": 8099,
       "request_errors": 3,
       "kind": "hardware",
-      "benchmark_id": "cfa4a7821799"
+      "benchmark_id": "cfa4a7821799",
+      "router_flags": "--router-mode kv --router-temperature 0.5 --router-queue-policy fcfs"
     },
     {
       "id": "n3u-agg-ns-agentx-kvs2c08-c192",
@@ -188,7 +198,8 @@
       "successful_requests": 10086,
       "request_errors": 3,
       "kind": "hardware",
-      "benchmark_id": "ec80570c70b6"
+      "benchmark_id": "ec80570c70b6",
+      "router_flags": "--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-prefill-load-scale 2.0 --router-kv-overlap-score-credit 0.8"
     },
     {
       "id": "n3u-agg-ns2-agentx-kvs3c08-c96",
@@ -205,7 +216,8 @@
       "successful_requests": 7209,
       "request_errors": 0,
       "kind": "hardware",
-      "benchmark_id": "dbfe7f1631e6"
+      "benchmark_id": "dbfe7f1631e6",
+      "router_flags": "--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-prefill-load-scale 3.0 --router-kv-overlap-score-credit 0.8"
     },
     {
       "total_tok_s_gpu": 6829.794567128188,
@@ -362,6 +374,183 @@
       "cache_pct": 62.70963021148953,
       "successful_requests": 10486,
       "request_errors": 19
+    }
+  ],
+  "flag_sweep": [
+    {
+      "id": "n3u-agg-ns-agentx-kv-c192",
+      "policy": "kv",
+      "clients": 192,
+      "summary": "hardware/n3u-agg-ns-agentx-kv-c192.json",
+      "gcs_summary": "gs://alisachen-models/perf/1789555981_alisachen-n3u-agg-ns-agentx-kv-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260916_105318/profile_export_aiperf.json",
+      "gcs_console": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789555981_alisachen-n3u-agg-ns-agentx-kv-c192",
+      "total_tok_s_gpu": 9654.845403825839,
+      "output_tok_s_gpu": 96.80592651877136,
+      "ttft_p95_s": 11.65726274620001,
+      "itl_mean_ms": 30.605941456514323,
+      "cache_pct": 74.38365790099185,
+      "successful_requests": 9519,
+      "request_errors": 3,
+      "kind": "hardware",
+      "benchmark_id": "eab78ed17c62",
+      "router_flags": "--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs",
+      "label": "Default KV",
+      "prefill_load_scale": "not explicitly set",
+      "overlap_score_credit": "not explicitly set",
+      "temperature": "0.0",
+      "queue_policy": "fcfs",
+      "throughput_change_vs_default_kv_pct": 0.0,
+      "ttft_change_vs_default_kv_pct": 0.0
+    },
+    {
+      "id": "n3u-agg-ns-agentx-kvs2c08-c192",
+      "policy": "kvs2c08",
+      "clients": 192,
+      "summary": "hardware/n3u-agg-ns-agentx-kvs2c08-c192.json",
+      "gcs_summary": "gs://alisachen-models/perf/1789575514_alisachen-n3u-agg-ns-agentx-kvs2c08-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260916_161904/profile_export_aiperf.json",
+      "gcs_console": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789575514_alisachen-n3u-agg-ns-agentx-kvs2c08-c192",
+      "total_tok_s_gpu": 10240.793595581146,
+      "output_tok_s_gpu": 102.43347907529873,
+      "ttft_p95_s": 8.11382578225,
+      "itl_mean_ms": 28.831646336839476,
+      "cache_pct": 77.49422831549904,
+      "successful_requests": 10086,
+      "request_errors": 3,
+      "kind": "hardware",
+      "benchmark_id": "ec80570c70b6",
+      "router_flags": "--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-prefill-load-scale 2.0 --router-kv-overlap-score-credit 0.8",
+      "label": "KV: scale 2, credit 0.8",
+      "prefill_load_scale": "2.0",
+      "overlap_score_credit": "0.8",
+      "temperature": "0.0",
+      "queue_policy": "fcfs",
+      "throughput_change_vs_default_kv_pct": 6.068954677649407,
+      "ttft_change_vs_default_kv_pct": -30.396818199067233
+    },
+    {
+      "id": "n3u-agg-ns-agentx-kvs3c08-c192",
+      "policy": "kvs3c08",
+      "clients": 192,
+      "summary": "hardware/n3u-agg-ns-agentx-kvs3c08-c192.json",
+      "gcs_summary": "gs://alisachen-models/perf/1789569414_alisachen-n3u-agg-ns-agentx-kvs3c08-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260916_143711/profile_export_aiperf.json",
+      "gcs_console": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789569414_alisachen-n3u-agg-ns-agentx-kvs3c08-c192",
+      "total_tok_s_gpu": 11011.921190783736,
+      "output_tok_s_gpu": 108.86538221497428,
+      "ttft_p95_s": 6.331731673199994,
+      "itl_mean_ms": 24.13803047107743,
+      "cache_pct": 81.8470949149697,
+      "successful_requests": 10687,
+      "request_errors": 3,
+      "kind": "hardware",
+      "benchmark_id": "6edbd7f57a3e",
+      "router_flags": "--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-prefill-load-scale 3.0 --router-kv-overlap-score-credit 0.8",
+      "label": "KV: scale 3, credit 0.8",
+      "prefill_load_scale": "3.0",
+      "overlap_score_credit": "0.8",
+      "temperature": "0.0",
+      "queue_policy": "fcfs",
+      "throughput_change_vs_default_kv_pct": 14.055903851346407,
+      "ttft_change_vs_default_kv_pct": -45.684232988022956
+    },
+    {
+      "id": "n3u-agg-ns2-agentx-kvt05-c192",
+      "policy": "kvt05",
+      "clients": 192,
+      "summary": "hardware/n3u-agg-ns2-agentx-kvt05-c192.json",
+      "gcs_summary": "gs://alisachen-models/perf/1789574468_alisachen-n3u-agg-ns2-agentx-kvt05-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260916_160123/profile_export_aiperf.json",
+      "gcs_console": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789574468_alisachen-n3u-agg-ns2-agentx-kvt05-c192",
+      "total_tok_s_gpu": 7816.373015491913,
+      "output_tok_s_gpu": 79.4887205626071,
+      "ttft_p95_s": 22.148398715199992,
+      "itl_mean_ms": 44.98281860890775,
+      "cache_pct": 60.992475087568884,
+      "successful_requests": 8099,
+      "request_errors": 3,
+      "kind": "hardware",
+      "benchmark_id": "cfa4a7821799",
+      "router_flags": "--router-mode kv --router-temperature 0.5 --router-queue-policy fcfs",
+      "label": "KV: temperature 0.5",
+      "prefill_load_scale": "not explicitly set",
+      "overlap_score_credit": "not explicitly set",
+      "temperature": "0.5",
+      "queue_policy": "fcfs",
+      "throughput_change_vs_default_kv_pct": -19.04196609513199,
+      "ttft_change_vs_default_kv_pct": 89.99656435143699
+    },
+    {
+      "id": "n3u-agg-ns2-agentx-rr-c192",
+      "policy": "rr",
+      "clients": 192,
+      "summary": "hardware/n3u-agg-ns2-agentx-rr-c192.json",
+      "gcs_summary": "gs://alisachen-models/perf/1789560983_alisachen-n3u-agg-ns2-agentx-rr-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260916_121640/profile_export_aiperf.json",
+      "gcs_console": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789560983_alisachen-n3u-agg-ns2-agentx-rr-c192",
+      "total_tok_s_gpu": 6802.289469097507,
+      "output_tok_s_gpu": 71.37809353845007,
+      "ttft_p95_s": 60.081522396249994,
+      "itl_mean_ms": 48.19882407837417,
+      "cache_pct": 56.171456051053056,
+      "successful_requests": 7206,
+      "request_errors": 3,
+      "kind": "hardware",
+      "benchmark_id": "0e8eaffb64d4",
+      "router_flags": "--router-mode round-robin",
+      "label": "RR reference",
+      "prefill_load_scale": "not explicitly set",
+      "overlap_score_credit": "not explicitly set",
+      "temperature": "not applicable",
+      "queue_policy": "not applicable",
+      "throughput_change_vs_default_kv_pct": -29.545329991487744,
+      "ttft_change_vs_default_kv_pct": 415.3999159522688
+    },
+    {
+      "id": "n3u-agg-ns-agentx-kv-c96",
+      "policy": "kv",
+      "clients": 96,
+      "summary": "hardware/n3u-agg-ns-agentx-kv-c96.json",
+      "gcs_summary": "gs://alisachen-models/perf/1789550601_alisachen-n3u-agg-ns-agentx-kv-c96/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c96_20260916_092337/profile_export_aiperf.json",
+      "gcs_console": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789550601_alisachen-n3u-agg-ns-agentx-kv-c96",
+      "total_tok_s_gpu": 6843.880810963666,
+      "output_tok_s_gpu": 75.10970041208905,
+      "ttft_p95_s": 5.357950530349997,
+      "itl_mean_ms": 16.103767276794642,
+      "cache_pct": 79.19202693348505,
+      "successful_requests": 6978,
+      "request_errors": 0,
+      "kind": "hardware",
+      "benchmark_id": "e708f0863767",
+      "router_flags": "--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs",
+      "label": "Default KV",
+      "prefill_load_scale": "not explicitly set",
+      "overlap_score_credit": "not explicitly set",
+      "temperature": "0.0",
+      "queue_policy": "fcfs",
+      "throughput_change_vs_default_kv_pct": 0.0,
+      "ttft_change_vs_default_kv_pct": 0.0
+    },
+    {
+      "id": "n3u-agg-ns2-agentx-kvs3c08-c96",
+      "policy": "kvs3c08",
+      "clients": 96,
+      "summary": "hardware/n3u-agg-ns2-agentx-kvs3c08-c96.json",
+      "gcs_summary": "gs://alisachen-models/perf/1789582550_alisachen-n3u-agg-ns2-agentx-kvs3c08-c96/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c96_20260916_181609/profile_export_aiperf.json",
+      "gcs_console": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789582550_alisachen-n3u-agg-ns2-agentx-kvs3c08-c96",
+      "total_tok_s_gpu": 7045.363834965239,
+      "output_tok_s_gpu": 78.35106620589502,
+      "ttft_p95_s": 3.1121206455999975,
+      "itl_mean_ms": 13.340415370525843,
+      "cache_pct": 86.24548126318845,
+      "successful_requests": 7209,
+      "request_errors": 0,
+      "kind": "hardware",
+      "benchmark_id": "dbfe7f1631e6",
+      "router_flags": "--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-prefill-load-scale 3.0 --router-kv-overlap-score-credit 0.8",
+      "label": "KV: scale 3, credit 0.8",
+      "prefill_load_scale": "3.0",
+      "overlap_score_credit": "0.8",
+      "temperature": "0.0",
+      "queue_policy": "fcfs",
+      "throughput_change_vs_default_kv_pct": 2.943987915143187,
+      "ttft_change_vs_default_kv_pct": -41.9158383794054
     }
   ]
 }
