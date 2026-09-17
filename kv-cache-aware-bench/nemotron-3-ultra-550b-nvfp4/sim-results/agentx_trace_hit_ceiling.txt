@@ -1,0 +1,3 @@
+trace                                       req sessions turns mean/med cold tok HIT CEILING mean ISL
+weka_256k_bench4k.jsonl                    4000      874      4.6/1        0.088       0.846    70114
+weka_256k_aiperf.jsonl                    28444     1558     18.3/1        0.008       0.969   137232
