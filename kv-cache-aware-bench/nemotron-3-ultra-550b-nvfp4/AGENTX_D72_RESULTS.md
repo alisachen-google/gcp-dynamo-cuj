@@ -304,6 +304,26 @@ because the real lanes start part-way through sessions and cap idle gaps. Those 
 terms, not engine terms. At 768 the sim's decode (TPOT 39 ms vs 21 ms measured) also re-enters because its slower
 request cycle keeps more requests in flight per decode worker.
 
+### Reading the measured tail itself (independent of the simulator)
+
+[`scripts/agentx_ttft_tail.py`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/agentx_ttft_tail.py)
+splits the per-request records three ways:
+
+| 12:6 KV | 192 clients | 768 clients |
+|---|---|---|
+| cold first turns (cache-busted): TTFT = a + ISL / rate | −0.03 s + ISL / **26,200 tok/s** (1,653 turns) | 0.34 s + ISL / **22,200 tok/s** (5,067 turns) |
+| cold turns over 100 k tokens: TTFT p50 / p95 | 5.95 / 12.3 s (n = 67) | 6.85 / 14.5 s (n = 223) |
+| warm turns, lowest vs highest in-flight quartile: TTFT p95 | 1.77 vs 1.93 s | 7.01 vs 7.50 s |
+| p95 tail composition | 19 % cold first turns, median ISL 108 k, in-flight at issue = overall median | 7 % cold, median ISL **136 k**, in-flight at issue = overall median |
+
+Three facts follow. (1) The real uncached prefill rate is 22–26 k tok/s per TP4 worker, so the AIC seed of 19.7 k
+used by the sim is 12–33 % slow: a modest, second-order term. (2) The tail is **not queue-driven**: warm turns issued
+under the heaviest quarter of the load have the same p95 as those issued under the lightest quarter. (3) The tail is
+**size-driven**: it is the long-context turns (median 136 k tokens at 768) whose prefix is not on the worker that gets
+them — a cold 130 k turn costs 6–7 s at the median, which is exactly the p95 level. So the way to reproduce the
+measured tail in a simulator is not a heavier prefill queue but the right *miss distribution*: which long turns miss,
+and how much of them, which is the cache-churn / routing term (hit 0.94 → 0.88 as load rises).
+
 ### Where the gap is, in plain words
 
 1. **Output tokens: the engine model is right once output length is corrected.** The sim replays the trace's recorded
