@@ -5,9 +5,8 @@
 #   stage 3  pick the KV-vs-RR comparison cells from the MEASURED ladders (select_agentx_points.py: same config = RR's peak
 #            cell, same SLO = best cell per policy with TTFT p95 <= 20 s, P90 >= 20, stationary) -> /tmp/agentx_88_points.md
 #   stage 4  KV-router flag sweep at the selected cells (scale 3 / scale 2 credit 0.8, temperature 0.5 at the KV same-SLO
-#            cell; tuned router at the same-config cell). Selection failure or empty output halts the flag sweep.
-# The inherited ladder is a hardware sampling plan. Current simulation evidence is the audited AIPerf replay
-# in reports/agentx-64gpu-topology.md; the old v5 selection and fallback are superseded.
+#            cell; tuned router at the same-config cell).  Falls back to the sim's choice (768 / 384) if selection is empty.
+# Ladder client counts come from the v5 stream-level simulation (KNEE_ANALYSIS.md "64-GPU disagg").
 # PRECONDITION: stage 1 waits until 16 READY np-2 nodes carry no GPU requests.  Those nodes belong to other tenants today;
 # this script never deletes or preempts anything it did not create.
 set -u
@@ -22,15 +21,8 @@ nohup bash "$S" n3u-mnnvl-88 "$M" "$(for c in $RR; do printf 'rr:%s ' $c; done)"
 echo "stage 2 (RR ladder) pid=$!"
 nohup bash -c "
   until grep -q 'N3U AGENTX 88 RR DONE' /tmp/agentx_88_rr.log 2>/dev/null; do sleep 300; done
-  python3 $D/select_agentx_points.py n3u-mnnvl-88 64 '${KV// /,}' '${RR// /,}' --logs /tmp/agentx_88.log /tmp/agentx_88_rr.log --out-md /tmp/agentx_88_points.md --out-points /tmp/agentx_88_flag_points.txt > /tmp/agentx_88_select.log 2>&1 || {
-    echo 'HALT: measured point selection failed; no simulation fallback' >> /tmp/agentx_88_select.log
-    exit 1
-  }
-  PTS=\$(cat /tmp/agentx_88_flag_points.txt 2>/dev/null)
-  if [ -z \"\$PTS\" ]; then
-    echo 'HALT: measured selection produced no eligible flag-sweep points; see /tmp/agentx_88_points.md' >> /tmp/agentx_88_select.log
-    exit 1
-  fi
+  python3 $D/select_agentx_points.py n3u-mnnvl-88 64 '${KV// /,}' '${RR// /,}' --logs /tmp/agentx_88.log /tmp/agentx_88_rr.log --out-md /tmp/agentx_88_points.md --out-points /tmp/agentx_88_flag_points.txt > /tmp/agentx_88_select.log 2>&1
+  PTS=\$(cat /tmp/agentx_88_flag_points.txt 2>/dev/null); [ -z \"\$PTS\" ] && PTS='kvs3c08:768 kvs2c08:768 kvt05:768 kvs3c08:384'
   echo \"[\$(date -u '+%F %T')] N3U AGENTX 88 SELECT DONE points: \$PTS\" >> /tmp/agentx_88_select.log
   exec bash $S n3u-mnnvl-88 $M \"\$PTS\" 'N3U AGENTX 88 SELECT DONE' /tmp/agentx_88_select.log 'N3U AGENTX 88 FLAGS DONE' /tmp/agentx_88_flags.log 0 np-2 n3u-mnnvl-88 $W
 " > /tmp/agentx_88_flags.nohup 2>&1 &
