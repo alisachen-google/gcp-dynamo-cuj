@@ -1,0 +1,20 @@
+# Engine-reported counters scraped by aiperf from the Dynamo frontend during the profiling window (server_metrics_export.csv per artifact).
+# HIT = sum(dynamo_frontend_cached_tokens) / sum(dynamo_frontend_input_sequence_tokens). send/queue = request-plane frontend->worker.
+# tokenize = frontend tokenizer time per request. kv_xfer_est = router's estimated prefill->decode KV transfer latency (disagg only).
+arm        pol      clients  n_req  in/req  cached/req  HIT    sim_hit  send_p50 send_p95 queue_p95 tokenize_p50 tokenize_p95 kv_xfer_p50
+9:9        kv       48       2888   101955  96972       0.951  0.80     1.7ms    4.4ms    1.0ms     4.4ms        100ms        197ms
+9:9        kv       96       7540   86583   81319       0.939  0.78     1.4ms    3.8ms    1.0ms     4.4ms        90ms         197ms
+9:9        kv       192      12802  94077   87766       0.933  0.77     1.4ms    3.5ms    0.9ms     6.5ms        149ms        205ms
+12:6       kv       96       7469   86538   81422       0.941  0.78     1.4ms    3.7ms    1.0ms     5.0ms        94ms         190ms
+12:6       kv       192      12614  93612   87681       0.937  0.76     1.7ms    4.0ms    1.0ms     8.0ms        173ms        205ms
+12:6       kv       384      24235  93249   86160       0.924  0.74     1.6ms    3.7ms    1.0ms     11.2ms       207ms        234ms
+12:6       kv       480      29222  93506   85142       0.911  0.74     1.4ms    3.0ms    1.0ms     17.9ms       212ms        264ms
+12:6       kv       768      41248  95303   83897       0.880  0.73     1.4ms    2.9ms    1.0ms     22.6ms       212ms        370ms
+agg6       kv       48       2844   102033  87920       0.862  0.80     1.9ms    4.6ms    1.0ms     3.4ms        60ms         -
+agg6       kv       96       6979   85218   67467       0.792  0.79     1.5ms    4.1ms    0.9ms     4.5ms        91ms         -
+agg6       kv       192      9525   88438   65744       0.743  0.77     1.5ms    3.9ms    0.9ms     7.2ms        145ms        -
+agg6       kv-tuned 96       7210   84913   73205       0.862  0.83     1.4ms    4.0ms    0.9ms     4.0ms        79ms         -
+agg6       kv-tuned 192      10696  89864   73487       0.818  0.82     1.5ms    3.7ms    0.9ms     7.1ms        173ms        -
+agg6       rr       48       2776   101896  75483       0.741  0.40     2.1ms    4.7ms    1.0ms     3.9ms        63ms         -
+agg6       rr       96       6416   83384   58108       0.697  0.40     1.5ms    3.9ms    0.9ms     3.9ms        84ms         -
+agg6       rr       192      7221   82367   46118       0.560  0.40     1.7ms    4.3ms    0.9ms     6.1ms        153ms        -

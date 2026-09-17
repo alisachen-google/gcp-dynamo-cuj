@@ -224,11 +224,14 @@ Measured cells: 2.05 / 3.45 / 6.63 / 7.98 req/s · 1,998 / 3,231 / 6,276 / 7,566
 **The engine substitutions barely move the 12:6 ratios** (total 0.55 → 0.55, 0.58 → 0.59, 0.53 → 0.56, 0.49 → 0.53), so
 on this topology the engine constants are not the gap. Two terms that the ladder cannot substitute are:
 
-1. **Prefix hit rate.** The sim's 12:6 cells run at hit 0.78 → 0.74 (96 → 480 clients), i.e. ~15–18 k uncached tokens
-   per turn. Backing the hit rate out of the measured records (uncached ≈ (TTFT − 0.19 s) × 19.7 k tok/s per worker)
-   gives **0.93 → 0.83**, i.e. 2–6 k uncached tokens per turn; turns over 150 k tokens return a first token in 0.5–0.8 s
-   at the median, which is only possible with near-complete cache reuse. Per request the sim therefore does 2.5–4×
-   the prefill work at low load and ~1.5× at 480. This is the TTFT-tail term (2.3–2.7× after every other
+1. **Prefix hit rate.** The sim's 12:6 cells run at hit 0.78 → 0.73 (96 → 768 clients), i.e. ~15–18 k uncached tokens
+   per turn. The engine's own counter (`dynamo_frontend_cached_tokens` ÷ `input_sequence_tokens`, scraped by aiperf
+   during the window; [`sim-results/agentx_server_metrics.txt`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_server_metrics.txt))
+   says **0.94 / 0.94 / 0.92 / 0.91 / 0.88 at 96 / 192 / 384 / 480 / 768**, i.e. 5–11 k uncached tokens per turn (the
+   earlier TTFT-based estimate of 0.93 → 0.83 was right at low load and too low at high load, where queueing was being
+   counted as prefill). Per request the sim therefore does **3× the prefill work at low load and 1.6× at 768**. The
+   router's estimated KV hand-off latency is 0.19–0.21 s up to 192 clients and grows to 0.26 / 0.37 s at 480 / 768, which
+   is the fixed per-request term the ladder adds and the reason it should scale with load rather than stay constant. This is the TTFT-tail term (2.3–2.7× after every other
    substitution), it is why the sim's disagg knee lands at 768 and its ceiling at 6,187 total/GPU (silicon is at
    10,434 and still stationary at 480), and it inflates the sim's in-flight count so that even the measured decode
    line still yields a TPOT 1.4–1.6× too slow at 384 / 480.
@@ -238,7 +241,7 @@ on this topology the engine constants are not the gap. Two terms that the ladder
    480 (observed 0.53).
 
 Calibration order for the disagg sim, by payoff: replay the full trace (fixes term 2 and part of term 1), calibrate
-the cache model to the measured 0.83–0.93 hit rate (fixes the tail and the knee), then halve the decode slope. Until
+the cache model to the measured 0.88–0.94 hit rate (fixes the tail and the knee), then halve the decode slope. Until
 then, read the disagg sim as: total tokens ≈ 0.5–0.6× silicon, TTFT p95 ≈ 2–2.7× silicon, knee and ceiling not
 predictive; topology ranking and cell selection are still sound (12:6 vs 9:9 came out in the sim's order on silicon).
 

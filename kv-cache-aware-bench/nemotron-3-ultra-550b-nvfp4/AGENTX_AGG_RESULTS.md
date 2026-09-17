@@ -291,6 +291,31 @@ TTFT tail once the engine constants are measured; the 0.6–0.7× on total token
 slice (67–70 k vs 82–102 k measured) and nothing else. **The sim models the workload and the agg engine acceptably; what
 it models badly is the KV-aware router** (compare the KV residual's 1.4× TPOT and the raw 0.25–0.28× on tuned KV).
 
+### Compute, network and overheads on agg RR, from the engine counters
+
+With round-robin there is no routing intelligence and no prefill→decode transfer, so the agg RR cells are the cleanest
+test of the sim's *engine* model. The scraped frontend metrics
+([`sim-results/agentx_server_metrics.txt`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_server_metrics.txt))
+separate the terms:
+
+| term | measured (RR 48 / 96 / 192) | sim | verdict |
+|---|---|---|---|
+| network: request-plane send frontend→worker | 1.5–2.1 ms p50, 4–5 ms p95 | 0 | negligible; no transfer on agg |
+| request-plane queue | ≤ 1 ms p95 | 0 | negligible |
+| tokenizer (frontend CPU, 80–100 k-token prompts) | 4–6 ms p50, **63–153 ms p95** | 0 | the only non-compute term that matters, and it is client-side; grows with load (212 ms p95 at 768 on disagg) |
+| prefix hit rate (engine counter) | **0.74 / 0.70 / 0.56** | 0.40 | sim prefills 1.2–1.7× more tokens per turn than silicon: with 6 workers the radix cache on each worker still holds most of every session's context, because KV capacity per worker is far larger than the working set |
+| prefix hit rate, KV routing | 0.86 / 0.79 / 0.74 | 0.80 / 0.79 / 0.77 | sim right for KV; the 0.19–0.20 loss from 48 → 192 is real (cache churn under 12 sessions per worker) |
+| prefix hit rate, tuned KV | 0.86 / 0.82 (96 / 192) | 0.83 / 0.82 | sim right |
+| decode (ITL p50 vs batch) | 5.5 + 1.45·bs ms | 7 + 1.6·bs, then 28 + 5.7·bs past batch 7 | cliff wrong; slope right below 7 |
+| prefill/decode contention on one GPU | present (chunked prefill stretches decode; TTFT p95 8 → 60 s from 48 → 192) | absent | the sim's agg tail is *lighter* than silicon despite doing more prefill work |
+
+Reading: on agg RR the sim carries two errors of opposite sign — it prefills 1.2–1.7× too many tokens (hit 0.40 vs
+0.56–0.74) but never pays for prefill and decode sharing a GPU — and they roughly cancel on the TTFT tail (0.8–0.9×),
+which is why RR looks like the "well-modelled" arm. Network is not a factor on agg (≈ 3 ms per request end to end);
+the tokenizer is the one non-GPU cost worth putting in the sim (≈ 0.1 s at p95 at 192 clients, 0.2 s at 768). So
+"compare compute and network" reduces on agg to: compute model needs the measured decode line, a cache model sized to
+the real KV capacity (RR hit 0.56–0.74, not 0.40), and prefill/decode contention; network can be left at zero.
+
 ### Where the gap is, in plain words
 
 1. **The decode cliff is the biggest single term on agg** (unlike disagg, where the engine model was within 10%). The

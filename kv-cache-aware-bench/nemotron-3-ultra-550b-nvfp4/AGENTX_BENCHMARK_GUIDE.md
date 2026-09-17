@@ -187,14 +187,15 @@ load-scale flag as pure prefix loss, whereas the live effect is queue relief (AG
 
 Disagg (12:6 KV, 96 / 192 / 384 / 480, and 9:9 at 48 / 96 / 192): the engine substitutions (output length, 0.19 s
 hand-off, measured decode line) barely move the ratios — total tokens stay at 0.53–0.59× and TTFT p95 at 2.3–2.7× too
-pessimistic. The gap is (1) **prefix hit rate**: sim 0.74–0.78 vs 0.83–0.93 backed out of the measured records, so the
-sim prefills 2.5–4× more tokens per turn, which sets its tail, its early knee (768) and its low ceiling (6,187 vs 10,434
+pessimistic. The gap is (1) **prefix hit rate**: sim 0.73–0.78 vs **0.88–0.94 reported by the engine's cached-token counter**, so the
+sim prefills 1.6–3× more tokens per turn, which sets its tail, its early knee (768) and its low ceiling (6,187 vs 10,434
 measured and still rising); (2) **trace representation**: 70 k input tokens per request vs 86–94 k measured and a
 0.69–0.80× request rate from the 4 k-request slice. Requests × input length reproduces the residual exactly. Agg (KV 48 / 96 / 192 and RR 48 / 96 / 192): the largest
 term is the sim's decode cliff past batch 7 (TPOT 27–61 ms simulated vs 7–24 ms measured), which it applies to the deep
 per-worker batches its KV policy creates by packing sessions; removing it lifts the KV cells from 0.38–0.44× to
 0.53–0.62×, and the rest is the trace residual. The RR ladder is the control: with no packing the same engine is within
-10–20% of silicon on requests and TTFT tail, so the agg sim's problem is its KV-router model, not the engine. Full ladders: AGENTX_D72_RESULTS.md §iv, AGENTX_AGG_RESULTS.md §iv; overlay page
+10–20% of silicon on requests and TTFT tail, so the agg sim's problem is its KV-router model, not the engine. The engine counters add two calibration facts: the agg RR hit rate is 0.56–0.74 (sim 0.40), and
+network is negligible on agg (≈ 3 ms per request), with the frontend tokenizer (0.06–0.2 s p95) the only non-GPU term worth modelling. Full ladders: AGENTX_D72_RESULTS.md §iv, AGENTX_AGG_RESULTS.md §iv; overlay page
 `reports/n3u-agentx-sim-vs-real.html`. Rankings across topologies are the sim's reliable output; levels, and the
 KV-vs-RR ordering on agg, must come from silicon.
 
