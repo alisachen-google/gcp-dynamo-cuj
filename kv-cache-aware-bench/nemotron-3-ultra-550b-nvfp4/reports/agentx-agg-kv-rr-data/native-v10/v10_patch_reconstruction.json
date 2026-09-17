@@ -1,0 +1,29 @@
+{
+  "candidate": "v10",
+  "incremental_changed_files": [
+    "lib/mocker/src/common/perf_model.rs"
+  ],
+  "all_eleven_patches_reconstruct_source": true,
+  "reconstructed_file_sha256": {
+    "lib/bindings/python/Cargo.toml": "2318662f8136147082734e026642dc6cba98cab88e95f5971f467e800a854596",
+    "lib/bindings/python/rust/llm/entrypoint.rs": "65481255d816280e9a61b31447a1c6f30c384aea2de29e9a73eaf0d62d1a9ee9",
+    "lib/bindings/python/rust/llm/replay.rs": "2257aba1a57e0326a6dae4a096567d09111b38eeaa4a2f4df0d4e08514251a52",
+    "lib/bindings/python/src/dynamo/_core.pyi": "a282e2b51b2a95796cff1cf8f0294c7f212f957c843e53156eca89029c36343f",
+    "lib/llm/src/mocker.rs": "f16270c1b47ddf82fa99998953710d8140d9d837d267c2ace4fa945dc4ae7cdd",
+    "lib/mocker/src/cache/radix_cache.rs": "8f7d1200dee2607b80f89ed88ba9ba4f7021c071e22d41813927c5f7964b9500",
+    "lib/mocker/src/common/perf_model.rs": "717bc1033a9b5275cbd15cb94731273d7b0136b87a1ea0221e2030c9cba95a22",
+    "lib/mocker/src/common/protocols.rs": "64d414dfa3fcb94f5dd4e43656857ce2b1e6c25220f97dca36b975fd06b502e5",
+    "lib/mocker/src/kv_manager/sglang_backend.rs": "0413ef02209407f5f68c31002536234c9cc8a2fdaf416ce1cbdbf371f6dd193b",
+    "lib/mocker/src/scheduler/sglang/config.rs": "7506d2d76195c4f2585f581ad0dad0dbe78423ebdbfd4ebba73a09c1b49055b7",
+    "lib/mocker/src/scheduler/sglang/core.rs": "91c7247b419ff25432f17044a39ffec7422b51b630695165241e0dff276ebf60",
+    "lib/mocker/src/scheduler/sglang/decode.rs": "5333c0fb366965db3b5851bbfe028ad1530cec865f84b926baa508de0eb704a1",
+    "lib/mocker/src/scheduler/sglang/prefill.rs": "2e35fda0aa3e764f116b0ea36fdb0c169b2b32f5a591998ac9f55e6f248c61f4",
+    "lib/mocker/src/scheduler/sglang/request.rs": "a47d3f49e231e6717428d675b44d66e757259c5537abaa9d1fb457760e591317",
+    "lib/mocker/src/scheduler/sglang/tests.rs": "70b5f96a2072ef41531183af6e07ffe5a81949b85c5658924f1b4b26a095592b"
+  },
+  "native_mocker_tests_passed": 713,
+  "clippy_passed": true,
+  "native_build_status": "built",
+  "native_core_sha256": "5e298de426f7b27f1cc3d0647ac8eefec49d0abd989a01ac93e673e5bedd0d02",
+  "server_python": "/tmp/n3u-path1-hybrid7-venv/bin/python"
+}

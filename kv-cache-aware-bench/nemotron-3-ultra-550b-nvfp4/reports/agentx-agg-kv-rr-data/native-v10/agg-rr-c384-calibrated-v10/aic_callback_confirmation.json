@@ -1,0 +1,8 @@
+{
+  "worker-0": "\u001b[2m2026-09-17T16:34:14.429704Z\u001b[0m \u001b[32m INFO\u001b[0m \u001b[2m_core::llm::aic_callback\u001b[0m\u001b[2m:\u001b[0m AIC: using pure-Rust RustAicCallback (no GIL on the predict hot path)",
+  "worker-1": "\u001b[2m2026-09-17T16:34:14.898891Z\u001b[0m \u001b[32m INFO\u001b[0m \u001b[2m_core::llm::aic_callback\u001b[0m\u001b[2m:\u001b[0m AIC: using pure-Rust RustAicCallback (no GIL on the predict hot path)",
+  "worker-2": "\u001b[2m2026-09-17T16:34:15.455932Z\u001b[0m \u001b[32m INFO\u001b[0m \u001b[2m_core::llm::aic_callback\u001b[0m\u001b[2m:\u001b[0m AIC: using pure-Rust RustAicCallback (no GIL on the predict hot path)",
+  "worker-3": "\u001b[2m2026-09-17T16:34:15.983006Z\u001b[0m \u001b[32m INFO\u001b[0m \u001b[2m_core::llm::aic_callback\u001b[0m\u001b[2m:\u001b[0m AIC: using pure-Rust RustAicCallback (no GIL on the predict hot path)",
+  "worker-4": "\u001b[2m2026-09-17T16:34:16.506324Z\u001b[0m \u001b[32m INFO\u001b[0m \u001b[2m_core::llm::aic_callback\u001b[0m\u001b[2m:\u001b[0m AIC: using pure-Rust RustAicCallback (no GIL on the predict hot path)",
+  "worker-5": "\u001b[2m2026-09-17T16:34:17.021688Z\u001b[0m \u001b[32m INFO\u001b[0m \u001b[2m_core::llm::aic_callback\u001b[0m\u001b[2m:\u001b[0m AIC: using pure-Rust RustAicCallback (no GIL on the predict hot path)"
+}

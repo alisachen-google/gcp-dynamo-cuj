@@ -1,0 +1,146 @@
+{
+  "rr192": {
+    "source": "/tmp/n3u-path1-hardware/n3u-agg-ns2-agentx-rr-c192/server_metrics.csv",
+    "sha256": "1ecf84d2fc3587bc95f444140bc988a58e1c1a8c572d266d154839db784f8aa5",
+    "metadata": [
+      {
+        "Metric": "dynamo_frontend_model_context_length",
+        "avg": "262144.0000",
+        "min": "262144.0000",
+        "max": "262144.0000"
+      },
+      {
+        "Metric": "dynamo_frontend_model_kv_cache_block_size",
+        "avg": "64.0000",
+        "min": "64.0000",
+        "max": "64.0000"
+      },
+      {
+        "Metric": "dynamo_frontend_model_max_num_batched_tokens",
+        "avg": "16384.0000",
+        "min": "16384.0000",
+        "max": "16384.0000"
+      },
+      {
+        "Metric": "dynamo_frontend_model_max_num_seqs",
+        "avg": "16.0000",
+        "min": "16.0000",
+        "max": "16.0000"
+      },
+      {
+        "Metric": "dynamo_frontend_model_total_kv_blocks",
+        "avg": "443697.0000",
+        "min": "443697.0000",
+        "max": "443697.0000"
+      }
+    ]
+  },
+  "rr384": {
+    "source": "/tmp/n3u-path1-hardware/n3u-agg-ns2-agentx-rr-c384/server_metrics.csv",
+    "sha256": "7106d46b7900643b168f4b2c5e3556cdaa9c341d1eece9c661dbafe87af2225c",
+    "metadata": [
+      {
+        "Metric": "dynamo_frontend_model_context_length",
+        "avg": "262144.0000",
+        "min": "262144.0000",
+        "max": "262144.0000"
+      },
+      {
+        "Metric": "dynamo_frontend_model_kv_cache_block_size",
+        "avg": "64.0000",
+        "min": "64.0000",
+        "max": "64.0000"
+      },
+      {
+        "Metric": "dynamo_frontend_model_max_num_batched_tokens",
+        "avg": "16384.0000",
+        "min": "16384.0000",
+        "max": "16384.0000"
+      },
+      {
+        "Metric": "dynamo_frontend_model_max_num_seqs",
+        "avg": "16.0000",
+        "min": "16.0000",
+        "max": "16.0000"
+      },
+      {
+        "Metric": "dynamo_frontend_model_total_kv_blocks",
+        "avg": "443697.0000",
+        "min": "443697.0000",
+        "max": "443697.0000"
+      }
+    ]
+  },
+  "kv192": {
+    "source": "/tmp/n3u-path1-hardware/n3u-agg-ns-agentx-kv-c192/server_metrics.csv",
+    "sha256": "30f56103cd98e6b2701a76c6a3dcf9a5f973532073f36c9ca4f675a73f6c5836",
+    "metadata": [
+      {
+        "Metric": "dynamo_frontend_model_context_length",
+        "avg": "262144.0000",
+        "min": "262144.0000",
+        "max": "262144.0000"
+      },
+      {
+        "Metric": "dynamo_frontend_model_kv_cache_block_size",
+        "avg": "64.0000",
+        "min": "64.0000",
+        "max": "64.0000"
+      },
+      {
+        "Metric": "dynamo_frontend_model_max_num_batched_tokens",
+        "avg": "16384.0000",
+        "min": "16384.0000",
+        "max": "16384.0000"
+      },
+      {
+        "Metric": "dynamo_frontend_model_max_num_seqs",
+        "avg": "16.0000",
+        "min": "16.0000",
+        "max": "16.0000"
+      },
+      {
+        "Metric": "dynamo_frontend_model_total_kv_blocks",
+        "avg": "443697.0000",
+        "min": "443697.0000",
+        "max": "443697.0000"
+      }
+    ]
+  },
+  "kv384": {
+    "source": "/tmp/n3u-path1-hardware/n3u-agg-ns-agentx-kv-c384/server_metrics.csv",
+    "sha256": "e577bfd4280331d1731305a932cfc09ced26af0f8d0ffc6f113b3956a08d73ff",
+    "metadata": [
+      {
+        "Metric": "dynamo_frontend_model_context_length",
+        "avg": "262144.0000",
+        "min": "262144.0000",
+        "max": "262144.0000"
+      },
+      {
+        "Metric": "dynamo_frontend_model_kv_cache_block_size",
+        "avg": "64.0000",
+        "min": "64.0000",
+        "max": "64.0000"
+      },
+      {
+        "Metric": "dynamo_frontend_model_max_num_batched_tokens",
+        "avg": "16384.0000",
+        "min": "16384.0000",
+        "max": "16384.0000"
+      },
+      {
+        "Metric": "dynamo_frontend_model_max_num_seqs",
+        "avg": "16.0000",
+        "min": "16.0000",
+        "max": "16.0000"
+      },
+      {
+        "Metric": "dynamo_frontend_model_total_kv_blocks",
+        "avg": "443697.0000",
+        "min": "443697.0000",
+        "max": "443697.0000"
+      }
+    ]
+  }
+}

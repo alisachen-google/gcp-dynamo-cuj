@@ -1,0 +1,46 @@
+{
+  "candidate": "v10",
+  "status": "unvalidated shared timing candidate; no completed performance result",
+  "purpose": "Compensate missing recurrent-state traffic and per-kernel fixed cost in the selected AIC SOL fallbacks; normal native AIC timings remain the base.",
+  "formula": "AIC_decode_ms + (osl - 1) * (decode_fixed_ms + ready_decode_requests * decode_ms_per_request)",
+  "model_geometry": {
+    "mamba_layers": 48,
+    "total_heads": 256,
+    "tp": 4,
+    "head_dim": 64,
+    "state_size": 128,
+    "state_dtype": "float32",
+    "ssm_bytes_per_request_per_gpu": 100663296
+  },
+  "aic_hardware_assumptions": {
+    "peak_mem_bytes_per_s": 8000000000000,
+    "empirical_bandwidth_fraction": 0.8,
+    "empirical_memory_kernel_fixed_ms": 0.003,
+    "kernels_per_layer": 2
+  },
+  "coefficients": {
+    "prefill_scale": 1.7050018888376215,
+    "prefill_attention_ms_per_billion_pairs": 165.56955130562164,
+    "decode_fixed_ms": 0.28800000000000003,
+    "decode_ms_per_request": 0.03145728
+  },
+  "batch16": {
+    "current_ssm_sol_ms": 0.006733823999999999,
+    "current_conv_sol_ms": 0.021233664,
+    "nominal_ssm_state_peak_bandwidth_ms": 0.402653184,
+    "added_decode_ms": 0.79131648
+  },
+  "limitations": [
+    "Bandwidth utilization and 3us kernel cost are AIC hardware-file empirical assumptions, not measured Nemotron hardware kernels.",
+    "SSM state residency in device caches and backend kernel fusion are not observed.",
+    "This addition is specific to the confirmed SOL fallback gap; do not apply it on top of complete measured SSM/Conv timing tables.",
+    "Cold prefill calibration already absorbs prefill kernel costs; prefill timing and scheduler behavior are unchanged.",
+    "End-to-end acceptance still requires every same-build point within 20% for total throughput/GPU and p95 TTFT."
+  ],
+  "source_sha256": {
+    "/tmp/n3u-path1-hybrid6-venv/lib/python3.12/site-packages/aiconfigurator_core/sdk/operations/mamba.py": "d0ea8ddd98a6bf4ba0b0d98ce0bec43762558fa6ebece7f5d806ca95bad30c13",
+    "/tmp/n3u-path1-hybrid6-venv/lib/python3.12/site-packages/aiconfigurator_core/sdk/models/nemotron_h.py": "1d573ea546f7bcc2e9f33378e8b99a1ecb4f9d8848a92975ee92ef1f2c80cefa",
+    "/tmp/n3u-path1-hybrid6-venv/lib/python3.12/site-packages/aiconfigurator_core/systems/gb300.yaml": "bef233b2f10ab3e2c324515932bba23e4ac07d49961dda1e8e943797406a1cdb",
+    "/tmp/n3u-path1-sglang-v0.5.16/configs/mamba_utils.py": "ea3d331adc4bef2277c36b8a20ae9298de1316e9478f740fa2f82b7f19caf070"
+  }
+}

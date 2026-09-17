@@ -1,0 +1,359 @@
+{
+  "schema_version": 1,
+  "hardware_date": "2026-09-16",
+  "simulation_date": "2026-09-17",
+  "gpus": 24,
+  "slo_ttft_p95_s": 20,
+  "hardware": [
+    {
+      "id": "n3u-agg-ns-agentx-kv-c48",
+      "policy": "kv",
+      "clients": 48,
+      "summary": "hardware/n3u-agg-ns-agentx-kv-c48.json",
+      "gcs_summary": "gs://alisachen-models/perf/1789545801_alisachen-n3u-agg-ns-agentx-kv-c48/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c48_20260916_080341/profile_export_aiperf.json",
+      "gcs_console": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789545801_alisachen-n3u-agg-ns-agentx-kv-c48"
+    },
+    {
+      "id": "n3u-agg-ns-agentx-kv-c96",
+      "policy": "kv",
+      "clients": 96,
+      "summary": "hardware/n3u-agg-ns-agentx-kv-c96.json",
+      "gcs_summary": "gs://alisachen-models/perf/1789550601_alisachen-n3u-agg-ns-agentx-kv-c96/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c96_20260916_092337/profile_export_aiperf.json",
+      "gcs_console": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789550601_alisachen-n3u-agg-ns-agentx-kv-c96"
+    },
+    {
+      "id": "n3u-agg-ns2-agentx-rr-c48",
+      "policy": "rr",
+      "clients": 48,
+      "summary": "hardware/n3u-agg-ns2-agentx-rr-c48.json",
+      "gcs_summary": "gs://alisachen-models/perf/1789550745_alisachen-n3u-agg-ns2-agentx-rr-c48/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c48_20260916_092603/profile_export_aiperf.json",
+      "gcs_console": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789550745_alisachen-n3u-agg-ns2-agentx-rr-c48"
+    },
+    {
+      "id": "n3u-agg-ns2-agentx-rr-c96",
+      "policy": "rr",
+      "clients": 96,
+      "summary": "hardware/n3u-agg-ns2-agentx-rr-c96.json",
+      "gcs_summary": "gs://alisachen-models/perf/1789555623_alisachen-n3u-agg-ns2-agentx-rr-c96/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c96_20260916_104719/profile_export_aiperf.json",
+      "gcs_console": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789555623_alisachen-n3u-agg-ns2-agentx-rr-c96"
+    },
+    {
+      "id": "n3u-agg-ns-agentx-kv-c192",
+      "policy": "kv",
+      "clients": 192,
+      "summary": "hardware/n3u-agg-ns-agentx-kv-c192.json",
+      "gcs_summary": "gs://alisachen-models/perf/1789555981_alisachen-n3u-agg-ns-agentx-kv-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260916_105318/profile_export_aiperf.json",
+      "gcs_console": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789555981_alisachen-n3u-agg-ns-agentx-kv-c192"
+    },
+    {
+      "id": "n3u-agg-ns2-agentx-rr-c192",
+      "policy": "rr",
+      "clients": 192,
+      "summary": "hardware/n3u-agg-ns2-agentx-rr-c192.json",
+      "gcs_summary": "gs://alisachen-models/perf/1789560983_alisachen-n3u-agg-ns2-agentx-rr-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260916_121640/profile_export_aiperf.json",
+      "gcs_console": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789560983_alisachen-n3u-agg-ns2-agentx-rr-c192"
+    },
+    {
+      "id": "n3u-agg-ns-agentx-kv-c384",
+      "policy": "kv",
+      "clients": 384,
+      "summary": "hardware/n3u-agg-ns-agentx-kv-c384.json",
+      "gcs_summary": "gs://alisachen-models/perf/1789562076_alisachen-n3u-agg-ns-agentx-kv-c384/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c384_20260916_123454/profile_export_aiperf.json",
+      "gcs_console": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789562076_alisachen-n3u-agg-ns-agentx-kv-c384"
+    },
+    {
+      "id": "n3u-agg-ns2-agentx-rr-c384",
+      "policy": "rr",
+      "clients": 384,
+      "summary": "hardware/n3u-agg-ns2-agentx-rr-c384.json",
+      "gcs_summary": "gs://alisachen-models/perf/1789567077_alisachen-n3u-agg-ns2-agentx-rr-c384/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c384_20260916_135817/profile_export_aiperf.json",
+      "gcs_console": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789567077_alisachen-n3u-agg-ns2-agentx-rr-c384"
+    },
+    {
+      "id": "n3u-agg-ns-agentx-kvs3c08-c192",
+      "policy": "kvs3c08",
+      "clients": 192,
+      "summary": "hardware/n3u-agg-ns-agentx-kvs3c08-c192.json",
+      "gcs_summary": "gs://alisachen-models/perf/1789569414_alisachen-n3u-agg-ns-agentx-kvs3c08-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260916_143711/profile_export_aiperf.json",
+      "gcs_console": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789569414_alisachen-n3u-agg-ns-agentx-kvs3c08-c192"
+    },
+    {
+      "id": "n3u-agg-ns2-agentx-kvt05-c192",
+      "policy": "kvt05",
+      "clients": 192,
+      "summary": "hardware/n3u-agg-ns2-agentx-kvt05-c192.json",
+      "gcs_summary": "gs://alisachen-models/perf/1789574468_alisachen-n3u-agg-ns2-agentx-kvt05-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260916_160123/profile_export_aiperf.json",
+      "gcs_console": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789574468_alisachen-n3u-agg-ns2-agentx-kvt05-c192"
+    },
+    {
+      "id": "n3u-agg-ns-agentx-kvs2c08-c192",
+      "policy": "kvs2c08",
+      "clients": 192,
+      "summary": "hardware/n3u-agg-ns-agentx-kvs2c08-c192.json",
+      "gcs_summary": "gs://alisachen-models/perf/1789575514_alisachen-n3u-agg-ns-agentx-kvs2c08-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260916_161904/profile_export_aiperf.json",
+      "gcs_console": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789575514_alisachen-n3u-agg-ns-agentx-kvs2c08-c192"
+    },
+    {
+      "id": "n3u-agg-ns2-agentx-kvs3c08-c96",
+      "policy": "kvs3c08",
+      "clients": 96,
+      "summary": "hardware/n3u-agg-ns2-agentx-kvs3c08-c96.json",
+      "gcs_summary": "gs://alisachen-models/perf/1789582550_alisachen-n3u-agg-ns2-agentx-kvs3c08-c96/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c96_20260916_181609/profile_export_aiperf.json",
+      "gcs_console": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789582550_alisachen-n3u-agg-ns2-agentx-kvs3c08-c96"
+    }
+  ],
+  "files": {
+    "hardware/n3u-agg-ns-agentx-kv-c48.json": {
+      "sha256": "9b939cabfa894f92a10916a80eea531a027ddba95f0034d1ce842d0f3a399b71",
+      "source": "/tmp/n3u-path1-hardware/n3u-agg-ns-agentx-kv-c48/summary.json"
+    },
+    "hardware/n3u-agg-ns-agentx-kv-c96.json": {
+      "sha256": "7e32811bf2aeae8dab1917a4f9e0be0775ca8c99a83613e41a1aa19cb774a233",
+      "source": "/tmp/n3u-path1-hardware/n3u-agg-ns-agentx-kv-c96/summary.json"
+    },
+    "hardware/n3u-agg-ns2-agentx-rr-c48.json": {
+      "sha256": "f18c67e0406439c1ec4623e7e74caaef8194fdf81ff570d505993eb8c12b7b27",
+      "source": "/tmp/n3u-path1-hardware/n3u-agg-ns2-agentx-rr-c48/summary.json"
+    },
+    "hardware/n3u-agg-ns2-agentx-rr-c96.json": {
+      "sha256": "20434d49bd2451e5bb08bea77f62c94e30df85ff3d7d451da17f6808b848a876",
+      "source": "/tmp/n3u-path1-hardware/n3u-agg-ns2-agentx-rr-c96/summary.json"
+    },
+    "hardware/n3u-agg-ns-agentx-kv-c192.json": {
+      "sha256": "2d6fb0de99fd8e5e447b85072b54c8de4f0b2aca3ba1596a9f5c3ffd99bb6fc5",
+      "source": "/tmp/n3u-path1-hardware/n3u-agg-ns-agentx-kv-c192/summary.json"
+    },
+    "hardware/n3u-agg-ns2-agentx-rr-c192.json": {
+      "sha256": "4c166a44777419e95ee1b5b3cd98524385b933fad654a46d0ed20a77f4fc155b",
+      "source": "/tmp/n3u-path1-hardware/n3u-agg-ns2-agentx-rr-c192/summary.json"
+    },
+    "hardware/n3u-agg-ns-agentx-kv-c384.json": {
+      "sha256": "fdb007c244c459963451c2f4153093a2867b9dfdcf91be8a2fe8db0053842e86",
+      "source": "/tmp/n3u-path1-hardware/n3u-agg-ns-agentx-kv-c384/summary.json"
+    },
+    "hardware/n3u-agg-ns2-agentx-rr-c384.json": {
+      "sha256": "52632c2a5c873d2112fda7335f9411c95836e07715d0c46f8f2e5f40108906be",
+      "source": "/tmp/n3u-path1-hardware/n3u-agg-ns2-agentx-rr-c384/summary.json"
+    },
+    "hardware/n3u-agg-ns-agentx-kvs3c08-c192.json": {
+      "sha256": "52a20cc8636bdd4d948bc8d743628635d26981a2f29765614329b487d318e582",
+      "source": "/tmp/n3u-path1-hardware/n3u-agg-ns-agentx-kvs3c08-c192/summary.json"
+    },
+    "hardware/n3u-agg-ns2-agentx-kvt05-c192.json": {
+      "sha256": "1368d7803b5c3d0a23204b60e35de28e1af067870828d686c047c15ccdd83c8c",
+      "source": "/tmp/n3u-path1-hardware/n3u-agg-ns2-agentx-kvt05-c192/summary.json"
+    },
+    "hardware/n3u-agg-ns-agentx-kvs2c08-c192.json": {
+      "sha256": "a10ed2fb1ba46e6b9f5ff31aa3bb9936b54a84e27e70e106dde5e88849b027b0",
+      "source": "/tmp/n3u-path1-hardware/n3u-agg-ns-agentx-kvs2c08-c192/summary.json"
+    },
+    "hardware/n3u-agg-ns2-agentx-kvs3c08-c96.json": {
+      "sha256": "f7aad98ee8c9d8875fab3997ebbbcf2ca0993b738b3126a76b2b48853687abdc",
+      "source": "/tmp/n3u-path1-hardware/n3u-agg-ns2-agentx-kvs3c08-c96/summary.json"
+    },
+    "native-v10/matrix.json": {
+      "sha256": "69fbdb7f6c5a5133f3e18a9f2847e6b2e2048f5f607be2b7678f64a3acd80509",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/matrix_v10_throughput_portable.json"
+    },
+    "native-v10/agg-rr-c192-calibrated-v10/simulation_summary.json": {
+      "sha256": "055fb9dabed8c459679fde36e97746a3e2972830e184ab3a90ddd32d311ec4c0",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-rr-c192-calibrated-v10/simulation_summary.json"
+    },
+    "native-v10/agg-rr-c192-calibrated-v10/engine.json": {
+      "sha256": "8a9fe3be2d6b3d3f344ab8a7ab68cd5057e880fb4626fac40e00c3d5db154858",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-rr-c192-calibrated-v10/engine.json"
+    },
+    "native-v10/agg-rr-c192-calibrated-v10/server-environment.json": {
+      "sha256": "d078d75d8c980e2367706ad900dd37ae03ce6ed85757dde667cce1fe9b3eea86",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-rr-c192-calibrated-v10/server-environment.json"
+    },
+    "native-v10/agg-rr-c192-calibrated-v10/comparison.json": {
+      "sha256": "00936db1ec7be9bb30284dc2758d0f30c1c325e7073b1c5fbabc8c823e9b289f",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-rr-c192-calibrated-v10/comparison.json"
+    },
+    "native-v10/agg-rr-c192-calibrated-v10/input_identity.json": {
+      "sha256": "2de4a3560062d80c0d58a42103931114c6f97210f0a3b28cdf27488305877e30",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-rr-c192-calibrated-v10/input_identity.json"
+    },
+    "native-v10/agg-rr-c192-calibrated-v10/payload_sample.json": {
+      "sha256": "e9bdcde2bbd91bcafeaa723776c70bc1c37ee471267a766f804de8fff7293c07",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-rr-c192-calibrated-v10/payload_sample.json"
+    },
+    "native-v10/agg-rr-c192-calibrated-v10/aic_callback_confirmation.json": {
+      "sha256": "54bafb1788c5f7c79c0ec5f9d21a1ed79f213fd798c90726c71905865e48e15e",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-rr-c192-calibrated-v10/aic_callback_confirmation.json"
+    },
+    "native-v10/agg-rr-c192-calibrated-v10/artifact-sha256.json": {
+      "sha256": "0ffd3501202026de14d5908ac2b97a843eba28bcbb1c03af95594d75eec20196",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-rr-c192-calibrated-v10/artifact-sha256.json"
+    },
+    "native-v10/agg-rr-c192-calibrated-v10/provenance.json": {
+      "sha256": "08188fd0c84f21f07ac40b6f3708a61383ed86175f05721579e464d1d25aa97b",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-rr-c192-calibrated-v10/provenance.json"
+    },
+    "native-v10/agg-rr-c384-calibrated-v10/simulation_summary.json": {
+      "sha256": "f44c3950c6a1436bb16d367cd5be4f11103ef43b902e15fbe04d857b5b224570",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-rr-c384-calibrated-v10/simulation_summary.json"
+    },
+    "native-v10/agg-rr-c384-calibrated-v10/engine.json": {
+      "sha256": "8a9fe3be2d6b3d3f344ab8a7ab68cd5057e880fb4626fac40e00c3d5db154858",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-rr-c384-calibrated-v10/engine.json"
+    },
+    "native-v10/agg-rr-c384-calibrated-v10/server-environment.json": {
+      "sha256": "d078d75d8c980e2367706ad900dd37ae03ce6ed85757dde667cce1fe9b3eea86",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-rr-c384-calibrated-v10/server-environment.json"
+    },
+    "native-v10/agg-rr-c384-calibrated-v10/comparison.json": {
+      "sha256": "d03540bf02c8e781003a9d490ffc114ca96f69c784c13b3c75358dda287e2b12",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-rr-c384-calibrated-v10/comparison.json"
+    },
+    "native-v10/agg-rr-c384-calibrated-v10/input_identity.json": {
+      "sha256": "aa8f3d838ae5a5b0101ce540ebd4aa13f0839f465b359b602d289e10f503ed56",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-rr-c384-calibrated-v10/input_identity.json"
+    },
+    "native-v10/agg-rr-c384-calibrated-v10/payload_sample.json": {
+      "sha256": "54ae9820bf112db667fc6ebd136a7acae6d95b93be765f2f9944b7cdbc13c513",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-rr-c384-calibrated-v10/payload_sample.json"
+    },
+    "native-v10/agg-rr-c384-calibrated-v10/aic_callback_confirmation.json": {
+      "sha256": "6c218a95a612a38a374ba8055adfb8baa7cb43617e7f3b30b48123b8e1e7f444",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-rr-c384-calibrated-v10/aic_callback_confirmation.json"
+    },
+    "native-v10/agg-rr-c384-calibrated-v10/artifact-sha256.json": {
+      "sha256": "ec66233ad20fd1babd11350ab7a4b601c3cf11e504dd5bbd47850d199f685105",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-rr-c384-calibrated-v10/artifact-sha256.json"
+    },
+    "native-v10/agg-rr-c384-calibrated-v10/provenance.json": {
+      "sha256": "73277e6a20f3ab362392ca3509dd710ec4c1f1fddb8ed78cd3e268a04cd4c3f8",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-rr-c384-calibrated-v10/provenance.json"
+    },
+    "native-v10/agg-kv-c192-calibrated-v10/simulation_summary.json": {
+      "sha256": "5c84ab88483cfa0beba07df7da189ce350310b61dc19b9ecfb4a8dde74c34d6e",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-kv-c192-calibrated-v10/simulation_summary.json"
+    },
+    "native-v10/agg-kv-c192-calibrated-v10/engine.json": {
+      "sha256": "8a9fe3be2d6b3d3f344ab8a7ab68cd5057e880fb4626fac40e00c3d5db154858",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-kv-c192-calibrated-v10/engine.json"
+    },
+    "native-v10/agg-kv-c192-calibrated-v10/server-environment.json": {
+      "sha256": "d078d75d8c980e2367706ad900dd37ae03ce6ed85757dde667cce1fe9b3eea86",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-kv-c192-calibrated-v10/server-environment.json"
+    },
+    "native-v10/agg-kv-c192-calibrated-v10/comparison.json": {
+      "sha256": "323305e362cb262cf635b3aabc0c3ac1aaa1f89f68be2ce9d9f5ee32c2ad175e",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-kv-c192-calibrated-v10/comparison.json"
+    },
+    "native-v10/agg-kv-c192-calibrated-v10/input_identity.json": {
+      "sha256": "eedaca5a0447de3383d03ffd6f550ed9752d5f6e043be8c67916ab1303c37d31",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-kv-c192-calibrated-v10/input_identity.json"
+    },
+    "native-v10/agg-kv-c192-calibrated-v10/payload_sample.json": {
+      "sha256": "5334f88436f4a2f5d2497b56ae6c01a2f2e78f27f171df7dab6dd05c627d2884",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-kv-c192-calibrated-v10/payload_sample.json"
+    },
+    "native-v10/agg-kv-c192-calibrated-v10/aic_callback_confirmation.json": {
+      "sha256": "9a114a3522994878621f23246f102ffaf253eae032af2a80e332d3d21763df4c",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-kv-c192-calibrated-v10/aic_callback_confirmation.json"
+    },
+    "native-v10/agg-kv-c192-calibrated-v10/artifact-sha256.json": {
+      "sha256": "b407db271611cd8460f4110502202e34422c21ea9021fdb6275f738681338e9b",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-kv-c192-calibrated-v10/artifact-sha256.json"
+    },
+    "native-v10/agg-kv-c192-calibrated-v10/provenance.json": {
+      "sha256": "50fabfea754de5200545c60423c80d9d86f3ca6dd64cbeb65ea187c0aaf8f6a8",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-kv-c192-calibrated-v10/provenance.json"
+    },
+    "native-v10/agg-kv-c384-calibrated-v10/simulation_summary.json": {
+      "sha256": "707af5dc808f11f67c007ca37642b3b708383b71bea693245f9b21507866f357",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-kv-c384-calibrated-v10/simulation_summary.json"
+    },
+    "native-v10/agg-kv-c384-calibrated-v10/engine.json": {
+      "sha256": "8a9fe3be2d6b3d3f344ab8a7ab68cd5057e880fb4626fac40e00c3d5db154858",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-kv-c384-calibrated-v10/engine.json"
+    },
+    "native-v10/agg-kv-c384-calibrated-v10/server-environment.json": {
+      "sha256": "d078d75d8c980e2367706ad900dd37ae03ce6ed85757dde667cce1fe9b3eea86",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-kv-c384-calibrated-v10/server-environment.json"
+    },
+    "native-v10/agg-kv-c384-calibrated-v10/comparison.json": {
+      "sha256": "c30fdbf12daa9f41a52b98e1a9e1fa148b57cc6cd7b83a50c85f7ce75056b5f7",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-kv-c384-calibrated-v10/comparison.json"
+    },
+    "native-v10/agg-kv-c384-calibrated-v10/input_identity.json": {
+      "sha256": "f0f24c31ad7830de655b1cfcefe20634cdbb1e12a2aba1a620bb59d34cecaa02",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-kv-c384-calibrated-v10/input_identity.json"
+    },
+    "native-v10/agg-kv-c384-calibrated-v10/payload_sample.json": {
+      "sha256": "b5e8ba114cd176ceac1f10fafd35369dd6ffc3098e37bcf7c54c0d49fd1fd851",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-kv-c384-calibrated-v10/payload_sample.json"
+    },
+    "native-v10/agg-kv-c384-calibrated-v10/aic_callback_confirmation.json": {
+      "sha256": "64b738b68ae368c1034970f67a5386acc4001517eeafd1e192e4357a84d26601",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-kv-c384-calibrated-v10/aic_callback_confirmation.json"
+    },
+    "native-v10/agg-kv-c384-calibrated-v10/artifact-sha256.json": {
+      "sha256": "c7b70140bb29fb94dcaa3ed38fd2c48023e0535e18e7cbffb9e8e21aed6f9dda",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-kv-c384-calibrated-v10/artifact-sha256.json"
+    },
+    "native-v10/agg-kv-c384-calibrated-v10/provenance.json": {
+      "sha256": "bcbdb5584c85951ffcc67ece0ccd09208b5d19ef5d2cf0a9f9aad37346e3756f",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg-kv-c384-calibrated-v10/provenance.json"
+    },
+    "native-v10/v10_patch_reconstruction.json": {
+      "sha256": "d6f3cd04d6723e577de3d0cd7e5323f651e9f220f3e0a1b12e4b9af70cd31050",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/v10_patch_reconstruction.json"
+    },
+    "native-v10/decode_mamba_timing_candidate_v10.json": {
+      "sha256": "a6e4c042cab571379e089597b9915419eb5d5abe4b06b9ad00a2d76f0aa23b0b",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/decode_mamba_timing_candidate_v10.json"
+    },
+    "native-v10/prefill_calibration_v2.json": {
+      "sha256": "5fb83197e3caff2af36c594ac357174cfbe2f362c33ca2f1c921b0b7221faa1d",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/prefill_calibration_v2.json"
+    },
+    "native-v10/agg_hardware_serving_metadata.json": {
+      "sha256": "77139c167d1024d852e050ac7db133d88ff6410f502375e166103c73565b6668",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_path1/agg_hardware_serving_metadata.json"
+    },
+    "custom-python/audit.json": {
+      "sha256": "7ba82473fb53db3595c11d98715930c218774173749c856cf58dd34c2d49ada0",
+      "source": "/home/alisachen_google_com/gcp-dynamo-cuj/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_agg_policy_20260917/audit.json"
+    },
+    "custom-python/comparison.csv": {
+      "sha256": "eced70ef994f191caafd7b13532ac5633513ebd868cdacc81c8688edcdf54d56",
+      "source": "/home/alisachen_google_com/gcp-dynamo-cuj/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_agg_policy_20260917/comparison.csv"
+    },
+    "custom-python/targets.json": {
+      "sha256": "ead204327299db30d9b17bbd51d46663faa76f7fe7cd27a195ee6a4c09a7a8e4",
+      "source": "/home/alisachen_google_com/gcp-dynamo-cuj/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_agg_policy_targets_20260917.json"
+    },
+    "custom-python/source/dynosim_aiperf_replay.py": {
+      "sha256": "478490955311cdde535e1a9fb2f38849f3f46228387a3620d7efaac15713360f",
+      "source": "/home/alisachen_google_com/gcp-dynamo-cuj/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_agg_policy_20260917/source/dynosim_aiperf_replay.py"
+    },
+    "custom-python/source/dynosim_agentx.py": {
+      "sha256": "4a0f9eef03b17a7f472a0c376c647f463c145a5fc56f0fd1d45eb995c420bebf",
+      "source": "/home/alisachen_google_com/gcp-dynamo-cuj/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_agg_policy_20260917/source/dynosim_agentx.py"
+    },
+    "custom-python/source/agentx_scheduled_engine.py": {
+      "sha256": "7a38722e74600faa5264192aeaf61e1a226d536ab1b71359ddbdddd8edf8fc57",
+      "source": "/home/alisachen_google_com/gcp-dynamo-cuj/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_agg_policy_20260917/source/agentx_scheduled_engine.py"
+    },
+    "custom-python/source/dynosim_pd.py": {
+      "sha256": "160160ee98eca99a05f41e108e4588a541f062a3114f5844b1c0b8a54ce3481b",
+      "source": "/home/alisachen_google_com/gcp-dynamo-cuj/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_agg_policy_20260917/source/dynosim_pd.py"
+    },
+    "native-v10/original-calibration-report.txt": {
+      "sha256": "154af18a544ac0609a8561dbee472265597db20d79008f118ec3218567af64b2",
+      "source": "/tmp/n3u-path1-worktree/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/reports/agentx-path1-calibration.md"
+    },
+    "hardware/original-results-report.txt": {
+      "sha256": "71fa8a89201783131fc69691bf4a6987976797ff65c64f7b2b3ed319051aed92",
+      "source": "/home/alisachen_google_com/gcp-dynamo-cuj/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/AGENTX_AGG_RESULTS.md"
+    },
+    "hardware/original-run-index.txt": {
+      "sha256": "9b62c2a4f710966f09e5040180dc1d408476c8a74b23426ed48321f1820d547d",
+      "source": "/home/alisachen_google_com/gcp-dynamo-cuj/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/RUN_INDEX.md"
+    }
+  }
+}

@@ -1,0 +1,366 @@
+{
+  "hardware_fragment": "/tmp/n3u-path1-hardware/kv192-raw-first4mb.part",
+  "run_dir": "/tmp/n3u-path1-runs/agg-kv-c192-calibrated-v10",
+  "fragment_sha256": "5b619c1f58de8b8ac4eab2ff78f44085bad203456e0817fac17b5161994d9b39",
+  "sampled_hardware_records": 13,
+  "matched_records": 13,
+  "pending_or_missing": [],
+  "all_samples_present": true,
+  "matched_samples_equal": true,
+  "all_samples_equal": true,
+  "header_scope": "Header names are case-insensitive; request/correlation IDs are normalized only when equal to record metadata. Extra routing headers remain differences.",
+  "all_headers_equal_except_runtime_ids": true,
+  "comparisons": [
+    {
+      "identity": [
+        "3e573575f7a9f0d647460e769c0a64e71d59",
+        11,
+        8,
+        "warmup",
+        "[rid:56300504054f]\n\n",
+        "weka_main",
+        "3e573575f7a9f0d647460e769c0a64e71d59"
+      ],
+      "hardware_payload_sha256": "9b4ac63190827e8f0cea965b12159c18d7a38999ee581f9ef2a43a66430de36f",
+      "simulation_payload_sha256": "9b4ac63190827e8f0cea965b12159c18d7a38999ee581f9ef2a43a66430de36f",
+      "payload_equal": true,
+      "marker_equal": true,
+      "target_equal": true,
+      "headers_equal_except_runtime_ids": true,
+      "header_diff_keys": [],
+      "payload_diff_keys": [],
+      "source_kind_pair": [
+        "weka_main",
+        "weka_main"
+      ],
+      "conversation_id_pair": [
+        "3e573575f7a9f0d647460e769c0a64e71d59",
+        "3e573575f7a9f0d647460e769c0a64e71d59"
+      ]
+    },
+    {
+      "identity": [
+        "0bcd99353218b9a386b1c4aec13d77abecdb",
+        21,
+        18,
+        "warmup",
+        "[rid:be4bd570dafb]\n\n",
+        "weka_main",
+        "0bcd99353218b9a386b1c4aec13d77abecdb"
+      ],
+      "hardware_payload_sha256": "3768e308b7710c37cd242f511014c20cc7e063eb72d571765b2829297e056fa4",
+      "simulation_payload_sha256": "3768e308b7710c37cd242f511014c20cc7e063eb72d571765b2829297e056fa4",
+      "payload_equal": true,
+      "marker_equal": true,
+      "target_equal": true,
+      "headers_equal_except_runtime_ids": true,
+      "header_diff_keys": [],
+      "payload_diff_keys": [],
+      "source_kind_pair": [
+        "weka_main",
+        "weka_main"
+      ],
+      "conversation_id_pair": [
+        "0bcd99353218b9a386b1c4aec13d77abecdb",
+        "0bcd99353218b9a386b1c4aec13d77abecdb"
+      ]
+    },
+    {
+      "identity": [
+        "751fbb2089c7c4303f3ed241f3a7a27a3f2c",
+        10,
+        10,
+        "warmup",
+        "[rid:785d1d9c68e7]\n\n",
+        "weka_main",
+        "751fbb2089c7c4303f3ed241f3a7a27a3f2c"
+      ],
+      "hardware_payload_sha256": "e38cf3e0634b92c7807fbab21fa035b37e5ccbc1cd3782a654e2dc6d0dcdcd90",
+      "simulation_payload_sha256": "e38cf3e0634b92c7807fbab21fa035b37e5ccbc1cd3782a654e2dc6d0dcdcd90",
+      "payload_equal": true,
+      "marker_equal": true,
+      "target_equal": true,
+      "headers_equal_except_runtime_ids": true,
+      "header_diff_keys": [],
+      "payload_diff_keys": [],
+      "source_kind_pair": [
+        "weka_main",
+        "weka_main"
+      ],
+      "conversation_id_pair": [
+        "751fbb2089c7c4303f3ed241f3a7a27a3f2c",
+        "751fbb2089c7c4303f3ed241f3a7a27a3f2c"
+      ]
+    },
+    {
+      "identity": [
+        "0470d446a4514dfe0c6ad0be92853bd13287",
+        150,
+        45,
+        "warmup",
+        "[rid:477655bdd750]\n\n",
+        "weka_flat",
+        "0470d446a4514dfe0c6ad0be92853bd13287::fa:006"
+      ],
+      "hardware_payload_sha256": "1e30044497b5c153e5cd1ff2abd6d6f969c5ba91f8c7268d767097dbfa4d1f22",
+      "simulation_payload_sha256": "1e30044497b5c153e5cd1ff2abd6d6f969c5ba91f8c7268d767097dbfa4d1f22",
+      "payload_equal": true,
+      "marker_equal": true,
+      "target_equal": true,
+      "headers_equal_except_runtime_ids": true,
+      "header_diff_keys": [],
+      "payload_diff_keys": [],
+      "source_kind_pair": [
+        "weka_flat",
+        "weka_flat"
+      ],
+      "conversation_id_pair": [
+        "0470d446a4514dfe0c6ad0be92853bd13287::fa:006",
+        "0470d446a4514dfe0c6ad0be92853bd13287::fa:006"
+      ]
+    },
+    {
+      "identity": [
+        "578354185933aedcdc6c17fbfbfcfb48876b",
+        11,
+        41,
+        "warmup",
+        "[rid:c7de8a3655a5]\n\n",
+        "weka_subagent",
+        "578354185933aedcdc6c17fbfbfcfb48876b::sa:subagent_001_bd5df00b"
+      ],
+      "hardware_payload_sha256": "7249fb6f9f808431be91e26417b1c70821ef558cd538451e5c2928750c1049f7",
+      "simulation_payload_sha256": "7249fb6f9f808431be91e26417b1c70821ef558cd538451e5c2928750c1049f7",
+      "payload_equal": true,
+      "marker_equal": true,
+      "target_equal": true,
+      "headers_equal_except_runtime_ids": true,
+      "header_diff_keys": [],
+      "payload_diff_keys": [],
+      "source_kind_pair": [
+        "weka_subagent",
+        "weka_subagent"
+      ],
+      "conversation_id_pair": [
+        "578354185933aedcdc6c17fbfbfcfb48876b::sa:subagent_001_bd5df00b",
+        "578354185933aedcdc6c17fbfbfcfb48876b::sa:subagent_001_bd5df00b"
+      ]
+    },
+    {
+      "identity": [
+        "3531533f1f293048fc9691b112feafc44e62",
+        6,
+        5,
+        "warmup",
+        "[rid:26ff5bcc1e4c]\n\n",
+        "weka_main",
+        "3531533f1f293048fc9691b112feafc44e62"
+      ],
+      "hardware_payload_sha256": "e911219eae04dd5713c42ba5d5a1da4aa9d500c59d0ec90d2e94245f85250af0",
+      "simulation_payload_sha256": "e911219eae04dd5713c42ba5d5a1da4aa9d500c59d0ec90d2e94245f85250af0",
+      "payload_equal": true,
+      "marker_equal": true,
+      "target_equal": true,
+      "headers_equal_except_runtime_ids": true,
+      "header_diff_keys": [],
+      "payload_diff_keys": [],
+      "source_kind_pair": [
+        "weka_main",
+        "weka_main"
+      ],
+      "conversation_id_pair": [
+        "3531533f1f293048fc9691b112feafc44e62",
+        "3531533f1f293048fc9691b112feafc44e62"
+      ]
+    },
+    {
+      "identity": [
+        "063179eb93f4337a662e859c5a2c5638e03f",
+        16,
+        13,
+        "warmup",
+        "[rid:9b5d339cdf58]\n\n",
+        "weka_flat",
+        "063179eb93f4337a662e859c5a2c5638e03f::fa:000"
+      ],
+      "hardware_payload_sha256": "96ce230464732889daf59a3c2bb77ab2df1fd86b2b4c5cb73eba45e48676aa02",
+      "simulation_payload_sha256": "96ce230464732889daf59a3c2bb77ab2df1fd86b2b4c5cb73eba45e48676aa02",
+      "payload_equal": true,
+      "marker_equal": true,
+      "target_equal": true,
+      "headers_equal_except_runtime_ids": true,
+      "header_diff_keys": [],
+      "payload_diff_keys": [],
+      "source_kind_pair": [
+        "weka_flat",
+        "weka_flat"
+      ],
+      "conversation_id_pair": [
+        "063179eb93f4337a662e859c5a2c5638e03f::fa:000",
+        "063179eb93f4337a662e859c5a2c5638e03f::fa:000"
+      ]
+    },
+    {
+      "identity": [
+        "5ca97cc975a39a898d775b63881b22fe178e",
+        40,
+        40,
+        "warmup",
+        "[rid:54e79d55d0b0]\n\n",
+        "weka_main",
+        "5ca97cc975a39a898d775b63881b22fe178e"
+      ],
+      "hardware_payload_sha256": "9966ac32ff3d3a22ed8fdb2344289f54939817a4cbb4013519f7d5c1602fd01b",
+      "simulation_payload_sha256": "9966ac32ff3d3a22ed8fdb2344289f54939817a4cbb4013519f7d5c1602fd01b",
+      "payload_equal": true,
+      "marker_equal": true,
+      "target_equal": true,
+      "headers_equal_except_runtime_ids": true,
+      "header_diff_keys": [],
+      "payload_diff_keys": [],
+      "source_kind_pair": [
+        "weka_main",
+        "weka_main"
+      ],
+      "conversation_id_pair": [
+        "5ca97cc975a39a898d775b63881b22fe178e",
+        "5ca97cc975a39a898d775b63881b22fe178e"
+      ]
+    },
+    {
+      "identity": [
+        "5cbd632dae8626a5743d4a3ce38bd74ff9dc",
+        46,
+        36,
+        "warmup",
+        "[rid:f1610626bd67]\n\n",
+        "weka_main",
+        "5cbd632dae8626a5743d4a3ce38bd74ff9dc"
+      ],
+      "hardware_payload_sha256": "15d468da07bd24c108c3cbca8c6574cbfa57a08cf9f49a30020dc6caf7d06e47",
+      "simulation_payload_sha256": "15d468da07bd24c108c3cbca8c6574cbfa57a08cf9f49a30020dc6caf7d06e47",
+      "payload_equal": true,
+      "marker_equal": true,
+      "target_equal": true,
+      "headers_equal_except_runtime_ids": true,
+      "header_diff_keys": [],
+      "payload_diff_keys": [],
+      "source_kind_pair": [
+        "weka_main",
+        "weka_main"
+      ],
+      "conversation_id_pair": [
+        "5cbd632dae8626a5743d4a3ce38bd74ff9dc",
+        "5cbd632dae8626a5743d4a3ce38bd74ff9dc"
+      ]
+    },
+    {
+      "identity": [
+        "458bc16a2a50e993cc97c108d4d19cb9f453",
+        28,
+        28,
+        "warmup",
+        "[rid:2a03a3f8533b]\n\n",
+        "weka_main",
+        "458bc16a2a50e993cc97c108d4d19cb9f453"
+      ],
+      "hardware_payload_sha256": "4438121b97d9cd5630129a315ec6f37e4af2bac3ea0336f5a1756a1f95719c8b",
+      "simulation_payload_sha256": "4438121b97d9cd5630129a315ec6f37e4af2bac3ea0336f5a1756a1f95719c8b",
+      "payload_equal": true,
+      "marker_equal": true,
+      "target_equal": true,
+      "headers_equal_except_runtime_ids": true,
+      "header_diff_keys": [],
+      "payload_diff_keys": [],
+      "source_kind_pair": [
+        "weka_main",
+        "weka_main"
+      ],
+      "conversation_id_pair": [
+        "458bc16a2a50e993cc97c108d4d19cb9f453",
+        "458bc16a2a50e993cc97c108d4d19cb9f453"
+      ]
+    },
+    {
+      "identity": [
+        "07dd40536557a1d6440a923557c3129dc929",
+        7,
+        7,
+        "warmup",
+        "[rid:9ebd5d41e3eb]\n\n",
+        "weka_main",
+        "07dd40536557a1d6440a923557c3129dc929"
+      ],
+      "hardware_payload_sha256": "dfbcb0f06929faccc17acdf545e87fc1ad2fe38bf157d1e6ff15603e15bb921d",
+      "simulation_payload_sha256": "dfbcb0f06929faccc17acdf545e87fc1ad2fe38bf157d1e6ff15603e15bb921d",
+      "payload_equal": true,
+      "marker_equal": true,
+      "target_equal": true,
+      "headers_equal_except_runtime_ids": true,
+      "header_diff_keys": [],
+      "payload_diff_keys": [],
+      "source_kind_pair": [
+        "weka_main",
+        "weka_main"
+      ],
+      "conversation_id_pair": [
+        "07dd40536557a1d6440a923557c3129dc929",
+        "07dd40536557a1d6440a923557c3129dc929"
+      ]
+    },
+    {
+      "identity": [
+        "12bd4c7c82ae413b035253cb800fc5312111",
+        2,
+        2,
+        "warmup",
+        "[rid:dc78e76a86ca]\n\n",
+        "weka_main",
+        "12bd4c7c82ae413b035253cb800fc5312111"
+      ],
+      "hardware_payload_sha256": "4719d3446ec2af0d4ab4587faedf1ed87705f7d3282ef60b27eaf19542d656af",
+      "simulation_payload_sha256": "4719d3446ec2af0d4ab4587faedf1ed87705f7d3282ef60b27eaf19542d656af",
+      "payload_equal": true,
+      "marker_equal": true,
+      "target_equal": true,
+      "headers_equal_except_runtime_ids": true,
+      "header_diff_keys": [],
+      "payload_diff_keys": [],
+      "source_kind_pair": [
+        "weka_main",
+        "weka_main"
+      ],
+      "conversation_id_pair": [
+        "12bd4c7c82ae413b035253cb800fc5312111",
+        "12bd4c7c82ae413b035253cb800fc5312111"
+      ]
+    },
+    {
+      "identity": [
+        "439e5f9ed3159bd826529d8ae5bd1536903f",
+        14,
+        7,
+        "warmup",
+        "[rid:da77b02f4458]\n\n",
+        "weka_main",
+        "439e5f9ed3159bd826529d8ae5bd1536903f"
+      ],
+      "hardware_payload_sha256": "a7d9a95567ab5e0a14ec7ba08a7f2f0223b32823d97e097e2f38de9cfb905110",
+      "simulation_payload_sha256": "a7d9a95567ab5e0a14ec7ba08a7f2f0223b32823d97e097e2f38de9cfb905110",
+      "payload_equal": true,
+      "marker_equal": true,
+      "target_equal": true,
+      "headers_equal_except_runtime_ids": true,
+      "header_diff_keys": [],
+      "payload_diff_keys": [],
+      "source_kind_pair": [
+        "weka_main",
+        "weka_main"
+      ],
+      "conversation_id_pair": [
+        "439e5f9ed3159bd826529d8ae5bd1536903f",
+        "439e5f9ed3159bd826529d8ae5bd1536903f"
+      ]
+    }
+  ]
+}

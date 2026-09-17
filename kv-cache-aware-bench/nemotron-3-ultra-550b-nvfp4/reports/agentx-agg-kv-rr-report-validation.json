@@ -1,0 +1,16 @@
+{
+  "all_checks_passed": true,
+  "hardware_summaries": 12,
+  "baseline_hardware_points": 8,
+  "native_v10_points": 4,
+  "custom_python_points": 8,
+  "verified_input_files": 63,
+  "shared_native_core_and_engine": true,
+  "native_matrix_matches_summaries": true,
+  "native_ttft_calibrated": false,
+  "slo_selection": {
+    "default_kv_clients": 192,
+    "rr_clients": 96,
+    "tuned_kv_clients": 192
+  }
+}

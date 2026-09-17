@@ -2,8 +2,6 @@
 
 Current simulation source: [AIPerf replay](reports/agentx-aiperf-results.md). Hardware measurements remain in section iii; the old simulation curves and gap interpretation have moved to the historical archive.
 
-Consolidated report: [agg KV/RR hardware sweep, knee/SLO comparisons and simulation](reports/agentx-agg-kv-rr-report.md) · [standalone HTML](reports/agentx-agg-kv-rr-report.html). Its native V10 calibration samples are identified separately from the earlier custom Python model.
-
 6 × TP4/EP4 aggregated workers (24 GPU, GB300), SGLang 0.5.16 / Dynamo 1.4.2 / FlashInfer 0.6.18 (the
 "new stack"), Weka 256K Claude-Code trace. Companion to AGG24_RESULTS.md (busy-stream results, old and new
 stack) and AGENTX_COMPARISON.md (methodology). Status 2026-09-16 07:30 UTC: no AgentX-mode agg point

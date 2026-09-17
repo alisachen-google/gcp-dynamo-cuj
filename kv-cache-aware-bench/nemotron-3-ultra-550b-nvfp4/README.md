@@ -6,6 +6,8 @@ GB300 NVL72, sglang backend, replaying `semianalysisai/cc-traces-weka-062126-256
 
 Current AgentX simulation performance (2026-09-17) uses the **new AIPerf replay** for agg and disagg; v3/v5 results are historical. Start with the [current result index](reports/agentx-aiperf-results.md): [64-GPU KV/RR topology curves](reports/agentx-64gpu-topology.md), [replay audit and simulation-vs-hardware gaps](reports/agentx-faithful-replay.md), and [reproduction commands](reports/agentx-replay-howto.md).
 
+For the complete **agg KV versus RR report**, use [hardware sweeps, knee/SLO comparisons and simulation methods](reports/agentx-agg-kv-rr-report.md), or the [standalone HTML](reports/agentx-agg-kv-rr-report.html). It includes measured 24-GPU AgentX curves, the separate native DynoSim V10 calibration samples, and the earlier custom-model sweep with its limitations.
+
 Why this model is the interesting second datapoint: hybrid Mamba-2/LatentMoE
 with only 12/108 attention layers — 6 KB/token KV (6x smaller than Kimi),
 near-linear prefill, and a smaller attention-KV footprint. Usable cache also depends on Mamba-state capacity and checkpoint eligibility; the original assumption of effectively unbounded cache is not sufficient. The study tests
