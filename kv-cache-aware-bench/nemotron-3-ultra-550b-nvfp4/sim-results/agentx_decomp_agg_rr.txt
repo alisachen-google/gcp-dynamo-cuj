@@ -1,0 +1,16 @@
+v1 (AIC-seeded, as published)                       48   0.60       716    29.8    1774     6.81    16.0 |  0.79x  0.95x  0.54x  0.82x
+v1 (AIC-seeded, as published)                       96   1.00      1152    48.0    2910    11.41    25.8 |  0.57x  0.71x  0.47x  0.91x
+v1 (AIC-seeded, as published)                      192   1.36      1438    59.9    3900    34.43    51.5 |  0.69x  0.84x  0.57x  0.57x
++ output length = measured (×0.81)                  48   0.64       627    26.1    1863     7.28    15.2 |  0.84x  0.83x  0.57x  0.88x
++ output length = measured (×0.81)                  96   1.13      1021    42.5    3285    15.79    23.7 |  0.64x  0.63x  0.53x  1.26x
++ output length = measured (×0.81)                 192   1.56      1250    52.1    4471    43.81    49.1 |  0.79x  0.73x  0.65x  0.73x
++ TTFT floor 0.19 s (transfer + scheduling)         48   0.63       620    25.8    1851     7.33    15.2 |  0.83x  0.82x  0.57x  0.89x
++ TTFT floor 0.19 s (transfer + scheduling)         96   1.12      1008    42.0    3253    14.17    23.9 |  0.63x  0.62x  0.53x  1.13x
++ TTFT floor 0.19 s (transfer + scheduling)        192   1.55      1245    51.9    4430    45.60    49.1 |  0.79x  0.73x  0.65x  0.76x
++ decode = measured ITL (5.5 + 1.45·bs, no cliff)      48   0.68       680    28.3    1973     8.01     9.9 |  0.89x  0.90x  0.60x  0.97x
++ decode = measured ITL (5.5 + 1.45·bs, no cliff)      96   1.22      1123    46.8    3574    17.12    16.5 |  0.69x  0.69x  0.58x  1.36x
++ decode = measured ITL (5.5 + 1.45·bs, no cliff)     192   1.62      1348    56.2    4673    46.21    37.9 |  0.82x  0.79x  0.68x  0.77x
+measured (agg RR, AgentX mode)                      48   0.76       756    31.5    3269     8.27     7.5
+measured (agg RR, AgentX mode)                      96   1.76      1620    67.5    6174    12.56    12.1
+measured (agg RR, AgentX mode)                     192   1.97      1713    71.4    6827    60.10    30.5
+

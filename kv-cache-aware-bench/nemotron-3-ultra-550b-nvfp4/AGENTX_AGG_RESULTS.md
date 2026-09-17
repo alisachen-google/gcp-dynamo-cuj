@@ -256,13 +256,50 @@ then 28.4 + 5.68·bs — the busy-stream refit) with a straight line through the
 | + decode = measured ITL line (5.8 + 1.33·bs, no cliff) | 1.24 | 1,139 (47.5) | 3,614 | 3.79 s | 18.6 ms | 0.64× · 0.63× · 0.53× · 0.71× |
 | **residual after all substitutions** | | | | | | **0.64× requests · 0.53× total · TTFT p95 0.71× (light) · TPOT still 1.6× too slow** |
 
+### At 192 clients (measured: 2.62 req/s · 2,344 output tok/s = 97.7/GPU · 9,741 total/GPU · TTFT p95 11.68 s (p50 1.56) · ITL p50 23.9 ms · 74.5 in flight)
+
+| sim variant | req/s | output tok/s (/GPU) | total tok/s/GPU | TTFT p95 | TPOT | sim/real: req/s · output · total · TTFT p95 |
+|---|---|---|---|---|---|---|
+| v1, AIC-seeded (as published) | 1.30 | 1,388 (57.8) | 3,728 | 5.89 s | 60.9 ms | 0.50× · 0.59× · **0.38×** · 0.50× |
+| + output length = measured (×0.75) | 1.69 | 1,395 (58.1) | 4,863 | 5.79 s | 52.3 ms | 0.64× · 0.59× · 0.50× · 0.50× |
+| + fixed 0.19 s per request (scheduling) | 1.66 | 1,355 (56.5) | 4,771 | 6.06 s | 53.5 ms | 0.63× · 0.58× · 0.49× · 0.52× |
+| + decode = measured ITL line (5.8 + 1.33·bs, no cliff) | 2.08 | 1,797 (74.9) | 6,008 | 6.97 s | 33.1 ms | 0.79× · 0.77× · **0.62×** · 0.60× |
+| **residual after all substitutions** | | | | | | **0.79× requests · 0.62× total · TTFT p95 0.60× (light) · TPOT still 1.4× too slow** |
+
+At 192 the decode substitution alone lifts the sim from 0.38× to 0.62× of silicon on total tokens (+63%), the largest
+single move anywhere in the study; the remaining 0.62× is 0.79 (request rate) × 0.76 (input tokens per request, 67 k
+sim vs 88 k measured) = 0.60, i.e. the trace residual, with a small remainder from the sim's still-deeper per-worker
+batches (TPOT 33 vs 24 ms).
+
+### The round-robin ladder (agg RR, 48 / 96 / 192): the engine is fine when the router is simple
+
+Script [`scripts/dynosim_agentx_decomp_agg_rr.py`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/scripts/dynosim_agentx_decomp_agg_rr.py),
+table [`sim-results/agentx_decomp_agg_rr.txt`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_decomp_agg_rr.txt);
+decode line 5.5 + 1.45·bs ms through the measured RR ITL p50 points.
+
+| sim variant → sim ÷ real (req/s · output · total · TTFT p95) | 48 | 96 | 192 |
+|---|---|---|---|
+| v1, AIC-seeded (as published) | 0.79 · 0.95 · **0.54** · 0.82 | 0.57 · 0.71 · **0.47** · 0.91 | 0.69 · 0.84 · **0.57** · 0.57 |
+| + output length = measured | 0.84 · 0.83 · 0.57 · 0.88 | 0.64 · 0.63 · 0.53 · 1.26 | 0.79 · 0.73 · 0.65 · 0.73 |
+| + fixed 0.19 s per request | 0.83 · 0.82 · 0.57 · 0.89 | 0.63 · 0.62 · 0.53 · 1.13 | 0.79 · 0.73 · 0.65 · 0.76 |
+| + decode = measured ITL line | 0.89 · 0.90 · 0.60 · 0.97 | 0.69 · 0.69 · 0.58 · 1.36 | 0.82 · 0.79 · 0.68 · 0.77 |
+| **residual** | **0.89× requests · 0.60× total · p95 0.97×** | **0.69× · 0.58× · 1.36×** | **0.82× · 0.68× · 0.77×** |
+
+Measured RR cells: 0.76 / 1.76 / 1.97 req/s · 756 / 1,620 / 1,713 output tok/s · 3,269 / 6,174 / 6,827 total/GPU · TTFT
+p95 8.27 / 12.56 / 60.1 s · ITL p50 7.5 / 12.1 / 30.5 ms. For RR the sim is within 10–20% on request rate and on the
+TTFT tail once the engine constants are measured; the 0.6–0.7× on total tokens is the input-length term of the trace
+slice (67–70 k vs 82–102 k measured) and nothing else. **The sim models the workload and the agg engine acceptably; what
+it models badly is the KV-aware router** (compare the KV residual's 1.4× TPOT and the raw 0.25–0.28× on tuned KV).
+
 ### Where the gap is, in plain words
 
 1. **The decode cliff is the biggest single term on agg** (unlike disagg, where the engine model was within 10%). The
-   published sim runs agg decode at 27–40 ms per token against 7–12 ms measured, because its busy-stream refit jumps to
-   28.4 + 5.68·bs past batch 7. Removing the cliff lifts total tokens by 17–29% (0.48 → 0.56×, 0.41 → 0.53×) and is the
-   reason the sim ranked RR ahead of KV on agg below the knee: the router that packs a session's turns onto one worker
-   was being charged a decode penalty the real engine does not pay (measured: KV ahead 1.03× / 1.12×, §iii).
+   published sim runs agg decode at 27–61 ms per token against 7–24 ms measured, because its busy-stream refit jumps to
+   28.4 + 5.68·bs past batch 7. Removing the cliff lifts total tokens by 17–63% (0.48 → 0.56×, 0.41 → 0.53×, 0.38 →
+   0.62× at 48 / 96 / 192) and is the reason the sim ranked RR ahead of KV on agg below the knee and predicted a 26% loss
+   for the tuned router: the router that packs a session's turns onto one worker was being charged a decode penalty the
+   real engine does not pay (measured: KV ahead 1.03× / 1.12× / 1.42×, tuned +14%, §iii, §v). The RR ladder is the
+   control: with a router that never packs, the same engine lands within 10–20% of silicon on requests and tail.
 2. **Even with the measured line, the sim's mean TPOT is 1.6–2.0× too slow** (14.3 / 18.6 vs 7.3 / 11.9 ms). The line is
    right, so the sim must be running larger per-worker batches than the live fleet: it lets the KV policy pile many
    sessions' bursts onto the worker that holds their prefix while other workers idle, whereas the live Dynamo router

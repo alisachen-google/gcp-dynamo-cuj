@@ -190,9 +190,11 @@ hand-off, measured decode line) barely move the ratios — total tokens stay at 
 pessimistic. The gap is (1) **prefix hit rate**: sim 0.74–0.78 vs 0.83–0.93 backed out of the measured records, so the
 sim prefills 2.5–4× more tokens per turn, which sets its tail, its early knee (768) and its low ceiling (6,187 vs 10,434
 measured and still rising); (2) **trace representation**: 70 k input tokens per request vs 86–94 k measured and a
-0.69–0.80× request rate from the 4 k-request slice. Requests × input length reproduces the residual exactly. Agg (KV, 48 / 96): the largest term is the sim's decode
-cliff past batch 7 (TPOT 27–40 ms simulated vs 7–12 ms measured); removing it recovers a third of the 0.35–0.44× gap,
-the rest is the same trace residual. Full ladders: AGENTX_D72_RESULTS.md §iv, AGENTX_AGG_RESULTS.md §iv; overlay page
+0.69–0.80× request rate from the 4 k-request slice. Requests × input length reproduces the residual exactly. Agg (KV 48 / 96 / 192 and RR 48 / 96 / 192): the largest
+term is the sim's decode cliff past batch 7 (TPOT 27–61 ms simulated vs 7–24 ms measured), which it applies to the deep
+per-worker batches its KV policy creates by packing sessions; removing it lifts the KV cells from 0.38–0.44× to
+0.53–0.62×, and the rest is the trace residual. The RR ladder is the control: with no packing the same engine is within
+10–20% of silicon on requests and TTFT tail, so the agg sim's problem is its KV-router model, not the engine. Full ladders: AGENTX_D72_RESULTS.md §iv, AGENTX_AGG_RESULTS.md §iv; overlay page
 `reports/n3u-agentx-sim-vs-real.html`. Rankings across topologies are the sim's reliable output; levels, and the
 KV-vs-RR ordering on agg, must come from silicon.
 
