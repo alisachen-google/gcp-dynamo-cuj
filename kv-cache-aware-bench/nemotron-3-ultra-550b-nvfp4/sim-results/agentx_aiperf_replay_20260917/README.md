@@ -9,7 +9,7 @@ model uses the current DynoSim aggregated engine without fitting its parameters.
 - `worker_placement.json`: simulated placement and per-worker decode/cache metrics.
 - Each point directory: aiperf summary, configuration, provenance, statistics,
   and compressed complete simulation request records and log.
-- `prewarm-validation.log`: reproduces the job template's prewarm parsing error.
+- `prewarm-validation.txt`: reproduces the job template's prewarm parsing error.
 
 The original hardware artifact URIs and configuration are retained in
 [`../agentx_calibration_targets.json`](../agentx_calibration_targets.json).

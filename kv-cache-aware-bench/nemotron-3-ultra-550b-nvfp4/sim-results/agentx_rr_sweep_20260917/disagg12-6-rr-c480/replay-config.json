@@ -1,0 +1,88 @@
+{
+  "random_seed": 42,
+  "benchmark": {
+    "models": {
+      "items": [
+        {
+          "name": "alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4"
+        }
+      ]
+    },
+    "endpoint": {
+      "urls": [
+        "http://simulated-serving:8000"
+      ],
+      "type": "chat",
+      "timeout": 1200.0,
+      "streaming": true,
+      "use_server_token_count": true,
+      "extra": {
+        "ignore_eos": true
+      }
+    },
+    "datasets": [
+      {
+        "name": "main",
+        "type": "public",
+        "dataset": "semianalysis_cc_traces_weka_062126_256k",
+        "entries": 393,
+        "random_seed": 42,
+        "max_context_length": 262144,
+        "cache_bust": {
+          "target": "first_turn_prefix"
+        }
+      }
+    ],
+    "phases": [
+      {
+        "name": "profiling",
+        "kind": "profiling",
+        "type": "concurrency",
+        "duration": 3600.0,
+        "concurrency": 480,
+        "grace_period": 60.0,
+        "timing_mode": "agentic_replay",
+        "trajectory_start_min_ratio": 0.25,
+        "trajectory_start_max_ratio": 0.75,
+        "system_idle_gap_cap_seconds": 10.0
+      }
+    ],
+    "artifacts": {
+      "dir": "/tmp/n3u-disagg-rr-sweep-20260917/disagg12-6-rr-c480",
+      "records": [
+        "jsonl"
+      ],
+      "raw": false,
+      "slice_duration": 1.0,
+      "auto_plot": false,
+      "plot_required": false
+    },
+    "slos": {
+      "time_to_first_token": 5000.0,
+      "inter_token_latency": 10.0
+    },
+    "tokenizer": {
+      "name": "/tmp/n3u-faithful-data/tokenizer",
+      "trust_remote_code": true
+    },
+    "gpu_telemetry": {
+      "enabled": false
+    },
+    "server_metrics": {
+      "enabled": false
+    },
+    "network_latency": {
+      "enabled": false
+    },
+    "otel": {},
+    "mlflow": {},
+    "wandb": {},
+    "runtime": {
+      "ui": "simple",
+      "workers": 200,
+      "record_processors": 8
+    },
+    "scenario": "inferencex-agentx-mvp",
+    "unsafe_override": false
+  }
+}

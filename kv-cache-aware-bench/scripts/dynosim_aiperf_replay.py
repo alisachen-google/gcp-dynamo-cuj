@@ -16,6 +16,7 @@ import json
 import os
 import sys
 import time
+from collections import Counter
 from contextlib import ExitStack
 from functools import lru_cache
 from pathlib import Path
@@ -74,6 +75,16 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("--duration", type=float, default=3600)
     parser.add_argument("--wall-clock", action="store_true")
     parser.add_argument("--entries", type=int, default=393)
+    parser.add_argument(
+        "--cache-capacity-tokens",
+        type=int,
+        help="Per-worker prefix-cache capacity; default retains the legacy 100M-token pool",
+    )
+    parser.add_argument(
+        "--kv-decode-block-cost",
+        action="store_true",
+        help="Controlled agg KV ablation: charge the projected active unique prompt-block footprint",
+    )
     return parser.parse_args()
 
 
@@ -183,6 +194,8 @@ def main() -> None:
         },
         "point": args.point,
         "engine": args.engine,
+        "kv_decode_block_cost_ablation": args.kv_decode_block_cost,
+        "cache_capacity_tokens": args.cache_capacity_tokens or 100_000_000,
         "serving": serving,
         "hardware_comparison_source": target.get(
             "hardware_comparison_source", target.get("source")
@@ -196,7 +209,11 @@ def main() -> None:
             name: hashlib.sha256(
                 Path(__file__).with_name(name).read_bytes()
             ).hexdigest()
-            for name in ("dynosim_agentx.py", "dynosim_pd.py")
+            for name in (
+                "dynosim_agentx.py",
+                "dynosim_pd.py",
+                "dynosim_aiperf_replay.py",
+            )
         },
         "duration_s": args.duration,
         "entries": args.entries,
@@ -219,6 +236,9 @@ def main() -> None:
         json.dumps(provenance, indent=2) + "\n"
     )
     da.dp.apply_n3u_constants()
+    if args.cache_capacity_tokens is not None:
+        assert args.cache_capacity_tokens >= da.dp.BLOCK_TOKENS
+        da.dp.KV_CAPACITY_TOKENS = args.cache_capacity_tokens
     if args.engine == "measured":
         assert serving["agg"], "The optional measured fit only supports agg"
         da.dp.agg_tpot_ms = (
@@ -235,10 +255,29 @@ def main() -> None:
         if not serving["agg"]
         else "least_inflight",
     )
+    # A single-factor diagnostic for the term omitted by the legacy KV score.
+    # This is not a complete implementation of Dynamo's scheduler/sequence state.
+    active_prompt_blocks = [Counter() for _ in engine.D]
+    incoming_blocks = set()
+    if args.kv_decode_block_cost:
+        assert serving["agg"] and target["policy"] == "kv"
+        for index, worker in enumerate(engine.P):
+            old_load = worker.load_blocks
+            counts = active_prompt_blocks[index]
+
+            def projected_load(now, old_load=old_load, counts=counts):
+                return old_load(now) + len(counts.keys() | incoming_blocks)
+
+            worker.load_blocks = projected_load
     log_file = (args.artifact_dir / "simulation-dispatch.jsonl").open("w", buffering=1)
     real_clock = time.perf_counter
     started = real_clock()
-    stats = {"requests": 0, "completed": 0, "tokenization_seconds": 0.0}
+    stats = {
+        "requests": 0,
+        "completed": 0,
+        "tokenization_seconds": 0.0,
+        "max_cached_blocks_per_prefill_worker": [0] * len(engine.P),
+    }
 
     # The cache and service time use the actual tokenizer/chat-template payload.
     # Each 64-token block receives a stable ID; prefix matching remains in DynoSim.
@@ -266,10 +305,20 @@ def main() -> None:
         start_ns = time.perf_counter_ns()
         wall_ns = time.time_ns()
         hit_before = engine.hits
-        prefill_worker = engine.rr % len(engine.P) if target["policy"] == "rr" else None
+        if args.kv_decode_block_cost:
+            incoming_blocks.clear()
+            incoming_blocks.update(hashes)
         ttft, tpot, _done, worker = engine.serve(hashes, out_len, now)
+        prefill_worker = engine.last_prefill_worker
+        if args.kv_decode_block_cost:
+            active_prompt_blocks[worker].update(hashes)
         if serving["agg"]:
             prefill_worker = worker
+        if prefill_worker is not None:
+            stats["max_cached_blocks_per_prefill_worker"][prefill_worker] = max(
+                stats["max_cached_blocks_per_prefill_worker"][prefill_worker],
+                len(engine.P[prefill_worker].cache),
+            )
         cached_tokens = 64 * (engine.hits - hit_before)
         # Match OSL-1 inter-token intervals; old Engine.done includes OSL.
         latency = ttft + max(0, out_len - 1) * tpot
@@ -350,7 +399,14 @@ def main() -> None:
             log_file.write(json.dumps(row) + "\n")
             raise
         finally:
-            engine.release(worker)
+            engine.release(worker, hashes)
+            if args.kv_decode_block_cost:
+                counts = active_prompt_blocks[worker]
+                for block in hashes:
+                    counts[block] -= 1
+                    assert counts[block] >= 0
+                    if counts[block] == 0:
+                        del counts[block]
 
     async def send_request(self, request_info, payload, *, first_token_callback=None):
         # HTTP normally owns this timeout. Keep it in the simulated transport

@@ -1,0 +1,13 @@
+{
+  "requests": 9106,
+  "completed": 9079,
+  "tokenization_seconds": 233.19761712895706,
+  "wall_seconds": 673.2638536030427,
+  "tokenization_full_parity_checks": 190,
+  "tokenization_cache": {
+    "hits": 304275,
+    "misses": 27262,
+    "maxsize": 8192,
+    "currsize": 8192
+  }
+}

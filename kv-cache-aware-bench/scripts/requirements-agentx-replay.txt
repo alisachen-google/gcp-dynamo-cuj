@@ -13,3 +13,4 @@ blobfile==3.3.0
 protobuf==7.36.1
 pytest==9.1.1
 pytest-asyncio==1.4.0
+matplotlib==3.11.2

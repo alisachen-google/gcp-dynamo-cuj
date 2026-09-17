@@ -1,0 +1,10 @@
+{
+  "source": "gs://alisachen-models/perf/1789560095_alisachen-n3u-mnnvl-126-agentx-kv-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260916_120219/server_metrics_export.csv",
+  "assumption": {
+    "prefill_prefix_cache_tokens_per_worker": 51801984,
+    "source": "gs://alisachen-models/perf/1789560095_alisachen-n3u-mnnvl-126-agentx-kv-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260916_120219/server_metrics_export.csv",
+    "note": "Decode-facing model metadata reports 809406 blocks/worker. Used as a prefill-cache capacity proxy, pending per-prefill-worker measurement. Not a measured Mamba cache capacity."
+  },
+  "original_sha256": "23e57a1a8c4b0ced8597c6848a06fe8b3845404c582bca3c9a5b484b62798d17",
+  "archive_transform": "CSV CRLF line endings normalized to LF; field values retained"
+}

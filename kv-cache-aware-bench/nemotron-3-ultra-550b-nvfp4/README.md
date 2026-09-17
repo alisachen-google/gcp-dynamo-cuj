@@ -4,9 +4,11 @@ Second model of the KV-cache-aware routing study: agg + disagg KV-vs-RR on
 GB300 NVL72, sglang backend, replaying `semianalysisai/cc-traces-weka-062126-256k`
 (same dataset as the Kimi-K2.5 study for cross-model comparability).
 
+Current AgentX work (2026-09-17): [64-GPU KV/RR topology curves](reports/agentx-64gpu-topology.md), [replay audit and simulation-vs-hardware gaps](reports/agentx-faithful-replay.md), and [reproduction commands](reports/agentx-replay-howto.md).
+
 Why this model is the interesting second datapoint: hybrid Mamba-2/LatentMoE
 with only 12/108 attention layers — 6 KB/token KV (6x smaller than Kimi),
-near-linear prefill, effectively unbounded per-worker cache. The study tests
+near-linear prefill, and a smaller attention-KV footprint. Usable cache also depends on Mamba-state capacity and checkpoint eligibility; the original assumption of effectively unbounded cache is not sufficient. The study tests
 whether KV-aware routing's win survives when recompute is cheap and cache is
 abundant (pure placement value) — see `DESIGN.md` for the full walkthrough.
 

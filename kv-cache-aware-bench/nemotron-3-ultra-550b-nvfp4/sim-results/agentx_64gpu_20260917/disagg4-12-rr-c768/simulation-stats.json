@@ -1,0 +1,19 @@
+{
+  "requests": 8976,
+  "completed": 8387,
+  "tokenization_seconds": 1374.5567837618291,
+  "max_cached_blocks_per_prefill_worker": [
+    809406,
+    809406,
+    809406,
+    809406
+  ],
+  "wall_seconds": 2122.1004141131416,
+  "tokenization_full_parity_checks": 188,
+  "tokenization_cache": {
+    "hits": 135134,
+    "misses": 140874,
+    "maxsize": 8192,
+    "currsize": 8192
+  }
+}

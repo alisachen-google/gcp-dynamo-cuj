@@ -1,0 +1,56 @@
+{
+  "aiperf_version": "0.12.0",
+  "aiperf_source_sha256": {
+    "timing/strategies/agentic_replay.py": "dfed34b23b6636d592d2ed546212454076a177e429ea9a3f9e72cda323217803",
+    "timing/trajectory_source.py": "46b3de73f682903eba71b1827c3b951be457f6375926fbdf14907157c1ff3a3b",
+    "timing/branch_orchestrator.py": "178766d13de718b37623b819d76c895231e49d4c1429a2c328a9ac39adfd59f0",
+    "timing/replay_dependencies.py": "a1a14ba1348b269e458b5dee22ae9acc262d38ac49523285ef00d54587b6c72c",
+    "timing/session_tree.py": "d858e8ba0bc6c2007b1c5d630d67b5d003b8bec2d31a0301eb337ac68c61b25a",
+    "dataset/loader/weka_trace.py": "ffda228c45887376fcfb4efde0dda0570ccd9eaf3db70d7a9b92fc06520a73b7",
+    "dataset/loader/weka_agent_chains.py": "2476c52ec0b371172bed68a91d4983588a1b6d08e6b47d223a1435cc4200384a"
+  },
+  "dataset_snapshot": "8fecd2fc56694469f758f0afbbb6335ad3043740",
+  "arrow_sha256": {
+    "cc-traces-weka-062126-256k-train-00000-of-00002.arrow": "6978cce33448b0c089adbab462899279ba3b82a70a3094eab80d7c0ffa4b4fb0",
+    "cc-traces-weka-062126-256k-train-00001-of-00002.arrow": "a9985755aca0500a6f5f1ca54cf713566d10219ab4e3e12a6d9c2a4eacf8d250"
+  },
+  "tokenizer_sha256": {
+    "tokenizer.json": "623c34567aebb18582765289fbe23d901c62704d6518d71866e0e58db892b5b7",
+    "config.json": "0c939f324c8910f5ebdafbe2a56d7e4e074c50042a3b4f26326bf71a3fe33929",
+    "special_tokens_map.json": "e9435fefd6d838fd9fcbbc44b97a8e3ff322be7f6dfb7e4fd2468586574bb52b",
+    "chat_template.jinja": "82753bef5cedc4932c1ed509b5c9a12be680fd86d1adb65bc3f7398d11c8eebc",
+    "tokenizer_config.json": "10f93eabcb9b1602fbb991d6308e787ce1df28ee9cd7a1c6d1e8c3f338b957bc"
+  },
+  "point": "disagg12-4-rr-c192",
+  "engine": "original",
+  "kv_decode_block_cost_ablation": false,
+  "cache_capacity_tokens": 51801984,
+  "serving": {
+    "agg": false,
+    "prefill_workers": 12,
+    "decode_workers": 4,
+    "decode_routing": "round_robin"
+  },
+  "hardware_comparison_source": null,
+  "replay_config_source": "gs://alisachen-models/perf/1789560095_alisachen-n3u-mnnvl-126-agentx-kv-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260916_120219/profile_export_aiperf.json",
+  "virtual_clock": true,
+  "benchmark_id": "1c5139a6c6ea",
+  "engine_source_sha256": {
+    "dynosim_agentx.py": "c90e89a92315c5f2be8ac9aec32ef2a0f0c703cfa50cd7ea2a6098115e96c1a2",
+    "dynosim_pd.py": "1a4d61de9cf7d7fdb9950f9bccbe7bdc3327f10c26ba830d0ab94f0ce581095e",
+    "dynosim_aiperf_replay.py": "fdf0e81db6da05039a693ad2a5892f69fc2eb64f9c4dff47ce461ef50051424b"
+  },
+  "duration_s": 3600.0,
+  "entries": 393,
+  "adaptations": [
+    "cached Arrow download source",
+    "in-process service manager and message bus",
+    "simulated serving transport",
+    "unified virtual asyncio/time clock",
+    "logical workers report zero host CPU load",
+    "pin benchmark ID from target for repeatable cache-bust markers",
+    "memoize tokenization at explicit special-token boundaries, with full-encoding parity checks"
+  ],
+  "initial_cache": "empty before actual aiperf trajectory warmup; counterfactual topology",
+  "request_timeout_seconds": 1200.0
+}

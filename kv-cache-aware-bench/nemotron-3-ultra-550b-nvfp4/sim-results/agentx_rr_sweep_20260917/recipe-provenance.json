@@ -1,0 +1,18 @@
+{
+  "github_repo": "alisachen-google/gcp-dynamo-cuj",
+  "recipe_commit": "96a019d8922002de91f4f9acc68005c7aac4ea21",
+  "dynamo_tag": "v1.4.2",
+  "dynamo_commit": "2ecbdfdf192c69c02c6d21e931d20d3b4a0bb64a",
+  "recipe_sha256": {
+    "nemotron-3-ultra-550b-nvfp4/scripts/resume_126_after_capacity.sh": "646c16283253e9e94638a6bca1ec1921e49aa54b4d315d4ef309898bf00d8b5e",
+    "nemotron-3-ultra-550b-nvfp4/scripts/agentx_runner.sh": "f96996847d8cba55111277b3df3443a9d38d2f6a17c13e1be46f76c9a4c5256c",
+    "sglang/manifests/n3u-mnnvl-126.yaml": "2ce04fee8df252c8e18f0b3acdd65321d6379452081963f59e4f08d88f683b51",
+    "manifests/perf/sgl-d72-agentx.yaml": "1df907568ec4cc478cffe522983efa7aa975b9ecde99e6607f5f2a096cb6801d"
+  },
+  "disagg_rr_recipe_clients_in_order": [
+    192,
+    96,
+    384
+  ],
+  "disagg_rr_hardware_search": "2026-09-17: no objects for gs://alisachen-models/perf/*n3u*agentx*rr*/ except the four agg jobs; broader *126*rr* also empty. This is absence in the searched artifact namespace, not proof a hardware job never ran."
+}

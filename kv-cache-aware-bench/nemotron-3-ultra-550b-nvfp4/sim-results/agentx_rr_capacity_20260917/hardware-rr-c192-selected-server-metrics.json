@@ -1,0 +1,439 @@
+{
+  "dynamo_frontend_model_total_kv_blocks": {
+    "type": "gauge",
+    "series": [
+      {
+        "endpoint_url": "http://n3u-agg-ns2-frontend:8000/metrics",
+        "labels": {
+          "model": "alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4"
+        },
+        "stats": {
+          "avg": 443697.0,
+          "min": 443697.0,
+          "max": 443697.0,
+          "std": 0.0,
+          "p1": 443697.0,
+          "p5": 443697.0,
+          "p10": 443697.0,
+          "p25": 443697.0,
+          "p50": 443697.0,
+          "p75": 443697.0,
+          "p90": 443697.0,
+          "p95": 443697.0,
+          "p99": 443697.0
+        },
+        "timeslices": {
+          "array_count": 3672
+        }
+      }
+    ]
+  },
+  "dynamo_frontend_model_kv_cache_block_size": {
+    "type": "gauge",
+    "series": [
+      {
+        "endpoint_url": "http://n3u-agg-ns2-frontend:8000/metrics",
+        "labels": {
+          "model": "alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4"
+        },
+        "stats": {
+          "avg": 64.0,
+          "min": 64.0,
+          "max": 64.0,
+          "std": 0.0,
+          "p1": 64.0,
+          "p5": 64.0,
+          "p10": 64.0,
+          "p25": 64.0,
+          "p50": 64.0,
+          "p75": 64.0,
+          "p90": 64.0,
+          "p95": 64.0,
+          "p99": 64.0
+        },
+        "timeslices": {
+          "array_count": 3672
+        }
+      }
+    ]
+  },
+  "dynamo_frontend_model_max_num_seqs": {
+    "type": "gauge",
+    "series": [
+      {
+        "endpoint_url": "http://n3u-agg-ns2-frontend:8000/metrics",
+        "labels": {
+          "model": "alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4"
+        },
+        "stats": {
+          "avg": 16.0,
+          "min": 16.0,
+          "max": 16.0,
+          "std": 0.0,
+          "p1": 16.0,
+          "p5": 16.0,
+          "p10": 16.0,
+          "p25": 16.0,
+          "p50": 16.0,
+          "p75": 16.0,
+          "p90": 16.0,
+          "p95": 16.0,
+          "p99": 16.0
+        },
+        "timeslices": {
+          "array_count": 3672
+        }
+      }
+    ]
+  },
+  "dynamo_frontend_model_max_num_batched_tokens": {
+    "type": "gauge",
+    "series": [
+      {
+        "endpoint_url": "http://n3u-agg-ns2-frontend:8000/metrics",
+        "labels": {
+          "model": "alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4"
+        },
+        "stats": {
+          "avg": 16384.0,
+          "min": 16384.0,
+          "max": 16384.0,
+          "std": 0.0,
+          "p1": 16384.0,
+          "p5": 16384.0,
+          "p10": 16384.0,
+          "p25": 16384.0,
+          "p50": 16384.0,
+          "p75": 16384.0,
+          "p90": 16384.0,
+          "p95": 16384.0,
+          "p99": 16384.0
+        },
+        "timeslices": {
+          "array_count": 3672
+        }
+      }
+    ]
+  },
+  "dynamo_frontend_active_requests": {
+    "type": "gauge",
+    "series": [
+      {
+        "endpoint_url": "http://n3u-agg-ns2-frontend:8000/metrics",
+        "labels": {
+          "model": "alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4"
+        },
+        "stats": {
+          "avg": 102.85244710796331,
+          "min": 0.0,
+          "max": 154.0,
+          "std": 21.128219833093226,
+          "p1": 19.0,
+          "p5": 76.0,
+          "p10": 83.0,
+          "p25": 90.0,
+          "p50": 104.0,
+          "p75": 117.0,
+          "p90": 128.0,
+          "p95": 133.0,
+          "p99": 143.0
+        },
+        "timeslices": {
+          "array_count": 3671
+        }
+      }
+    ]
+  },
+  "dynamo_frontend_queued_requests": {
+    "type": "gauge",
+    "series": [
+      {
+        "endpoint_url": "http://n3u-agg-ns2-frontend:8000/metrics",
+        "labels": {
+          "model": "alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4"
+        },
+        "stats": {
+          "avg": 34.28112230999728,
+          "min": 0.0,
+          "max": 71.0,
+          "std": 13.855795795533357,
+          "p1": 0.0,
+          "p5": 15.0,
+          "p10": 18.0,
+          "p25": 23.0,
+          "p50": 34.0,
+          "p75": 46.0,
+          "p90": 52.0,
+          "p95": 56.0,
+          "p99": 62.0
+        },
+        "timeslices": {
+          "array_count": 3671
+        }
+      }
+    ]
+  },
+  "dynamo_frontend_inflight_requests": {
+    "type": "gauge",
+    "series": [
+      {
+        "endpoint_url": "http://n3u-agg-ns2-frontend:8000/metrics",
+        "labels": {
+          "model": "alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4"
+        },
+        "stats": {
+          "avg": 102.85253790974303,
+          "min": 0.0,
+          "max": 154.0,
+          "std": 21.128463305188696,
+          "p1": 19.0,
+          "p5": 76.0,
+          "p10": 83.0,
+          "p25": 90.0,
+          "p50": 104.0,
+          "p75": 117.0,
+          "p90": 128.0,
+          "p95": 133.0,
+          "p99": 143.0
+        },
+        "timeslices": {
+          "array_count": 3671
+        }
+      }
+    ]
+  },
+  "dynamo_frontend_event_loop_delay_seconds": {
+    "type": "histogram",
+    "series": [
+      {
+        "endpoint_url": "http://n3u-agg-ns2-frontend:8000/metrics",
+        "stats": {
+          "count": 481210,
+          "sum": 507.94811762100096,
+          "avg": 0.0010555643432617796,
+          "count_rate": 90.42444200290205,
+          "sum_rate": 0.09544881673760619,
+          "p1_estimate": 0.00011239656656201628,
+          "p5_estimate": 0.0002499501275510462,
+          "p10_estimate": 0.0004218920787873336,
+          "p25_estimate": 0.0009377179324961955,
+          "p50_estimate": 0.0012307338788277425,
+          "p75_estimate": 0.0012662614664642729,
+          "p90_estimate": 0.001287578019046191,
+          "p95_estimate": 0.0012946835365734968,
+          "p99_estimate": 0.0013003679505953418
+        },
+        "buckets": {
+          "0": 0,
+          "0.001": 139934,
+          "0.005": 481209,
+          "0.01": 481209,
+          "0.025": 481210,
+          "0.05": 481210,
+          "0.1": 481210,
+          "0.25": 481210,
+          "0.5": 481210,
+          "1": 481210,
+          "+Inf": 481210
+        },
+        "timeslices": {
+          "array_count": 5322
+        }
+      }
+    ]
+  },
+  "dynamo_component_router_requests": {
+    "type": "counter",
+    "series": [
+      {
+        "endpoint_url": "http://n3u-agg-ns2-frontend:8000/metrics",
+        "labels": {
+          "dynamo_component": "backend",
+          "dynamo_namespace": "n3u_agg_ns2",
+          "router_id": "7587896927535422792",
+          "worker_id": "694da00d9e06dd48"
+        },
+        "stats": {
+          "total": 0.0,
+          "rate": 0.0,
+          "rate_avg": 0.0,
+          "rate_min": 0.0,
+          "rate_max": 0.0,
+          "rate_std": 0.0
+        },
+        "timeslices": {
+          "array_count": 5322
+        }
+      }
+    ]
+  },
+  "dynamo_component_router_requests_started": {
+    "type": "counter",
+    "series": [
+      {
+        "endpoint_url": "http://n3u-agg-ns2-frontend:8000/metrics",
+        "labels": {
+          "dynamo_component": "backend",
+          "dynamo_namespace": "n3u_agg_ns2",
+          "router_id": "7587896927535422792",
+          "worker_id": "694da00d9e06dd48"
+        },
+        "stats": {
+          "total": 0.0,
+          "rate": 0.0,
+          "rate_avg": 0.0,
+          "rate_min": 0.0,
+          "rate_max": 0.0,
+          "rate_std": 0.0
+        },
+        "timeslices": {
+          "array_count": 5322
+        }
+      }
+    ]
+  },
+  "dynamo_component_router_kv_hit_rate": {
+    "type": "histogram",
+    "series": [
+      {
+        "endpoint_url": "http://n3u-agg-ns2-frontend:8000/metrics",
+        "labels": {
+          "dynamo_component": "backend",
+          "dynamo_namespace": "n3u_agg_ns2",
+          "router_id": "7587896927535422792",
+          "worker_id": "694da00d9e06dd48"
+        },
+        "stats": {
+          "count": 0
+        },
+        "buckets": {
+          "0": 0,
+          "0.05": 0,
+          "0.1": 0,
+          "0.15000000000000002": 0,
+          "0.2": 0,
+          "0.25": 0,
+          "0.30000000000000004": 0,
+          "0.35000000000000003": 0,
+          "0.4": 0,
+          "0.45": 0,
+          "0.5": 0,
+          "0.55": 0,
+          "0.6000000000000001": 0,
+          "0.65": 0,
+          "0.7000000000000001": 0,
+          "0.75": 0,
+          "0.8": 0,
+          "0.8500000000000001": 0,
+          "0.9": 0,
+          "0.9500000000000001": 0,
+          "1": 0,
+          "+Inf": 0
+        }
+      }
+    ]
+  },
+  "dynamo_component_router_input_sequence_tokens": {
+    "type": "histogram",
+    "series": [
+      {
+        "endpoint_url": "http://n3u-agg-ns2-frontend:8000/metrics",
+        "labels": {
+          "dynamo_component": "backend",
+          "dynamo_namespace": "n3u_agg_ns2",
+          "router_id": "7587896927535422792",
+          "worker_id": "694da00d9e06dd48"
+        },
+        "stats": {
+          "count": 0
+        },
+        "buckets": {
+          "0": 0,
+          "100": 0,
+          "210": 0,
+          "430": 0,
+          "870": 0,
+          "1800": 0,
+          "3600": 0,
+          "7400": 0,
+          "15000": 0,
+          "31000": 0,
+          "63000": 0,
+          "130000": 0,
+          "+Inf": 0
+        }
+      }
+    ]
+  },
+  "dynamo_component_router_inter_token_latency_seconds": {
+    "type": "histogram",
+    "series": [
+      {
+        "endpoint_url": "http://n3u-agg-ns2-frontend:8000/metrics",
+        "labels": {
+          "dynamo_component": "backend",
+          "dynamo_namespace": "n3u_agg_ns2",
+          "router_id": "7587896927535422792",
+          "worker_id": "694da00d9e06dd48"
+        },
+        "stats": {
+          "count": 0
+        },
+        "buckets": {
+          "0": 0,
+          "0.0019": 0,
+          "0.0035": 0,
+          "0.0067": 0,
+          "0.013": 0,
+          "0.024": 0,
+          "0.045": 0,
+          "0.084": 0,
+          "0.16": 0,
+          "0.3": 0,
+          "0.56": 0,
+          "1.1": 0,
+          "2": 0,
+          "+Inf": 0
+        }
+      }
+    ]
+  },
+  "dynamo_component_router_time_to_first_token_seconds": {
+    "type": "histogram",
+    "series": [
+      {
+        "endpoint_url": "http://n3u-agg-ns2-frontend:8000/metrics",
+        "labels": {
+          "dynamo_component": "backend",
+          "dynamo_namespace": "n3u_agg_ns2",
+          "router_id": "7587896927535422792",
+          "worker_id": "694da00d9e06dd48"
+        },
+        "stats": {
+          "count": 0
+        },
+        "buckets": {
+          "0": 0,
+          "0.0022": 0,
+          "0.0047": 0,
+          "0.01": 0,
+          "0.022": 0,
+          "0.047": 0,
+          "0.1": 0,
+          "0.22": 0,
+          "0.47": 0,
+          "1": 0,
+          "2.2": 0,
+          "4.7": 0,
+          "10": 0,
+          "22": 0,
+          "48": 0,
+          "100": 0,
+          "220": 0,
+          "480": 0,
+          "+Inf": 0
+        }
+      }
+    ]
+  }
+}

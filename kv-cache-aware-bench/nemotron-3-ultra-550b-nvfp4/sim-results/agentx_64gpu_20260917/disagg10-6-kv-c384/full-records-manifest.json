@@ -1,0 +1,18 @@
+{
+  "local_run_directory": "/tmp/n3u-64gpu-refine-20260917/disagg10-6-kv-c384",
+  "files": {
+    "profile_export.jsonl": {
+      "sha256": "664700a37bbe62d968b9db807f4964377c4fe2d6d7e2d547f8ecdba3c50848ff",
+      "bytes": 49937988
+    },
+    "simulation-dispatch.jsonl": {
+      "sha256": "83e5a9d5f2aceeaec510678a09dba3b4aef793b76e423e16435ee717a96036c6",
+      "bytes": 19591997
+    },
+    "logs/aiperf.log": {
+      "sha256": "3d92961ada46db8199e99c0bc5fb4321add600b74e0d066c68a0389717e27226",
+      "bytes": 206367
+    }
+  },
+  "note": "Full records audited locally; compact archive retains summaries, config and provenance. Rerun commands reproduce the experiment; temporary local files are not permanent storage."
+}

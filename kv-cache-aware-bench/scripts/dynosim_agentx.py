@@ -1,10 +1,14 @@
-"""DynoSim — AgentX concurrency semantics (aiperf --scenario inferencex-agentx-mvp).
+"""DynoSim's serving engine and historical approximate AgentX load generator.
+
+The faithful replay adapter imports only Engine and runs the actual aiperf
+loader/scheduler. The custom load generator below is retained for historical
+results; its assumptions do NOT describe the complete current Weka dataset.
 
 Same engine model as dynosim_pd.simulate() (Dynamo KV-router worker_logit, FCFS prefill
 tier, decode TPOT model, per-worker radix cache) but a different LOAD MODEL:
   * concurrency C = C live session lanes; a lane holds ONE session at a time and recycles
     to the next session when its last turn completes (session tree = linear here: the
-    062126 corpus variant has no subagent fan-out, so in-flight <= C).
+    approximation omits the actual corpus's subagent fan-out).
   * warm-up: each play starts at turn k ~ U(0.25, 0.75) x n_turns; turns 0..k-1 are issued
     back-to-back to prime the cache and are NOT measured.
   * think-time: turn i+1 is dispatched at max(prev_end, lane_t0 + (ts[i+1]-ts[k])) — the
@@ -18,7 +22,7 @@ tier, decode TPOT model, per-worker radix cache) but a different LOAD MODEL:
 Usage: dynosim_agentx.py <trace.jsonl> --splits 6:12,9:9,12:6 --clients 48,96,... --policies kv,rr --out csv
 """
 import argparse, csv, heapq, json, random, importlib.util, pathlib, sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 spec=importlib.util.spec_from_file_location("dynosim_pd", pathlib.Path(__file__).with_name("dynosim_pd.py")); dp=importlib.util.module_from_spec(spec); spec.loader.exec_module(dp)
 
 def load_sessions(path, limit=4000):
@@ -34,11 +38,12 @@ def load_sessions(path, limit=4000):
 class Engine:
     """disagg P:D or agg engine; serve(hash_ids, out_len, now) -> (ttft_s, tpot_s, done_t)"""
     def __init__(self, n_prefill, n_decode, policy, agg=False, router=None, decode_policy="least_inflight"):
-        if decode_policy not in ("least_inflight", "round_robin"):
+        if decode_policy not in ("least_inflight", "round_robin", "active_blocks"):
             raise ValueError(f"Unknown decode policy: {decode_policy}")
         self.agg=agg; self.policy=policy; self.router=router or dp.ROUTER
         self.decode_policy=decode_policy; self.decode_rr=0
         self.P=[dp.PrefillWorker() for _ in range(n_prefill)]; self.D=[0]*(n_prefill if agg else n_decode)
+        self.active_prompt_blocks=[Counter() for _ in self.D]
         self.rr=0; self.hits=0; self.blocks=0
     def serve(self, hid, out_len, now):
         P=self.P; tb=len(hid)
@@ -54,16 +59,34 @@ class Engine:
         rate=dp.AGG_PREFILL_TOKRATE if (self.agg and hasattr(dp,"AGG_PREFILL_TOKRATE")) else dp.PREFILL_TOKRATE
         svc=max(0.005,new/rate); start=max(now,P[w].free_at); pf=start+svc
         self.last=(start-now, svc, new)  # (queue wait s, service s, uncached tokens) for the last served request
+        self.last_prefill_worker=w
         P[w].free_at=pf; P[w].queued.append((pf,tb-ov)); P[w].insert(hid)
         if self.agg: d=w
         elif self.decode_policy == "round_robin":
             d=self.decode_rr%len(self.D); self.decode_rr+=1
+        elif self.decode_policy == "active_blocks":
+            # Dynamo 1.4.2 disagg decode uses projected unique active prompt
+            # blocks, with overlap credit and active-request weight both zero.
+            incoming=set(hid)
+            # |active union incoming| = |active| + |incoming minus active|.
+            # Avoid copying a potentially huge active set for every candidate.
+            d=min(range(len(self.D)),key=lambda i:len(self.active_prompt_blocks[i]) + sum(h not in self.active_prompt_blocks[i] for h in incoming))
         else: d=min(range(len(self.D)),key=lambda i:self.D[i])
         self.D[d]+=1
+        if self.decode_policy == "active_blocks": self.active_prompt_blocks[d].update(hid)
         tpot=(dp.agg_tpot_ms(self.D[d]) if self.agg and hasattr(dp,"agg_tpot_ms") else dp.TPOT_BASE_MS+dp.TPOT_SLOPE_MS*self.D[d])/1000.0
         done=pf+out_len*tpot
         return pf-now, tpot, done, d
-    def release(self,d): self.D[d]-=1
+    def release(self,d,hash_ids=None):
+        if self.decode_policy == "active_blocks" and hash_ids is None:
+            raise ValueError("active_blocks release requires prompt hashes")
+        self.D[d]-=1
+        if self.decode_policy == "active_blocks":
+            counts=self.active_prompt_blocks[d]
+            for block in hash_ids:
+                counts[block]-=1
+                assert counts[block]>=0
+                if counts[block]==0: del counts[block]
 
 def simulate_agentx(sessions, n_prefill, n_decode, policy, clients, window=3600.0, idle_cap=10.0, agg=False, seed=42, router=None, warm_s=0.0):
     """warm_s: like aiperf's warm-up, the measurement window opens warm_s seconds after the first measurable request instead of at it (default 0 = published behaviour)."""

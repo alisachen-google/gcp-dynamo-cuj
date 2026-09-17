@@ -1,0 +1,38 @@
+[
+  {
+    "worker": 0,
+    "warmup_requests": 110,
+    "profile_requests": 1477,
+    "itl_mean_ms": 32.59643195666892
+  },
+  {
+    "worker": 1,
+    "warmup_requests": 23,
+    "profile_requests": 1554,
+    "itl_mean_ms": 31.779639639639637
+  },
+  {
+    "worker": 2,
+    "warmup_requests": 16,
+    "profile_requests": 1475,
+    "itl_mean_ms": 32.3916406779661
+  },
+  {
+    "worker": 3,
+    "warmup_requests": 16,
+    "profile_requests": 1571,
+    "itl_mean_ms": 34.96452577975811
+  },
+  {
+    "worker": 4,
+    "warmup_requests": 12,
+    "profile_requests": 1503,
+    "itl_mean_ms": 36.675535595475715
+  },
+  {
+    "worker": 5,
+    "warmup_requests": 8,
+    "profile_requests": 1543,
+    "itl_mean_ms": 33.312845106934546
+  }
+]

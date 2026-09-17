@@ -1,0 +1,6 @@
+{
+  "checks": 2000,
+  "result": "PASS: exact serve results, P/D choices, cache hits and release state across 2000 mixed shared-prefix requests and cancellations",
+  "before_sha256": "c90e89a92315c5f2be8ac9aec32ef2a0f0c703cfa50cd7ea2a6098115e96c1a2",
+  "after_sha256": "9282facee33f94486233cceb66cdc25341495a59cee1f0a14040eabcf1f2fa10"
+}
