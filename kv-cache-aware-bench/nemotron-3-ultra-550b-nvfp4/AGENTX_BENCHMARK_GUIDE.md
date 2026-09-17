@@ -207,6 +207,26 @@ input/output length, TTFT p95, TPOT and interactivity at 192 clients, and within
 one open workload term is the subagent stream mix (sim 71–81 % subagent turns vs 51 % measured, a loader
 chain-splitting rule), and the open engine term is decode in-flight feedback at high load.
 
+**Faithful replay through aiperf itself (2026-09-17).** The hand re-implementations above are superseded for agg by
+[`scripts/dynosim_aiperf_replay.py`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/scripts/dynosim_aiperf_replay.py):
+the real aiperf 0.12.0 CLI, Weka loader (9,602 conversations / 68,266 turns from the 393 roots, including its agent-chain
+splitting), trajectory sampler, dependency barriers, warm-up and metrics exporter drive the DynoSim engine through an
+in-process transport on an accelerated clock, so replay parity holds by construction (96/96 and 192/192 initial lane
+snapshots, every warm-up and common profiled request matching hardware token counts). Reports:
+[fidelity and results](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/reports/agentx-faithful-replay.md) ·
+[calibration plan](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/reports/agentx-replay-calibration.md) ·
+[how to rerun](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/reports/agentx-replay-howto.md) ·
+[artifacts](https://github.com/alisachen-google/gcp-dynamo-cuj/tree/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_aiperf_replay_20260917).
+
+| agg 6 × TP4 cell | published v3 sim | faithful replay | silicon | total-token error | what is left |
+|---|---|---|---|---|---|
+| RR, 96 clients | 2,924 | **6,106** | 6,137 | **−0.5 %** | TTFT p95 −40 % (no prefill/decode contention), ITL p50 +59 % |
+| default KV, 192 clients | 3,715 | **6,983** | 9,655 | −27.7 % | the sim's KV router overloads one worker (2,101 requests, ITL 109 ms vs 15–39 ms on the others; cached fraction 93 % vs 74 % measured) |
+
+With the replay exact, the RR cell proves the dataset-replay terms were the whole throughput gap (request rate −0.2 %,
+input −0.3 %, output −1.0 %), and the KV cell isolates the remaining error in the simulated KV router's load term —
+the over-packing diagnosed in AGENTX_AGG_RESULTS.md §iv. Disagg cells are not replayed this way yet.
+
 ### 5.4 Disagg or agg, so far
 
 At equal clients the 72-GPU disagg fleet is diluted 3× until it saturates, so the comparison is made at equal load
