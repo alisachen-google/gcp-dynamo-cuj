@@ -339,6 +339,49 @@ own turns, hash ids, recorded `delay_ms`, and the engine-counted output length),
 conversion is the next step; the engine terms measured so far (prefill 20–33 % slow, decode line right below 200
 clients) are second order next to it.
 
+### v5: replaying the same dataset object aiperf replays (stream-level parity), and where it lands
+
+[`scripts/agentx_stream_trace.py`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/scripts/agentx_stream_trace.py)
+converts the raw SemiAnalysis dataset (393 traces; 28,444 root requests and 39,822 subagent requests in 1,697 subagent
+entries) into root and subagent streams with aiperf's end-to-start delay rule (`t_k − (t_{k−1} + api_{k−1})`, clamped at 0).
+[`scripts/dynosim_agentx_v5.py`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/scripts/dynosim_agentx_v5.py)
+replays lanes as trajectory trees the way `agentic_replay` does (t* ∈ 0.25–0.75 as launched, previous turn primed,
+first profiled turn after its own delay, children spawned on the parent's completion and joined, whole-system idle
+cap 10 s, 900 s warm-up); engine untouched. Four replay rules were tried; results in
+[`sim-results/agentx_v5_sim.txt`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_v5_sim.txt):
+
+| 12:6 KV | hit | req/s | ISL/req | OSL/req | subagent share | total/GPU | TTFT p95 | TPOT | P90 |
+|---|---|---|---|---|---|---|---|---|---|
+| v3 published (4 k slice), 192 | 0.763 | 2.70 | 70 k | 1,200 | — | 2,679 | 4.21 s | 10.5 ms | 72 |
+| v5b recycle at t*, 192 | 0.946 | 2.52 | 84 k | 795 | 72 % | 2,981 | 1.32 s | 7.4 ms | 120 |
+| **v5d recycle at turn 0, 192** | 0.942 | 4.92 | 88 k | 837 | 71 % | 6,062 | 1.49 s | 9.1 ms | 90 |
+| **silicon, 192** | 0.937 | 3.45 | 94 k | 936 | 51 % | 4,510 | 1.77 s | 10.0 ms | 89 |
+| v3 published, 768 | 0.725 | 6.22 | 68 k | 1,100 | — | 5,981 | 30 s | 43 ms | 19 |
+| v5b recycle at t*, 768 | 0.914 | 12.9 | 86 k | 771 | 80 % | 15,558 | 3.16 s | 34.5 ms | 17 |
+| v5d recycle at turn 0, 768 | 0.907 | 16.3 | 79 k | 720 | 81 % | 18,193 | 3.80 s | 59 ms | 13 |
+| **silicon, 768** | 0.880 | 11.27 | 95 k | 936 | 51 % | 15,004 | 7.0 s | 20.9 ms | 45 |
+
+Where parity now stands (192 clients, v5d vs silicon): hit rate, input length, output length, TTFT p95, TPOT and P90
+interactivity are all within 6–16 %, from 0.4–2.4× in the published sim; total tokens per GPU are within 34 % (from
+0.59×). The two recycle rules bracket silicon on request rate (0.73× and 1.43×), and the one dimension that stays off in
+every v5 variant is the **stream mix: 71–81 % subagent turns against 51 % measured**, i.e. the sim issues subagent turns
+about twice as fast as aiperf does while its root-turn rate is within 15 %. The raw dataset carries 23 subagent turns
+per subagent entry; the measured replay shows 5 turns per subagent conversation, so aiperf's nested hash-id chain
+detection (which splits each subagent entry into sibling chains and drops those no parent turn can spawn) is the rule
+the converter does not yet reproduce. That is a dataset-loader behaviour, not a serving-engine one. Two checks that
+came out negative on the way: no request in the 256 k dataset exceeds the 262,144 context limit (no keep/drop
+truncation), and gating parent joins on blocking-only children changes nothing (v5c = v5b).
+
+At 768 the engine terms re-enter: with the request rate within 15 % (v5b) and total tokens within 4 %, the sim's TPOT is
+1.6–2.8× too slow (34–59 ms vs 20.9) because its decode line (5.97 + 0.4·batch per decode worker) is applied to a deeper
+in-flight population than silicon carries (its requests last longer, so more overlap), and its TTFT p95 is 0.45–0.55×
+of silicon because the size-driven tail (long turns that miss, see the record analysis below) is not in the cache model.
+
+**Calibration status.** Published sim → v5: hit 0.76 → 0.94 (silicon 0.94), TTFT p95 4.2 → 1.5 s (1.8), interactivity
+72 → 90 (89), total tokens 0.59× → 1.34× / 0.66× (bracket) at 192, and 0.40× → 1.04–1.21× at 768. The next step is
+the subagent chain-splitting rule in the converter; after it, the remaining disagreement should be the decode
+in-flight feedback at high load, which is an engine-model item.
+
 ### Reading the measured tail itself (independent of the simulator)
 
 [`scripts/agentx_ttft_tail.py`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/agentx_ttft_tail.py)

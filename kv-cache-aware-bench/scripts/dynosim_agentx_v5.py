@@ -26,7 +26,8 @@ def simulate_v5(traces, n_prefill, n_decode, policy, clients, window=3600.0, war
         eng.P[w].insert(hid)
     def new_play(L, t):
         tr = traces[rnd.randrange(len(traces))]; salt = play[0]; play[0] += 1
-        ts = (start[0] + rnd.random() * (start[1] - start[0])) * tr["duration_s"] if t > 0 or True else 0.0
+        # first play of a lane is a trajectory snapshot at t*; every recycle starts a fresh trace at turn 0 (aiperf: "lane recycles: a fresh session starting at turn 0")
+        ts = (start[0] + rnd.random() * (start[1] - start[0])) * tr["duration_s"] if L not in lanes else 0.0
         if not lanes.get(L, {}).get("first_done", False): pass
         st = {"tr": tr, "salt": salt, "ts": ts, "streams": [], "live": 0, "first_done": True, "started": set(), "children_running": 0}
         lanes[L] = st
@@ -104,4 +105,4 @@ if __name__ == "__main__":
     print(f"{'variant':26s} {'clients':>7s} {'hit':>6s} {'req/s':>6s} {'ISL/req':>7s} {'OSL':>5s} {'sub%':>5s} {'tot/GPU':>8s} {'out/GPU':>7s} {'ttft p50':>8s} {'ttft p95':>8s} {'wait p95':>8s} {'tpot':>6s} {'P90':>6s}")
     for c in cl:
         dp.apply_n3u_constants(); m = simulate_v5(traces, 12, 6, "kv", c)
-        print(f"{'v5c blocking-child join':26s} {c:7d} {m['hit_rate']:6.3f} {m['req_per_s']:6.2f} {m['in_tok_per_req']:7.0f} {m['out_per_req']:5.0f} {m['sub_share']*100:5.0f} {m['total_tok_s']/72:8.0f} {m['throughput_tok_s']/72:7.1f} {m['ttft_p50_s']:8.2f} {m['ttft_p95_s']:8.2f} {m['wait_p95_s']:8.2f} {m['tpot_mean_ms']:6.1f} {1000/m['tpot_p90_ms']:6.1f}", flush=True)
+        print(f"{'v5d recycle at turn 0':26s} {c:7d} {m['hit_rate']:6.3f} {m['req_per_s']:6.2f} {m['in_tok_per_req']:7.0f} {m['out_per_req']:5.0f} {m['sub_share']*100:5.0f} {m['total_tok_s']/72:8.0f} {m['throughput_tok_s']/72:7.1f} {m['ttft_p50_s']:8.2f} {m['ttft_p95_s']:8.2f} {m['wait_p95_s']:8.2f} {m['tpot_mean_ms']:6.1f} {1000/m['tpot_p90_ms']:6.1f}", flush=True)

@@ -201,6 +201,12 @@ network is negligible on agg (≈ 3 ms per request), with the frontend tokenizer
 `reports/n3u-agentx-sim-vs-real.html`. Rankings across topologies are the sim's reliable output; levels, and the
 KV-vs-RR ordering on agg, must come from silicon.
 
+**Calibrated replay (v5, 2026-09-17).** Replaying the raw SemiAnalysis dataset as root + subagent streams with aiperf's
+trajectory-tree rules (AGENTX_D72_RESULTS.md §iv, v5) brings the disagg sim to parity within 6–16 % on hit rate,
+input/output length, TTFT p95, TPOT and interactivity at 192 clients, and within 4–21 % on total tokens at 768; the
+one open workload term is the subagent stream mix (sim 71–81 % subagent turns vs 51 % measured, a loader
+chain-splitting rule), and the open engine term is decode in-flight feedback at high load.
+
 ### 5.4 Disagg or agg, so far
 
 At equal clients the 72-GPU disagg fleet is diluted 3× until it saturates, so the comparison is made at equal load

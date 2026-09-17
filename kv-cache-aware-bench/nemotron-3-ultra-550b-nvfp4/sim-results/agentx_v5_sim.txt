@@ -3,7 +3,17 @@ variant                    clients    hit  req/s ISL/req   OSL  sub%  tot/GPU ou
 v5 tree replay (0.25-0.75)     192  0.964   1.42  113162   765    49     2249    15.1     0.09     1.15     0.28    6.6  147.7
 v5 tree replay (0.25-0.75)     768  0.929   6.02  116180   747    50     9772    62.4     0.10     3.71     1.52    9.5   83.5
 
-# v5b: first profiled turn after its end-to-start delay (handoff), parent join gated on all spawned children, OSL x1.0
+# v5b: first profiled turn after its end-to-start delay (handoff), parent join gated on spawned children, OSL x1.0
 variant                    clients    hit  req/s ISL/req   OSL  sub%  tot/GPU out/GPU ttft p50 ttft p95 wait p95   tpot    P90
 v5b handoff-delay + join       192  0.946   2.52   84492   795    72     2981    27.8     0.08     1.32     0.09    7.4  119.5
 v5b handoff-delay + join       768  0.914  12.90   86094   771    80    15558   138.1     0.13     3.16     1.86   34.5   16.8
+
+# v5c: as v5b, join gated only on blocking children (recorded end before the parent's next turn)
+variant                    clients    hit  req/s ISL/req   OSL  sub%  tot/GPU out/GPU ttft p50 ttft p95 wait p95   tpot    P90
+v5c blocking-child join        192  0.946   2.52   84492   795    72     2981    27.8     0.08     1.32     0.09    7.4  119.5
+v5c blocking-child join        768  0.915  12.91   86086   771    80    15574   138.2     0.13     3.05     1.80   34.5   16.8
+
+# v5d: as v5c, lane recycles start a fresh trace at turn 0 (only the first play uses t* in 0.25-0.75)
+variant                    clients    hit  req/s ISL/req   OSL  sub%  tot/GPU out/GPU ttft p50 ttft p95 wait p95   tpot    P90
+v5d recycle at turn 0          192  0.942   4.92   87940   837    71     6062    57.1     0.09     1.49     0.23    9.1   89.5
+v5d recycle at turn 0          768  0.907  16.34   79444   720    81    18193   163.4     0.15     3.80     2.97   59.1   12.7
