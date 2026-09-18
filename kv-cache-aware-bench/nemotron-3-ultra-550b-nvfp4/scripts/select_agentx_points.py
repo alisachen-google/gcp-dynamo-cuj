@@ -11,7 +11,7 @@ usage: select_agentx_points.py <jobprefix> <gpus> <kv clients csv> <rr clients c
 import sys, csv, io, re, subprocess, argparse
 ap = argparse.ArgumentParser(); ap.add_argument("jp"); ap.add_argument("gpus", type=int); ap.add_argument("kv"); ap.add_argument("rr")
 ap.add_argument("--logs", nargs="*", default=[]); ap.add_argument("--ttft", type=float, default=20.0); ap.add_argument("--p90", type=float, default=20.0)
-ap.add_argument("--out-md", default=""); ap.add_argument("--out-points", default=""); ap.add_argument("--variants", default="kvs3c08,kvs2c08,kvt05"); a = ap.parse_args()
+ap.add_argument("--out-json", default=""); ap.add_argument("--out-md", default=""); ap.add_argument("--out-points", default=""); ap.add_argument("--variants", default="kvs3c08,kvs2c08,kvt05"); a = ap.parse_args()
 def sh(c): return subprocess.run(c, shell=True, capture_output=True, text=True).stdout
 knee = {}
 for lg in a.logs:
@@ -55,3 +55,6 @@ md.append(f"Flag-sweep points: {' '.join(pts) or '(none: no KV cell met the SLO)
 out = "\n".join(md); print(out)
 if a.out_md: open(a.out_md, "w").write(out + "\n")
 if a.out_points: open(a.out_points, "w").write(" ".join(pts) + "\n")
+if a.out_json:
+    import json
+    json.dump({"rr_peak": rr_peak and rr_peak["clients"], "same_cfg": same_cfg, "kv_slo": kv_slo, "rr_slo": rr_slo, "kv": kv, "rr": rr}, open(a.out_json, "w"), indent=1)
