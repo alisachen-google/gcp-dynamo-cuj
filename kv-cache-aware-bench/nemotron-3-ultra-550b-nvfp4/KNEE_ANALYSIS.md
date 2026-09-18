@@ -244,6 +244,10 @@ largest KV cell's KNEE-CHECK is not POST-KNEE; [`scripts/agentx_88_kv_knee_exten
 | KV | 672 | 15,184 | 3.98 / 17.04 s | 16.0 / 17.1 ms | 59 | 207.1 | 0.857 | AT/PRE-KNEE (stationary, q1 4.93 s → q4 4.17 s) | PASS | 15,183 · 3.86 s | [1789686412](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789686412_alisachen-n3u-mnnvl-88-agentx-kv-c672) |
 | KV | 768 | 15,543 | 10.08 / 27.14 s | 16.2 / 17.6 ms | 57 | 276.8 | 0.851 | AT/PRE-KNEE (stationary, q1 7.16 s → q4 9.64 s); throughput plateau (+2% for +14% clients) | PASS | 19,034 · 4.39 s | [1789695978](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789695978_alisachen-n3u-mnnvl-88-agentx-kv-c768) |
 | KV | 1,152 | 10,697 | 79.98 / 164.32 s | 12.7 / 16.3 ms | 61 | 699.6 | 0.771 | **POST-KNEE** (growing, saturated: q1 40.4 s → q4 137.8 s) | PASS | 24,663 · 12.78 s | [1789706033](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789706033_alisachen-n3u-mnnvl-88-agentx-kv-c1152) |
+| RR | 192 | 4,419 | 6.75 / 31.45 s | 8.9 / 10.5 ms | 95 | 55.7 | 0.611 | AT/PRE-KNEE (stationary, q1 11.19 s → q4 4.12 s) | PASS | — | [1789721971](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789721971_alisachen-n3u-mnnvl-88-agentx-rr-c192) |
+| RR | 144 | 3,588 | 2.55 / 21.63 s | 8.5 / 10.3 ms | 97 | 39.1 | 0.630 | AT/PRE-KNEE (stationary, q1 5.92 s → q4 1.00 s) | PASS | — | [1789728380](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789728380_alisachen-n3u-mnnvl-88-agentx-rr-c144) |
+| RR | 96 | 2,671 | 1.08 / 13.03 s | 7.8 / 9.3 ms | 108 | 20.9 | 0.671 | AT/PRE-KNEE (stationary, q1 1.44 s → q4 0.99 s) | PASS | — | [1789734386](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789734386_alisachen-n3u-mnnvl-88-agentx-rr-c96) |
+| KV | 480 | 12,204 | 0.80 / 7.12 s | 13.2 / 15.4 ms | 65 | 119.3 | 0.891 | AT/PRE-KNEE (stationary, q1 0.93 s → q4 0.74 s) | PASS | — | [1789740024](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789740024_alisachen-n3u-mnnvl-88-agentx-kv-c480) |
 
 **Measured KV knee (8:8, default flags).** Throughput peaks at 672–768 clients (15,184 → 15,543 total tok/s/GPU, +2 % for +14 %
 clients) and the 1,152-client cell is post-knee (10,697, TTFT p50 growing 40 s → 138 s through the window), so the knee
@@ -251,3 +255,18 @@ extension (1,536+) did not run. The simulation placed the default-KV knee at 1,1
 earlier and lower, with the prefill tier as the limit: TTFT p95 is already 17 s at 672 and 27 s at 768 while ITL stays at 16–18 ms
 (P90 interactivity 57–59), and the engine hit rate falls 0.93 → 0.91 → 0.86 → 0.85 → 0.77 as clients rise. The last cell
 inside the TTFT p95 ≤ 20 s budget is 672 clients.
+
+**Measured KV vs RR on 8:8 (SLO = TTFT p95 ≤ 10 s, P90 interactivity ≥ 20, stationary; 2026-09-18).** RR was searched
+adaptively from 192 clients downward (192 → 144 → 96) because RR at 192 is already at TTFT p95 31 s; no RR cell is inside 10 s
+(96 clients: 13.0 s), so RR's same-SLO cell uses the agreed 20 s fallback. Default KV was bisected between 384 (4.8 s) and 672
+(17.0 s): 480 clients lands at 7.1 s and is KV's same-SLO cell.
+
+| comparison | KV cell | RR cell | total tok/s/GPU KV vs RR | TTFT p95 KV vs RR | P90 interactivity KV vs RR | hit rate KV vs RR |
+|---|---|---|---|---|---|---|
+| same config (192 clients) | 192 | 192 | 5,142 vs 4,419 = **1.16×** | 2.40 s vs 31.45 s (13× lower) | 100 vs 95 | 0.93 vs 0.61 |
+| same SLO (KV ≤ 10 s; RR ≤ 20 s fallback) | 480 | 96 | 12,204 vs 2,671 = **4.57×** | 7.12 s vs 13.03 s | 65 vs 108 | 0.89 vs 0.67 |
+
+At equal load the throughput gap is small because 192 clients do not saturate 64 GPUs under either policy; what RR loses is the
+prefix cache (hit rate 0.61 vs 0.93), so it prefills ~5× more tokens per turn and its TTFT tail is 13× longer. That tail is what
+caps RR's usable load: it cannot hold 10 s even at 96 clients, while KV holds 7 s at 480, hence 4.6× the throughput per GPU
+inside the SLO. Flag sweep (6 runs) follows at the KV same-SLO cell (480) and the same-config cell (192).
