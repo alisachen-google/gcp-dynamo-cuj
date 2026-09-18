@@ -276,6 +276,7 @@ inside the SLO. Flag sweep (6 runs) follows at the KV same-SLO cell (480) and th
 | run | flags | total tok/s/GPU | vs default | TTFT p50 / p95 | P90 interactivity | hit rate | warm-up wall (check) | knee | artifact |
 |---|---|---|---|---|---|---|---|---|---|
 | 1 | load scale 3, overlap credit 0.8 | 12,018 | −1.5 % | 1.42 / 10.48 s | 65 | 0.862 | 3,332 s (baseline 3,334 s) | stationary | [1789748912](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789748912_alisachen-n3u-mnnvl-88-agentx-kvs3c08-c480) |
+| 2 | overlap credit decay 0.5 | 11,839 | −3.0 % | 2.16 / 13.13 s | 65 | 0.841 | 3,322 s | stationary | [1789765406](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789765406_alisachen-n3u-mnnvl-88-agentx-kvd05-c480) |
 
 Run 1: the agg winner does not transfer to 8:8 disagg. Weighting prefill load more and discounting overlap moves requests away
 from the workers that hold their prefix (hit rate 0.891 → 0.862), which adds prefill work to a prefill-bound fleet: TTFT p95
@@ -297,3 +298,8 @@ no disconnects). Guard v3 ([`scripts/mnnvl_transport_guard_v3.sh`](https://githu
 bounds the log window to the cell just run and reports queue-wait timeouts as OVERLOADED (the cell is treated as post-knee);
 every other transfer failure still halts the programme.
 
+Run 2 and the change of plan. Credit decay 0.5 also loses, and by more (−3.0 % total, TTFT p95 +84 %). Runs 1 and 2 both *reduce*
+cache affinity and both lose in proportion to the hit rate they give up: 0.891 → 12,204 tok/s/GPU at 7.1 s (default), 0.862 →
+12,018 at 10.5 s, 0.841 → 11,839 at 13.1 s. Credit decay 1.0 and load scale 2 push the same way, so they were dropped as
+predictable losers; the remaining phase-A budget probes the other direction — *more* affinity: overlap credit 1.5 (run 3), and
+credit 2.0 (run 4) only if 1.5 beats default KV.
