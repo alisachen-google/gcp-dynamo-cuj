@@ -1,0 +1,1075 @@
+# AgentX Path 1 calibration
+
+> **Archived snapshot: 17 September 2026, 19:02 UTC.**
+> This readable edition preserves the findings, measurements, commands and historical
+> status statements from the [original text snapshot](original-calibration-report.txt).
+> The final V10 acceptance decision uses throughput only; earlier sections retain
+> the former throughput-and-TTFT gate. Statements about running or pending work refer
+> to the archived snapshot, rather than live progress.
+
+Links to evidence preserved in this report bundle are clickable. References to
+artifacts outside the bundle are shown as code paths relative to the original
+study's `reports/` directory. These paths document the source locations; they
+are not links to files included here.
+
+## Contents
+
+- [Snapshot status](#snapshot-status)
+- [Fixed method and acceptance criteria](#fixed-method-and-acceptance-criteria)
+- [Reproducibility and known limits](#reproducibility-and-known-limits)
+- [Initial hardware targets](#initial-hardware-targets)
+- [Completed end-to-end comparisons](#completed-end-to-end-comparisons)
+- [Blocker found by the live replay](#blocker-found-by-the-live-replay)
+- [Shared prefill timing calibration, candidate v2](#shared-prefill-timing-calibration-candidate-v2)
+- [Native prefix-cache correction, candidate v3](#native-prefix-cache-correction-candidate-v3)
+- [Prefill priority and hybrid Mamba cache, candidate v4](#prefill-priority-and-hybrid-mamba-cache-candidate-v4)
+- [Checkpoint publication correction, candidate v5](#checkpoint-publication-correction-candidate-v5)
+- [Branch and decode checkpoint tracking, candidate v6](#branch-and-decode-checkpoint-tracking-candidate-v6)
+- [Checkpoint recency correction, candidate v7](#checkpoint-recency-correction-candidate-v7)
+- [Prefix lookup and admission corrections, candidate v8](#prefix-lookup-and-admission-corrections-candidate-v8)
+- [Remaining prefill budget, candidate v9](#remaining-prefill-budget-candidate-v9)
+- [Remaining publication-timing fidelity limits](#remaining-publication-timing-fidelity-limits)
+- [Decode graph padding and initial cache-state diagnostics](#decode-graph-padding-and-initial-cache-state-diagnostics)
+- [Missing Mamba decode work, candidate v10](#missing-mamba-decode-work-candidate-v10)
+- [Reproducing the native builds and live comparison](#reproducing-the-native-builds-and-live-comparison)
+- [Payload fidelity evidence](#payload-fidelity-evidence)
+
+## Snapshot status
+
+Status (2026-09-17, 19:02 UTC, revised after the throughput-only instruction):
+**V10 passes all four aggregate throughput calibration points**. The user has
+removed p95 TTFT from calibration. The target remains total input+output
+tokens/s per GPU, within ±20% at every matching hardware point. TTFT is retained
+as a diagnostic and does not drive further fitting or block the sweep.
+
+| Router | Clients | Hardware total tok/s/GPU | V10 total tok/s/GPU | Throughput error |
+|---|---:|---:|---:|---:|
+| RR | 192 | 6,802.29 | 6,829.79 | +0.40% |
+| RR | 384 | 5,076.01 | 5,324.21 | +4.89% |
+| KV | 192 | 9,654.85 | 10,182.40 | +5.46% |
+| KV | 384 | 8,257.49 | 9,433.30 | +14.24% |
+
+All four are matching 24-GPU aggregate comparisons, using one native build,
+one shared engine configuration, and the original Path 1 methodology. The
+unrounded values and configuration/replay checks are in
+`../sim-results/agentx_path1/matrix_v10_throughput.json`.
+This validates the aggregate reference points; disaggregation validation is
+still running, and there is no matching 64-GPU hardware reference.
+
+V9 throughput errors are -0.0094% (RR192), +5.1841% (RR384), +7.0902%
+(KV192), and +14.3007% (KV384). All four runs use one native build and engine
+configuration, pass the strict warmup source/branch/input audit, and have valid
+AgentX submission metadata. See the new
+`../sim-results/agentx_path1/matrix_v9_throughput.json`.
+Original two-metric evaluations below remain historical evidence; their failed
+TTFT checks are not rewritten as successful TTFT calibration.
+
+V9 corrects final-token reuse, prefix-lookup side effects, and admission into
+the remaining prefill budget. It passes 710 native tests, Clippy, and two live
+HTTP cache fixtures. All 24 workers confirm the native Rust AIC callback.
+Complete warmups match 185/185 hardware requests at each 192-client point and
+349/349 at each 384-client point, all successful with one output token.
+All 39 sampled hardware HTTP requests match payloads, cache-bust markers and
+headers apart from runtime IDs. V8 was superseded during warmup after source
+review exposed an incorrect budget-boundary assumption.
+
+All four V10 comparisons use one shared decode-timing candidate
+for a confirmed missing Mamba cost in AIC's analytical fallback. It passes
+713 native tests, Clippy, and a live HTTP check of native forward-pass timings.
+The coefficients come from model geometry and AIC hardware assumptions,
+not fitted endpoint metrics. The complete V10 matrix above validates aggregate
+throughput against the four selected hardware runs. TTFT remains uncalibrated
+and is reported in the underlying exports without affecting acceptance.
+Exact warmups match 185/185 requests at each
+192-client point and 349/349 at each 384-client point; all 39 sampled HTTP
+payloads and headers match. RR192 and KV192 started at 17:24 UTC after V9
+released host memory.
+
+The new 64-GPU aggregate/disaggregate KV-versus-RR sweep is tracked separately
+in `agentx-path1-topology64.md`, with automatically
+refreshed run progress (`agentx-path1-topology64-progress.md`). Its native
+disaggregation extension passes functional tests. Aggregate RR/KV at 16 clients
+and disaggregated 12P/6D KV at 192 clients are running; no completed 64-GPU
+performance points or validated optimal topology are available yet.
+
+Under the former two-metric gate, the earlier v6 matrix passed both RR points;
+KV192 and KV384 failed TTFT at
+-20.73% and -21.09%. Those near misses remain failures. Earlier completed and
+superseded attempts are retained below; results from different builds cannot
+be combined to claim acceptance.
+
+## Fixed method and acceptance criteria
+
+The client is AIPerf 0.12.0's normal AgentX runner, with its actual scheduler,
+multiprocessing, streaming HTTP transport and wall clock. It sends requests through
+Dynamo 1.4.2's frontend/router to NVIDIA's live Mocker/DynoSim SGLang workers.
+AIC 0.11.0 supplies forward-pass timing. Both simulator speedup ratios remain 1.
+Offline trace replay and the previous custom Python serving model are excluded.
+
+For each matching hardware point, **total throughput per GPU** must satisfy
+`abs(simulation / hardware - 1) <= 0.20`:
+
+* Total throughput per GPU: AIPerf `total_token_throughput.avg / GPU count`,
+  including input and output tokens. Disaggregated GPU count includes P and D.
+* P95 TTFT is recorded from AIPerf `time_to_first_token.p95`, in milliseconds,
+  but is no longer a calibration target.
+
+Errors are reported with sign; no averaging across concurrency points can hide
+a failed throughput point. TTFT, cache hits, queue length, batch size, ITL and error counts
+are diagnostics. Missing results are pending, never passes.
+
+Each full comparison preserves the saved 3600-second profiling phase, 60-second
+grace, 1200-second request timeout, concurrency, 393-root dataset, seed 42,
+25–75% trajectory-start sampling, one-token trajectory warmup, idle-gap cap,
+cache bust, branching and join barriers. Saved benchmark IDs restore the same
+cache-bust namespace. The failed separate 900-second hardware prewarm is not added.
+The actual one-token trajectory warmup is substantial: RR192 took 1651.48 seconds
+for 185 requests; RR384 took approximately 2746 seconds for 349 requests, before
+the 3600-second profiling phase. The normal AgentX strategy prints a 252825-second
+nominal spread, but its configured system-idle cap compresses idle gaps to 10
+seconds, as in the hardware run. This is upstream workload behavior, not simulator
+clock acceleration. The live comparisons retain this warmup schedule.
+
+The current acceptance matrix is aggregated RR and KV at 192 and 384 clients.
+Hardware references for additional validation are recorded in
+`../sim-results/agentx_path1/hardware_targets.json`.
+Calibration must use shared serving parameters or supported model fixes, with
+every attempt retained. Per-point output multipliers are not a model correction.
+`../scripts/check_path1_matrix.py` verifies one shared
+native build, package set, and engine configuration across those four points.
+It also checks the saved hardware workload configuration, seed, benchmark ID,
+six TP4 workers and 24-GPU denominator. Pending or mixed-version points cannot
+form an accepted matrix. The checker now defaults to throughput only; use
+`--targets total_tok_s_per_gpu p95_ttft_ms` to reproduce the former gate.
+The following files retain the original two-metric evaluations. The completed
+`v3 matrix` (`../sim-results/agentx_path1/matrix_v3.json`) fails; the
+`v6 matrix` (`../sim-results/agentx_path1/matrix_v6.json`) fails two TTFT targets.
+The completed `v7 matrix` (`../sim-results/agentx_path1/matrix_v7.json`) fails all
+four TTFT targets. The completed `v9 matrix` (`../sim-results/agentx_path1/matrix_v9.json`) fails
+three TTFT targets. The original
+`V10 in-flight snapshot` (`../sim-results/agentx_path1/matrix_v10.json`) is retained
+unchanged; the complete current evaluation is the throughput-only matrix above.
+
+## Reproducibility and known limits
+
+* Work is isolated in branch `agentx-path1-calibration-20260917` and checkout
+  `/tmp/n3u-path1-worktree`; the main thread's checkout and runs are untouched.
+* Server environment: `/tmp/n3u-path1-venv`; client environment:
+  `/tmp/n3u-faithful-venv`. AIPerf source files were compared byte-for-byte with
+  upstream v0.12.0, commit `be53bf2953d30e46c500e6a80fc1f8b6f84bc718`.
+  Separate environments preserve incompatible aiohttp dependency requirements.
+* Dataset: original Arrow cache snapshot
+  `8fecd2fc56694469f758f0afbbb6335ad3043740`, loaded by the unmodified public
+  dataset loader through an isolated Hugging Face cache in offline mode.
+* Tokenizer bytes are reused from the saved hardware model cache. The original
+  model and tokenizer names are preserved through an isolated local HF snapshot.
+  AIPerf's normal offline tokenizer resolver loads these bytes.
+* Local etcd 3.5.15, NATS 2.10.26 with 16 MiB maximum payload, and ZMQ event
+  transport retain the deployment's transport types. The hardware manifest pins
+  NATS to the 2.10 series, without recording its exact patch version.
+* AIC uses GB300/SGLang 0.5.14 tables, the newest available version in AIC 0.11.0.
+  Hardware manifests install `ai-dynamo[sglang]==1.4.2`, whose SGLang dependency
+  is 0.5.16. Actual installed hardware package versions were not captured.
+  The current public container configs for both amd64 and arm64 put
+  `/opt/sglang/bin` first on `PATH`, set no `PYTHONPATH` or `PIP_CONSTRAINT`,
+  and use `/sgl-workspace/sglang` as the working directory. The manifest uses
+  `bash -c`. This gives no image-config evidence of a source-tree override,
+  but does not establish the benchmark's actual image ID or imports; see
+  `../sim-results/agentx_path1/hardware_container_python_resolution.json`.
+* Candidate v2 quantization is explicit: FP8 GEMM, NVFP4 MoE, FP8 KV and BF16
+  attention queries in AIC. The
+  checkpoint mixes FP8 projections and NVFP4 experts. SGLang v0.5.16's
+  `ModelOptMixedPrecisionConfig.from_config` maps this checkpoint's
+  `kv_cache_scheme={type: float, num_bits: 8}` to FP8, and `kv_cache_dtype=auto`
+  selects FP8 from it. This is source-supported; actual runtime dtype still
+  needs hardware-log verification.
+* Aggregated workers: six TP4/EP4 replicas (24 GPUs), max running 16, page 64,
+  chunked prefill 16384; measured capacity 443697 pages per worker.
+  All four saved frontend exports advertise those limits and context 262144;
+  see [`agg_hardware_serving_metadata.json`](agg_hardware_serving_metadata.json).
+* Mocker's SGLang CLI rejects `max_model_len` and advertises context 0 by default.
+  `../scripts/path1_mocker.py` changes only startup metadata to
+  advertise the real 262144-token context limit. It uses the upstream engine.
+* `../scripts/path1_agentx_client.py` changes only the
+  generated benchmark ID before calling the normal AIPerf CLI. It contains no
+  fake transport, replay scheduler or serving model.
+* AIC's native interface returned readiness `ready`, source `aic`, and no warning.
+  Live worker logs confirm the pure Rust AIC callback is used.
+* Hybrid Mamba cache-state capacity and eligibility have not been demonstrated
+  faithful in upstream Mocker. The original persistent hardware cache state is
+  also unavailable. Neither gap is silently replaced with an infinite cache or
+  a claimed exact reconstruction.
+
+The completed baseline warmups match all hardware source-turn/input-length
+tuples: 185/185 at RR192 (22537767 prompt tokens) and 349/349 at RR384
+(43732021 prompt tokens). Every simulated warmup returns exactly one token.
+The first 4 MiB of each saved hardware raw export supplies 17 complete request
+samples; all 17 have equal JSON payloads, cache-bust markers and targets in the
+baseline replay. The sample fragments are not the complete benchmark export.
+See `warmup_audit_rr*_baseline.json` and `payload_sample_rr*_baseline.json` in
+`sim-results/agentx_path1` (`../sim-results/agentx_path1/`).
+
+AIPerf's Weka loader uses `DELTAS_WITH_RESPONSES`: later prompts contain the
+dataset's recorded responses and discard live generated text. Synthetic Mocker
+response content therefore does not rewrite the AgentX conversation history.
+Closed-loop completion order, branching progress and the subset completed in
+3600 seconds can still differ when serving latency differs; that is expected
+workload feedback, not proof of identical complete request sequences.
+
+A further profiling audit samples 15 requests from byte ranges beginning at
+128 MiB in the saved RR192/RR384 raw exports. Fourteen have byte-equivalent JSON
+payloads, markers and cache-bust targets. Branch identity includes the full
+conversation ID: different `:aux:` child conversations can share the same source
+outer/turn indices, so those indices alone are not a valid comparison key.
+
+The remaining RR192 sample has the same recorded messages and 740-token output
+target after normalizing only its cache-bust marker. Both markers reproduce the
+upstream hash exactly at recycle pass 0: hardware used lane 98, simulation lane
+52. AIPerf's normal `_dispatch_recycled_on_lane` assigns a newly sampled root to
+the lane released by a completed tree, so a latency change can change that lane
+and its marker. Path 1 preserves this closed-loop behavior. It does **not** claim
+byte-identical full-run dispatch or all cache-bust strings. See
+`../sim-results/agentx_path1/recycled_lane_marker_diagnostic.json`
+and `profiling_payload_sample_rr*_v3.json`.
+
+The complete v6 record audit also compares full branch identities, including
+`conversation_id` and `source_kind`. All four warmups pass this stronger check.
+Among profiling identities occurring once in each run, paired completed-output
+lengths agree for every request: 7083 RR192, 4691 RR384, 9513 KV192 and 7904 KV384
+(29191 total). Prompt-token differences span -3 to +4 tokens. The earlier raw
+payload audit demonstrates that lane-dependent cache-bust markers can cause such
+differences; record counts alone do not prove that explanation for every pair or
+establish byte-identical payloads. Different completed subsets remain expected.
+See `input_identity_{rr,kv}{192,384}_v6.json` and
+`../scripts/check_path1_inputs.py`.
+
+## Initial hardware targets
+
+| Serving | Clients | GPUs | Total tok/s/GPU | P95 TTFT (s) |
+|---|---:|---:|---:|---:|
+| Agg RR | 192 | 24 | 6802.29 | 60.082 |
+| Agg RR | 384 | 24 | 5076.01 | 494.982 |
+| Agg KV | 192 | 24 | 9654.85 | 11.657 |
+| Agg KV | 384 | 24 | 8257.49 | 119.439 |
+| Disagg 12P:6D KV | 192 | 72 | 4510.50 | 1.768 |
+| Disagg 12P:6D KV | 384 | 72 | 8636.80 | 2.580 |
+
+No real disaggregated RR AgentX reference was found in the saved hardware
+artifacts. A 64-GPU topology prediction cannot be labeled calibrated against
+64-GPU hardware without a matching hardware measurement.
+
+## Completed end-to-end comparisons
+
+All values below come from complete official AIPerf exports, after the saved
+3600-second profiling window and normal 60-second grace. Relative errors use
+the hardware denominator. A point passes only when both metrics and replay
+validation pass.
+
+| Native serving model | Point | Total tok/s/GPU: sim / real | Error | P95 TTFT (s): sim / real | Error | Gate |
+|---|---|---:|---:|---:|---:|---|
+| Baseline AIC + response visibility fix | Agg RR192 | 7918.82 / 6802.29 | +16.4% | 30.718 / 60.082 | -48.9% | Fail: TTFT |
+| Baseline AIC + response visibility fix | Agg RR384 | 8367.27 / 5076.01 | +64.8% | 184.306 / 494.982 | -62.8% | Fail: both |
+| V3: shared prefill calibration + full-prefix lookup | Agg RR192 | 8786.75 / 6802.29 | +29.2% | 33.298 / 60.082 | -44.6% | Fail: both |
+| V3: shared prefill calibration + full-prefix lookup | Agg KV192 | 11029.15 / 9654.85 | +14.2% | 7.080 / 11.657 | -39.3% | Fail: TTFT |
+| V3: shared prefill calibration + full-prefix lookup | Agg RR384 | 7893.27 / 5076.01 | +55.5% | 219.157 / 494.982 | -55.7% | Fail: both |
+| V3: shared prefill calibration + full-prefix lookup | Agg KV384 | 12332.60 / 8257.49 | +49.4% | 60.692 / 119.439 | -49.2% | Fail: both |
+| V5: hybrid checkpoint publication correction (control) | Agg RR384 | 5303.12 / 5076.01 | +4.47% | 382.434 / 494.982 | -22.74% | Fail: TTFT |
+| V6: branch/decode checkpoint tracking | Agg RR192 | 6887.98 / 6802.29 | +1.26% | 59.578 / 60.082 | -0.84% | Pass |
+| V6: branch/decode checkpoint tracking | Agg KV192 | 10270.67 / 9654.85 | +6.38% | 9.240 / 11.657 | -20.73% | Fail: TTFT |
+| V6: branch/decode checkpoint tracking | Agg RR384 | 5386.85 / 5076.01 | +6.12% | 396.584 / 494.982 | -19.88% | Pass |
+| V6: branch/decode checkpoint tracking | Agg KV384 | 9562.00 / 8257.49 | +15.80% | 94.251 / 119.439 | -21.09% | Fail: TTFT |
+| V7: checkpoint recency correction | Agg RR192 | 6896.31 / 6802.29 | +1.38% | 84.158 / 60.082 | +40.07% | Fail: TTFT |
+| V7: checkpoint recency correction | Agg KV192 | 10437.71 / 9654.85 | +8.11% | 8.311 / 11.657 | -28.71% | Fail: TTFT |
+| V7: checkpoint recency correction | Agg RR384 | 5299.92 / 5076.01 | +4.41% | 342.872 / 494.982 | -30.73% | Fail: TTFT |
+| V7: checkpoint recency correction | Agg KV384 | 9587.21 / 8257.49 | +16.10% | 93.417 / 119.439 | -21.79% | Fail: TTFT |
+| V9: prefix lookup and remaining prefill budget | Agg RR192 | 6801.65 / 6802.29 | -0.01% | 79.370 / 60.082 | +32.10% | Fail: TTFT |
+| V9: prefix lookup and remaining prefill budget | Agg RR384 | 5339.15 / 5076.01 | +5.18% | 563.594 / 494.982 | +13.86% | Pass |
+| V9: prefix lookup and remaining prefill budget | Agg KV192 | 10339.40 / 9654.85 | +7.09% | 8.684 / 11.657 | -25.51% | Fail: TTFT |
+| V9: prefix lookup and remaining prefill budget | Agg KV384 | 9438.38 / 8257.49 | +14.30% | 94.771 / 119.439 | -20.65% | Fail: TTFT |
+
+RR192 baseline has 8185 valid profiling requests and 3 timeouts; the three
+timeout source turns match hardware's long-output timeouts. Its submission
+metadata is valid, all 185 warmup inputs match, and all warmups return one token.
+Artifacts:
+`../sim-results/agentx_path1/agg-rr-c192-baseline-r3/`.
+RR384 baseline has 8218 successful profiling requests and 5 errors, valid
+submission metadata and an exact 349-request warmup input match. Its official
+benchmark duration is 3658.69 seconds. Artifacts:
+`../sim-results/agentx_path1/agg-rr-c384-baseline-r3/`.
+
+All four completed v3 points have valid submission metadata and exact warmup
+inputs. Profiling errors are 3 at each 192-client point, 5 at RR384 and 4 at
+KV384. V4 contributes no performance row because it was stopped in warmup.
+V6 RR192 has 7294 successful profiling requests and KV192 has 10091; each has
+three timeout errors on the same source turns as hardware. Both have valid
+AgentX submission metadata and exact warmup matches. V6 RR384 has 5343 successful
+profiling requests and 11 timeout errors; KV384 has 9245 successes and 4 timeout
+errors, compared with hardware's 14 and 7 timeouts, respectively. Both have valid
+submission metadata and exact warmup matches. The 20% threshold is applied to
+unrounded values: KV192's -20.73% and KV384's -21.09% TTFT errors are failures.
+
+## Blocker found by the live replay
+
+Upstream `lib/llm/src/mocker.rs::generate_random_token` samples token IDs
+1000–1999 without considering the deployment tokenizer. For this tokenizer,
+208 of those 1000 IDs decode to whitespace or incomplete UTF-8 by themselves.
+The streaming detokenizer can therefore produce no visible content for a
+one-token AgentX warmup request. AIPerf correctly flags an invalid inference
+result; that failure changes the workload that proceeds to profiling.
+
+Trial `agg-rr-c192-baseline-r1` had 5 such failures among its first 26 returned
+warmup records; RR384 had 2 among 12. Both were stopped and retained as invalid
+trials. Successful warmup requests matched the hardware source conversations,
+turns and input lengths. These failures must be fixed before calibrating latency.
+
+The local native correction adds an optional printable first-output token, while
+retaining the original scheduler, AIC timing, token count, streaming transport,
+and AIPerf validation. Token 1120 decodes to `x` with the saved tokenizer. Explicit
+output replay and reasoning-boundary tokens retain precedence. The implementation
+and regression test live in isolated source `/tmp/n3u-path1-dynamo`.
+
+## Shared prefill timing calibration, candidate v2
+
+`../scripts/fit_path1_prefill.py` fits native AIC timing
+parameters from hardware warmup records. It is a latency-parameter regression,
+not a serving replay or a replacement for the live comparison.
+
+Training uses 93 isolated one-token warmups from RR192. A request is eligible
+only when it starts at least one second after every earlier warmup ended; the
+first global request and reported cache hits are excluded. Missing cache-read
+usage remains recorded as unknown, not asserted zero. The AgentX session markers
+and unique root warmups support treating these prompts as cold for the fit.
+
+For a prefill pass with batch size `b`, new tokens per request `q`, and cached
+prefix length `p`, candidate v2 uses:
+
+```text
+prefill_ms = 1.7050018888376215 * AIC_prefill_ms
+           + 165.56955130562164 * b * q * (p + q/2) / 1e9
+decode_ms  = AIC_decode_ms
+```
+
+The additional term represents a prompt-length-dependent attention cost. It is
+additive across successive chunks. This fit identifies a timing discrepancy;
+it does not identify which hardware kernel or backend difference caused it.
+The same coefficients apply to every concurrency and router. Neither wall-clock
+speed nor benchmark output metrics are scaled.
+
+| Isolated hardware warmups | Role | Requests | Error p5 / median / p95 | Within 20% |
+|---|---|---:|---:|---:|
+| RR48 | Holdout | 32 | -72.95% / +0.61% / +3.29% | 84.4% |
+| RR96 | Holdout | 55 | -1.98% / +0.49% / +3.16% | 100% |
+| RR192 | Training | 93 | -2.38% / +0.003% / +2.14% | 100% |
+| RR384 | Holdout | 142 | -2.32% / +0.17% / +2.31% | 100% |
+
+The five RR48 outliers contain approximately 14–16 seconds of additional
+latency; their cause is not established, and they remain failures in this table.
+These are individual warmup latency checks, **not** the two end-to-end target
+metrics and not evidence that throughput or p95 TTFT passes.
+
+The same coefficients also transfer to isolated, apparently cold warmups from
+the real 12P:6D KV runs, without refitting. Across 93 requests at 192 clients,
+prediction error p5/median/p95 is -2.95%/-0.23%/+1.93%; across 142 requests at
+384 clients it is -4.57%/-1.10%/-0.12%. This comparison includes a decode-step
+estimate but no explicit transfer term. The per-request 20% check passes 93/93
+and 141/142 respectively; the retained 384-client disagg holdout outlier is -23.1%.
+Hardware minus predicted compute has
+median residual 11 ms and 68 ms respectively; it does not by itself identify
+network bandwidth or an exact transfer model. See
+`../sim-results/agentx_path1/disagg_warmup_compute_check.json`.
+
+An independent decode diagnostic reconstructs only the intervals from first to
+last output token in the error-free disagg hardware records. It excludes time
+waiting for prefill. Under an explicitly approximate assumption of six balanced
+decode workers, unchanged AIC predicts 0.5% more decode tokens on the observed
+192-client intervals and 10.0% more on the 384-client intervals. A constant
+overhead fit on 192 clients is only 0.045 ms per step; it is **not applied**.
+Per-worker placement is unobserved, so this is neither a kernel measurement nor
+an end-to-end simulation. It provides no reason for a large decode multiplier.
+See `../scripts/check_path1_decode.py` and
+`../sim-results/agentx_path1/decode_timing_diagnostic.json`.
+
+All samples, source hashes and coefficients are retained in
+[`prefill_calibration_v2.json`](prefill_calibration_v2.json).
+None of the four 192/384-client aggregate references has a reported cache-hit
+warmup request starting at least one second after all earlier requests ended.
+See `../sim-results/agentx_path1/cached_warmup_isolation_diagnostic.json`.
+Cached warmups overlap, so they cannot independently identify cached-prefill
+compute time without queueing. The isolated fit therefore validates cold timing;
+the live matrix checks the combined cached-prefill, cache and scheduling behavior.
+The native correction wraps the upstream Rust AIC callback inside Mocker; it
+leaves Dynamo routing, cache behavior, scheduling, and AIPerf unchanged.
+Seven native performance-model tests pass, including identity defaults, fully
+cached prompts, invalid-parameter rejection, decode preservation, and additive
+attention cost across chunks. Rust formatting and Mocker/LLM Clippy checks pass.
+
+The first request on each simulated worker has additional initialization cost.
+It remains in the actual AgentX warmup and in saved records. Subsequent live
+candidate warmups currently show roughly 2–4% median latency error, compared
+with about -50% in the uncalibrated baseline. These observations are provisional.
+
+## Native prefix-cache correction, candidate v3
+
+The v1.4.2 SGLang Mocker scheduler chooses the first chunk boundary before
+calling `allocate_for_request` to look up the cached prefix. The lookup therefore
+sees at most one chunk of the prompt. Subsequent chunks extend the active lease
+without another cache lookup. A 32-token cached prefix with an 8-token chunk
+incorrectly reuses only 8 tokens; the regression fails on the original code
+with `left: 8, right: 32`. At this deployment's 16384-token chunk size, the same
+bug limits reuse of long AgentX prompts.
+
+The completed RR192 baseline's uninterrupted native forward-pass stream records
+605273831 newly computed prefill tokens versus 691308939 input tokens in the
+frontend scrape window: approximately **12.4% reuse**. The scrape boundary
+includes one extra request, and cancellation can leave a small uncomputed tail,
+so this is a diagnostic estimate. Hardware reports cached tokens amounting to
+**56.2% of successful profiling input tokens**. There are no missing per-worker
+forward-pass counter values. The cache deficit partly offsets AIC's optimistic
+cold-prefill timing in throughput, while the tail-latency gate still fails.
+See `../sim-results/agentx_path1/agg-rr-c192-baseline-r3/cache_diagnostic.json`.
+
+Candidate v3 matches the entire prompt first, then applies the chunk budget to
+uncached tokens. This follows the ordering in SGLang v0.5.16's
+[`Req.init_next_round_input`](https://github.com/sgl-project/sglang/blob/v0.5.16/python/sglang/srt/managers/schedule_batch.py)
+and
+[`PrefillAdder.add_one_req`](https://github.com/sgl-project/sglang/blob/v0.5.16/python/sglang/srt/managers/schedule_policy.py).
+Three regression cases cover fully cached prompts, a short uncached tail, and
+a tail requiring additional chunks. All 57 native SGLang scheduler tests and
+the Mocker Clippy check pass. The 38 native disaggregation/handoff unit tests
+also pass; these tests are not used as serving-performance measurements.
+
+The live frontend-to-Mocker integration check sends the same 100021-token chat
+prompt twice, after initializing the worker. The cold request computes all
+100021 tokens and takes 4.963 seconds. The cached request computes only the
+53-token unaligned tail and takes 0.042 seconds. Native forward-pass events
+verify these computation counts. Artifacts are in
+`/tmp/n3u-path1-runs/full-prefix-smoke/`; this is a regression check, not an
+AgentX performance comparison.
+
+This is a source correction, not a fitted cache-hit multiplier. V3 retains
+candidate v2's shared prefill coefficients and explicit BF16 attention.
+All four v2 candidates were stopped during warmup and retained with
+`superseded.json`; they are not accepted calibration measurements. The two
+original baselines measure the earlier native implementation and are complete.
+The hybrid Mamba eligibility/state-pool limitation is addressed by candidate v4
+below; hardware configuration and full performance validation remain pending.
+
+A live one-P/one-D native rendezvous check also passes: prefill events occur on
+P, D computes no prefill tokens, and streamed outputs contain the requested one
+and sixteen tokens. This uses the native bootstrap/handoff coordinator. Transfer
+delay is disabled specifically for this functional check, so its timings are
+not calibration measurements. See
+`../sim-results/agentx_path1/disagg_handoff_smoke.json`.
+Full disaggregation comparisons still need actual P-worker capacity, hybrid-state
+pool settings, and transfer timing. The saved manifests use Mooncake transfer;
+the native simulator's timing proxy must be checked against it.
+
+A further read of the saved 12P:6D KV192 frontend export confirms a model-level
+capacity of 809406 pages and max-running 64, consistent with the decode pool.
+It has no separate prefill KV capacity or Mamba pool metric. The exported
+`kv_transfer_estimated_latency_seconds` mean is 0.6754 seconds, but this spans
+prefill-result receipt to the first decode token, including dispatch and decode
+work. Its histogram quantiles are bucket estimates and its collection includes
+warmup. It is not a transfer-only measurement or the AIPerf p95-TTFT target.
+Fitting it as a constant network delay would double-count other work. See
+`../sim-results/agentx_path1/disagg_frontend_metrics_check.json`
+and the pinned
+[`TimingTracker` implementation](https://github.com/ai-dynamo/dynamo/blob/v1.4.2/lib/llm/src/protocols/common/timing.rs).
+
+The completed v3 cache diagnostics show the opposite cache error from the
+baseline: estimated reuse is 70.2% for RR192 versus hardware's reported 56.2%,
+and 80.1% for KV192 versus 74.4%. At 384 clients, the corresponding estimates
+are 59.5% versus 30.1% for RR, and 77.6% versus 60.8% for KV. All four captures have no
+missing counters. V3 computes 228414330 / 191410681 new prefill tokens for
+RR192 / KV192 respectively. These are diagnostic comparisons with slightly
+different denominator boundaries and a different completed-request mix; they
+support correcting the cache model but do not isolate an exact causal share of
+the performance error. Full details are saved beside each v3 comparison as
+`cache_diagnostic.json`, produced by
+`../scripts/summarize_path1_cache.py`.
+
+V3's native mean-shape timing approximation also warrants a limitation: batches
+with more than one prefill request account for 3.9%/4.3% of modeled pass time at
+RR/KV192 and 1.8%/0.9% at RR/KV384. Those passes include mixed decode work. This
+does not quantify the actual approximation error, but gives no evidence for
+changing a broad batch multiplier to fit the end-to-end targets. See
+`../sim-results/agentx_path1/prefill_batching_v3.json`.
+
+## Prefill priority and hybrid Mamba cache, candidate v4
+
+V4 adds two native serving corrections, while retaining the v2 AIC coefficients,
+v3 full-prefix lookup, original AIPerf client, Dynamo router and wall-clock method.
+Its full benchmark attempts were superseded during warmup by v5; it has no
+accepted end-to-end result.
+
+* Explicit `sglang.enable_mixed_chunk=false` gives prefill priority. Existing
+  decodes pause during prefill chunks; a completed prefill emits its first token
+  without charging a separate decode forward. The upstream Mocker default is
+  retained when this new option is absent, so earlier builds remain reproducible.
+* Explicit `sglang.mamba_state_capacity=769` enables an optional native hybrid
+  cache. A reusable prefix must end at a resident recurrent-state checkpoint.
+  Splitting an attention-KV edge does not invent a checkpoint. Active requests
+  reserve a live state plus two ping-pong buffers; cached checkpoints use the
+  same finite pool. LRU state eviction can tombstone an internal checkpoint or
+  remove a leaf's KV and state together. Decode checkpoints remain private until
+  request completion. Router removal events accompany freed physical pages.
+
+These behaviors follow the pinned SGLang
+[`scheduler.py`](https://github.com/sgl-project/sglang/blob/v0.5.16/python/sglang/srt/managers/scheduler.py),
+[`mamba_radix_cache.py`](https://github.com/sgl-project/sglang/blob/v0.5.16/python/sglang/srt/mem_cache/mamba_radix_cache.py)
+and [hybrid cache configuration](https://github.com/sgl-project/sglang/blob/v0.5.16/python/sglang/srt/mem_cache/kv_cache_configurator.py).
+The modeled checkpoint granularity is 64 tokens, matching the deployment page
+size and the source's default FLA checkpoint chunk. The model configuration has
+no `mamba_chunk_size` override. This is the **prefill** alignment; v4/v5's
+completion logic used page alignment for decode too, corrected in v6 below.
+The source resolves Nemotron's paged/overlapped
+cache to the extra-buffer strategy with the default Triton linear-attention
+backend; actual installed runtime settings still require worker-log verification.
+
+The state capacity is **inferred**, not measured or fitted independently to each
+point. The saved attention-KV capacity, model state dimensions, FP32 SSM/BF16
+convolution state and default Mamba:KV memory ratio 0.9 imply approximately 770
+states per worker. Candidate v4 uses 769 for all four aggregate points. Rounding
+and unavailable resolved runtime settings remain uncertainty; see
+`../sim-results/agentx_path1/cache_memory_consistency.json`.
+A read-only Cloud Logging query for the original worker startup messages was
+also blocked by `ACCESS_TOKEN_SCOPE_INSUFFICIENT` on this VM. No credentials,
+permissions or cluster settings were changed; see
+`../sim-results/agentx_path1/hardware_worker_log_access.json`.
+A read-only inventory of all four exact benchmark job prefixes also finds no
+worker startup logs, only AIPerf exports and client logs:
+`../sim-results/agentx_path1/hardware_artifact_inventory.json`.
+No full disaggregation result uses an assumed prefill pool. Hybrid caching on
+native decode destinations is explicitly unsupported by this extension until
+state transfer is modeled; it is not silently enabled.
+
+All 692 native Mocker unit tests pass, including new regressions for prefill
+priority, no extra decode forward for one-token prefill, branch/checkpoint
+eligibility, independent recurrent-state eviction, whole-leaf eviction, private
+decode checkpoints, and repeated branching with cancellation under a finite pool.
+Mocker Clippy passes. These unit tests are not used as serving-performance runs.
+The release build and live HTTP verification pass. A 100021-token prompt
+computes all input tokens cold and only 53 tokens when repeated. A branched
+100024-token prompt sharing about 60000 input tokens reuses the last eligible
+checkpoint at 49152, computing 50872 tokens. None of these one-token requests
+schedules a separate decode forward. See
+`../sim-results/agentx_path1/hybrid_cache_smoke.json`.
+All five patches cleanly reconstruct the built source from upstream v1.4.2.
+
+The first v4 RR384 attempt was invalidated during warmup: a native ZMQ
+publisher failed to bind its dynamically selected port (`Address already in
+use`), while the containing process and health endpoint stayed alive. It is
+retained with `superseded.json`. The controller now checks native panic logs
+throughout startup/execution and staggers worker startup. The clean retry uses
+the same v4 native binary, engine settings and benchmark under a new namespace;
+no profiling performance is taken from the invalid attempt.
+
+## Checkpoint publication correction, candidate v5
+
+A new pressure regression exposed a bug in the local v4 hybrid-cache extension:
+while publishing a new branch checkpoint, evicting its older descendant could
+recursively delete the new branch as an unprotected tombstone. The regression
+failed on v4 with zero reusable tokens instead of eight. V5 protects the
+prospective branch during state allocation and releases that protection after
+publication. This is a correction to our extension, not a claimed upstream
+Dynamo defect.
+
+All 695 native Mocker tests and Clippy pass, including three new cases covering
+the raw branch eviction, an actual SGLang prefill sequence, and 200 rounds of
+concurrent branching/cancellation with a small finite pool. The live HTTP check
+also passes eleven requests using an eight-state pressure fixture: the shortened
+branch retains its 256-token checkpoint, and its repeat computes only 54 of 310
+prompt tokens. The sixteen-output request schedules fifteen decode forwards;
+one-token prefill requests schedule none. This fixture is a functional test;
+all benchmark workers retain the inferred capacity of 769. See
+`../sim-results/agentx_path1/hybrid_cache_pressure_smoke.json`.
+
+All six patches reconstruct the fourteen modified source files byte-for-byte;
+hashes are saved in
+`../sim-results/agentx_path1/v5_patch_reconstruction.json`.
+V5 changes no AIC coefficients, benchmark parameters, or replay methodology.
+All v4 runs were stopped during warmup and retained with `superseded.json`.
+Fresh v5 namespaces start with empty caches and replay the full saved warmup.
+The controller additionally requires each worker's metrics initialization and
+checks native background panic logs, since process liveness alone did not catch
+the earlier ZMQ startup failure.
+
+## Branch and decode checkpoint tracking, candidate v6
+
+The next source audit found two additional mismatches in the local hybrid
+extension. SGLang's
+[`_mamba_radix_cache_v2_req_prepare_for_extend`](https://github.com/sgl-project/sglang/blob/v0.5.16/python/sglang/srt/managers/schedule_batch.py)
+can track a branch point inside a recomputed prefill chunk. It does not always
+retain the chunk's end state. Decode tracks recurrent states at the separately
+configured `mamba_track_interval`, whose pinned source default is **256** tokens.
+Completion can donate only a state that was actually tracked. V5 instead kept
+prefill chunk ends and rounded completed sequences down to the 64-token page.
+
+V6 records the branch point and pending recurrent checkpoint in each native
+request. It retains the shared prefill alignment of 64 and explicitly sets the
+decode interval to 256 for all four points. Hybrid KV-store events are emitted
+when a checkpoint is donated; allocated or computed KV beyond that point stays
+private. A prefill too short to track a new state retains its already protected
+checkpoint. These changes do not alter AIPerf, AIC coefficients, router settings,
+state capacity, or the wall-clock methodology.
+
+Three red regressions demonstrated the previous discrepancies: a recomputed
+branch reused 512 instead of 576 tokens, completion invented a 384-token
+checkpoint when the last tracked state was at 320, and allocation advertised
+private KV before donation. The corrected build passes **699** native Mocker
+tests and Clippy. Its live HTTP test passes twelve requests: after a first
+branched request recomputes from checkpoint 49152, a later sibling reuses the
+new checkpoint at 59968. Independent tokenizer inspection confirms the shared
+prefix is 60012 tokens, aligned down to 59968. Small-pool eviction still passes.
+See `../sim-results/agentx_path1/hybrid_cache_tracking_smoke.json`.
+
+Seven patches reconstruct all fifteen changed source files exactly; see
+`../sim-results/agentx_path1/v6_patch_reconstruction.json`.
+The four v6 acceptance runs use an immutable separate environment. The v5
+384-client controls retain their original binary/configuration; their results
+will not be combined with v6 to claim that one model passes every point.
+At 13:14 UTC, the optional KV384 v5 control was stopped as available host RAM
+fell below 30 GiB. Its partial data and `superseded.json` are retained; it has
+no completed performance result. The RR384 control and all v6 points subsequently
+completed; their official results appear above.
+
+Both v6 192-client warmups match hardware's 185 source-turn/input-length tuples,
+return one token per request and have zero errors. Warmup-only p95 TTFT is
+34.371 versus 34.127 seconds for RR and 29.441 versus 30.290 seconds for KV.
+Of the paired individual latencies, 168/185 RR and 171/185 KV requests are within
+20%. These are prefill diagnostics, not the full profiling acceptance metrics;
+see `../sim-results/agentx_path1/warmup_latency_v6_c192.json`.
+Both 384-client warmups also match all 349 hardware source-turn/input-length
+tuples, with one output token each and zero errors. Their warmup-only p95 TTFT
+is 78.279 versus 75.617 seconds for RR and 73.201 versus 73.580 seconds for KV;
+see `../sim-results/agentx_path1/warmup_latency_v6_c384.json`.
+The v6 raw-payload sample audit matches all 17 hardware warmup samples exactly
+(8 RR192 and 9 RR384), including cache-bust markers and output targets.
+
+Native forward-pass events also show that the large v3 cache-reuse surplus was
+reduced by the hybrid-cache corrections. The diagnostic reused-input fractions
+are:
+
+| Point | V3 estimate | V6 estimate | Hardware reported cached/input |
+|---|---:|---:|---:|
+| RR192 | 70.22% | 56.08% | 56.17% |
+| KV192 | 80.11% | 75.64% | 74.38% |
+| RR384 | 59.49% | 32.58% | 30.12% |
+| KV384 | 77.57% | 66.10% | 60.81% |
+
+Simulation estimates use computed prefill tokens and frontend input-token
+histograms over the observed profiling window; hardware uses successful request
+records. Scrape boundaries, canceled tails and the closed-loop completed mix can
+differ, so these are diagnostic estimates, not an exact request-paired hit-rate
+comparison. No native forward-pass event counters are missing in the v6 traces.
+See each completed v6 bundle's `cache_diagnostic.json`. KV384 retains a cache
+reuse surplus, consistent with—but not by itself proving—the remaining latency
+and throughput optimism.
+
+A separate header audit found that launches through v6 explicitly enabled
+`AIPERF_HTTP_X_DYNAMO_SESSION_ID_FROM_CORRELATION_ID`, adding Dynamo session/parent
+headers absent from the hardware raw samples. Request bodies still match, but
+wire headers are not identical. These runs have no session-affinity TTL: Dynamo
+constructs no affinity coordinator, its configured stock FCFS policy does not
+read the session ID, and the Mocker serving model does not read agent context.
+The extra fields therefore do not select a session-pinned replica. The launcher
+now sets this flag to `0` for future runs; current processes and their saved
+launcher copies are unchanged. See
+`../sim-results/agentx_path1/transport_header_audit.json`.
+
+## Checkpoint recency correction, candidate v7
+
+The remaining KV192 TTFT error motivated another comparison against SGLang's
+cache lifecycle. A duplicate checkpoint donation at request completion refreshed
+the local extension's recurrent-state LRU. SGLang's `_insert_helper` instead
+discards the duplicate donation without refreshing that existing state's LRU;
+unlocking the completed request also leaves its recency unchanged. This matters
+when a request finishes without crossing a new decode-checkpoint boundary.
+
+V7 separates donation from actual checkpoint consumption. Recording an existing
+checkpoint leaves its state recency unchanged. An unfinished request still
+refreshes the checkpoint it adopts, matching SGLang's post-insert prefix lookup.
+The change affects three native files and no AIC coefficients or engine settings.
+It corrects the local hybrid extension, not a claimed upstream Dynamo bug.
+
+Two red regressions reproduced the wrong eviction: the raw cache retained an
+old four-token checkpoint, and the scheduler retained an old 128-token checkpoint
+after completion. A companion attention-KV eviction control already passed.
+The corrected build passes **702** native Mocker tests and Clippy.
+
+A live HTTP control and corrected run use a ten-state functional fixture. A
+two-request overlap followed by seven pressure requests makes v6 evict the wrong
+checkpoint: the B probe recomputes all 129 input tokens. V7 reuses 128 and computes
+one; the A probe remains cold, demonstrating real eviction rather than an
+unbounded cache. Both probes go through Dynamo's frontend and native AIC workers.
+See `../sim-results/agentx_path1/hybrid_lru_live_v6_control.json`
+and `../sim-results/agentx_path1/hybrid_lru_live_v7_corrected.json`.
+The benchmark configuration retains 769 states; the small fixture is not a
+performance-calibration run.
+
+The eighth patch reconstructs all fifteen modified source files exactly with
+the previous seven patches; see
+`../sim-results/agentx_path1/v7_patch_reconstruction.json`.
+V7 uses a separate environment and also disables the extra session headers
+documented above. All 24 worker logs confirm the native Rust AIC callback; all
+four launch configurations disable those headers. See
+`../sim-results/agentx_path1/v7_startup_verification.json`.
+All 39 hardware request samples match bodies, cache-bust markers, targets and
+headers apart from runtime request/correlation IDs: RR192 8/8, RR384 9/9,
+KV192 13/13 and KV384 9/9. See `payload_sample_{rr,kv}{192,384}_v7.json`.
+Both 192-client warmups match all 185 full source/branch identities and prompt
+lengths; both 384-client warmups match all 349. Each returns one output token
+per request, with zero errors. See `input_identity_{rr,kv}{192,384}_v7.json`.
+All four official exports are complete. Throughput passes at every point, but
+all four TTFT targets fail. The stronger profiling audit pairs 29182 unique
+source/branch identities across hardware and simulation; every paired output
+length agrees. This does not imply identical dispatch order or cache state.
+
+## Prefix lookup and admission corrections, candidate v8
+
+SGLang v0.5.16's `Req._compute_max_prefix_len` limits reuse to one token short
+of the input: prefill must produce the next-token logits. Upstream Mocker and
+the earlier candidates could reuse the complete prompt. With a recurrent-state
+cache, excluding that last token can require falling back to an older checkpoint,
+so the difference can exceed one token. V8 applies this limit before chunking
+and preserves it during allocation. Zero-output functional requests remain exempt.
+
+SGLang also calls `init_next_round_input` before `PrefillAdder.add_one_req` checks
+the remaining token budget. A candidate rejected by that budget still refreshes
+cache recency. A hybrid cache hit also temporarily allocates one copied Mamba
+state and may evict a checkpoint. V8 models these lookup side effects, releases
+the temporary state, and retains the existing full-admission state accounting.
+This changes the local hybrid extension without changing the client, routing,
+clock, AIC coefficients, or benchmark engine configuration.
+
+Four regressions fail on v7: attention-cache final-token reuse, hybrid final-token
+fallback, recency of a budget-rejected candidate, and its temporary state pressure.
+The corrected build passes **706 native Mocker tests** and Clippy. All nine
+patches reconstruct the fifteen modified files exactly; see
+`../sim-results/agentx_path1/v8_patch_reconstruction.json`.
+
+The live HTTP final-token fixture sends the same 32768-token prompt three times
+through a ten-state worker. V7 computes 32768, 0 and 0 tokens. V8 computes 32768,
+16384 and 64: the first repeat falls back to the earlier checkpoint, then creates
+a reusable checkpoint one page short of the prompt end. Both return exactly one
+visible output token each time. See
+`../sim-results/agentx_path1/hybrid_lasttoken_live_v7_control.json`
+and `../sim-results/agentx_path1/hybrid_lasttoken_live_v8_corrected.json`.
+The previous recency/eviction HTTP fixture also passes on v8; see
+`../sim-results/agentx_path1/hybrid_lru_live_v8_corrected.json`.
+These small functional fixtures are not performance comparisons. Further source
+review found that the budget-rejection tests covered an invalid control-flow
+assumption: after a **new** admission exhausts the budget, `add_one_req` returns
+`OTHER` and stops the waiting loop. Only an existing chunk continuation reaches
+the next candidate in that situation. V8's RR384 attempt was stopped during
+warmup and is invalid for performance comparison. Candidate v9 corrects this.
+
+Saved frontend metrics provide no evidence of reported KV-event application
+failures: both hardware and v6 KV192/KV384 exports show zero duplicate-store,
+non-OK application, source-mismatch and query-error counters. This does not prove
+that every event was delivered; see
+`../sim-results/agentx_path1/router_event_health_v6.json`.
+
+## Remaining prefill budget, candidate v9
+
+V9 follows the distinction between `add_chunked_req`, which runs before the
+waiting-queue loop, and `add_one_req`, whose returned `budget_state()` stops that
+loop after budget exhaustion. The regression now covers both paths with five
+and seven resident checkpoints; the earlier two cases incorrectly treated a
+new request as a continuation.
+
+The same review found that native admission compared a candidate's remaining
+input to the configured chunk size, instead of the **remaining batch budget**.
+If the candidate was smaller than the configured chunk but larger than the
+remaining space, Mocker rejected it. SGLang admits a partial chunk. V9 fixes this
+for both attention-only and hybrid cache configurations. With a twelve-token
+budget and four-token pages, a five-token first request consumes eight budget
+tokens and the next eight-token request now processes four tokens in that pass.
+
+The partial-budget condition is also present in pristine upstream Dynamo 1.4.2.
+Four cases fail on v8; the corrected build passes all **710 native Mocker tests**
+and Clippy. The tenth patch reconstructs all fifteen modified files exactly; see
+`../sim-results/agentx_path1/v9_patch_reconstruction.json`.
+Both live HTTP fixtures pass again on v9: final-token recomputation and checkpoint
+recency/eviction. See
+`../sim-results/agentx_path1/hybrid_lasttoken_live_v9_corrected.json`
+and `../sim-results/agentx_path1/hybrid_lru_live_v9_corrected.json`.
+No AIC coefficients, workload settings, or engine settings change. Full replay
+and both performance targets remain required.
+All four comparisons use the same build; all 24 workers confirm the Rust AIC
+callback and the saved header setting. See
+`../sim-results/agentx_path1/v9_startup_verification.json`.
+
+The completed same-build matrix passes all four throughput targets and RR384
+TTFT, but fails the other three TTFT targets. Strict input audits pair 29,066
+unique successful profiling turns with hardware; all paired output lengths
+match. Prompt-length deltas range from -4 to +4 tokens because closed-loop
+completion changes lane recycling and cache-bust markers. This is not a claim
+of byte-identical HTTP payloads for every profiling request. The complete
+matrix and per-run audit bundles preserve all failures and unrounded metrics.
+
+## Remaining publication-timing fidelity limits
+
+A source audit found that SGLang's worker load signal uses rounded active pool
+usage, whereas Mocker reports resident allocated KV blocks, including evictable
+cache. The saved frontend manifests set no overload thresholds, and Dynamo's
+`kv_used_blocks` signal feeds that overload monitor. This source difference does
+not by itself explain the current routing gap; no load-report correction is fitted.
+
+SGLang's [decode reporting](https://github.com/sgl-project/sglang/blob/v0.5.16/python/sglang/srt/managers/scheduler_components/metrics_reporter.py)
+also batches cache-event publication at `decode_log_interval` (default 40).
+Prefill reports and idle handling flush events too. Mocker publishes at every
+modeled pass end. Its live boundary already defers events until the modeled pass
+finishes; this is a cadence difference, not premature publication before compute.
+
+A diagnostic applies those flush boundaries to the completed v7 pass timestamps.
+If each decode pass produced an event, its additional delay would have p95
+0.635 seconds for KV192 and 0.677 seconds for RR192; maxima are below 1.49 seconds.
+Actual event creation times and counts are not observed. These are hypothetical
+publication delays, not measured latency contributions or a serving prediction;
+closed-loop routing effects still need an end-to-end test. No such delay has been
+added to v9. See
+`../sim-results/agentx_path1/load_and_event_publication_source_audit.json`
+and `../sim-results/agentx_path1/cache_event_cadence_diagnostic_v7_c192.json`.
+
+## Decode graph padding and initial cache-state diagnostics
+
+SGLang v0.5.16 defaults to decode CUDA graphs and captures batch sizes
+1, 2, 4, 8, 12 and 16 within this deployment's 16-request limit. It pads to
+the next captured size; FlashInfer gives dummy sequences length one.
+Mocker currently passes the actual ready decode batch to AIC. Runtime graph
+settings were not saved, so this remains a source-default comparison.
+See [capture-size selection](https://github.com/sgl-project/sglang/blob/v0.5.16/python/sglang/srt/model_executor/runner/base_cuda_graph_runner.py#L57)
+and [decode graph preparation](https://github.com/sgl-project/sglang/blob/v0.5.16/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py#L1108).
+
+An operation-level sensitivity check on completed v7 forward passes estimates
+3.17%, 0.68%, 2.89% and 0.0034% additional decode work for RR192, RR384,
+KV192 and KV384 respectively. It pads non-attention operators, retains actual
+attention batch/context, and rounds contexts to three diagnostic buckets.
+It omits dummy attention cost and operator masking; it is neither an exact
+padded-graph prediction nor another serving replay. In particular, KV384
+already uses batch 16 on 529599 of 530998 observed decode passes, so padding
+does not explain its full TTFT gap. No timing correction was applied.
+See `../sim-results/agentx_path1/decode_graph_padding_sensitivity_v7.json`.
+
+The detailed hardware KV192 export has separate `metrics` and `warmup_metrics`
+sections. Its profiling view has a boundary timeslice containing accumulated
+warmup events; leading zero slices must not be read as warmup inactivity.
+The warmup section records 2875 stored and 1796 removed events over warmup.
+Those counters count events, not resident blocks or Mamba states, and cannot
+reconstruct initial cache contents. No initial cache fill was inferred or
+applied. Evidence is in
+`../sim-results/agentx_path1/hardware_initial_cache_state_diagnostic.json`.
+
+## Missing Mamba decode work, candidate v10
+
+The selected AIC 0.11.0 model queries return `source=sol` for both Mamba decode
+kernels. The recurrent-state-update fallback counts input/output vectors but
+omits the recurrent tensor's read and write. At batch 16 it predicts 0.006734 ms
+for all 48 state-update layers. SGLang's FP32 temporal state is
+`48 * (256 / TP4) * 64 * 128 * 4 = 100663296` bytes per request per GPU.
+Reading and writing that state for 16 requests costs a nominal 0.402653 ms at
+AIC's 8 TB/s peak memory bandwidth. This is a bandwidth calculation, not a
+measured GPU kernel time. See
+`../sim-results/agentx_path1/aic_decode_operator_sources.json`.
+
+The candidate adds shared native AIC calibration terms:
+
+```
+decode_ms = AIC_decode_ms + 0.288 + ready_decode_requests * 0.03145728
+```
+
+The per-request term uses the missing state read/write bytes and AIC's 80%
+empirical bandwidth assumption. The fixed term uses its 3-microsecond memory
+kernel assumption for two kernels in each of 48 layers. These are vendor-file
+empirical assumptions, not Nemotron kernel measurements. The correction is
+specific to the confirmed SOL fallback; applying it on top of complete measured
+Mamba kernel timings could double count work. Device-cache residency and kernel
+fusion are unobserved. The existing prefill calibration remains unchanged.
+Coefficients, derivation, limitations and source hashes are in
+[`decode_mamba_timing_candidate_v10.json`](decode_mamba_timing_candidate_v10.json).
+
+The optional decode terms default to zero and are applied per native decode
+forward, using only ready requests. The prefill output is excluded; no cost is
+added for an empty batch or an output target of one. Path 1 still uses the real
+AIPerf AgentX client, Dynamo router, native scheduler and Rust AIC callback.
+The implementation is the incremental
+`AIC decode calibration patch` (`../scripts/path1-patches/dynamo-1.4.2-aic-decode-calibration.patch`).
+All eleven patches reconstruct the current 15 modified source files exactly.
+The build passes 713 native tests and Clippy. A five-request live HTTP fixture
+checks native decode durations at batches one and four against the unmodified
+AIC base plus the configured correction to within 0.001 ms. This validates
+wiring, not benchmark accuracy:
+`../sim-results/agentx_path1/decode_calibration_live_v10.json`.
+
+An independent timing sanity check against observed disaggregated hardware
+decode intervals is saved in
+`../sim-results/agentx_path1/decode_mamba_interval_sanity_v10.json`.
+It assumes balanced worker placement and includes non-kernel waits, so it is
+neither a disaggregated serving replay nor an acceptance result. No coefficient
+was fitted to those intervals.
+
+A further RR warmup check finds two possible cached-prefill timing samples if
+client arrival order is assumed to equal backend round-robin order. They overlap
+other requests globally, and backend placement, queueing and first-use costs are
+unobserved. They do not justify a new cached-prefill fit:
+`../sim-results/agentx_path1/conditional_cached_prefill_diagnostic.json`.
+
+The native prefill callback also reduces uneven batches to mean chunk-end and
+prefix lengths. In V9, multi-request prefill batches account for 6.03% of
+modeled prefill time at RR192, 1.79% at RR384, 9.82% at KV192 and 0.56% at
+KV384. This approximation alone is unlikely to explain the common KV gap,
+although tail effects cannot be inferred from aggregate time fractions.
+Forward-pass events record full-prompt variance, not the per-chunk/prefix
+covariance needed to quantify its timing bias. No new timing fit is applied;
+see `../sim-results/agentx_path1/prefill_batch_heterogeneity_v9.json`.
+
+## Reproducing the native builds and live comparison
+
+Start with the upstream Dynamo v1.4.2 source and apply these patches in order:
+
+1. `../scripts/path1-patches/dynamo-1.4.2-cpu-build.patch`
+   disables the unused CUDA block-manager dependency for this CPU simulation build.
+2. `../scripts/path1-patches/dynamo-1.4.2-first-visible-token.patch`
+   fixes one-token synthetic response visibility.
+3. For calibrated candidates,
+   `../scripts/path1-patches/dynamo-1.4.2-aic-prefill-calibration.patch`.
+4. For candidate v3,
+   `../scripts/path1-patches/dynamo-1.4.2-full-prefix-before-chunk.patch`.
+
+5. For candidate v4,
+   `../scripts/path1-patches/dynamo-1.4.2-prefill-priority-hybrid-cache.patch`.
+6. For candidate v5,
+   `../scripts/path1-patches/dynamo-1.4.2-hybrid-checkpoint-publication.patch`.
+7. For candidate v6,
+   `../scripts/path1-patches/dynamo-1.4.2-hybrid-checkpoint-tracking.patch`.
+8. For candidate v7,
+   `../scripts/path1-patches/dynamo-1.4.2-hybrid-checkpoint-lru.patch`.
+9. For candidate v8,
+   `../scripts/path1-patches/dynamo-1.4.2-prefill-prefix-admission.patch`.
+10. For candidate v9,
+    `../scripts/path1-patches/dynamo-1.4.2-prefill-remaining-budget.patch`.
+11. For candidate v10,
+    `../scripts/path1-patches/dynamo-1.4.2-aic-decode-calibration.patch`.
+
+Build with the upstream Rust 1.96.1 toolchain and AIC feature enabled:
+
+```bash
+maturin build --release --features aic-forward-pass \
+  --manifest-path lib/bindings/python/Cargo.toml --out /tmp/path1-wheels
+```
+
+Install the resulting `ai-dynamo-runtime` wheel alongside `ai-dynamo==1.4.2`
+and `aiconfigurator-core==0.11.0`. Keep AIPerf 0.12.0 in its separate client
+environment. The baseline and candidate use separate server environments:
+
+| Build | Server environment | Native core SHA-256 |
+|---|---|---|
+| Baseline + visibility fix | `/tmp/n3u-path1-venv` | `8c2702b669d6dbd29ffcefba52b121149d9332422da46d89d634731be7451898` |
+| Prefill calibration support | `/tmp/n3u-path1-calibrated-venv` | `856309e874f0ea38dcb9fe6f1381aebb9c27053ad3581437a66a0d176c073d84` |
+| Calibration + full-prefix correction | `/tmp/n3u-path1-prefix-venv` | `995fa3c2d0f7d19e5befc3c96c90d5f210c175ec6bcd7767b149576ab7f20e4c` |
+| Prefill priority + hybrid cache | `/tmp/n3u-path1-hybrid-venv` | `bcc2d5b2f069bf833f3b0ef1a8ce3752ba1ee8e8bd669d8b1e887a6d182af148` |
+| Hybrid checkpoint publication fix | `/tmp/n3u-path1-hybrid2-venv` | `dad908d9698d798669fb87aba947a9a3844edfd79307585c7815091082234b07` |
+| Branch/decode checkpoint tracking | `/tmp/n3u-path1-hybrid3-venv` | `266ac9e1104d82136f1fe97f9c16569e3a223de88703c5bf08bfbb3f651b7247` |
+| Checkpoint recency correction | `/tmp/n3u-path1-hybrid4-venv` | `e5b9a51e583dd75ac2937d67afe38dd6d3030001644ebfdfa8d83f406672aa26` |
+| Prefix lookup and admission corrections | `/tmp/n3u-path1-hybrid5-venv` | `4c3988503b1c85745685873a52105f7c73202a0cdec8b242c11991d6368ad0d4` |
+| Remaining prefill budget correction | `/tmp/n3u-path1-hybrid6-venv` | `591363f3407b33df842c2b40e12fc4c54eb1186572a99d6ebe3774cf254e2164` |
+| Shared Mamba decode timing candidate | `/tmp/n3u-path1-hybrid7-venv` | `5e298de426f7b27f1cc3d0647ac8eefec49d0abd989a01ac93e673e5bedd0d02` |
+
+Example candidate launch from the study directory, with local etcd/NATS already
+running and isolated HF dataset/tokenizer caches prepared:
+
+```bash
+/tmp/n3u-path1-venv/bin/python scripts/run_path1_agentx.py \
+  --hardware-summary /tmp/n3u-path1-hardware/n3u-agg-ns2-agentx-rr-c192/summary.json \
+  --hardware-records /tmp/n3u-rr-sweep-real/agg6-rr-c192/records.jsonl \
+  --run-dir /tmp/n3u-path1-runs/agg-rr-c192-calibrated-v7 \
+  --http-port 18118 --metrics-port 18720 --namespace path1_rr192_cal_v7 \
+  --router round-robin \
+  --engine-config sim-results/agentx_path1/agg_engine_calibrated_v7.json \
+  --server-python /tmp/n3u-path1-hybrid4-venv/bin/python
+```
+
+The example run directory already exists; choose a fresh directory and free
+ports for another attempt. Each launch owns six worker processes, one frontend,
+the ordinary AIPerf client and a passive metrics observer. The observer records
+native forward-pass events and worker Prometheus metrics without issuing model
+requests. The controller verifies warmup source turns and input lengths against
+hardware before accepting an end-to-end comparison.
+
+Check the complete four-point gate with official exports:
+
+```bash
+/tmp/n3u-path1-venv/bin/python scripts/check_path1_matrix.py \
+  --candidate v7 --output sim-results/agentx_path1/matrix_v7.json --require-pass
+```
+
+This returns a nonzero status while any point is incomplete, invalid, or outside
+20% for either metric. It recalculates errors from the official summaries.
+For completed points, the saved result bundles also contain the hardware and
+simulation summaries plus run status. Pass `--run-root sim-results/agentx_path1`
+to validate these bundles without the original temporary run directories.
+The archived v3 matrix reproduces all four failures with the same metric values.
+
+Completed runs' large raw JSONL exports are losslessly compressed to `.jsonl.gz`
+to conserve this host's RAM-backed temporary filesystem. Each `raw-archive.json`
+records the original byte count and SHA-256, verified by decompressing the whole
+archive before removing the uncompressed copy. The payload auditor reads either
+format; official summaries and acceptance measurements are unchanged.
+Completed detailed server-metrics JSON exports are likewise archived as
+`.json.gz`, with full-byte verification in `server-metrics-archive.json`.
+The cache diagnostic reads either representation. Closed raw shards from old
+failed attempts use the same verified compression and remain failed attempts.
+
+Current attempts are under `/tmp/n3u-path1-runs/`:
+
+* `agg-rr-c192-baseline-r3`, `agg-rr-c384-baseline-r3`
+* `agg-rr-c192-calibrated-v3`, `agg-rr-c384-calibrated-v3`
+* `agg-kv-c192-calibrated-v3`, `agg-kv-c384-calibrated-v3`
+* `agg-rr-c384-calibrated-v5` (completed control; TTFT fails)
+* `agg-kv-c384-calibrated-v5` (stopped for RAM; incomplete)
+* `agg-rr-c192-calibrated-v6`, `agg-rr-c384-calibrated-v6` (both pass)
+* `agg-kv-c192-calibrated-v6`, `agg-kv-c384-calibrated-v6` (both fail TTFT)
+* `agg-rr-c192-calibrated-v7`, `agg-kv-c192-calibrated-v7` (both fail TTFT)
+* `agg-rr-c384-calibrated-v7`, `agg-kv-c384-calibrated-v7` (both fail TTFT)
+* `agg-rr-c384-calibrated-v8` (superseded during warmup; invalid budget-boundary assumption)
+* `agg-rr-c192-calibrated-v9`, `agg-kv-c192-calibrated-v9` (running)
+* `agg-rr-c384-calibrated-v9`, `agg-kv-c384-calibrated-v9` (running)
+* `agg-rr-c384-calibrated-v10`, `agg-kv-c384-calibrated-v10` (running)
+
+Each eventual `comparison.json` contains both signed metric errors, replay
+validity checks, and an `all_targets_pass` gate. The controller never labels a
+pending run or a failed replay as passing.
+
+
+Candidate v1 used the AIC default of FP8 attention compute. Source inspection
+found that SGLang v0.5.16 selects FlashInfer for NemotronH on this GPU, and its
+prefill/decode planning uses the model dtype for queries. The saved checkpoint
+has `dtype=bfloat16`; KV storage remains FP8. Candidate v2 pins BF16 attention
+and refits the same two parameters on the same training requests. The v1 trials
+were stopped during warmup and retained; they are not completed benchmarks.
+This is supported by the [SGLang model defaults](https://github.com/sgl-project/sglang/blob/v0.5.16/python/sglang/srt/arg_groups/overrides.py#L878)
+and [FlashInfer query dtype](https://github.com/sgl-project/sglang/blob/v0.5.16/python/sglang/srt/layers/attention/flashinfer_backend.py#L1759).
+Actual hardware package versions and runtime logs remain unavailable.
+
+## Payload fidelity evidence
+
+All 17 complete warmup records sampled from the first 4 MiB of the two hardware
+raw exports match the live baseline's complete JSON request payload, cache-bust
+marker and marker placement: 8/8 for RR192 and 9/9 for RR384. Results and canonical
+payload hashes are saved in
+`../sim-results/agentx_path1/payload_sample_rr192_baseline.json`
+and `../sim-results/agentx_path1/payload_sample_rr384_baseline.json`.
+The reproducible comparison is
+`../scripts/check_path1_payloads.py`.
+
+AIPerf's Weka loader selects `DELTAS_WITH_RESPONSES`: subsequent requests use
+recorded dataset history and discard the live response text. The synthetic
+Mocker output therefore does not replace the next turn's prompt. Initial
+warmup source order, selected turns and input lengths also agree with hardware
+for the returned records inspected so far.
+
+These checks support input fidelity, not a claim that a closed-loop run will
+complete exactly the same requests in one hour: different response times can
+change branching progress and recycling. Final acceptance still requires a
+valid full replay and both end-to-end metrics within 20% at every compared point.

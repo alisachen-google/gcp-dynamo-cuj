@@ -3,7 +3,7 @@
   "hardware_date": "2026-09-16",
   "simulation_date": "2026-09-17",
   "gpus": 24,
-  "slo_ttft_p95_s": 20,
+  "slo_ttft_p95_s": 10,
   "hardware": [
     {
       "id": "n3u-agg-ns-agentx-kv-c48",
@@ -358,6 +358,373 @@
     "hardware/agentx_runner.sh.txt": {
       "source": "/home/alisachen_google_com/gcp-dynamo-cuj/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/agentx_runner.sh",
       "sha256": "3ecc596a3bfb84d71ff6a95a819cb0f2bc11b44f508eab1ee09ef94716c67103"
+    },
+    "request-metrics/n3u-agg-ns-agentx-kv-c48.csv.gz": {
+      "sha256": "fe3a35100dbc409dc14937bd8f45ff03425b6021cb8a15916b1c25895cd0e2e0",
+      "source": "gs://alisachen-models/perf/1789545801_alisachen-n3u-agg-ns-agentx-kv-c48/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c48_20260916_080341/profile_export.jsonl"
+    },
+    "request-metrics/n3u-agg-ns-agentx-kv-c96.csv.gz": {
+      "sha256": "1bd4757e9784b00bcd9b909ecbd0036d312f7572b814ab04c280fce75bbc8891",
+      "source": "gs://alisachen-models/perf/1789550601_alisachen-n3u-agg-ns-agentx-kv-c96/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c96_20260916_092337/profile_export.jsonl"
+    },
+    "request-metrics/n3u-agg-ns2-agentx-rr-c48.csv.gz": {
+      "sha256": "ee8593035d4a6efd3511a36e7c77252a4c39ae944716c69a2c6a04ba8afb0d2a",
+      "source": "gs://alisachen-models/perf/1789550745_alisachen-n3u-agg-ns2-agentx-rr-c48/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c48_20260916_092603/profile_export.jsonl"
+    },
+    "request-metrics/n3u-agg-ns2-agentx-rr-c96.csv.gz": {
+      "sha256": "fd8c5d2d6b9e88d52d978ccdb16f5f30e9a972dbf6ae35d77381025ec21db2c7",
+      "source": "gs://alisachen-models/perf/1789555623_alisachen-n3u-agg-ns2-agentx-rr-c96/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c96_20260916_104719/profile_export.jsonl"
+    },
+    "request-metrics/n3u-agg-ns-agentx-kv-c192.csv.gz": {
+      "sha256": "edb740cb7ae9a0a4867538eceddf9ce942da09cd2819bb78813cfe80ec77b671",
+      "source": "gs://alisachen-models/perf/1789555981_alisachen-n3u-agg-ns-agentx-kv-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260916_105318/profile_export.jsonl"
+    },
+    "request-metrics/n3u-agg-ns2-agentx-rr-c192.csv.gz": {
+      "sha256": "d49548e90cb972927bfb5b3377fc6443c4de36683c8ab11611ba32c639fdf618",
+      "source": "gs://alisachen-models/perf/1789560983_alisachen-n3u-agg-ns2-agentx-rr-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260916_121640/profile_export.jsonl"
+    },
+    "request-metrics/n3u-agg-ns-agentx-kv-c384.csv.gz": {
+      "sha256": "05870587bfa0d9e584838e8cf8a6c8ce6b8b865aafaa89cbeb24e00854adc762",
+      "source": "gs://alisachen-models/perf/1789562076_alisachen-n3u-agg-ns-agentx-kv-c384/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c384_20260916_123454/profile_export.jsonl"
+    },
+    "request-metrics/n3u-agg-ns2-agentx-rr-c384.csv.gz": {
+      "sha256": "efb9499f9e882c219b63c15b1ef2b660d72658541a9fe425fee3d78b4bf87177",
+      "source": "gs://alisachen-models/perf/1789567077_alisachen-n3u-agg-ns2-agentx-rr-c384/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c384_20260916_135817/profile_export.jsonl"
+    },
+    "request-metrics/n3u-agg-ns-agentx-kvs3c08-c192.csv.gz": {
+      "sha256": "84db125dbeecd0850a5b0ffe8091565064cba1988bbb8f623200ca5e5c269989",
+      "source": "gs://alisachen-models/perf/1789569414_alisachen-n3u-agg-ns-agentx-kvs3c08-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260916_143711/profile_export.jsonl"
+    },
+    "request-metrics/n3u-agg-ns2-agentx-kvt05-c192.csv.gz": {
+      "sha256": "20dceb83ccc67c3d6b7e6deee28026f676841757ba3409107ec8f5c39844f550",
+      "source": "gs://alisachen-models/perf/1789574468_alisachen-n3u-agg-ns2-agentx-kvt05-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260916_160123/profile_export.jsonl"
+    },
+    "request-metrics/n3u-agg-ns-agentx-kvs2c08-c192.csv.gz": {
+      "sha256": "b4e3b84f52f0740d6226674002da567ee5e5154a52dd2b26abafb35bc1f85d6a",
+      "source": "gs://alisachen-models/perf/1789575514_alisachen-n3u-agg-ns-agentx-kvs2c08-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260916_161904/profile_export.jsonl"
+    },
+    "request-metrics/n3u-agg-ns2-agentx-kvs3c08-c96.csv.gz": {
+      "sha256": "d1167f2426244e9d2bd638a2d4bf53cb9bc38c29803aecfd7be5f490dde489cf",
+      "source": "gs://alisachen-models/perf/1789582550_alisachen-n3u-agg-ns2-agentx-kvs3c08-c96/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c96_20260916_181609/profile_export.jsonl"
+    },
+    "request-metrics/agg-rr-c192-calibrated-v10.csv.gz": {
+      "sha256": "a7821737f4efc790a54b778e4ede6a8b00b1a0d7769f865392d2eb9bb3aeea6c",
+      "source": "/tmp/n3u-path1-runs/agg-rr-c192-calibrated-v10/artifacts/profile_export.jsonl"
+    },
+    "request-metrics/agg-rr-c384-calibrated-v10.csv.gz": {
+      "sha256": "47f47eca447f1f63edc1621223438bd72ac368ea189238c22223171490c5ad9b",
+      "source": "/tmp/n3u-path1-runs/agg-rr-c384-calibrated-v10/artifacts/profile_export.jsonl"
+    },
+    "request-metrics/agg-kv-c192-calibrated-v10.csv.gz": {
+      "sha256": "1e7fb8f90f73a14162c384efecd5565335965368399504afb9e993c0ffa12509",
+      "source": "/tmp/n3u-path1-runs/agg-kv-c192-calibrated-v10/artifacts/profile_export.jsonl"
+    },
+    "request-metrics/agg-kv-c384-calibrated-v10.csv.gz": {
+      "sha256": "ea79a5cd332dfd673f0336b7fe422d23a366e57b66303ae00883afbf4bbf7eea",
+      "source": "/tmp/n3u-path1-runs/agg-kv-c384-calibrated-v10/artifacts/profile_export.jsonl"
+    },
+    "request-metrics/manifest.json": {
+      "sha256": "a889161bd1544a8591b96f1d6c874cc21b46ecd4fd4250dfd1df305b45e19acd",
+      "source": "Numeric projection of the original per-request exports; see this file for source hashes."
+    },
+    "native-v10/original-calibration-report.md": {
+      "sha256": "58e81febed6827ad0f18859c91b88d8b7a3ea7fd9d8eabbc723189c9e7cc015a",
+      "source": "Readable Markdown conversion of preserved original-calibration-report.txt; original retained."
+    },
+    "native-v10/agg-kv-c48-holdout-v10/input_identity.json": {
+      "sha256": "073ecec773a55a8daf22980cbf72145c260c1230f786e32f2ef51356f586dac2",
+      "source": "Recomputed with check_path1_inputs.py from /tmp/agentx-v10-agg-extension/agg-kv-c48-holdout-v10 and /tmp/agentx-interactivity-records/n3u-agg-ns-agentx-kv-c48.jsonl"
+    },
+    "native-v10/agg-kv-c48-holdout-v10/simulation_summary.json": {
+      "sha256": "abd3c9564fe3e8a2eaefaed9d98d60bda097766171eee4050d8ab2b7db36fbc1",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kv-c48-holdout-v10/artifacts/profile_export_aiperf.json"
+    },
+    "native-v10/agg-kv-c48-holdout-v10/client-config.json": {
+      "sha256": "c573fc9673296a4fce31c1f43cfab890167001fe7d0ae82c570455636219d807",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kv-c48-holdout-v10/client-config.json"
+    },
+    "native-v10/agg-kv-c48-holdout-v10/provenance.json": {
+      "sha256": "4a34f4374353650c56ad6ce1500c1213e6fe64a11980744e209a4d56a2403706",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kv-c48-holdout-v10/provenance.json"
+    },
+    "native-v10/agg-kv-c48-holdout-v10/server-environment.json": {
+      "sha256": "d078d75d8c980e2367706ad900dd37ae03ce6ed85757dde667cce1fe9b3eea86",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kv-c48-holdout-v10/server-environment.json"
+    },
+    "native-v10/agg-kv-c48-holdout-v10/engine.json": {
+      "sha256": "8a9fe3be2d6b3d3f344ab8a7ab68cd5057e880fb4626fac40e00c3d5db154858",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kv-c48-holdout-v10/engine.json"
+    },
+    "native-v10/agg-kv-c48-holdout-v10/comparison.json": {
+      "sha256": "85d527ad4dc17252e6d5e7591db3cb67ff95d254a5077c9b726db69d04f854d9",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kv-c48-holdout-v10/comparison.json"
+    },
+    "native-v10/agg-kv-c48-holdout-v10/status.json": {
+      "sha256": "495331aa0d444cab588b62fa363a96f3570f1b676b8deffb6569d6d9e9bd95cb",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kv-c48-holdout-v10/status.json"
+    },
+    "request-metrics/agg-kv-c48-holdout-v10.csv.gz": {
+      "sha256": "538d8aa5b7ed3c707b42da2c35a821cf884d4abcdb03c1b5e65d03212964f0ae",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kv-c48-holdout-v10/artifacts/profile_export.jsonl"
+    },
+    "native-v10/agg-kv-c96-holdout-v10/input_identity.json": {
+      "sha256": "3f32e878ba66cdee56973c445ffee7d77a8a7e35e978028533bdf297fa640e98",
+      "source": "Recomputed with check_path1_inputs.py from /tmp/agentx-v10-agg-extension/agg-kv-c96-holdout-v10 and /tmp/agentx-interactivity-records/n3u-agg-ns-agentx-kv-c96.jsonl"
+    },
+    "native-v10/agg-kv-c96-holdout-v10/simulation_summary.json": {
+      "sha256": "64df01aaa716bb070745aae8a7faf63319299b04fa48b9fb34a0938bf1fd8309",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kv-c96-holdout-v10/artifacts/profile_export_aiperf.json"
+    },
+    "native-v10/agg-kv-c96-holdout-v10/client-config.json": {
+      "sha256": "c543a52135d70ea7daa942ffa3406242a07d7f3c62be188949d4b30ed0d2a1d9",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kv-c96-holdout-v10/client-config.json"
+    },
+    "native-v10/agg-kv-c96-holdout-v10/provenance.json": {
+      "sha256": "5ee4fe25e0c7f6dfb2889d8ad112b29f74b2892b19f454011218e75a12f02a1f",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kv-c96-holdout-v10/provenance.json"
+    },
+    "native-v10/agg-kv-c96-holdout-v10/server-environment.json": {
+      "sha256": "d078d75d8c980e2367706ad900dd37ae03ce6ed85757dde667cce1fe9b3eea86",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kv-c96-holdout-v10/server-environment.json"
+    },
+    "native-v10/agg-kv-c96-holdout-v10/engine.json": {
+      "sha256": "8a9fe3be2d6b3d3f344ab8a7ab68cd5057e880fb4626fac40e00c3d5db154858",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kv-c96-holdout-v10/engine.json"
+    },
+    "native-v10/agg-kv-c96-holdout-v10/comparison.json": {
+      "sha256": "7de3398ce69cff1ddec5098ca62fb9c67ada633e50b35846ddd40f43dbdf9861",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kv-c96-holdout-v10/comparison.json"
+    },
+    "native-v10/agg-kv-c96-holdout-v10/status.json": {
+      "sha256": "fc7d587ed6088b75f63d43a4b2f4263ad6f83e19160c00f2c46f69e4bb216178",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kv-c96-holdout-v10/status.json"
+    },
+    "request-metrics/agg-kv-c96-holdout-v10.csv.gz": {
+      "sha256": "402cd107be62b570dc55cc8d68f1a46e21c86534448f2a2289781f2782afc6b7",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kv-c96-holdout-v10/artifacts/profile_export.jsonl"
+    },
+    "native-v10/agg-rr-c48-holdout-v10/input_identity.json": {
+      "sha256": "acfdc0b79fdabefc233672ce52dbc2318c4d4ca0dd57d6c292c40df0690f18cd",
+      "source": "Recomputed with check_path1_inputs.py from /tmp/agentx-v10-agg-extension/agg-rr-c48-holdout-v10 and /tmp/n3u-rr-sweep-real/agg6-rr-c48/records.jsonl"
+    },
+    "native-v10/agg-rr-c48-holdout-v10/simulation_summary.json": {
+      "sha256": "1aeaba16e37e0a202d5262f5c8ea9f9a7bc2259553837f05fa0d31df2dedb75e",
+      "source": "/tmp/agentx-v10-agg-extension/agg-rr-c48-holdout-v10/artifacts/profile_export_aiperf.json"
+    },
+    "native-v10/agg-rr-c48-holdout-v10/client-config.json": {
+      "sha256": "a43dccdd0c72793b7d697a69ae1bf5a644bff52c1143f5caa3ec33008bf4b7e5",
+      "source": "/tmp/agentx-v10-agg-extension/agg-rr-c48-holdout-v10/client-config.json"
+    },
+    "native-v10/agg-rr-c48-holdout-v10/provenance.json": {
+      "sha256": "1759d4e24f70fc3c7e2fa3cc322bc2e51908c712afd28ac618d2429215e624da",
+      "source": "/tmp/agentx-v10-agg-extension/agg-rr-c48-holdout-v10/provenance.json"
+    },
+    "native-v10/agg-rr-c48-holdout-v10/server-environment.json": {
+      "sha256": "d078d75d8c980e2367706ad900dd37ae03ce6ed85757dde667cce1fe9b3eea86",
+      "source": "/tmp/agentx-v10-agg-extension/agg-rr-c48-holdout-v10/server-environment.json"
+    },
+    "native-v10/agg-rr-c48-holdout-v10/engine.json": {
+      "sha256": "8a9fe3be2d6b3d3f344ab8a7ab68cd5057e880fb4626fac40e00c3d5db154858",
+      "source": "/tmp/agentx-v10-agg-extension/agg-rr-c48-holdout-v10/engine.json"
+    },
+    "native-v10/agg-rr-c48-holdout-v10/comparison.json": {
+      "sha256": "ca5300c1dfef9276265c001728ed8293beb5624d28481ba5ef9253b11c69fdc6",
+      "source": "/tmp/agentx-v10-agg-extension/agg-rr-c48-holdout-v10/comparison.json"
+    },
+    "native-v10/agg-rr-c48-holdout-v10/status.json": {
+      "sha256": "514dac7d05b474159b29868cad0828a7768c55d764985e410ce6dab2c9bb3ca7",
+      "source": "/tmp/agentx-v10-agg-extension/agg-rr-c48-holdout-v10/status.json"
+    },
+    "request-metrics/agg-rr-c48-holdout-v10.csv.gz": {
+      "sha256": "b5633cc99a8371ac785dc554100f54dc3d575986d0f4d5f1e0696b0d7a83a00d",
+      "source": "/tmp/agentx-v10-agg-extension/agg-rr-c48-holdout-v10/artifacts/profile_export.jsonl"
+    },
+    "native-v10/agg-rr-c96-holdout-v10/input_identity.json": {
+      "sha256": "2fefa9d553e4491b533afdb522617cfbeb51fb5ad68c79e6096b5ca465ee04d4",
+      "source": "Recomputed with check_path1_inputs.py from /tmp/agentx-v10-agg-extension/agg-rr-c96-holdout-v10 and /tmp/n3u-rr-sweep-real/agg6-rr-c96/records.jsonl"
+    },
+    "native-v10/agg-rr-c96-holdout-v10/simulation_summary.json": {
+      "sha256": "30ade630d7d30ce255f1388de5321585bb047bc90054f84cf83194a19982c2f2",
+      "source": "/tmp/agentx-v10-agg-extension/agg-rr-c96-holdout-v10/artifacts/profile_export_aiperf.json"
+    },
+    "native-v10/agg-rr-c96-holdout-v10/client-config.json": {
+      "sha256": "c82c8bce5ac51765ea3e0196ab627a25417121bd2b9e684e38e861ec9ac2b755",
+      "source": "/tmp/agentx-v10-agg-extension/agg-rr-c96-holdout-v10/client-config.json"
+    },
+    "native-v10/agg-rr-c96-holdout-v10/provenance.json": {
+      "sha256": "39e36a2eca1278b850258f637faa2cea9ac322f0c52c23f0ec880bd473232d01",
+      "source": "/tmp/agentx-v10-agg-extension/agg-rr-c96-holdout-v10/provenance.json"
+    },
+    "native-v10/agg-rr-c96-holdout-v10/server-environment.json": {
+      "sha256": "d078d75d8c980e2367706ad900dd37ae03ce6ed85757dde667cce1fe9b3eea86",
+      "source": "/tmp/agentx-v10-agg-extension/agg-rr-c96-holdout-v10/server-environment.json"
+    },
+    "native-v10/agg-rr-c96-holdout-v10/engine.json": {
+      "sha256": "8a9fe3be2d6b3d3f344ab8a7ab68cd5057e880fb4626fac40e00c3d5db154858",
+      "source": "/tmp/agentx-v10-agg-extension/agg-rr-c96-holdout-v10/engine.json"
+    },
+    "native-v10/agg-rr-c96-holdout-v10/comparison.json": {
+      "sha256": "7565cf9079cb5de4fef113b6a4b73ab79c75ea93fa3d6bc7d5b67bb2cb3bdc52",
+      "source": "/tmp/agentx-v10-agg-extension/agg-rr-c96-holdout-v10/comparison.json"
+    },
+    "native-v10/agg-rr-c96-holdout-v10/status.json": {
+      "sha256": "ceb88f3ad0e0ce7275e1367910bc3b515fb78f3b0a0a5b7c780684c393052be6",
+      "source": "/tmp/agentx-v10-agg-extension/agg-rr-c96-holdout-v10/status.json"
+    },
+    "request-metrics/agg-rr-c96-holdout-v10.csv.gz": {
+      "sha256": "c400d5478bbed2882df6fae85c217a14c5ef742b2f2d7a82884609ee9388a297",
+      "source": "/tmp/agentx-v10-agg-extension/agg-rr-c96-holdout-v10/artifacts/profile_export.jsonl"
+    },
+    "native-v10/agg-kvs3c08-c192-holdout-v10/input_identity.json": {
+      "sha256": "cd197ba1e0920fa8f6161b22c13967176d7490e0d4c7c7ead8e6104a95f97fb7",
+      "source": "Recomputed with check_path1_inputs.py from /tmp/agentx-v10-agg-extension/agg-kvs3c08-c192-holdout-v10 and /tmp/agentx-interactivity-records/n3u-agg-ns-agentx-kvs3c08-c192.jsonl"
+    },
+    "native-v10/agg-kvs3c08-c192-holdout-v10/simulation_summary.json": {
+      "sha256": "b4462207cf4a9685c0ac460bb1271b7cb5a13cc0835a4d6d42fc8832f64dbc2b",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs3c08-c192-holdout-v10/artifacts/profile_export_aiperf.json"
+    },
+    "native-v10/agg-kvs3c08-c192-holdout-v10/client-config.json": {
+      "sha256": "6e052bbf67d5a6139fb4eae8fa6f0af9f1586938efab28d53051067860bc629d",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs3c08-c192-holdout-v10/client-config.json"
+    },
+    "native-v10/agg-kvs3c08-c192-holdout-v10/provenance.json": {
+      "sha256": "f58780f65988b729c2875dd143e9489587dcf4ce19fb8c35686c560001a8cc50",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs3c08-c192-holdout-v10/provenance.json"
+    },
+    "native-v10/agg-kvs3c08-c192-holdout-v10/server-environment.json": {
+      "sha256": "d078d75d8c980e2367706ad900dd37ae03ce6ed85757dde667cce1fe9b3eea86",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs3c08-c192-holdout-v10/server-environment.json"
+    },
+    "native-v10/agg-kvs3c08-c192-holdout-v10/engine.json": {
+      "sha256": "8a9fe3be2d6b3d3f344ab8a7ab68cd5057e880fb4626fac40e00c3d5db154858",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs3c08-c192-holdout-v10/engine.json"
+    },
+    "native-v10/agg-kvs3c08-c192-holdout-v10/comparison.json": {
+      "sha256": "b834b030b22b70bd12aa776581cf733a9fc3542c5c1ec6a374d8e771d9694982",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs3c08-c192-holdout-v10/comparison.json"
+    },
+    "native-v10/agg-kvs3c08-c192-holdout-v10/status.json": {
+      "sha256": "5e7f87fbba8811ecf0f385ae602f4718b31f5115f6213e2b87b1436e29d919db",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs3c08-c192-holdout-v10/status.json"
+    },
+    "request-metrics/agg-kvs3c08-c192-holdout-v10.csv.gz": {
+      "sha256": "320ea166130ccb71ff7417bb0e98e34d93be14b22fce8c3ea52371cc33a59864",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs3c08-c192-holdout-v10/artifacts/profile_export.jsonl"
+    },
+    "native-v10/agg-kvt05-c192-holdout-v10/input_identity.json": {
+      "sha256": "159891784e8f8e8655867a4e7a98d48db4ab3535a6e027fc664eb4f92a86ffae",
+      "source": "Recomputed with check_path1_inputs.py from /tmp/agentx-v10-agg-extension/agg-kvt05-c192-holdout-v10 and /tmp/agentx-interactivity-records/n3u-agg-ns2-agentx-kvt05-c192.jsonl"
+    },
+    "native-v10/agg-kvt05-c192-holdout-v10/simulation_summary.json": {
+      "sha256": "7a974ae399f6e429f661e5c7de2854882466d1eafa845c838c874a35fe64a832",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvt05-c192-holdout-v10/artifacts/profile_export_aiperf.json"
+    },
+    "native-v10/agg-kvt05-c192-holdout-v10/client-config.json": {
+      "sha256": "c2af7ce06bf194d74cb0f3df0bc486a409875761596efdfeb0aa5e135139c9d2",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvt05-c192-holdout-v10/client-config.json"
+    },
+    "native-v10/agg-kvt05-c192-holdout-v10/provenance.json": {
+      "sha256": "f04dd79c12839c4142d4fb95be3ab44ac0452dd50c4845043faf05bad544ac68",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvt05-c192-holdout-v10/provenance.json"
+    },
+    "native-v10/agg-kvt05-c192-holdout-v10/server-environment.json": {
+      "sha256": "d078d75d8c980e2367706ad900dd37ae03ce6ed85757dde667cce1fe9b3eea86",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvt05-c192-holdout-v10/server-environment.json"
+    },
+    "native-v10/agg-kvt05-c192-holdout-v10/engine.json": {
+      "sha256": "8a9fe3be2d6b3d3f344ab8a7ab68cd5057e880fb4626fac40e00c3d5db154858",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvt05-c192-holdout-v10/engine.json"
+    },
+    "native-v10/agg-kvt05-c192-holdout-v10/comparison.json": {
+      "sha256": "afbb8d6b691c31ad19ac7908e786a78b5c7955cacbc05beeee8fe561774d3384",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvt05-c192-holdout-v10/comparison.json"
+    },
+    "native-v10/agg-kvt05-c192-holdout-v10/status.json": {
+      "sha256": "fc4d8ca09f8307f504c05a358486ca76651f93da7b11732f8c189ceec879e0e2",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvt05-c192-holdout-v10/status.json"
+    },
+    "request-metrics/agg-kvt05-c192-holdout-v10.csv.gz": {
+      "sha256": "94fd8a8abe07aa178778140b4ca15a512bb3cda68008b3e7b1b3463e7db05302",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvt05-c192-holdout-v10/artifacts/profile_export.jsonl"
+    },
+    "native-v10/agg-kvs2c08-c192-holdout-v10/input_identity.json": {
+      "sha256": "853b0bd922574fbe48d449c5439ff52c6d997910477b391df9ff481461c14324",
+      "source": "Recomputed with check_path1_inputs.py from /tmp/agentx-v10-agg-extension/agg-kvs2c08-c192-holdout-v10 and /tmp/agentx-interactivity-records/n3u-agg-ns-agentx-kvs2c08-c192.jsonl"
+    },
+    "native-v10/agg-kvs2c08-c192-holdout-v10/simulation_summary.json": {
+      "sha256": "5ea8db81114bc80668c83ee8793f6652916dd956a7ee736a0c11c036367ad393",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs2c08-c192-holdout-v10/artifacts/profile_export_aiperf.json"
+    },
+    "native-v10/agg-kvs2c08-c192-holdout-v10/client-config.json": {
+      "sha256": "8159ddb14f07b209be921bd6d48393c408c4aaa126867e5fa3ed70443580dc40",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs2c08-c192-holdout-v10/client-config.json"
+    },
+    "native-v10/agg-kvs2c08-c192-holdout-v10/provenance.json": {
+      "sha256": "56c491fb2adc6800632327f2a43cba370124df4f18e8c91d720c73d798b99140",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs2c08-c192-holdout-v10/provenance.json"
+    },
+    "native-v10/agg-kvs2c08-c192-holdout-v10/server-environment.json": {
+      "sha256": "d078d75d8c980e2367706ad900dd37ae03ce6ed85757dde667cce1fe9b3eea86",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs2c08-c192-holdout-v10/server-environment.json"
+    },
+    "native-v10/agg-kvs2c08-c192-holdout-v10/engine.json": {
+      "sha256": "8a9fe3be2d6b3d3f344ab8a7ab68cd5057e880fb4626fac40e00c3d5db154858",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs2c08-c192-holdout-v10/engine.json"
+    },
+    "native-v10/agg-kvs2c08-c192-holdout-v10/comparison.json": {
+      "sha256": "540c07c5ca5d9a23c66f102ac9a6346d3b0e4d29662f9caf5d97ce1e6f8d5f1c",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs2c08-c192-holdout-v10/comparison.json"
+    },
+    "native-v10/agg-kvs2c08-c192-holdout-v10/status.json": {
+      "sha256": "24130787e8210425012ccb27e74c684fdfa4087d4057b1407fa114d21d91d16f",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs2c08-c192-holdout-v10/status.json"
+    },
+    "request-metrics/agg-kvs2c08-c192-holdout-v10.csv.gz": {
+      "sha256": "f75c0758063e7b9e086f3727e6364a9881afcd35d981dbc9bade56603ed15906",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs2c08-c192-holdout-v10/artifacts/profile_export.jsonl"
+    },
+    "native-v10/agg-kvs3c08-c96-holdout-v10/input_identity.json": {
+      "sha256": "d73a2306999837945dd516461faa40b96caa92e60661862ef5f8086d91b6ad85",
+      "source": "Recomputed with check_path1_inputs.py from /tmp/agentx-v10-agg-extension/agg-kvs3c08-c96-holdout-v10 and /tmp/agentx-interactivity-records/n3u-agg-ns2-agentx-kvs3c08-c96.jsonl"
+    },
+    "native-v10/agg-kvs3c08-c96-holdout-v10/simulation_summary.json": {
+      "sha256": "84160450effa8a072729dd975093a8ded0f1c6b8c0295ab3a011e03b9dc77bb7",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs3c08-c96-holdout-v10/artifacts/profile_export_aiperf.json"
+    },
+    "native-v10/agg-kvs3c08-c96-holdout-v10/client-config.json": {
+      "sha256": "de7010e7f0e521cf97e24f2d40dded15833d31528761131a681c5f5b7b22a806",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs3c08-c96-holdout-v10/client-config.json"
+    },
+    "native-v10/agg-kvs3c08-c96-holdout-v10/provenance.json": {
+      "sha256": "6afbcd07748fb0fcb06b8e7b58321caf70df2ac806a7569c39f1c9f2db0ff4ab",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs3c08-c96-holdout-v10/provenance.json"
+    },
+    "native-v10/agg-kvs3c08-c96-holdout-v10/server-environment.json": {
+      "sha256": "d078d75d8c980e2367706ad900dd37ae03ce6ed85757dde667cce1fe9b3eea86",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs3c08-c96-holdout-v10/server-environment.json"
+    },
+    "native-v10/agg-kvs3c08-c96-holdout-v10/engine.json": {
+      "sha256": "8a9fe3be2d6b3d3f344ab8a7ab68cd5057e880fb4626fac40e00c3d5db154858",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs3c08-c96-holdout-v10/engine.json"
+    },
+    "native-v10/agg-kvs3c08-c96-holdout-v10/comparison.json": {
+      "sha256": "8c3699f56fb1ecc10fdd3bad0a30fbd3ddc7fb7afafe0ab53aad08b275d4de73",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs3c08-c96-holdout-v10/comparison.json"
+    },
+    "native-v10/agg-kvs3c08-c96-holdout-v10/status.json": {
+      "sha256": "6e01160a3022bfe6ded0c11d1e9d911da73d21acb59d73affc05fc16ad2f6eb1",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs3c08-c96-holdout-v10/status.json"
+    },
+    "request-metrics/agg-kvs3c08-c96-holdout-v10.csv.gz": {
+      "sha256": "dfaac3ce7f12cc3f0599a98b5c3aee081faa054663de1d8ec8b4ae9042b8813e",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs3c08-c96-holdout-v10/artifacts/profile_export.jsonl"
+    },
+    "native-v10/holdouts.json": {
+      "sha256": "6d37980babf8b2b26d3f3d77fa48323415b863c838552436e098c66df2ea1539",
+      "source": "/tmp/agentx-v10-agg-extension/jobs.json"
     }
-  }
+  },
+  "request_metrics_manifest": "request-metrics/manifest.json",
+  "slo_e2e_normalized_interactivity_p90_tps": 20,
+  "native_holdout_date": "2026-09-18"
 }

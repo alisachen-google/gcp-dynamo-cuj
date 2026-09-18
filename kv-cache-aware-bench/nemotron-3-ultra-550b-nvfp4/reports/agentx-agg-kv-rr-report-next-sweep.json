@@ -1,0 +1,152 @@
+{
+  "status": "proposed_not_launched",
+  "serving_shape": "24 GB300 GPUs; six TP4/EP4 aggregated workers",
+  "anchor": {
+    "prefill_load_scale": 3.0,
+    "overlap_score_credit": 0.8,
+    "temperature": 0.0,
+    "queue_policy": "fcfs"
+  },
+  "anchor_concurrency": 192,
+  "additional_anchor_repeats": 2,
+  "profiling_duration_s": 3600,
+  "initial_additional_profiles": 8,
+  "initial_profiling_gpu_hours_excluding_warmup_and_drain": 192,
+  "slo_ttft_p95_s": 10,
+  "slo_e2e_normalized_interactivity_p90_tps": 20,
+  "variants": [
+    {
+      "changed_flag": "prefill_load_scale",
+      "settings": {
+        "prefill_load_scale": 4.0,
+        "overlap_score_credit": 0.8,
+        "temperature": 0.0,
+        "queue_policy": "fcfs"
+      },
+      "concurrency": 192,
+      "router_args": [
+        "--router-mode",
+        "kv",
+        "--router-temperature",
+        "0.0",
+        "--router-queue-policy",
+        "fcfs",
+        "--router-prefill-load-scale",
+        "4.0",
+        "--router-kv-overlap-score-credit",
+        "0.8"
+      ]
+    },
+    {
+      "changed_flag": "prefill_load_scale",
+      "settings": {
+        "prefill_load_scale": 5.0,
+        "overlap_score_credit": 0.8,
+        "temperature": 0.0,
+        "queue_policy": "fcfs"
+      },
+      "concurrency": 192,
+      "router_args": [
+        "--router-mode",
+        "kv",
+        "--router-temperature",
+        "0.0",
+        "--router-queue-policy",
+        "fcfs",
+        "--router-prefill-load-scale",
+        "5.0",
+        "--router-kv-overlap-score-credit",
+        "0.8"
+      ]
+    },
+    {
+      "changed_flag": "overlap_score_credit",
+      "settings": {
+        "prefill_load_scale": 3.0,
+        "overlap_score_credit": 0.6,
+        "temperature": 0.0,
+        "queue_policy": "fcfs"
+      },
+      "concurrency": 192,
+      "router_args": [
+        "--router-mode",
+        "kv",
+        "--router-temperature",
+        "0.0",
+        "--router-queue-policy",
+        "fcfs",
+        "--router-prefill-load-scale",
+        "3.0",
+        "--router-kv-overlap-score-credit",
+        "0.6"
+      ]
+    },
+    {
+      "changed_flag": "overlap_score_credit",
+      "settings": {
+        "prefill_load_scale": 3.0,
+        "overlap_score_credit": 1.0,
+        "temperature": 0.0,
+        "queue_policy": "fcfs"
+      },
+      "concurrency": 192,
+      "router_args": [
+        "--router-mode",
+        "kv",
+        "--router-temperature",
+        "0.0",
+        "--router-queue-policy",
+        "fcfs",
+        "--router-prefill-load-scale",
+        "3.0",
+        "--router-kv-overlap-score-credit",
+        "1.0"
+      ]
+    },
+    {
+      "changed_flag": "temperature",
+      "settings": {
+        "prefill_load_scale": 3.0,
+        "overlap_score_credit": 0.8,
+        "temperature": 0.1,
+        "queue_policy": "fcfs"
+      },
+      "concurrency": 192,
+      "router_args": [
+        "--router-mode",
+        "kv",
+        "--router-temperature",
+        "0.1",
+        "--router-queue-policy",
+        "fcfs",
+        "--router-prefill-load-scale",
+        "3.0",
+        "--router-kv-overlap-score-credit",
+        "0.8"
+      ]
+    },
+    {
+      "changed_flag": "temperature",
+      "settings": {
+        "prefill_load_scale": 3.0,
+        "overlap_score_credit": 0.8,
+        "temperature": 0.25,
+        "queue_policy": "fcfs"
+      },
+      "concurrency": 192,
+      "router_args": [
+        "--router-mode",
+        "kv",
+        "--router-temperature",
+        "0.25",
+        "--router-queue-policy",
+        "fcfs",
+        "--router-prefill-load-scale",
+        "3.0",
+        "--router-kv-overlap-score-credit",
+        "0.8"
+      ]
+    }
+  ],
+  "followup": "Repeat finalists; test 128/160 and 96 sessions; then cross the strongest scale/credit values. Match every collected hardware cell with frozen V10, retaining mismatches."
+}

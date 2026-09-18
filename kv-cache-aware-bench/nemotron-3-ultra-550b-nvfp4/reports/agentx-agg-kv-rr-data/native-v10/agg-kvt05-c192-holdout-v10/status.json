@@ -1,0 +1,25 @@
+{
+  "state": "completed",
+  "updated_unix": 1789699588.2750332,
+  "metrics": {
+    "total_tok_s_per_gpu": {
+      "hardware": 7816.373015491913,
+      "simulation": 8017.555434542184,
+      "relative_error": 0.02573858983591637,
+      "within_20_percent": true
+    },
+    "p95_ttft_ms": {
+      "hardware": 22148.398715199994,
+      "simulation": 20477.727097449995,
+      "relative_error": -0.07543080830504689,
+      "within_20_percent": true
+    }
+  },
+  "valid_agentx_submission": true,
+  "warmup_valid": true,
+  "warmup_inputs_match": true,
+  "warmup_missing_inputs": [],
+  "warmup_unexpected_inputs": [],
+  "all_targets_pass": true,
+  "summary": "/tmp/agentx-v10-agg-extension/agg-kvt05-c192-holdout-v10/artifacts/profile_export_aiperf.json"
+}

@@ -8,15 +8,39 @@
   "best_measured_flag_at_192": "kvs3c08",
   "best_flag_throughput_change_vs_default_kv_pct": 14.055903851346407,
   "best_flag_ttft_change_vs_default_kv_pct": -45.684232988022956,
-  "native_v10_points": 4,
-  "custom_python_points": 8,
-  "verified_input_files": 64,
+  "native_v10_points": 12,
+  "custom_python_points": 0,
+  "native_points_match_all_hardware_settings": true,
+  "original_native_calibration_points": 4,
+  "new_native_holdout_points": 8,
+  "native_calibration_frozen": true,
+  "verified_input_files": 155,
   "shared_native_core_and_engine": true,
   "native_matrix_matches_summaries": true,
   "native_ttft_calibrated": false,
-  "slo_selection": {
-    "default_kv_clients": 192,
-    "rr_clients": 96,
-    "tuned_kv_clients": 192
+  "interactivity_recomputed_from_requests": 24,
+  "interactivity_valid_requests": 172658,
+  "interactivity_excluded_successful_requests": 0,
+  "request_counts_and_ttft_match_summaries": true,
+  "hardware_and_native_e2e_p95_and_rate_p10_match_summaries": true,
+  "percentile_method": "linear",
+  "slo_ttft_p95_s": 10,
+  "slo_e2e_normalized_interactivity_p90_tps": 20,
+  "slo_selections": {
+    "ttft_slo_pass": {
+      "kv": 96,
+      "rr": 48,
+      "kvs3c08": 192
+    },
+    "interactivity_slo_pass": {
+      "kv": 96,
+      "rr": 48,
+      "kvs3c08": 96
+    },
+    "combined_slo_pass": {
+      "kv": 96,
+      "rr": 48,
+      "kvs3c08": 96
+    }
   }
 }

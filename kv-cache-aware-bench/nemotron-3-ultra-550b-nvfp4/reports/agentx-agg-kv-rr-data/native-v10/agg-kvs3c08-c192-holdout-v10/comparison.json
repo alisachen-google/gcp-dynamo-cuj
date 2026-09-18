@@ -1,0 +1,23 @@
+{
+  "metrics": {
+    "total_tok_s_per_gpu": {
+      "hardware": 11011.921190783736,
+      "simulation": 11378.71430029021,
+      "relative_error": 0.03330872998014689,
+      "within_20_percent": true
+    },
+    "p95_ttft_ms": {
+      "hardware": 6331.731673199994,
+      "simulation": 5338.5312057999945,
+      "relative_error": -0.1568607955393735,
+      "within_20_percent": true
+    }
+  },
+  "valid_agentx_submission": true,
+  "warmup_valid": true,
+  "warmup_inputs_match": true,
+  "warmup_missing_inputs": [],
+  "warmup_unexpected_inputs": [],
+  "all_targets_pass": true,
+  "summary": "/tmp/agentx-v10-agg-extension/agg-kvs3c08-c192-holdout-v10/artifacts/profile_export_aiperf.json"
+}

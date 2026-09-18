@@ -1,0 +1,240 @@
+{
+  "all_runs_complete": true,
+  "replay_valid": true,
+  "calibration_frozen": true,
+  "original_calibration_matrix": "matrix.json",
+  "points": [
+    {
+      "run": "agg-kv-c48-holdout-v10",
+      "policy": "kv",
+      "router": "kv",
+      "clients": 48,
+      "hardware_id": "n3u-agg-ns-agentx-kv-c48",
+      "state": "completed",
+      "replay_valid": true,
+      "hardware_settings_match": true,
+      "hardware_serving_shape_matches": true,
+      "native_core_sha256": "5e298de426f7b27f1cc3d0647ac8eefec49d0abd989a01ac93e673e5bedd0d02",
+      "shared_engine_sha256": "2f03549ffb13a3ad6bea8aa1717c32fcd03ce3ede0ea08e013f83d0ec5bfb276",
+      "metrics": {
+        "total_tok_s_per_gpu": {
+          "hardware": 3334.352078535043,
+          "simulation": 3321.1313286330005,
+          "relative_error": -0.003965013169170417,
+          "within_20_percent": true
+        },
+        "p95_ttft_ms": {
+          "hardware": 3831.3594374000004,
+          "simulation": 3515.448986499974,
+          "relative_error": -0.08245387989867281,
+          "within_20_percent": true
+        }
+      },
+      "role": "holdout",
+      "router_flags": "--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs"
+    },
+    {
+      "run": "agg-kv-c96-holdout-v10",
+      "policy": "kv",
+      "router": "kv",
+      "clients": 96,
+      "hardware_id": "n3u-agg-ns-agentx-kv-c96",
+      "state": "completed",
+      "replay_valid": true,
+      "hardware_settings_match": true,
+      "hardware_serving_shape_matches": true,
+      "native_core_sha256": "5e298de426f7b27f1cc3d0647ac8eefec49d0abd989a01ac93e673e5bedd0d02",
+      "shared_engine_sha256": "2f03549ffb13a3ad6bea8aa1717c32fcd03ce3ede0ea08e013f83d0ec5bfb276",
+      "metrics": {
+        "total_tok_s_per_gpu": {
+          "hardware": 6843.880810963666,
+          "simulation": 6842.304419466418,
+          "relative_error": -0.0002303359074755651,
+          "within_20_percent": true
+        },
+        "p95_ttft_ms": {
+          "hardware": 5357.950530349996,
+          "simulation": 4695.367354499999,
+          "relative_error": -0.12366354860814954,
+          "within_20_percent": true
+        }
+      },
+      "role": "holdout",
+      "router_flags": "--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs"
+    },
+    {
+      "run": "agg-rr-c48-holdout-v10",
+      "policy": "rr",
+      "router": "rr",
+      "clients": 48,
+      "hardware_id": "n3u-agg-ns2-agentx-rr-c48",
+      "state": "completed",
+      "replay_valid": true,
+      "hardware_settings_match": true,
+      "hardware_serving_shape_matches": true,
+      "native_core_sha256": "5e298de426f7b27f1cc3d0647ac8eefec49d0abd989a01ac93e673e5bedd0d02",
+      "shared_engine_sha256": "2f03549ffb13a3ad6bea8aa1717c32fcd03ce3ede0ea08e013f83d0ec5bfb276",
+      "metrics": {
+        "total_tok_s_per_gpu": {
+          "hardware": 3250.084808233436,
+          "simulation": 3231.795870559123,
+          "relative_error": -0.005627218596875205,
+          "within_20_percent": true
+        },
+        "p95_ttft_ms": {
+          "hardware": 8271.755809899994,
+          "simulation": 8474.468373,
+          "relative_error": 0.02450659421756507,
+          "within_20_percent": true
+        }
+      },
+      "role": "holdout",
+      "router_flags": "--router-mode round-robin"
+    },
+    {
+      "run": "agg-rr-c96-holdout-v10",
+      "policy": "rr",
+      "router": "rr",
+      "clients": 96,
+      "hardware_id": "n3u-agg-ns2-agentx-rr-c96",
+      "state": "completed",
+      "replay_valid": true,
+      "hardware_settings_match": true,
+      "hardware_serving_shape_matches": true,
+      "native_core_sha256": "5e298de426f7b27f1cc3d0647ac8eefec49d0abd989a01ac93e673e5bedd0d02",
+      "shared_engine_sha256": "2f03549ffb13a3ad6bea8aa1717c32fcd03ce3ede0ea08e013f83d0ec5bfb276",
+      "metrics": {
+        "total_tok_s_per_gpu": {
+          "hardware": 6137.320473879631,
+          "simulation": 6121.406552662386,
+          "relative_error": -0.0025929754336562194,
+          "within_20_percent": true
+        },
+        "p95_ttft_ms": {
+          "hardware": 12557.413355399982,
+          "simulation": 12257.061075,
+          "relative_error": -0.02391832393339377,
+          "within_20_percent": true
+        }
+      },
+      "role": "holdout",
+      "router_flags": "--router-mode round-robin"
+    },
+    {
+      "run": "agg-kvs3c08-c192-holdout-v10",
+      "policy": "kvs3c08",
+      "router": "kv",
+      "clients": 192,
+      "hardware_id": "n3u-agg-ns-agentx-kvs3c08-c192",
+      "state": "completed",
+      "replay_valid": true,
+      "hardware_settings_match": true,
+      "hardware_serving_shape_matches": true,
+      "native_core_sha256": "5e298de426f7b27f1cc3d0647ac8eefec49d0abd989a01ac93e673e5bedd0d02",
+      "shared_engine_sha256": "2f03549ffb13a3ad6bea8aa1717c32fcd03ce3ede0ea08e013f83d0ec5bfb276",
+      "metrics": {
+        "total_tok_s_per_gpu": {
+          "hardware": 11011.921190783736,
+          "simulation": 11378.71430029021,
+          "relative_error": 0.03330872998014689,
+          "within_20_percent": true
+        },
+        "p95_ttft_ms": {
+          "hardware": 6331.731673199994,
+          "simulation": 5338.5312057999945,
+          "relative_error": -0.1568607955393735,
+          "within_20_percent": true
+        }
+      },
+      "role": "holdout",
+      "router_flags": "--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-prefill-load-scale 3.0 --router-kv-overlap-score-credit 0.8"
+    },
+    {
+      "run": "agg-kvt05-c192-holdout-v10",
+      "policy": "kvt05",
+      "router": "kv",
+      "clients": 192,
+      "hardware_id": "n3u-agg-ns2-agentx-kvt05-c192",
+      "state": "completed",
+      "replay_valid": true,
+      "hardware_settings_match": true,
+      "hardware_serving_shape_matches": true,
+      "native_core_sha256": "5e298de426f7b27f1cc3d0647ac8eefec49d0abd989a01ac93e673e5bedd0d02",
+      "shared_engine_sha256": "2f03549ffb13a3ad6bea8aa1717c32fcd03ce3ede0ea08e013f83d0ec5bfb276",
+      "metrics": {
+        "total_tok_s_per_gpu": {
+          "hardware": 7816.373015491913,
+          "simulation": 8017.555434542184,
+          "relative_error": 0.02573858983591637,
+          "within_20_percent": true
+        },
+        "p95_ttft_ms": {
+          "hardware": 22148.398715199994,
+          "simulation": 20477.727097449995,
+          "relative_error": -0.07543080830504689,
+          "within_20_percent": true
+        }
+      },
+      "role": "holdout",
+      "router_flags": "--router-mode kv --router-temperature 0.5 --router-queue-policy fcfs"
+    },
+    {
+      "run": "agg-kvs2c08-c192-holdout-v10",
+      "policy": "kvs2c08",
+      "router": "kv",
+      "clients": 192,
+      "hardware_id": "n3u-agg-ns-agentx-kvs2c08-c192",
+      "state": "completed",
+      "replay_valid": true,
+      "hardware_settings_match": true,
+      "hardware_serving_shape_matches": true,
+      "native_core_sha256": "5e298de426f7b27f1cc3d0647ac8eefec49d0abd989a01ac93e673e5bedd0d02",
+      "shared_engine_sha256": "2f03549ffb13a3ad6bea8aa1717c32fcd03ce3ede0ea08e013f83d0ec5bfb276",
+      "metrics": {
+        "total_tok_s_per_gpu": {
+          "hardware": 10240.793595581146,
+          "simulation": 10848.010794874372,
+          "relative_error": 0.05929395936221549,
+          "within_20_percent": true
+        },
+        "p95_ttft_ms": {
+          "hardware": 8113.82578225,
+          "simulation": 6397.9187034999995,
+          "relative_error": -0.2114794087030757,
+          "within_20_percent": false
+        }
+      },
+      "role": "holdout",
+      "router_flags": "--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-prefill-load-scale 2.0 --router-kv-overlap-score-credit 0.8"
+    },
+    {
+      "run": "agg-kvs3c08-c96-holdout-v10",
+      "policy": "kvs3c08",
+      "router": "kv",
+      "clients": 96,
+      "hardware_id": "n3u-agg-ns2-agentx-kvs3c08-c96",
+      "state": "completed",
+      "replay_valid": true,
+      "hardware_settings_match": true,
+      "hardware_serving_shape_matches": true,
+      "native_core_sha256": "5e298de426f7b27f1cc3d0647ac8eefec49d0abd989a01ac93e673e5bedd0d02",
+      "shared_engine_sha256": "2f03549ffb13a3ad6bea8aa1717c32fcd03ce3ede0ea08e013f83d0ec5bfb276",
+      "metrics": {
+        "total_tok_s_per_gpu": {
+          "hardware": 7045.363834965239,
+          "simulation": 7021.215379610054,
+          "relative_error": -0.0034275668256250613,
+          "within_20_percent": true
+        },
+        "p95_ttft_ms": {
+          "hardware": 3112.1206455999973,
+          "simulation": 2952.3882210999964,
+          "relative_error": -0.051325910107577255,
+          "within_20_percent": true
+        }
+      },
+      "role": "holdout",
+      "router_flags": "--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-prefill-load-scale 3.0 --router-kv-overlap-score-credit 0.8"
+    }
+  ]
+}

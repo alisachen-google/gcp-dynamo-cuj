@@ -1,0 +1,284 @@
+{
+  "schema_version": 1,
+  "extraction": "Numeric columns only; all exported phases and statuses retained. source_line is 1-based in the original JSONL.",
+  "runs": {
+    "n3u-agg-ns-agentx-kv-c48": {
+      "file": "request-metrics/n3u-agg-ns-agentx-kv-c48.csv.gz",
+      "sha256": "fe3a35100dbc409dc14937bd8f45ff03425b6021cb8a15916b1c25895cd0e2e0",
+      "source": "gs://alisachen-models/perf/1789545801_alisachen-n3u-agg-ns-agentx-kv-c48/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c48_20260916_080341/profile_export.jsonl",
+      "source_sha256": "9e23f77e2e3fec8be291bd6a50b5d1c70ab23ac62170782738bc1ec152da53cf",
+      "source_bytes": 36225122,
+      "rows_by_phase_and_status": {
+        "profiling/success": 2843,
+        "warmup/success": 46
+      }
+    },
+    "n3u-agg-ns-agentx-kv-c96": {
+      "file": "request-metrics/n3u-agg-ns-agentx-kv-c96.csv.gz",
+      "sha256": "1bd4757e9784b00bcd9b909ecbd0036d312f7572b814ab04c280fce75bbc8891",
+      "source": "gs://alisachen-models/perf/1789550601_alisachen-n3u-agg-ns-agentx-kv-c96/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c96_20260916_092337/profile_export.jsonl",
+      "source_sha256": "5b51a30c2541899359a9875994a3563546662e5d5f84a62442b978a44dd5e938",
+      "source_bytes": 81742236,
+      "rows_by_phase_and_status": {
+        "profiling/success": 6978,
+        "warmup/success": 91
+      }
+    },
+    "n3u-agg-ns2-agentx-rr-c48": {
+      "file": "request-metrics/n3u-agg-ns2-agentx-rr-c48.csv.gz",
+      "sha256": "ee8593035d4a6efd3511a36e7c77252a4c39ae944716c69a2c6a04ba8afb0d2a",
+      "source": "gs://alisachen-models/perf/1789550745_alisachen-n3u-agg-ns2-agentx-rr-c48/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c48_20260916_092603/profile_export.jsonl",
+      "source_sha256": "3d55d30f50e384e308e10b769b188db2f5d0ee6bf964e6e5f90a9fe622cc887f",
+      "source_bytes": 34453728,
+      "rows_by_phase_and_status": {
+        "profiling/success": 2775,
+        "warmup/success": 46
+      }
+    },
+    "n3u-agg-ns2-agentx-rr-c96": {
+      "file": "request-metrics/n3u-agg-ns2-agentx-rr-c96.csv.gz",
+      "sha256": "fd8c5d2d6b9e88d52d978ccdb16f5f30e9a972dbf6ae35d77381025ec21db2c7",
+      "source": "gs://alisachen-models/perf/1789555623_alisachen-n3u-agg-ns2-agentx-rr-c96/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c96_20260916_104719/profile_export.jsonl",
+      "source_sha256": "45f1823e6a0f026d27697f568600d49f4995e8bc9ecb71025f40af0e908885b7",
+      "source_bytes": 74510713,
+      "rows_by_phase_and_status": {
+        "profiling/success": 6413,
+        "warmup/success": 91
+      }
+    },
+    "n3u-agg-ns-agentx-kv-c192": {
+      "file": "request-metrics/n3u-agg-ns-agentx-kv-c192.csv.gz",
+      "sha256": "edb740cb7ae9a0a4867538eceddf9ce942da09cd2819bb78813cfe80ec77b671",
+      "source": "gs://alisachen-models/perf/1789555981_alisachen-n3u-agg-ns-agentx-kv-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260916_105318/profile_export.jsonl",
+      "source_sha256": "38f7c8fea507a6949158039ceb518f3d85d321a7d2ec9c93f8e512da41b5d456",
+      "source_bytes": 113528246,
+      "rows_by_phase_and_status": {
+        "profiling/error": 3,
+        "profiling/success": 9519,
+        "warmup/success": 185
+      }
+    },
+    "n3u-agg-ns2-agentx-rr-c192": {
+      "file": "request-metrics/n3u-agg-ns2-agentx-rr-c192.csv.gz",
+      "sha256": "d49548e90cb972927bfb5b3377fc6443c4de36683c8ab11611ba32c639fdf618",
+      "source": "gs://alisachen-models/perf/1789560983_alisachen-n3u-agg-ns2-agentx-rr-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260916_121640/profile_export.jsonl",
+      "source_sha256": "c2c6d6ca792bc4af8987723a231e4a9f0092291bfeeba999b717605461a5d143",
+      "source_bytes": 84147518,
+      "rows_by_phase_and_status": {
+        "profiling/error": 3,
+        "profiling/success": 7206,
+        "warmup/success": 185
+      }
+    },
+    "n3u-agg-ns-agentx-kv-c384": {
+      "file": "request-metrics/n3u-agg-ns-agentx-kv-c384.csv.gz",
+      "sha256": "05870587bfa0d9e584838e8cf8a6c8ce6b8b865aafaa89cbeb24e00854adc762",
+      "source": "gs://alisachen-models/perf/1789562076_alisachen-n3u-agg-ns-agentx-kv-c384/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c384_20260916_123454/profile_export.jsonl",
+      "source_sha256": "f73c7c92df61b8e8639fcde1417082767f64a648dc66d4623413dce911fae74e",
+      "source_bytes": 94162382,
+      "rows_by_phase_and_status": {
+        "profiling/error": 7,
+        "profiling/success": 8069,
+        "warmup/success": 349
+      }
+    },
+    "n3u-agg-ns2-agentx-rr-c384": {
+      "file": "request-metrics/n3u-agg-ns2-agentx-rr-c384.csv.gz",
+      "sha256": "efb9499f9e882c219b63c15b1ef2b660d72658541a9fe425fee3d78b4bf87177",
+      "source": "gs://alisachen-models/perf/1789567077_alisachen-n3u-agg-ns2-agentx-rr-c384/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c384_20260916_135817/profile_export.jsonl",
+      "source_sha256": "0db2c165b564101acada7ce49979ecef7690dcb19b7c061235313cf7a17049f1",
+      "source_bytes": 58702705,
+      "rows_by_phase_and_status": {
+        "profiling/error": 14,
+        "profiling/success": 4994,
+        "warmup/success": 349
+      }
+    },
+    "n3u-agg-ns-agentx-kvs3c08-c192": {
+      "file": "request-metrics/n3u-agg-ns-agentx-kvs3c08-c192.csv.gz",
+      "sha256": "84db125dbeecd0850a5b0ffe8091565064cba1988bbb8f623200ca5e5c269989",
+      "source": "gs://alisachen-models/perf/1789569414_alisachen-n3u-agg-ns-agentx-kvs3c08-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260916_143711/profile_export.jsonl",
+      "source_sha256": "1ac8fed089743cdb93a1edae2e4e1151932e90bdef6ebf441e4a75bd8c896560",
+      "source_bytes": 127065581,
+      "rows_by_phase_and_status": {
+        "profiling/error": 3,
+        "profiling/success": 10687,
+        "warmup/success": 185
+      }
+    },
+    "n3u-agg-ns2-agentx-kvt05-c192": {
+      "file": "request-metrics/n3u-agg-ns2-agentx-kvt05-c192.csv.gz",
+      "sha256": "20dceb83ccc67c3d6b7e6deee28026f676841757ba3409107ec8f5c39844f550",
+      "source": "gs://alisachen-models/perf/1789574468_alisachen-n3u-agg-ns2-agentx-kvt05-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260916_160123/profile_export.jsonl",
+      "source_sha256": "7f511ec5eaabf41f73c698be50bfaec47435f3ffab8b43959d5ded1954ce58a3",
+      "source_bytes": 94396229,
+      "rows_by_phase_and_status": {
+        "profiling/error": 3,
+        "profiling/success": 8099,
+        "warmup/success": 185
+      }
+    },
+    "n3u-agg-ns-agentx-kvs2c08-c192": {
+      "file": "request-metrics/n3u-agg-ns-agentx-kvs2c08-c192.csv.gz",
+      "sha256": "b4e3b84f52f0740d6226674002da567ee5e5154a52dd2b26abafb35bc1f85d6a",
+      "source": "gs://alisachen-models/perf/1789575514_alisachen-n3u-agg-ns-agentx-kvs2c08-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260916_161904/profile_export.jsonl",
+      "source_sha256": "7950b7b97b7c895f51827d6bcebd0b6c4aa6e78b9a6deb5e56910095d67efd28",
+      "source_bytes": 119865806,
+      "rows_by_phase_and_status": {
+        "profiling/error": 3,
+        "profiling/success": 10086,
+        "warmup/success": 185
+      }
+    },
+    "n3u-agg-ns2-agentx-kvs3c08-c96": {
+      "file": "request-metrics/n3u-agg-ns2-agentx-kvs3c08-c96.csv.gz",
+      "sha256": "d1167f2426244e9d2bd638a2d4bf53cb9bc38c29803aecfd7be5f490dde489cf",
+      "source": "gs://alisachen-models/perf/1789582550_alisachen-n3u-agg-ns2-agentx-kvs3c08-c96/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c96_20260916_181609/profile_export.jsonl",
+      "source_sha256": "ffc8d1ad8859a1366437b1cdcf7fa0dae6cf02164699f41e9cb1e7b8d8ea5494",
+      "source_bytes": 84075609,
+      "rows_by_phase_and_status": {
+        "profiling/success": 7209,
+        "warmup/success": 91
+      }
+    },
+    "agg-rr-c192-calibrated-v10": {
+      "file": "request-metrics/agg-rr-c192-calibrated-v10.csv.gz",
+      "sha256": "a7821737f4efc790a54b778e4ede6a8b00b1a0d7769f865392d2eb9bb3aeea6c",
+      "source": "/tmp/n3u-path1-runs/agg-rr-c192-calibrated-v10/artifacts/profile_export.jsonl",
+      "source_sha256": "95a1f99879b203d9be277d6ceba51ceda65912670e243883991fa32be09fbb66",
+      "source_bytes": 87864904,
+      "rows_by_phase_and_status": {
+        "profiling/error": 3,
+        "profiling/success": 7265,
+        "warmup/success": 185
+      }
+    },
+    "agg-rr-c384-calibrated-v10": {
+      "file": "request-metrics/agg-rr-c384-calibrated-v10.csv.gz",
+      "sha256": "47f47eca447f1f63edc1621223438bd72ac368ea189238c22223171490c5ad9b",
+      "source": "/tmp/n3u-path1-runs/agg-rr-c384-calibrated-v10/artifacts/profile_export.jsonl",
+      "source_sha256": "2d5ffe2ae0fa95999407c694264d8877b1047018426dff80be7f1b5be306cc05",
+      "source_bytes": 64361029,
+      "rows_by_phase_and_status": {
+        "profiling/error": 11,
+        "profiling/success": 5279,
+        "warmup/success": 349
+      }
+    },
+    "agg-kv-c192-calibrated-v10": {
+      "file": "request-metrics/agg-kv-c192-calibrated-v10.csv.gz",
+      "sha256": "1e7fb8f90f73a14162c384efecd5565335965368399504afb9e993c0ffa12509",
+      "source": "/tmp/n3u-path1-runs/agg-kv-c192-calibrated-v10/artifacts/profile_export.jsonl",
+      "source_sha256": "38e3904ae886490499921a0ff8784b1dfa303dc336946fd2acec76811a8efdea",
+      "source_bytes": 123787468,
+      "rows_by_phase_and_status": {
+        "profiling/error": 3,
+        "profiling/success": 10053,
+        "warmup/success": 185
+      }
+    },
+    "agg-kv-c384-calibrated-v10": {
+      "file": "request-metrics/agg-kv-c384-calibrated-v10.csv.gz",
+      "sha256": "ea79a5cd332dfd673f0336b7fe422d23a366e57b66303ae00883afbf4bbf7eea",
+      "source": "/tmp/n3u-path1-runs/agg-kv-c384-calibrated-v10/artifacts/profile_export.jsonl",
+      "source_sha256": "882d9e054ff91bfdc01adcf3fc5d4e7c19eaafa33ffe72532edbafc97f4d0b78",
+      "source_bytes": 113231988,
+      "rows_by_phase_and_status": {
+        "profiling/error": 4,
+        "profiling/success": 9135,
+        "warmup/success": 349
+      }
+    },
+    "agg-kv-c48-holdout-v10": {
+      "file": "request-metrics/agg-kv-c48-holdout-v10.csv.gz",
+      "sha256": "538d8aa5b7ed3c707b42da2c35a821cf884d4abcdb03c1b5e65d03212964f0ae",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kv-c48-holdout-v10/artifacts/profile_export.jsonl",
+      "source_sha256": "7e841e69e163e8aaee25031c9fef5cd190073ab3f9ad59589da28a6dc6db634f",
+      "source_bytes": 36727031,
+      "rows_by_phase_and_status": {
+        "profiling/success": 2835,
+        "warmup/success": 46
+      }
+    },
+    "agg-kv-c96-holdout-v10": {
+      "file": "request-metrics/agg-kv-c96-holdout-v10.csv.gz",
+      "sha256": "402cd107be62b570dc55cc8d68f1a46e21c86534448f2a2289781f2782afc6b7",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kv-c96-holdout-v10/artifacts/profile_export.jsonl",
+      "source_sha256": "e364375c3fe59bb9d6385ecb6cd525d5cd20e2a1f293d9111a8ce2dd69ff70f5",
+      "source_bytes": 84903940,
+      "rows_by_phase_and_status": {
+        "profiling/success": 6995,
+        "warmup/success": 91
+      }
+    },
+    "agg-rr-c48-holdout-v10": {
+      "file": "request-metrics/agg-rr-c48-holdout-v10.csv.gz",
+      "sha256": "b5633cc99a8371ac785dc554100f54dc3d575986d0f4d5f1e0696b0d7a83a00d",
+      "source": "/tmp/agentx-v10-agg-extension/agg-rr-c48-holdout-v10/artifacts/profile_export.jsonl",
+      "source_sha256": "5b3fd01ef60c3faa3ed4815eec1a604d578d54eb5c29f782294f85f77aa34ec1",
+      "source_bytes": 35072888,
+      "rows_by_phase_and_status": {
+        "profiling/success": 2771,
+        "warmup/success": 46
+      }
+    },
+    "agg-rr-c96-holdout-v10": {
+      "file": "request-metrics/agg-rr-c96-holdout-v10.csv.gz",
+      "sha256": "c400d5478bbed2882df6fae85c217a14c5ef742b2f2d7a82884609ee9388a297",
+      "source": "/tmp/agentx-v10-agg-extension/agg-rr-c96-holdout-v10/artifacts/profile_export.jsonl",
+      "source_sha256": "9b461168a1f7d5e3b2cc028185d8a0e63bdf14dee44f5f5ad163bb032d1f79ec",
+      "source_bytes": 76765517,
+      "rows_by_phase_and_status": {
+        "profiling/success": 6411,
+        "warmup/success": 91
+      }
+    },
+    "agg-kvs3c08-c192-holdout-v10": {
+      "file": "request-metrics/agg-kvs3c08-c192-holdout-v10.csv.gz",
+      "sha256": "320ea166130ccb71ff7417bb0e98e34d93be14b22fce8c3ea52371cc33a59864",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs3c08-c192-holdout-v10/artifacts/profile_export.jsonl",
+      "source_sha256": "b811ec318bf66381d05358c729a82c1cb86bd5d7d999dd6c30c9629d0826de36",
+      "source_bytes": 136423791,
+      "rows_by_phase_and_status": {
+        "profiling/error": 2,
+        "profiling/success": 11015,
+        "warmup/success": 185
+      }
+    },
+    "agg-kvt05-c192-holdout-v10": {
+      "file": "request-metrics/agg-kvt05-c192-holdout-v10.csv.gz",
+      "sha256": "94fd8a8abe07aa178778140b4ca15a512bb3cda68008b3e7b1b3463e7db05302",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvt05-c192-holdout-v10/artifacts/profile_export.jsonl",
+      "source_sha256": "3980b3beb174c728bf5edf5219df07efbe3b89617ccef982ecbd59bdb623f088",
+      "source_bytes": 100544766,
+      "rows_by_phase_and_status": {
+        "profiling/error": 3,
+        "profiling/success": 8230,
+        "warmup/success": 185
+      }
+    },
+    "agg-kvs2c08-c192-holdout-v10": {
+      "file": "request-metrics/agg-kvs2c08-c192-holdout-v10.csv.gz",
+      "sha256": "f75c0758063e7b9e086f3727e6364a9881afcd35d981dbc9bade56603ed15906",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs2c08-c192-holdout-v10/artifacts/profile_export.jsonl",
+      "source_sha256": "4152dc8ee2625889dbcf79a8f72b7b64523e7f9f2956368fbc1ad8e355311b52",
+      "source_bytes": 130426241,
+      "rows_by_phase_and_status": {
+        "profiling/error": 3,
+        "profiling/success": 10596,
+        "warmup/success": 185
+      }
+    },
+    "agg-kvs3c08-c96-holdout-v10": {
+      "file": "request-metrics/agg-kvs3c08-c96-holdout-v10.csv.gz",
+      "sha256": "dfaac3ce7f12cc3f0599a98b5c3aee081faa054663de1d8ec8b4ae9042b8813e",
+      "source": "/tmp/agentx-v10-agg-extension/agg-kvs3c08-c96-holdout-v10/artifacts/profile_export.jsonl",
+      "source_sha256": "d6ea6e59cd244a6b5a80f1f468554439795ab5eaadae2cbbc910455154dbbcab",
+      "source_bytes": 87303530,
+      "rows_by_phase_and_status": {
+        "profiling/success": 7195,
+        "warmup/success": 91
+      }
+    }
+  }
+}
