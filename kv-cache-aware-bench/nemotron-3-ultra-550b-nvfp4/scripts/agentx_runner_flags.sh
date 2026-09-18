@@ -19,7 +19,7 @@ if [ "$POOL" = "np-3" ]; then
   for d in $(kubectl get deploy -n $NS -o name | grep -E "n3u-mnnvl-(full|99|126|315|99mtp)"); do kubectl delete $d -n $NS --wait=false >> "$LOG" 2>&1; done
   sleep 90
 fi
-while :; do F=$(free_nodes); say "free $POOL nodes: $F / need $NEED"; [ "$F" -ge "$NEED" ] && break; sleep 300; done
+[ "$NEED" = "0" ] || { while :; do F=$(free_nodes); say "free $POOL nodes: $F / need $NEED"; [ "$F" -ge "$NEED" ] && break; sleep 300; done; }
 say "deploying $ARM"; kubectl apply -n $NS -f "$MAN" >> "$LOG" 2>&1
 for d in $(echo "$WL" | tr ',' ' ') ${ARM}-frontend; do kubectl rollout status deployment/$d -n $NS --timeout=3600s >> "$LOG" 2>&1 || { say "STACK TIMEOUT $d — HALTING"; exit 1; }; done
 first=1
@@ -28,9 +28,9 @@ for point in $PTS; do
   FE="pip install -q \"ai-dynamo==1.4.2\" && exec python3 -m dynamo.frontend ${ROUTER[$v]} --request-plane nats"
   J=$(python3 -c "import json,sys;print(json.dumps([sys.argv[1]]))" "$FE")
   kubectl patch deployment ${ARM}-frontend -n $NS --type=json -p "[{\"op\":\"replace\",\"path\":\"/spec/template/spec/containers/0/args\",\"value\":$J}]" >> "$LOG" 2>&1
-  kubectl rollout restart deployment/${ARM}-frontend -n $NS >> "$LOG" 2>&1; kubectl rollout status deployment/${ARM}-frontend -n $NS --timeout=600s >> "$LOG" 2>&1; sleep 120
+  kubectl rollout restart deployment/${ARM}-frontend -n $NS >> "$LOG" 2>&1; kubectl rollout status deployment/${ARM}-frontend -n $NS --timeout=600s >> "$LOG" 2>&1; sleep 45
   FEP=$(kubectl get pods -n $NS -l app=${ARM}-frontend -o name | head -1)
-  for r in $(seq 1 30); do kubectl exec -n $NS "$FEP" -c frontend -- curl -s -m 10 localhost:8000/v1/models 2>/dev/null | grep -q Nemotron && break; sleep 20; done; sleep 60
+  for r in $(seq 1 30); do kubectl exec -n $NS "$FEP" -c frontend -- curl -s -m 10 localhost:8000/v1/models 2>/dev/null | grep -q Nemotron && break; sleep 20; done; sleep 15
   JOB=alisachen-${JP}-agentx-${v}-c${C}; kubectl delete job -n $NS "$JOB" --ignore-not-found --wait=true >> "$LOG" 2>&1
   sed -e "s|/model-cache/alisachen/Kimi-K2.5-NVFP4|${N3U_DIR}|g" -e "s|alisachen/Kimi-K2.5-NVFP4|${N3U_SERVED}|g" \
       -e "s|models--alisachen--Kimi-K2.5-NVFP4|models--alisachen--Nemotron-3-Ultra-550B-A55B-NVFP4|g" \
@@ -38,7 +38,7 @@ for point in $PTS; do
       -e "s|cloud.google.com/gke-nodepool: np-1|cloud.google.com/gke-nodepool: ${BENCH_POOL:-np-1}|" \
       -e "/name: CONCURRENCIES/{n;s/value: .*/value: \"${C}\"/}" -e "/name: BENCHMARK_DURATION/{n;s/value: .*/value: \"3600\"/}" \
       "$TMPL" | kubectl apply -n $NS -f - >> "$LOG" 2>&1
-  st=""; for i in $(seq 1 ${JOB_WAIT_ITERS:-100}); do st=$(kubectl get jobs -n $NS "$JOB" --no-headers 2>/dev/null | awk '{print $2}'); [ "$st" = "Complete" ] && break; [ "$st" = "Failed" ] && break; sleep 120; done
+  st=""; for i in $(seq 1 $(( ${JOB_WAIT_ITERS:-100} * 4 ))); do st=$(kubectl get jobs -n $NS "$JOB" --no-headers 2>/dev/null | awk '{print $2}'); [ "$st" = "Complete" ] && break; [ "$st" = "Failed" ] && break; sleep 30; done
   say "$ARM AgentX $v c$C done (job=$st)"
   [ "$st" != "Complete" ] && { say "$([ $first = 1 ] && echo 'AGENTX SMOKE FAIL' || echo 'BENCH VIOLATION') on $v c$C - HALTING"; kubectl logs -n $NS -l job-name=$JOB --tail=30 2>/dev/null | grep -iE "error|scenario|unknown" | tail -8 >> "$LOG"; exit 2; }
   if [ "$POOL" = "np-3" ] || [ "${MNNVL_GUARD:-0}" = "1" ]; then bash "$GUARD" "$ARM" >> "$LOG" 2>&1 || { say "MNNVL TRANSPORT VIOLATION - HALTING"; exit 2; }; say "MNNVL gate PASS"; fi
