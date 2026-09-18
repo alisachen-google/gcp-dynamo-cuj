@@ -241,3 +241,13 @@ largest KV cell's KNEE-CHECK is not POST-KNEE; [`scripts/agentx_88_kv_knee_exten
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | KV | 192 | 5,142 | 0.38 / 2.40 s | 8.9 / 10.0 ms | 100 | 31.1 | 0.926 | AT/PRE-KNEE (stationary, q1 0.36 s → q4 0.39 s) | PASS | 3,329 · 1.07 s | [1789672351](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789672351_alisachen-n3u-mnnvl-88-agentx-kv-c192) |
 | KV | 384 | 9,993 | 0.56 / 4.83 s | 11.7 / 12.9 ms | 78 | 82.4 | 0.906 | AT/PRE-KNEE (stationary, q1 0.64 s → q4 0.55 s) | PASS | 8,379 · 2.93 s | [1789678827](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789678827_alisachen-n3u-mnnvl-88-agentx-kv-c384) |
+| KV | 672 | 15,184 | 3.98 / 17.04 s | 16.0 / 17.1 ms | 59 | 207.1 | 0.857 | AT/PRE-KNEE (stationary, q1 4.93 s → q4 4.17 s) | PASS | 15,183 · 3.86 s | [1789686412](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789686412_alisachen-n3u-mnnvl-88-agentx-kv-c672) |
+| KV | 768 | 15,543 | 10.08 / 27.14 s | 16.2 / 17.6 ms | 57 | 276.8 | 0.851 | AT/PRE-KNEE (stationary, q1 7.16 s → q4 9.64 s); throughput plateau (+2% for +14% clients) | PASS | 19,034 · 4.39 s | [1789695978](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789695978_alisachen-n3u-mnnvl-88-agentx-kv-c768) |
+| KV | 1,152 | 10,697 | 79.98 / 164.32 s | 12.7 / 16.3 ms | 61 | 699.6 | 0.771 | **POST-KNEE** (growing, saturated: q1 40.4 s → q4 137.8 s) | PASS | 24,663 · 12.78 s | [1789706033](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789706033_alisachen-n3u-mnnvl-88-agentx-kv-c1152) |
+
+**Measured KV knee (8:8, default flags).** Throughput peaks at 672–768 clients (15,184 → 15,543 total tok/s/GPU, +2 % for +14 %
+clients) and the 1,152-client cell is post-knee (10,697, TTFT p50 growing 40 s → 138 s through the window), so the knee
+extension (1,536+) did not run. The simulation placed the default-KV knee at 1,152 clients (24,663 tok/s/GPU); silicon saturates
+earlier and lower, with the prefill tier as the limit: TTFT p95 is already 17 s at 672 and 27 s at 768 while ITL stays at 16–18 ms
+(P90 interactivity 57–59), and the engine hit rate falls 0.93 → 0.91 → 0.86 → 0.85 → 0.77 as clients rise. The last cell
+inside the TTFT p95 ≤ 20 s budget is 672 clients.
