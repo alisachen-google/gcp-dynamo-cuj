@@ -282,3 +282,18 @@ from the workers that hold their prefix (hit rate 0.891 → 0.862), which adds p
 rises 47 % and throughput is flat to slightly down. On agg the same flags relieved decode-batch over-packing; disagg has no such
 problem because decode is a separate tier, so cache affinity is the better use of the prefill router.
 
+**RR at KV's same-SLO load (480 clients, 2026-09-18): RR collapses.** Same 8:8 fleet, same 480 clients: default KV delivers 12,204
+total tok/s/GPU at TTFT p95 7.1 s (hit rate 0.89); RR delivers **3,219** at TTFT p50 96 s / p95 388 s (hit rate 0.29), i.e. KV is
+**3.8× the throughput and 54× lower TTFT p95 at identical load**, and RR's throughput is below its own 192-client cell (4,419) —
+RR's knee lies between 192 and 480 clients (RR 384 is queued to bracket it). Knee check: POST-KNEE (saturated). 336 of the 480
+clients are in flight at any time, almost all waiting for prefill: with no cache affinity every turn re-prefills ~70 % of its
+context. [artifact 1789757358](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789757358_alisachen-n3u-mnnvl-88-agentx-rr-c480)
+
+*Guard note.* This cell tripped the transport guard: 353 requests failed with `KVTransferError … timed out after 300 s in
+KVPoll.WaitingForInput` (decode side) / `KVPoll.Bootstrapping` (prefill side). Those are SGLang's 300 s disaggregation queue-wait
+timeouts (`SGLANG_DISAGGREGATION_WAITING_TIMEOUT`) firing because prefill is queued for minutes — a saturation symptom, not a
+transport fault: mooncake moved KV over MNNVL throughout (TE peak 649 MB/s, no /dev/infiniband, MC_FORCE_MNNVL=1, no fallback,
+no disconnects). Guard v3 ([`scripts/mnnvl_transport_guard_v3.sh`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/mnnvl_transport_guard_v3.sh))
+bounds the log window to the cell just run and reports queue-wait timeouts as OVERLOADED (the cell is treated as post-knee);
+every other transfer failure still halts the programme.
+

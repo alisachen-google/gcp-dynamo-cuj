@@ -7,7 +7,7 @@ set -u
 export KUBECONFIG=$HOME/kv-cache-aware-bench/.kubeconfig-cmcs-pinned
 ARM=$1; MAN=$2; PTS=$3; GATE=$4; GLOG=$5; DONE=$6; LOG=$7; NEED=$8; POOL=$9; JP=${10}; WL=${11}
 NS=dynamo-cloud; TMPL=$HOME/kv-cache-aware-bench/manifests/perf/sgl-d72-agentx.yaml
-GUARD=$HOME/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/mnnvl_transport_guard.sh
+GUARD=$HOME/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/mnnvl_transport_guard_v3.sh
 N3U_DIR=/model-cache/alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4; N3U_SERVED=alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4
 say(){ echo "[$(date -u +%F' '%H:%M:%S)] $*" >> "$LOG"; }
 declare -A ROUTER=([kv]="--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs" [rr]="--router-mode round-robin" [kvs3c08]="--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-prefill-load-scale 3.0 --router-kv-overlap-score-credit 0.8" [kvs2c08]="--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-prefill-load-scale 2.0 --router-kv-overlap-score-credit 0.8" [kvt05]="--router-mode kv --router-temperature 0.5 --router-queue-policy fcfs" [kvwspt]="--router-mode kv --router-temperature 0.0 --router-queue-policy wspt" [kvd05]="--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-kv-overlap-score-credit-decay 0.5" [kvd10]="--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-kv-overlap-score-credit-decay 1.0" [kvd20]="--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-kv-overlap-score-credit-decay 2.0" [kvs4c08]="--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-prefill-load-scale 4.0 --router-kv-overlap-score-credit 0.8" [kvs3c08d05]="--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-prefill-load-scale 3.0 --router-kv-overlap-score-credit 0.8 --router-kv-overlap-score-credit-decay 0.5" [kvs3c08d10]="--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-prefill-load-scale 3.0 --router-kv-overlap-score-credit 0.8 --router-kv-overlap-score-credit-decay 1.0")
@@ -24,6 +24,7 @@ say "deploying $ARM"; kubectl apply -n $NS -f "$MAN" >> "$LOG" 2>&1
 for d in $(echo "$WL" | tr ',' ' ') ${ARM}-frontend; do kubectl rollout status deployment/$d -n $NS --timeout=3600s >> "$LOG" 2>&1 || { say "STACK TIMEOUT $d — HALTING"; exit 1; }; done
 first=1
 for point in $PTS; do
+  T0=$(date -u +%FT%TZ)
   v=${point%%:*}; C=${point##*:}; say "=== $ARM AgentX $v c$C $([ $first = 1 ] && echo '(smoke)')"
   FE="pip install -q \"ai-dynamo==1.4.2\" && exec python3 -m dynamo.frontend ${ROUTER[$v]} --request-plane nats"
   J=$(python3 -c "import json,sys;print(json.dumps([sys.argv[1]]))" "$FE")
@@ -41,7 +42,7 @@ for point in $PTS; do
   st=""; for i in $(seq 1 $(( ${JOB_WAIT_ITERS:-100} * 4 ))); do st=$(kubectl get jobs -n $NS "$JOB" --no-headers 2>/dev/null | awk '{print $2}'); [ "$st" = "Complete" ] && break; [ "$st" = "Failed" ] && break; sleep 30; done
   say "$ARM AgentX $v c$C done (job=$st)"
   [ "$st" != "Complete" ] && { say "$([ $first = 1 ] && echo 'AGENTX SMOKE FAIL' || echo 'BENCH VIOLATION') on $v c$C - HALTING"; kubectl logs -n $NS -l job-name=$JOB --tail=30 2>/dev/null | grep -iE "error|scenario|unknown" | tail -8 >> "$LOG"; exit 2; }
-  if [ "$POOL" = "np-3" ] || [ "${MNNVL_GUARD:-0}" = "1" ]; then bash "$GUARD" "$ARM" >> "$LOG" 2>&1 || { say "MNNVL TRANSPORT VIOLATION - HALTING"; exit 2; }; say "MNNVL gate PASS"; fi
+  if [ "$POOL" = "np-3" ] || [ "${MNNVL_GUARD:-0}" = "1" ]; then GUARD_SINCE=$T0 bash "$GUARD" "$ARM" >> "$LOG" 2>&1; grc=$?; if [ $grc = 3 ]; then say "MNNVL gate: transport healthy; cell $v c$C OVERLOADED (requests hit the 300 s prefill-wait timeout)"; elif [ $grc != 0 ]; then say "MNNVL TRANSPORT VIOLATION - HALTING"; exit 2; else say "MNNVL gate PASS"; fi; fi
   python3 "$HOME/kv-cache-aware-bench/sglang/scripts/knee_check.py" "${JP}-agentx-${v}-c${C}" >> "$LOG" 2>&1 || true
   first=0
 done
