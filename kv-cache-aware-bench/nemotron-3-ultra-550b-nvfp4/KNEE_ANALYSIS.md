@@ -270,3 +270,15 @@ At equal load the throughput gap is small because 192 clients do not saturate 64
 prefix cache (hit rate 0.61 vs 0.93), so it prefills ~5× more tokens per turn and its TTFT tail is 13× longer. That tail is what
 caps RR's usable load: it cannot hold 10 s even at 96 clients, while KV holds 7 s at 480, hence 4.6× the throughput per GPU
 inside the SLO. Flag sweep (6 runs) follows at the KV same-SLO cell (480) and the same-config cell (192).
+
+**8:8 KV flag sweep at the KV same-SLO cell (480 clients; baseline default KV 12,204 tok/s/GPU, TTFT p95 7.12 s, hit rate 0.891).**
+
+| run | flags | total tok/s/GPU | vs default | TTFT p50 / p95 | P90 interactivity | hit rate | warm-up wall (check) | knee | artifact |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | load scale 3, overlap credit 0.8 | 12,018 | −1.5 % | 1.42 / 10.48 s | 65 | 0.862 | 3,332 s (baseline 3,334 s) | stationary | [1789748912](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789748912_alisachen-n3u-mnnvl-88-agentx-kvs3c08-c480) |
+
+Run 1: the agg winner does not transfer to 8:8 disagg. Weighting prefill load more and discounting overlap moves requests away
+from the workers that hold their prefix (hit rate 0.891 → 0.862), which adds prefill work to a prefill-bound fleet: TTFT p95
+rises 47 % and throughput is flat to slightly down. On agg the same flags relieved decode-batch over-packing; disagg has no such
+problem because decode is a separate tier, so cache affinity is the better use of the prefill router.
+

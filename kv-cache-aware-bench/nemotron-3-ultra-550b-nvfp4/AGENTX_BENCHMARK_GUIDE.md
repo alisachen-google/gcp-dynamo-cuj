@@ -147,6 +147,7 @@ Measured so far (AgentX definition; total = input + output tokens per second per
 | disagg 8:8 RR (64 GPU) | 144 | 3,588 | 40.8 | 2.55 / 16.6 / 21.63 s | 8.5 / 10.3 ms | 97 | 39.1 | stationary ([artifact](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789728380_alisachen-n3u-mnnvl-88-agentx-rr-c144); hit rate 0.63; guard PASS) |
 | disagg 8:8 RR (64 GPU) | 96 | 2,671 | 29.6 | 1.08 / 9.0 / 13.03 s | 7.8 / 9.3 ms | 108 | 20.9 | stationary ([artifact](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789734386_alisachen-n3u-mnnvl-88-agentx-rr-c96); hit rate 0.67; guard PASS) |
 | disagg 8:8 KV (64 GPU) | 480 | 12,204 | 123.4 | 0.80 / 4.5 / 7.12 s | 13.2 / 15.4 ms | 65 | 119.3 | stationary ([artifact](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789740024_alisachen-n3u-mnnvl-88-agentx-kv-c480); hit rate 0.89; guard PASS) |
+| disagg 8:8 KV scale 3, credit 0.8 (64 GPU) | 480 | 12,018 | 121.6 | 1.42 / 7.4 / 10.48 s | 13.1 / 15.3 ms | 65 | 125.1 | stationary ([artifact](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789748912_alisachen-n3u-mnnvl-88-agentx-kvs3c08-c480); hit rate 0.86; −1.5% total, TTFT p95 +47% vs default KV at 480) |
 | agg KV | 48 | 3,334 | 32.3 | 0.42 / 2.5 / 3.83 s | 7.3 / 9.8 ms | 102 | 6.8 | stationary |
 | agg KV | 96 | 6,844 | 75.1 | 0.67 / 3.4 / 5.36 s | 11.9 / 23.5 ms | 43 | 27.5 | stationary |
 | agg KV | 192 | 9,655 | 96.8 | 1.56 / 8.4 / 11.68 s | 23.9 / 50.6 ms | 20 | 74.5 | stationary |

@@ -152,5 +152,6 @@ Artifacts: each job uploads `<model>_trace_c<conc>_<ts>/profile_export_aiperf.cs
 | 2026-09-18 12:17 | disagg 8:8 MNNVL (64 GPU, np-2) — AgentX concurrency | rr | 144 clients | `n3u-mnnvl-88-agentx-rr-c144` (2,610 tok/s · AT/PRE · guard PASS) | [1789728380](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789728380_alisachen-n3u-mnnvl-88-agentx-rr-c144) |
 | 2026-09-18 13:50 | disagg 8:8 MNNVL (64 GPU, np-2) — AgentX concurrency | rr | 96 clients | `n3u-mnnvl-88-agentx-rr-c96` (1,896 tok/s · AT/PRE · guard PASS) | [1789734386](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789734386_alisachen-n3u-mnnvl-88-agentx-rr-c96) |
 | 2026-09-18 16:18 | disagg 8:8 MNNVL (64 GPU, np-2) — AgentX concurrency | kv | 480 clients | `n3u-mnnvl-88-agentx-kv-c480` (7,895 tok/s · AT/PRE · guard PASS) | [1789740024](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789740024_alisachen-n3u-mnnvl-88-agentx-kv-c480) |
+| 2026-09-18 18:42 | disagg 8:8 MNNVL (64 GPU, np-2) — AgentX flag sweep | kvs3c08 (scale 3, credit 0.8) | 480 clients | `n3u-mnnvl-88-agentx-kvs3c08-c480` (7,780 tok/s · AT/PRE · −1.5% total, TTFT p95 +47% vs kv) | [1789748912](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789748912_alisachen-n3u-mnnvl-88-agentx-kvs3c08-c480) |
 
-116 jobs listed. Later runs of the same job name supersede earlier ones (fleet-instance-2 re-runs on 2026-09-15).
+117 jobs listed. Later runs of the same job name supersede earlier ones (fleet-instance-2 re-runs on 2026-09-15).

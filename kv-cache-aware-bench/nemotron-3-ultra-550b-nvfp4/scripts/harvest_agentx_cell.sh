@@ -18,10 +18,11 @@ c=i=None
 for r in csv.reader(open(D+"/server_metrics_export.csv")):
     if len(r)>6 and r[2]=="dynamo_frontend_cached_tokens": c=float(r[6])
     if len(r)>6 and r[2]=="dynamo_frontend_input_sequence_tokens": i=float(r[6])
-ev=[];n=0
+ev=[];n=0;wl=[];ws=[]
 for l in open(recs):
     try: md=json.loads(l)["metadata"]
     except Exception: continue
+    if md.get("benchmark_phase")=="warmup" and md.get("request_end_ns"): wl.append((md["request_end_ns"]-md["request_start_ns"])/1e9); ws+=[md["request_start_ns"],md["request_end_ns"]]
     if md.get("benchmark_phase")!="profiling": continue
     s,e=md.get("request_start_ns"),md.get("request_end_ns")
     if s and e: ev+=[(s,1),(e,-1)]; n+=1
@@ -31,4 +32,6 @@ infl=area/(ev[-1][0]-ev[0][0])
 print(f"{B}: total/GPU={tot/G:,.0f} out/GPU={out/G:.1f} out_tok_s={out:,.0f} req/s={float(m['Request Throughput (requests/sec)'][1]):.2f} n={n}"
       f" TTFT p50/p90/p95={float(tt[9])/1e3:.2f}/{float(tt[11])/1e3:.2f}/{float(tt[12])/1e3:.2f}s ITL p50/p90={float(it[9]):.1f}/{float(it[11]):.1f}ms P90={1000/float(it[11]):.0f}"
       f" inflight={infl:.1f} hit={c/i:.3f}")
+# warm-up health check: same fixed work every run at a given client count, so its wall time and cold-prefill latency must reproduce
+if wl: wl.sort(); print(f"  warm-up check: reqs={len(wl)} wall={(max(ws)-min(ws))/1e9:.0f}s latency p50={wl[len(wl)//2]:.2f}s p90={wl[int(len(wl)*.9)]:.2f}s (compare with other cells at the same client count)")
 PY
