@@ -11,7 +11,7 @@ usage: select_agentx_points.py <jobprefix> <gpus> <kv clients csv> <rr clients c
 import sys, csv, io, re, subprocess, argparse
 ap = argparse.ArgumentParser(); ap.add_argument("jp"); ap.add_argument("gpus", type=int); ap.add_argument("kv"); ap.add_argument("rr")
 ap.add_argument("--logs", nargs="*", default=[]); ap.add_argument("--ttft", type=float, default=20.0); ap.add_argument("--p90", type=float, default=20.0)
-ap.add_argument("--out-json", default=""); ap.add_argument("--out-md", default=""); ap.add_argument("--out-points", default=""); ap.add_argument("--variants", default="kvs3c08,kvs2c08,kvt05"); a = ap.parse_args()
+ap.add_argument("--out-json", default=""); ap.add_argument("--ttft-fallback", type=float, default=0.0); ap.add_argument("--out-md", default=""); ap.add_argument("--out-points", default=""); ap.add_argument("--variants", default="kvs3c08,kvs2c08,kvt05"); a = ap.parse_args()
 def sh(c): return subprocess.run(c, shell=True, capture_output=True, text=True).stdout
 knee = {}
 for lg in a.logs:
@@ -42,7 +42,10 @@ ok = lambda x: x["p95"] <= a.ttft and x["p90i"] >= a.p90 and not x["knee"].start
 best = lambda d: max((x for x in d.values() if ok(x)), key=lambda x: x["tot"], default=None)
 rr_peak = max(rr.values(), key=lambda x: x["tot"], default=None); both = sorted(set(kv) & set(rr))
 same_cfg = rr_peak["clients"] if rr_peak and rr_peak["clients"] in kv else (both[-1] if both else None)
-kv_slo, rr_slo = best(kv), best(rr)
+kv_slo, rr_slo = best(kv), best(rr); rr_slo_ttft = a.ttft
+if rr_slo is None and a.ttft_fallback:   # no RR cell inside the SLO: relax RR's budget to the fallback (reported as such)
+    okf = lambda x: x["p95"] <= a.ttft_fallback and x["p90i"] >= a.p90 and not x["knee"].startswith("POST")
+    rr_slo = max((x for x in rr.values() if okf(x)), key=lambda x: x["tot"], default=None); rr_slo_ttft = a.ttft_fallback
 pts = []
 if kv_slo: pts += [f"{v}:{kv_slo['clients']}" for v in a.variants.split(",")]
 if same_cfg and (not kv_slo or same_cfg != kv_slo["clients"]): pts.append(f"kvs3c08:{same_cfg}")
@@ -50,11 +53,11 @@ md = ["| policy | clients | total tok/s/GPU | output/GPU | TTFT p50 / p95 | P90 
 for x in sorted(cells, key=lambda x: (x["pol"], x["clients"])): md.append(f"| {x['pol']} | {x['clients']} | {x['tot']:,.0f} | {x['out']:.1f} | {x['p50']:.2f} / {x['p95']:.2f} s | {x['p90i']:.1f} | {x['knee']} | {x['art']} |")
 md.append("")
 if same_cfg: md.append(f"**Same config: {same_cfg} clients** — KV {kv[same_cfg]['tot']:,.0f} vs RR {rr[same_cfg]['tot']:,.0f} = {kv[same_cfg]['tot']/rr[same_cfg]['tot']:.2f}x; TTFT p95 {kv[same_cfg]['p95']:.1f} vs {rr[same_cfg]['p95']:.1f} s; P90 {kv[same_cfg]['p90i']:.0f} vs {rr[same_cfg]['p90i']:.0f}.")
-if kv_slo and rr_slo: md.append(f"**Same SLO (TTFT p95 <= {a.ttft:g} s, P90 >= {a.p90:g}, stationary): KV {kv_slo['clients']} -> {kv_slo['tot']:,.0f} vs RR {rr_slo['clients']} -> {rr_slo['tot']:,.0f} = {kv_slo['tot']/rr_slo['tot']:.2f}x.**")
+if kv_slo and rr_slo: md.append(f"**Same SLO (KV TTFT p95 <= {a.ttft:g} s, RR <= {rr_slo_ttft:g} s, P90 >= {a.p90:g}, stationary): KV {kv_slo['clients']} -> {kv_slo['tot']:,.0f} vs RR {rr_slo['clients']} -> {rr_slo['tot']:,.0f} = {kv_slo['tot']/rr_slo['tot']:.2f}x.**")
 md.append(f"Flag-sweep points: {' '.join(pts) or '(none: no KV cell met the SLO)'}")
 out = "\n".join(md); print(out)
 if a.out_md: open(a.out_md, "w").write(out + "\n")
 if a.out_points: open(a.out_points, "w").write(" ".join(pts) + "\n")
 if a.out_json:
     import json
-    json.dump({"rr_peak": rr_peak and rr_peak["clients"], "same_cfg": same_cfg, "kv_slo": kv_slo, "rr_slo": rr_slo, "kv": kv, "rr": rr}, open(a.out_json, "w"), indent=1)
+    json.dump({"rr_slo_ttft": rr_slo_ttft, "rr_peak": rr_peak and rr_peak["clients"], "same_cfg": same_cfg, "kv_slo": kv_slo, "rr_slo": rr_slo, "kv": kv, "rr": rr}, open(a.out_json, "w"), indent=1)
