@@ -74,6 +74,17 @@ flight by Little's law and by direct integration).
 **Stop rules.** Any KV transfer failure or non-NVLink path invalidates the point (the guard halts the ladder); no
 latency SLO gate is applied to a run — latency is reported, and SLO framings are applied afterwards.
 
+### 2.1 Pre-flight checklist (audited 2026-09-18 against the five "before your first run" rules)
+
+| rule | status | evidence |
+|---|---|---|
+| 1. client worker pool set explicitly | followed | `--workers-max 200` in the job template (pool = min(clients, 200)), `--record-processors 8` |
+| 2. real, pinned tokenizer (never `builtin`) | followed; pin recorded here | `--tokenizer` = the served model id, resolved offline (`HF_HUB_OFFLINE=1`) from the checkpoint's own tokenizer files incl. every `*.py`; `tokenizer.json` sha256 `623c34567aebb18582765289fbe23d901c62704d6518d71866e0e58db892b5b7` = byte-identical to `nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4` at repo commit `02462641f13d3af838b904f48195b9bb8a1e4ebc`; an offline snapshot cannot drift, so `--tokenizer-revision` is not needed |
+| 3. scrape every engine, engine cache report on | partly | aiperf scrapes the Dynamo frontend only (no `--server-metrics` per engine, no `--enable-cache-report`), so per-engine SGLang series are not collected. The hit rates we report come from the frontend's `cached_tokens / input_sequence_tokens` counters and are cross-checked by the client-side `usage_prompt_cache_read_tokens / usage_prompt_tokens` (KV 480: 0.891 from both) |
+| 4. conversation-aware routing | followed | Dynamo `--router-mode kv` routes on the request's own token blocks (KV-indexer overlap), the kind that needs no client key; no session-affinity TTL, so the `X-Dynamo-Session-ID` header would be inert. Measured KV hit rate 0.85–0.93; RR is the deliberate no-affinity baseline (0.29–0.67) |
+| 5. configuration timeouts raised, seed pinned | followed | `AIPERF_DATASET_CONFIGURATION_TIMEOUT=3600`, `AIPERF_SERVICE_PROFILE_CONFIGURE_TIMEOUT=3600`, `--random-seed 42`, processed dataset cache pre-staged on the PVC |
+| smoke test before real runs | followed | `--unsafe-override` 10-request smoke on the VM; every chain's first cell is a smoke cell that halts the chain on failure |
+
 ## 3. Simulation, step by step: what AIC gave us and what DynoSim gave us
 
 Two tools, two questions ([AGG24 §3](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/AGG24_RESULTS.md#3-simulation-stage--what-aic-and-dynosim-deliver) has the
