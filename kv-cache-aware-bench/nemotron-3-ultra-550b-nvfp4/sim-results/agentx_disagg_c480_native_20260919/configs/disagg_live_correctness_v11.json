@@ -1,0 +1,179 @@
+[
+  {
+    "passed": true,
+    "scope": "live two-pool correctness, not a performance calibration",
+    "router": "round-robin",
+    "requests": [
+      {
+        "requested_output_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12305,
+          "completion_tokens": 1,
+          "total_tokens": 12306
+        }
+      },
+      {
+        "requested_output_tokens": 16,
+        "usage": {
+          "prompt_tokens": 12305,
+          "completion_tokens": 16,
+          "total_tokens": 12321
+        }
+      },
+      {
+        "requested_output_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12305,
+          "completion_tokens": 1,
+          "total_tokens": 12306
+        }
+      },
+      {
+        "requested_output_tokens": 16,
+        "usage": {
+          "prompt_tokens": 12305,
+          "completion_tokens": 16,
+          "total_tokens": 12321
+        }
+      },
+      {
+        "requested_output_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12305,
+          "completion_tokens": 1,
+          "total_tokens": 12306
+        }
+      },
+      {
+        "requested_output_tokens": 16,
+        "usage": {
+          "prompt_tokens": 12305,
+          "completion_tokens": 16,
+          "total_tokens": 12321
+        }
+      },
+      {
+        "requested_output_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12305,
+          "completion_tokens": 1,
+          "total_tokens": 12306
+        }
+      },
+      {
+        "requested_output_tokens": 16,
+        "usage": {
+          "prompt_tokens": 12305,
+          "completion_tokens": 16,
+          "total_tokens": 12321
+        }
+      }
+    ],
+    "forward_pass_counts": {
+      "prefill": {
+        "computed_prefill_tokens": 24712,
+        "scheduled_decode_tokens": 0,
+        "nonempty_prefill_workers": {
+          "6629193847555721648": 4,
+          "6629193847555721642": 4
+        }
+      },
+      "decode": {
+        "computed_prefill_tokens": 0,
+        "scheduled_decode_tokens": 60,
+        "nonempty_prefill_workers": {}
+      }
+    },
+    "prefill_router_logs": [
+      "\u001b[2m2026-09-17T18:10:33.887628Z\u001b[0m \u001b[32m INFO\u001b[0m \u001b[2mdynamo_llm::kv_router::prefill_router::activation\u001b[0m\u001b[2m:\u001b[0m Activating prefill router \u001b[3mrouter_mode\u001b[0m\u001b[2m=\u001b[0mRoundRobin"
+    ]
+  },
+  {
+    "passed": true,
+    "scope": "live two-pool correctness, not a performance calibration",
+    "router": "kv",
+    "requests": [
+      {
+        "requested_output_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12305,
+          "completion_tokens": 1,
+          "total_tokens": 12306
+        }
+      },
+      {
+        "requested_output_tokens": 16,
+        "usage": {
+          "prompt_tokens": 12305,
+          "completion_tokens": 16,
+          "total_tokens": 12321
+        }
+      },
+      {
+        "requested_output_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12305,
+          "completion_tokens": 1,
+          "total_tokens": 12306
+        }
+      },
+      {
+        "requested_output_tokens": 16,
+        "usage": {
+          "prompt_tokens": 12305,
+          "completion_tokens": 16,
+          "total_tokens": 12321
+        }
+      },
+      {
+        "requested_output_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12305,
+          "completion_tokens": 1,
+          "total_tokens": 12306
+        }
+      },
+      {
+        "requested_output_tokens": 16,
+        "usage": {
+          "prompt_tokens": 12305,
+          "completion_tokens": 16,
+          "total_tokens": 12321
+        }
+      },
+      {
+        "requested_output_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12305,
+          "completion_tokens": 1,
+          "total_tokens": 12306
+        }
+      },
+      {
+        "requested_output_tokens": 16,
+        "usage": {
+          "prompt_tokens": 12305,
+          "completion_tokens": 16,
+          "total_tokens": 12321
+        }
+      }
+    ],
+    "forward_pass_counts": {
+      "prefill": {
+        "computed_prefill_tokens": 12424,
+        "scheduled_decode_tokens": 0,
+        "nonempty_prefill_workers": {
+          "6629193847555721928": 8
+        }
+      },
+      "decode": {
+        "computed_prefill_tokens": 0,
+        "scheduled_decode_tokens": 60,
+        "nonempty_prefill_workers": {}
+      }
+    },
+    "prefill_router_logs": [
+      "\u001b[2m2026-09-17T18:10:54.585246Z\u001b[0m \u001b[32m INFO\u001b[0m \u001b[2mdynamo_llm::kv_router::prefill_router::activation\u001b[0m\u001b[2m:\u001b[0m Activating prefill router \u001b[3mrouter_mode\u001b[0m\u001b[2m=\u001b[0mKV"
+    ]
+  }
+]

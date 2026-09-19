@@ -1,0 +1,19 @@
+{
+  "base": "Dynamo 1.4.2 source archive",
+  "native_core_sha256": "39e41354104490981f35f76850bd17973369fc8222dab9f7813e25f50146e36e",
+  "patches": {
+    "dynamo-1.4.2-aic-decode-calibration.patch": "b520695f21307286aaeb5a0cbcbed9de4c919d8e2d7685a6412f7dff5ac901a0",
+    "dynamo-1.4.2-aic-prefill-calibration.patch": "2e4065d48497507077b86c9dd61b2264d948b3cc8767e88a09a28a8c2263d224",
+    "dynamo-1.4.2-cpu-build.patch": "3c6e1c41af1d90a37b160d20b7315a21bb68330ccae50f8018311471c279a4aa",
+    "dynamo-1.4.2-faithful-disaggregation.patch": "5568eaefc3dac61a5ebb477c5b203db01743f6f4c81a258fa0ad050a2fe92a7c",
+    "dynamo-1.4.2-first-visible-token.patch": "539478d33ab16f854f32f82ca184caebf35c03046668f19e053849c4731c7508",
+    "dynamo-1.4.2-full-prefix-before-chunk.patch": "8f3b3e4a3988b854343c8eb49247d87d8390f7bad38bd1a4074f1894b4577f6d",
+    "dynamo-1.4.2-hybrid-checkpoint-lru.patch": "16a2c66994f07419049703ae7fad70011870ab5b18602b8ee9c25956f9ca556a",
+    "dynamo-1.4.2-hybrid-checkpoint-publication.patch": "2a1229b806eb4b514ae9524551dff9e7317b7718c92493d4ed3f517bfa89adb1",
+    "dynamo-1.4.2-hybrid-checkpoint-tracking.patch": "1ab0ab6c624fea0a980103b8acc14165be5f1b3612c499db86bc48809f825c28",
+    "dynamo-1.4.2-prefill-prefix-admission.patch": "60853ecb477f5f2c25a9002a2f4e2784200738285da9c4d8f312c153f211236c",
+    "dynamo-1.4.2-prefill-priority-hybrid-cache.patch": "0e8f92d98ddc19313d8ac501730688929030333f8187ed0dfe5b7c098f506937",
+    "dynamo-1.4.2-prefill-remaining-budget.patch": "77b90ac0364d4cf0b960cbb3005ed9b07bbdeceae1ee8bcaad1fc82c01f3934c"
+  },
+  "note": "Apply the V10 patch order from v10_patch_reconstruction.json, then faithful-disaggregation last; V11 reconstruction hashes are recorded with the sweep configs."
+}

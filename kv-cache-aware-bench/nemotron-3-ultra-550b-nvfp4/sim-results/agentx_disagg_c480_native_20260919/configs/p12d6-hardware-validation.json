@@ -1,0 +1,26 @@
+{
+  "name": "p12d6-hardware-validation",
+  "gpu_count": 72,
+  "pools": [
+    {
+      "role": "prefill",
+      "workers": 12,
+      "engine_config": "prefill-engine.json"
+    },
+    {
+      "role": "decode",
+      "workers": 6,
+      "engine_config": "decode-engine.json"
+    }
+  ],
+  "assumptions": [
+    "64 GPUs; each worker uses TP4 and EP4; every P and D GPU is included in the denominator.",
+    "The shared V10 AIC calibration is a candidate until its full hardware matrix passes; no hardware validation exists for 64 GPUs or disaggregated RR.",
+    "Prefill cache capacity is assumed equal to the observed aggregate allocation: 443697 attention pages and 769 recurrent states. Prefill startup logs are unavailable.",
+    "Decode uses 809406 observed attention pages and 64 private state/request slots inferred from the resolved SGLang defaults.",
+    "Per-rank handoff timing assumes 64 GB/s, the native Mocker default. It is not a measured Mooncake rate. A handoff moves 3072 bytes per input token plus 101990400 recurrent-state bytes per rank.",
+    "Independent handoff delays do not model contention on a shared NIC. Check demanded bandwidth and rerun finalists at 20 and 100 GB/s; placement within the NVLink domain is not established.",
+    "AIPerf retains the 393-root dataset, seed42, 25-75 percent sampled starts, warmup, one-hour wall-clock profile, 60s grace, and 1200s request timeout.",
+    "Frontend router mode applies to both P and D routing. KV comparisons measure cache-aware routing; prefix caching remains enabled for RR on aggregate/P workers."
+  ]
+}

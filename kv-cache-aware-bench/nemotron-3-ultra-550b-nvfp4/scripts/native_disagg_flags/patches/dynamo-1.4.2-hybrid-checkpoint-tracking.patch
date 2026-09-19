@@ -1,0 +1,558 @@
+--- a/lib/bindings/python/rust/llm/replay.rs
++++ b/lib/bindings/python/rust/llm/replay.rs
+@@ -119,7 +119,7 @@
+ #[pymethods]
+ impl SglangArgs {
+     #[new]
+-    #[pyo3(signature = (schedule_policy=None, page_size=None, max_prefill_tokens=None, chunked_prefill_size=None, clip_max_new_tokens=None, schedule_conservativeness=None, enable_mixed_chunk=None, mamba_state_capacity=None))]
++    #[pyo3(signature = (schedule_policy=None, page_size=None, max_prefill_tokens=None, chunked_prefill_size=None, clip_max_new_tokens=None, schedule_conservativeness=None, enable_mixed_chunk=None, mamba_state_capacity=None, mamba_cache_chunk_size=None, mamba_track_interval=None))]
+     #[allow(clippy::too_many_arguments)]
+     fn new(
+         schedule_policy: Option<String>,
+@@ -130,6 +130,8 @@
+         schedule_conservativeness: Option<f64>,
+         enable_mixed_chunk: Option<bool>,
+         mamba_state_capacity: Option<usize>,
++        mamba_cache_chunk_size: Option<usize>,
++        mamba_track_interval: Option<usize>,
+     ) -> PyResult<Self> {
+         let inner = RsSglangArgs {
+             schedule_policy,
+@@ -140,6 +142,8 @@
+             schedule_conservativeness,
+             enable_mixed_chunk,
+             mamba_state_capacity,
++            mamba_cache_chunk_size,
++            mamba_track_interval,
+         };
+         Ok(Self { inner })
+     }
+--- a/lib/bindings/python/src/dynamo/_core.pyi
++++ b/lib/bindings/python/src/dynamo/_core.pyi
+@@ -2048,6 +2048,8 @@
+         schedule_conservativeness: Optional[float] = None,
+         enable_mixed_chunk: Optional[bool] = None,
+         mamba_state_capacity: Optional[int] = None,
++        mamba_cache_chunk_size: Optional[int] = None,
++        mamba_track_interval: Optional[int] = None,
+     ) -> None:
+         ...
+ 
+--- a/lib/mocker/src/cache/radix_cache.rs
++++ b/lib/mocker/src/cache/radix_cache.rs
+@@ -428,6 +428,16 @@
+     /// Read-only prefix match length (does not mutate timestamps or split nodes).
+     /// Used for LPM scheduling scoring.
+     pub fn prefix_match_len(&self, key: &[u32]) -> usize {
++        self.prefix_match_lengths(key).0
++    }
++
++    /// Attention KV can match beyond the last reusable recurrent checkpoint.
++    /// SGLang tracks that branch point when recomputing the following prefill.
++    pub(crate) fn attention_prefix_match_len(&self, key: &[u32]) -> usize {
++        self.prefix_match_lengths(key).1
++    }
++
++    fn prefix_match_lengths(&self, key: &[u32]) -> (usize, usize) {
+         let page_keys = self.page_hashes(key);
+         let mut current = self.root;
+         let mut matched_pages: usize = 0;
+@@ -462,9 +472,15 @@
+             }
+         }
+         if self.mamba.is_some() {
+-            reusable_pages * self.page_size
++            (
++                reusable_pages * self.page_size,
++                matched_pages * self.page_size,
++            )
+         } else {
+-            matched_pages * self.page_size
++            (
++                matched_pages * self.page_size,
++                matched_pages * self.page_size,
++            )
+         }
+     }
+ 
+--- a/lib/mocker/src/common/protocols.rs
++++ b/lib/mocker/src/common/protocols.rs
+@@ -516,6 +516,12 @@
+     /// Uses page-aligned extra-buffer checkpoints; absent keeps attention-only caching.
+     #[validate(range(min = 5))]
+     pub mamba_state_capacity: Option<usize>,
++    /// Prefill checkpoint alignment. Default: max(page size, 64).
++    #[validate(range(min = 1))]
++    pub mamba_cache_chunk_size: Option<usize>,
++    /// Decode recurrent-state snapshot interval. SGLang default: 256 tokens.
++    #[validate(range(min = 1))]
++    pub mamba_track_interval: Option<usize>,
+     /// False gives prefill priority and emits its first token without a decode
+     /// pass, as SGLang does with enable_mixed_chunk=false. None preserves the
+     /// existing mocker's interleaved prefill/decode behavior.
+--- a/lib/mocker/src/kv_manager/sglang_backend.rs
++++ b/lib/mocker/src/kv_manager/sglang_backend.rs
+@@ -216,8 +216,11 @@
+         }
+         let allocated_tokens = available_before - self.cache.available_tokens();
+ 
+-        // Router-visible KV events are complete-block only.
+-        self.publish_stored_event(token_ids, &kv_indices, prefix_len);
++        // Hybrid KV becomes shared only when its recurrent checkpoint is
++        // donated. A computed suffix can still be private beyond that point.
++        if !self.cache.has_mamba_cache() {
++            self.publish_stored_event(token_ids, &kv_indices, prefix_len);
++        }
+ 
+         self.log_trace("allocation", allocated_tokens);
+ 
+@@ -259,7 +262,9 @@
+         }
+         let allocated_tokens = available_before - self.cache.available_tokens();
+ 
+-        self.publish_stored_event(token_ids, &lease.kv_indices, prefix_len);
++        if !self.cache.has_mamba_cache() {
++            self.publish_stored_event(token_ids, &lease.kv_indices, prefix_len);
++        }
+         self.log_trace("allocation", allocated_tokens);
+         true
+     }
+@@ -1005,6 +1010,29 @@
+     }
+ 
+     #[test]
++    fn hybrid_events_exclude_private_kv_beyond_the_donated_checkpoint() {
++        let (buffer, sink) = capture_router_event_sink(ROUTER_TEST_WORKER_ID);
++        let mut mgr = SglangKvManager::new(256, 4, KvEventPublishers::new(Some(sink), None), 0);
++        mgr.cache_mut().enable_mamba_cache(16);
++        let tokens: Vec<u32> = (0..64).collect();
++        let mut lease = mgr.allocate_for_request(&tokens[..32]).unwrap().lease;
++        assert!(
++            buffer.drain().is_empty(),
++            "allocation alone does not publish hybrid KV"
++        );
++        mgr.extend_cached_prefix(&tokens[..16], &mut lease);
++        assert_eq!(stored_hashes(&buffer.drain()).len(), 4);
++        assert!(mgr.extend_allocation(&tokens, &mut lease));
++        assert!(
++            buffer.drain().is_empty(),
++            "the untracked suffix is still request-private"
++        );
++        mgr.extend_cached_prefix(&tokens[..48], &mut lease);
++        assert_eq!(stored_hashes(&buffer.drain()).len(), 8);
++        mgr.finish(&tokens[..48], lease);
++    }
++
++    #[test]
+     fn active_partial_page_owns_full_capacity_and_extends_in_place() {
+         let mut mgr = SglangKvManager::new(12, 4, KvEventPublishers::default(), 0);
+         let mut alloc = mgr.allocate_for_request(&[1]).unwrap();
+--- a/lib/mocker/src/scheduler/sglang/config.rs
++++ b/lib/mocker/src/scheduler/sglang/config.rs
+@@ -25,6 +25,8 @@
+ 
+ pub(super) struct SglangConfig {
+     pub(super) enable_mixed_chunk: bool,
++    pub(super) mamba_cache_chunk_size: usize,
++    pub(super) mamba_track_interval: usize,
+     pub(super) schedule_policy: SchedulePolicy,
+     pub(super) max_prefill_tokens: usize,
+     pub(super) max_running_requests: usize,
+@@ -48,6 +50,19 @@
+ impl SglangConfig {
+     pub(super) fn from_args(args: &MockEngineArgs) -> Self {
+         let sglang = args.sglang.as_ref();
++        let mamba_cache_chunk_size = sglang
++            .and_then(|s| s.mamba_cache_chunk_size)
++            .unwrap_or(args.block_size.max(64));
++        let mamba_track_interval = sglang.and_then(|s| s.mamba_track_interval).unwrap_or(256);
++        if sglang.and_then(|s| s.mamba_state_capacity).is_some() {
++            assert!(
++                mamba_cache_chunk_size > 0
++                    && mamba_cache_chunk_size.is_multiple_of(args.block_size)
++            );
++            assert!(
++                mamba_track_interval > 0 && mamba_track_interval.is_multiple_of(args.block_size)
++            );
++        }
+         let schedule_conservativeness = sglang
+             .and_then(|s| s.schedule_conservativeness)
+             .unwrap_or(1.0);
+@@ -71,6 +86,8 @@
+ 
+         Self {
+             enable_mixed_chunk: sglang.and_then(|s| s.enable_mixed_chunk).unwrap_or(true),
++            mamba_cache_chunk_size,
++            mamba_track_interval,
+             schedule_policy,
+             // SGLang reserves a safety ratio of three plus two extra-buffer
+             // slots per concurrent request; actual live allocation is three.
+--- a/lib/mocker/src/scheduler/sglang/decode.rs
++++ b/lib/mocker/src/scheduler/sglang/decode.rs
+@@ -62,8 +62,11 @@
+     if kv_manager.cache().has_mamba_cache() && req.output_len() > 1 {
+         return;
+     }
+-    let aligned_tokens = if kv_manager.cache().has_mamba_cache() && req.output_len() > 0 {
+-        floor_to_block(req.materialized_tokens.saturating_sub(1), config.block_size)
++    let aligned_tokens = if kv_manager.cache().has_mamba_cache() {
++        let Some(tracked) = req.mamba.pending_checkpoint.take() else {
++            return;
++        };
++        tracked
+     } else {
+         req.page_aligned_materialized_tokens(config.block_size)
+     };
+@@ -170,10 +173,15 @@
+     kv_manager: &mut SglangKvManager,
+     block_size: usize,
+ ) {
+-    let committed = request.current_sequence_len().saturating_sub(usize::from(
+-        kv_manager.cache().has_mamba_cache() && request.output_len() > 0,
+-    ));
+-    let tokens_to_cache = floor_to_block(committed, block_size);
++    let tokens_to_cache = if kv_manager.cache().has_mamba_cache() {
++        request
++            .mamba
++            .pending_checkpoint
++            .unwrap_or(0)
++            .max(request.cached_tokens())
++    } else {
++        floor_to_block(request.current_sequence_len(), block_size)
++    };
+     if !request.kv_lease.is_active() {
+         return;
+     }
+@@ -347,6 +355,16 @@
+             remaining.min(1)
+         };
+         for _ in 0..burst {
++            // A decode forward consumes the previous output token; the token
++            // sampled by this forward has not yet entered the recurrent state.
++            if kv_manager.cache().has_mamba_cache()
++                && req.output_len() > 0
++                && req
++                    .current_sequence_len()
++                    .is_multiple_of(config.mamba_track_interval)
++            {
++                req.mamba.pending_checkpoint = Some(req.current_sequence_len());
++            }
+             let crossing_page_boundary = req.current_sequence_len() + 1 > req.allocated_tokens;
+             kv_manager.extend_decode(&mut req.kv_lease, &mut reservation);
+             if crossing_page_boundary {
+--- a/lib/mocker/src/scheduler/sglang/prefill.rs
++++ b/lib/mocker/src/scheduler/sglang/prefill.rs
+@@ -78,6 +78,14 @@
+         };
+         let extend_input = req.current_sequence_len() - materialized_prefix;
+ 
++        if req.materialized_tokens == 0 && kv_manager.cache().has_mamba_cache() {
++            let matched = kv_manager
++                .cache()
++                .attention_prefix_match_len(req.sequence_tokens());
++            let branch = matched / config.mamba_cache_chunk_size * config.mamba_cache_chunk_size;
++            req.mamba.branching_tokens = (branch > materialized_prefix).then_some(branch);
++        }
++
+         let chunk_tokens = if extend_input <= config.chunked_prefill_size {
+             extend_input
+         } else {
+@@ -143,6 +151,20 @@
+         };
+         let tokens_computed = chunk_end.saturating_sub(prefix_len);
+ 
++        if kv_manager.cache().has_mamba_cache() && tokens_computed >= config.mamba_cache_chunk_size
++        {
++            let mut tracked = prefix_len
++                + tokens_computed / config.mamba_cache_chunk_size * config.mamba_cache_chunk_size;
++            if let Some(branch) = req.mamba.branching_tokens
++                && branch > prefix_len
++                && branch < chunk_end
++                && (branch - prefix_len).is_multiple_of(config.mamba_cache_chunk_size)
++            {
++                tracked = branch;
++            }
++            req.mamba.pending_checkpoint = Some(tracked);
++        }
++
+         req.kv_lease = lease;
+         req.materialized_tokens = chunk_end;
+         req.allocated_tokens = ceil_to_block(chunk_end, config.block_size);
+--- a/lib/mocker/src/scheduler/sglang/request.rs
++++ b/lib/mocker/src/scheduler/sglang/request.rs
+@@ -8,6 +8,12 @@
+ 
+ use crate::common::protocols::DirectRequest;
+ use crate::kv_manager::sglang_backend::ActiveKvLease;
++
++#[derive(Debug, Default)]
++pub(super) struct MambaRequestState {
++    pub(super) branching_tokens: Option<usize>,
++    pub(super) pending_checkpoint: Option<usize>,
++}
+ 
+ #[derive(Debug)]
+ pub(super) struct SglangRequest {
+@@ -19,6 +25,7 @@
+     pub(super) kv_lease: ActiveKvLease,
+     pub(super) materialized_tokens: usize,
+     pub(super) allocated_tokens: usize,
++    pub(super) mamba: MambaRequestState,
+ }
+ 
+ impl SglangRequest {
+@@ -176,6 +183,7 @@
+         debug_assert!(!self.kv_lease.is_active());
+         self.materialized_tokens = 0;
+         self.allocated_tokens = 0;
++        self.mamba = MambaRequestState::default();
+     }
+ }
+ 
+@@ -196,6 +204,7 @@
+             kv_lease: ActiveKvLease::default(),
+             materialized_tokens: 0,
+             allocated_tokens: 0,
++            mamba: MambaRequestState::default(),
+         }
+     }
+ }
+--- a/lib/mocker/src/scheduler/sglang/tests.rs
++++ b/lib/mocker/src/scheduler/sglang/tests.rs
+@@ -49,6 +49,8 @@
+         .sglang(Some(SglangArgs {
+             page_size: Some(block_size),
+             chunked_prefill_size: Some(chunked_prefill_size),
++            mamba_cache_chunk_size: Some(block_size),
++            mamba_track_interval: Some(block_size),
+             ..Default::default()
+         }))
+         .build()
+@@ -246,6 +248,59 @@
+     }
+ }
+ 
++#[test]
++fn hybrid_prefill_tracks_a_recomputed_branch_point() {
++    let mut args = test_args(256, 64, 256);
++    let sg = args.sglang.as_mut().unwrap();
++    sg.enable_mixed_chunk = Some(false);
++    sg.mamba_state_capacity = Some(64);
++    let mut core = SglangCore::new(args);
++    let original: Vec<u32> = (0..1024).collect();
++    core.receive(direct_request(original.clone(), 1));
++    let mut now = 0.0;
++    while !core.is_empty() {
++        now = core.execute_pass_internal(None, now).end_ms;
++    }
++    let mut branch = original.clone();
++    branch[600] = 5000;
++    core.receive(direct_request(branch, 1));
++    while !core.is_empty() {
++        now = core.execute_pass_internal(None, now).end_ms;
++    }
++    // SGLang tracks the page-aligned branch inside the recomputed extend,
++    // rather than only its end. A later sibling can reuse that checkpoint.
++    assert_eq!(
++        core.kv_manager.cache().prefix_match_len(&original[..600]),
++        576
++    );
++}
++
++#[rstest]
++#[case(100, 320)]
++#[case(200, 512)]
++fn hybrid_completion_uses_the_last_tracked_decode_state(
++    #[case] outputs: u32,
++    #[case] cached: usize,
++) {
++    let mut args = test_args(128, 64, 256);
++    let sg = args.sglang.as_mut().unwrap();
++    sg.enable_mixed_chunk = Some(false);
++    sg.mamba_state_capacity = Some(64);
++    sg.mamba_track_interval = Some(256);
++    let mut core = SglangCore::new(args);
++    let mut request = direct_request((0..320).collect(), outputs as usize);
++    request.output_token_ids = Some((2000..2000 + outputs).collect());
++    core.receive(request);
++    let mut now = 0.0;
++    while !core.is_empty() {
++        now = core.execute_pass_internal(None, now).end_ms;
++    }
++    // Default SGLang decode tracking is every 256 tokens. Retain the prefill
++    // checkpoint until a decode forward actually reaches the 512 boundary.
++    let full: Vec<u32> = (0..320).chain(2000..2000 + outputs).collect();
++    assert_eq!(core.kv_manager.cache().prefix_match_len(&full), cached);
++}
++
+ fn make_decoded_request(
+     kv_manager: &mut SglangKvManager,
+     config: &SglangConfig,
+@@ -263,6 +318,7 @@
+         kv_lease: alloc.lease,
+         materialized_tokens: prompt_len,
+         allocated_tokens: ceil_to_block(prompt_len, config.block_size),
++        mamba: Default::default(),
+     }];
+     let result = simulate_decode_step(&mut running, kv_manager, config, 0.0, false);
+     assert_eq!(result.output_signals.len(), 1);
+@@ -311,6 +367,7 @@
+             kv_lease: zero_alloc.lease,
+             materialized_tokens: 4,
+             allocated_tokens: 4,
++            mamba: Default::default(),
+         },
+         SglangRequest {
+             uuid: normal_uuid,
+@@ -321,6 +378,7 @@
+             kv_lease: normal_alloc.lease,
+             materialized_tokens: 4,
+             allocated_tokens: 4,
++            mamba: Default::default(),
+         },
+     ];
+ 
+@@ -400,6 +458,7 @@
+         materialized_tokens: 0,
+         kv_lease: ActiveKvLease::default(),
+         allocated_tokens: 0,
++        mamba: Default::default(),
+     }]);
+     let req = get_new_batch_prefill(&mut waiting, &mut kv_manager, &config, 0.7, &[])
+         .can_run
+@@ -423,6 +482,7 @@
+         kv_lease: blocker_alloc.lease,
+         materialized_tokens: 3,
+         allocated_tokens: 4,
++        mamba: Default::default(),
+     };
+     buffer.drain();
+ 
+@@ -1228,6 +1288,7 @@
+                 materialized_tokens: 0,
+                 kv_lease: ActiveKvLease::default(),
+                 allocated_tokens: 0,
++                mamba: Default::default(),
+             },
+             SglangRequest {
+                 uuid: match_uuid,
+@@ -1238,6 +1299,7 @@
+                 materialized_tokens: 0,
+                 kv_lease: ActiveKvLease::default(),
+                 allocated_tokens: 0,
++                mamba: Default::default(),
+             },
+         ]);
+ 
+@@ -1271,6 +1333,7 @@
+                 materialized_tokens: 0,
+                 kv_lease: ActiveKvLease::default(),
+                 allocated_tokens: 0,
++                mamba: Default::default(),
+             });
+         }
+         let unique_uuid = Uuid::new_v4();
+@@ -1283,6 +1346,7 @@
+             materialized_tokens: 0,
+             kv_lease: ActiveKvLease::default(),
+             allocated_tokens: 0,
++            mamba: Default::default(),
+         });
+ 
+         apply_schedule_policy(&mut waiting, &kv_manager, &config);
+@@ -1349,6 +1413,7 @@
+             materialized_tokens: 0,
+             kv_lease: ActiveKvLease::default(),
+             allocated_tokens: 0,
++            mamba: Default::default(),
+         }]);
+ 
+         let admit = get_new_batch_prefill(&mut waiting, &mut kv_manager, &config, 0.7, &[]);
+@@ -1379,6 +1444,7 @@
+             materialized_tokens: 0,
+             kv_lease: ActiveKvLease::default(),
+             allocated_tokens: 0,
++            mamba: Default::default(),
+         }]);
+ 
+         let admit = get_new_batch_prefill(&mut waiting, &mut kv_manager, &config, 0.7, &[]);
+@@ -1412,6 +1478,7 @@
+                 materialized_tokens: 0,
+                 kv_lease: ActiveKvLease::default(),
+                 allocated_tokens: 0,
++                mamba: Default::default(),
+             },
+             SglangRequest {
+                 uuid: second_uuid,
+@@ -1422,6 +1489,7 @@
+                 materialized_tokens: 0,
+                 kv_lease: ActiveKvLease::default(),
+                 allocated_tokens: 0,
++                mamba: Default::default(),
+             },
+         ]);
+ 
+@@ -1456,6 +1524,7 @@
+             kv_lease: alloc.lease,
+             materialized_tokens: 6,
+             allocated_tokens: 8,
++            mamba: Default::default(),
+         }];
+ 
+         let first = simulate_decode_step(&mut running, &mut kv_manager, &config, 0.0, false);
+@@ -1500,6 +1569,7 @@
+             kv_lease: base_alloc.lease,
+             materialized_tokens: 4,
+             allocated_tokens: 4,
++            mamba: Default::default(),
+         }];
+ 
+         let mut fast_kv_manager = SglangKvManager::new(64, 4, KvEventPublishers::default(), 0);
+@@ -1513,6 +1583,7 @@
+             kv_lease: fast_alloc.lease,
+             materialized_tokens: 4,
+             allocated_tokens: 4,
++            mamba: Default::default(),
+         }];
+ 
+         let base = simulate_decode_step(
+@@ -1562,6 +1633,7 @@
+                 kv_lease: ActiveKvLease::from_parts(first, 4, kv_manager.cache().root()),
+                 materialized_tokens: 8,
+                 allocated_tokens: 8,
++                mamba: Default::default(),
+             },
+             SglangRequest {
+                 uuid: Uuid::new_v4(),
+@@ -1572,6 +1644,7 @@
+                 kv_lease: ActiveKvLease::from_parts(second, 4, kv_manager.cache().root()),
+                 materialized_tokens: 5,
+                 allocated_tokens: 8,
++                mamba: Default::default(),
+             },
+         ];
+ 
+@@ -1603,6 +1676,7 @@
+             kv_lease: alloc.lease,
+             materialized_tokens: 4,
+             allocated_tokens: 4,
++            mamba: Default::default(),
+         }];
+ 
+         simulate_decode_step(&mut running, &mut kv_manager, &config, 0.0, false);
+@@ -1899,6 +1973,7 @@
+             materialized_tokens: 0,
+             kv_lease: ActiveKvLease::default(),
+             allocated_tokens: 0,
++            mamba: Default::default(),
+         };
+         let first_output = expected_request.next_output_token();
+         expected_request.append_output_token(first_output);
+@@ -2011,6 +2086,7 @@
+             materialized_tokens: 0,
+             kv_lease: ActiveKvLease::default(),
+             allocated_tokens: 0,
++            mamba: Default::default(),
+         }]);
+ 
+         let chunk1 = get_new_batch_prefill(&mut waiting, &mut kv_manager, &config, 0.7, &[]);

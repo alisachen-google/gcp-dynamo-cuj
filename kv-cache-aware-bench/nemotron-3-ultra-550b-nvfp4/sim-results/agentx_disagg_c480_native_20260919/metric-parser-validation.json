@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "scope": "Collector validation against existing C256 native export; not a C480 result",
+  "source": "/tmp/n3u-path1-topology-runs/topo64-v11-p8d8-kv-c256/artifacts/profile_export.jsonl",
+  "eligible_records": 17289,
+  "excluded": {
+    "outside_profiling": 244,
+    "error_or_cancelled_or_overflow": 11
+  },
+  "e2e_normalized_interactivity_p90": 58.012243314554844,
+  "numpy_check": 58.012243314554844
+}

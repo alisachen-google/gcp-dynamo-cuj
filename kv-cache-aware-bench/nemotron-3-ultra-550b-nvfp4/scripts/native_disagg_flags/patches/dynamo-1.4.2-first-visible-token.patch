@@ -1,0 +1,101 @@
+--- a/lib/mocker/src/common/protocols.rs
++++ b/lib/mocker/src/common/protocols.rs
+@@ -636,6 +636,7 @@
+     bandwidth_g2_to_g4_gbps: OptionalConfigValue<f64>,
+     bandwidth_g4_to_g2_gbps: OptionalConfigValue<f64>,
+     reasoning: OptionalConfigValue<ReasoningConfig>,
++    first_output_token_id: OptionalConfigValue<u32>,
+     response_replay_trace_path: OptionalConfigValue<PathBuf>,
+     zmq_kv_events_port: OptionalConfigValue<u16>,
+     zmq_replay_port: OptionalConfigValue<u16>,
+@@ -955,6 +956,13 @@
+     /// When set, the mocker wraps output in thinking boundary tokens.
+     #[builder(default = "None")]
+     pub reasoning: Option<ReasoningConfig>,
++
++    /// Optional tokenizer-valid, printable first token for synthetic responses.
++    /// A one-token response sampled from an arbitrary token-ID range can decode
++    /// to an empty string (for example, an incomplete UTF-8 byte sequence).
++    /// Response replay and explicit reasoning boundaries retain precedence.
++    #[builder(default = "None")]
++    pub first_output_token_id: Option<u32>,
+ 
+     /// Optional Mooncake trace with exact output token IDs keyed by
+     /// `output_replay_id` annotations. Direct replay paths carry the same token
+@@ -1313,6 +1321,9 @@
+         }
+         if let Some(reasoning) = compat.reasoning.into_nullable() {
+             builder = builder.reasoning(reasoning);
++        }
++        if let Some(first_output_token_id) = compat.first_output_token_id.into_nullable() {
++            builder = builder.first_output_token_id(first_output_token_id);
+         }
+         if let Some(response_replay_trace_path) = compat.response_replay_trace_path.into_nullable()
+         {
+--- a/lib/llm/src/mocker.rs
++++ b/lib/llm/src/mocker.rs
+@@ -970,6 +970,7 @@
+         let active_requests = self.active_requests.clone();
+         let async_context = ctx.context();
+         let reasoning = self.engine_args.reasoning.clone();
++        let first_output_token_id = self.engine_args.first_output_token_id;
+         let handoff_session_timeout =
+             Duration::from_millis(self.engine_args.handoff_session_timeout_ms);
+         let mut native_timing = native_timing;
+@@ -1051,6 +1052,8 @@
+                             reasoning.as_ref().unwrap().start_thinking_token_id
+                         } else if think_len > 0 && token_count == think_len - 1 {
+                             reasoning.as_ref().unwrap().end_thinking_token_id
++                        } else if token_count == 0 {
++                            first_output_token_id.unwrap_or_else(generate_random_token)
+                         } else {
+                             generate_random_token()
+                         };
+@@ -1321,6 +1324,47 @@
+     }
+ 
+     #[tokio::test]
++    async fn configured_first_token_preserves_one_token_request_and_finish() {
++        // No model weights or GPU: exercise the live output handler by injecting
++        // the scheduler's one-token completion signal. The caller chooses a token
++        // verified to decode visibly with its deployment tokenizer.
++        let args: MockEngineArgs = serde_json::from_value(serde_json::json!({
++            "engine_type": "sglang",
++            "first_output_token_id": 42
++        }))
++        .unwrap();
++        assert_eq!(args.first_output_token_id, Some(42));
++        let roundtrip: MockEngineArgs =
++            serde_json::from_value(serde_json::to_value(&args).unwrap()).unwrap();
++        assert_eq!(roundtrip.first_output_token_id, Some(42));
++        let engine = MockEngine::new(args);
++        let (request_tx, mut request_rx) = tokio::sync::mpsc::unbounded_channel();
++        engine.request_senders.set(vec![request_tx]).unwrap();
++        let mut stream = engine
++            .generate(SingleIn::new(decode_request(3, 1)))
++            .await
++            .unwrap();
++        let request = request_rx.recv().await.unwrap();
++        assert_eq!(request.max_output_tokens, 1);
++        let request_id = request.uuid.unwrap();
++        engine
++            .active_requests
++            .get(&request_id)
++            .unwrap()
++            .send(OutputSignal {
++                uuid: request_id,
++                token_id: Some(123456789),
++                completed: true,
++                rejected: false,
++                handoff_delay_ms: None,
++            })
++            .unwrap();
++        assert_eq!(stream.next().await.unwrap().token_ids, vec![42]);
++        assert_eq!(stream.next().await.unwrap(), LLMEngineOutput::length());
++        assert!(stream.next().await.is_none());
++    }
++
++    #[tokio::test]
+     async fn context_capped_completion_maps_to_length() {
+         let args = MockEngineArgs::builder()
+             .max_model_len(Some(4))

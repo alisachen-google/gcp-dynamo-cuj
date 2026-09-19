@@ -1,0 +1,169 @@
+--- a/lib/mocker/src/scheduler/sglang/prefill.rs
++++ b/lib/mocker/src/scheduler/sglang/prefill.rs
+@@ -73,6 +73,7 @@
+         // requests must recompute the last prompt token to obtain next-token
+         // logits; page alignment and hybrid checkpoint eligibility can require
+         // more than one token. Zero-output synthetic requests need no logits.
++        let is_chunk_continuation = req.materialized_tokens > 0;
+         let lookup_len = req
+             .current_sequence_len()
+             .saturating_sub(usize::from(req.remaining_output_tokens() > 0));
+@@ -97,16 +98,17 @@
+             req.mamba.branching_tokens = (branch > materialized_prefix).then_some(branch);
+         }
+ 
+-        let chunk_tokens = if extend_input <= config.chunked_prefill_size {
+-            extend_input
+-        } else {
+-            let chunk = (rem_chunk_tokens as usize / config.block_size) * config.block_size;
+-            if chunk == 0 {
+-                rejected.push_back(req);
+-                break;
+-            }
+-            chunk.min(extend_input)
+-        };
++        let chunk_tokens =
++            if ceil_to_block(extend_input, config.block_size) as f64 <= rem_chunk_tokens {
++                extend_input
++            } else {
++                let chunk = (rem_chunk_tokens as usize / config.block_size) * config.block_size;
++                if chunk == 0 {
++                    rejected.push_back(req);
++                    break;
++                }
++                chunk.min(extend_input)
++            };
+ 
+         let charged_input_tokens = ceil_to_block(chunk_tokens, config.block_size) as f64;
+         let output_reserve = if chunk_tokens < extend_input {
+@@ -200,9 +202,13 @@
+         rem_chunk_tokens -= charged_input_tokens;
+         can_run.push(req);
+ 
+-        // An available request slot lets SGLang examine the next candidate,
+-        // even after this request consumes the chunk-token budget. Its prefix
+-        // lookup can affect cache recency before the budget rejects it.
++        // add_one_req returns budget_state after a fresh admission, stopping
++        // the waiting-queue loop when the batch budget is exhausted. Existing
++        // chunk continuations are added before that loop, so the next waiting
++        // request still performs its prefix lookup before budget rejection.
++        if !is_chunk_continuation && (rem_chunk_tokens <= 0.0 || rem_input_tokens <= 0.0) {
++            break;
++        }
+     }
+ 
+     while let Some(req) = rejected.pop_back() {
+--- a/lib/mocker/src/scheduler/sglang/tests.rs
++++ b/lib/mocker/src/scheduler/sglang/tests.rs
+@@ -98,16 +98,21 @@
+ }
+ 
+ #[rstest]
+-#[case(5)]
+-#[case(7)]
+-fn prefill_budget_rejection_still_refreshes_the_examined_cached_prefix(#[case] cached_count: u32) {
++#[case(5, false)]
++#[case(7, false)]
++#[case(5, true)]
++#[case(7, true)]
++fn prefill_budget_only_examines_next_prefix_after_a_chunk_continuation(
++    #[case] cached_count: u32,
++    #[case] continuation: bool,
++) {
+     let mut args = test_args(64, 4, 8);
+     args.sglang.as_mut().unwrap().mamba_state_capacity = Some(10);
+     let config = SglangConfig::from_args(&args);
+     let mut kv_manager = SglangKvManager::new(256, 4, KvEventPublishers::default(), 0);
+     kv_manager.cache_mut().enable_mamba_cache(10);
+-    // A is oldest, B is next. With seven checkpoints the cold prefill fills
+-    // the pool, so the speculative lookup's COW state must evict B.
++    // A is oldest, B is next. With seven checkpoints the active prefill fills
++    // the pool, so an examined cached prefix needs to evict a state for COW.
+     let cached: Vec<Vec<u32>> = (0..cached_count)
+         .map(|i| (i * 100..i * 100 + 8).collect())
+         .collect();
+@@ -117,29 +122,74 @@
+     }
+     let mut hot = cached[0].clone();
+     hot.extend(500..504);
+-    let mut waiting = VecDeque::from([
+-        SglangRequest::from(direct_request((1000..1016).collect(), 1)),
+-        SglangRequest::from(direct_request(hot, 1)),
+-    ]);
++    let mut waiting = VecDeque::from([SglangRequest::from(direct_request(
++        (1000..1024).collect(),
++        1,
++    ))]);
++    if continuation {
++        let mut first = get_new_batch_prefill(&mut waiting, &mut kv_manager, &config, 0.7, &[]);
++        assert_eq!(first.can_run.len(), 1);
++        waiting.push_front(first.can_run.remove(0));
++    }
++    waiting.push_back(SglangRequest::from(direct_request(hot, 1)));
+ 
+     let batch = get_new_batch_prefill(&mut waiting, &mut kv_manager, &config, 0.7, &[]);
+     assert_eq!(batch.can_run.len(), 1);
+     assert_eq!(batch.prefill_fpm[0].tokens_computed, 8);
+     assert_eq!(waiting.len(), 1);
+     if cached_count == 7 {
+-        assert_eq!(kv_manager.cache().prefix_match_len(&cached[1]), 0);
+-    }
+-    // SGLang calls init_next_round_input before PrefillAdder rejects A for
+-    // exhausted chunk tokens. That lookup consumes A's state and refreshes it.
++        assert_eq!(
++            kv_manager.cache().prefix_match_len(&cached[1]),
++            if continuation { 0 } else { 8 },
++        );
++    }
++    // add_chunked_req runs before the waiting-queue loop, so a continuation
++    // permits the next lookup before rejection. A new request returns OTHER
++    // from budget_state and stops the loop without looking at A.
+     assert!(kv_manager.cache_mut().reserve_mamba_states(3).0);
+-    assert_eq!(kv_manager.cache().prefix_match_len(&cached[0]), 8);
+-    assert_eq!(kv_manager.cache().prefix_match_len(&cached[1]), 0);
++    assert_eq!(
++        kv_manager.cache().prefix_match_len(&cached[0]),
++        if continuation { 8 } else { 0 },
++    );
++    assert_eq!(
++        kv_manager.cache().prefix_match_len(&cached[1]),
++        if continuation || cached_count == 7 {
++            0
++        } else {
++            8
++        },
++    );
+     kv_manager.cache_mut().release_mamba_states(3);
+     for mut req in batch.can_run {
+         kv_manager.abort(std::mem::take(&mut req.kv_lease));
+     }
+     assert!(kv_manager.cache_mut().reserve_mamba_states(10).0);
+     kv_manager.cache_mut().release_mamba_states(10);
++}
++
++#[rstest]
++#[case(false)]
++#[case(true)]
++fn prefill_chunks_a_new_request_to_the_remaining_batch_budget(#[case] hybrid: bool) {
++    let mut args = test_args(64, 4, 12);
++    let mut kv_manager = SglangKvManager::new(256, 4, KvEventPublishers::default(), 0);
++    if hybrid {
++        args.sglang.as_mut().unwrap().mamba_state_capacity = Some(20);
++        kv_manager.cache_mut().enable_mamba_cache(20);
++    }
++    let config = SglangConfig::from_args(&args);
++    let mut waiting = VecDeque::from([
++        SglangRequest::from(direct_request((0..5).collect(), 1)),
++        SglangRequest::from(direct_request((100..108).collect(), 1)),
++    ]);
++
++    let batch = get_new_batch_prefill(&mut waiting, &mut kv_manager, &config, 0.7, &[]);
++
++    assert_eq!(batch.can_run.len(), 2);
++    assert_eq!(batch.prefill_fpm[0].tokens_computed, 5);
++    assert_eq!(batch.prefill_fpm[1].tokens_computed, 4);
++    assert_eq!(batch.can_run[1].materialized_tokens, 4);
++    assert!(waiting.is_empty());
+ }
+ 
+ #[rstest]

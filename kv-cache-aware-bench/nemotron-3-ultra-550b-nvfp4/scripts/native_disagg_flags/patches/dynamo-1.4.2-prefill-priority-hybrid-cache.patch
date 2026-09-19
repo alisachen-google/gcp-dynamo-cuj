@@ -1,0 +1,878 @@
+--- a/lib/bindings/python/rust/llm/replay.rs
++++ b/lib/bindings/python/rust/llm/replay.rs
+@@ -119,7 +119,8 @@
+ #[pymethods]
+ impl SglangArgs {
+     #[new]
+-    #[pyo3(signature = (schedule_policy=None, page_size=None, max_prefill_tokens=None, chunked_prefill_size=None, clip_max_new_tokens=None, schedule_conservativeness=None))]
++    #[pyo3(signature = (schedule_policy=None, page_size=None, max_prefill_tokens=None, chunked_prefill_size=None, clip_max_new_tokens=None, schedule_conservativeness=None, enable_mixed_chunk=None, mamba_state_capacity=None))]
++    #[allow(clippy::too_many_arguments)]
+     fn new(
+         schedule_policy: Option<String>,
+         page_size: Option<usize>,
+@@ -127,6 +128,8 @@
+         chunked_prefill_size: Option<usize>,
+         clip_max_new_tokens: Option<usize>,
+         schedule_conservativeness: Option<f64>,
++        enable_mixed_chunk: Option<bool>,
++        mamba_state_capacity: Option<usize>,
+     ) -> PyResult<Self> {
+         let inner = RsSglangArgs {
+             schedule_policy,
+@@ -135,6 +138,8 @@
+             chunked_prefill_size,
+             clip_max_new_tokens,
+             schedule_conservativeness,
++            enable_mixed_chunk,
++            mamba_state_capacity,
+         };
+         Ok(Self { inner })
+     }
+--- a/lib/bindings/python/src/dynamo/_core.pyi
++++ b/lib/bindings/python/src/dynamo/_core.pyi
+@@ -2046,6 +2046,8 @@
+         chunked_prefill_size: Optional[int] = None,
+         clip_max_new_tokens: Optional[int] = None,
+         schedule_conservativeness: Optional[float] = None,
++        enable_mixed_chunk: Optional[bool] = None,
++        mamba_state_capacity: Optional[int] = None,
+     ) -> None:
+         ...
+ 
+--- a/lib/mocker/src/cache/radix_cache.rs
++++ b/lib/mocker/src/cache/radix_cache.rs
+@@ -198,6 +198,20 @@
+     pub evictable_size: usize,
+     /// Total token count in protected (locked) nodes.
+     pub protected_size: usize,
++    /// Hybrid recurrent-state checkpoints are indivisible. A matching KV path
++    /// can be reused only at a node whose corresponding state is still resident.
++    mamba: Option<MambaCache>,
++}
++
++struct MambaState {
++    last_access: Instant,
++    locks: usize,
++}
++
++struct MambaCache {
++    capacity: usize,
++    active_states: usize,
++    states: FxHashMap<NodeId, MambaState>,
+ }
+ 
+ impl RadixCache {
+@@ -220,7 +234,88 @@
+             evictable_leaves: FxHashSet::default(),
+             evictable_size: 0,
+             protected_size: 0,
+-        }
++            mamba: None,
++        }
++    }
++
++    pub(crate) fn enable_mamba_cache(&mut self, capacity: usize) {
++        assert!(
++            capacity >= 4,
++            "Mamba cache must fit active buffers and a checkpoint"
++        );
++        assert_eq!(self.nodes.len(), 1, "configure Mamba cache before using it");
++        self.mamba = Some(MambaCache {
++            capacity,
++            active_states: 0,
++            states: FxHashMap::default(),
++        });
++    }
++
++    pub(crate) fn has_mamba_cache(&self) -> bool {
++        self.mamba.is_some()
++    }
++
++    pub(crate) fn reserve_mamba_states(&mut self, count: usize) -> (bool, Vec<KvPageId>) {
++        let (fits, removed) = self.make_mamba_room(count);
++        if fits && let Some(mamba) = self.mamba.as_mut() {
++            mamba.active_states += count;
++        }
++        (fits, removed)
++    }
++
++    pub(crate) fn release_mamba_states(&mut self, count: usize) {
++        if let Some(mamba) = self.mamba.as_mut() {
++            mamba.active_states = mamba
++                .active_states
++                .checked_sub(count)
++                .expect("Mamba active-state reservation released twice");
++        }
++    }
++
++    pub(crate) fn record_mamba_checkpoint(&mut self, node: NodeId) -> Vec<KvPageId> {
++        if node == self.root || self.mamba.is_none() {
++            return Vec::new();
++        }
++        if let Some(state) = self.mamba.as_mut().unwrap().states.get_mut(&node) {
++            state.last_access = Instant::now();
++            return Vec::new();
++        }
++        let (fits, removed) = self.make_mamba_room(1);
++        assert!(fits, "Mamba checkpoint cannot fit after admission");
++        self.mamba.as_mut().unwrap().states.insert(
++            node,
++            MambaState {
++                last_access: Instant::now(),
++                locks: 0,
++            },
++        );
++        removed
++    }
++
++    fn make_mamba_room(&mut self, additional: usize) -> (bool, Vec<KvPageId>) {
++        let mut removed = Vec::new();
++        while let Some(mamba) = self.mamba.as_ref() {
++            if mamba.states.len() + mamba.active_states + additional <= mamba.capacity {
++                break;
++            }
++            let victim = mamba
++                .states
++                .iter()
++                .filter(|(id, state)| {
++                    state.locks == 0 && (!self.is_leaf(**id) || self.nodes[**id].lock_ref == 0)
++                })
++                .min_by_key(|(_, state)| state.last_access)
++                .map(|(id, _)| *id);
++            let Some(victim) = victim else {
++                return (false, removed);
++            };
++            if self.is_leaf(victim) {
++                self.remove_leaf_and_tombstones(victim, &mut removed);
++            } else {
++                self.mamba.as_mut().unwrap().states.remove(&victim);
++            }
++        }
++        (true, removed)
+     }
+ 
+     pub fn root(&self) -> NodeId {
+@@ -271,6 +366,7 @@
+ 
+         let mut current = self.root;
+         let mut matched_pages: usize = 0;
++        let mut reusable = (0, self.root);
+ 
+         while matched_pages < page_keys.len() {
+             let child_id = match self.nodes[current]
+@@ -301,10 +397,23 @@
+ 
+             matched_pages += common_len;
+             current = child_id;
+-            self.nodes[current].last_access_time = now;
+-        }
+-
+-        (matched_pages * self.page_size, current)
++            if let Some(mamba) = &self.mamba {
++                if mamba.states.contains_key(&current) {
++                    reusable = (matched_pages * self.page_size, current);
++                }
++            } else {
++                self.nodes[current].last_access_time = now;
++            }
++        }
++        if self.mamba.is_some() {
++            self.touch_path(reusable.1, now);
++            if let Some(state) = self.mamba.as_mut().unwrap().states.get_mut(&reusable.1) {
++                state.last_access = now;
++            }
++            reusable
++        } else {
++            (matched_pages * self.page_size, current)
++        }
+     }
+ 
+     /// Read-only prefix match length (does not mutate timestamps or split nodes).
+@@ -313,6 +422,7 @@
+         let page_keys = self.page_hashes(key);
+         let mut current = self.root;
+         let mut matched_pages: usize = 0;
++        let mut reusable_pages = 0;
+ 
+         while matched_pages < page_keys.len() {
+             let child_id = match self.nodes[current]
+@@ -334,9 +444,19 @@
+ 
+             matched_pages += common_len;
+             current = child_id;
+-        }
+-
+-        matched_pages * self.page_size
++            if self
++                .mamba
++                .as_ref()
++                .is_some_and(|mamba| mamba.states.contains_key(&current))
++            {
++                reusable_pages = matched_pages;
++            }
++        }
++        if self.mamba.is_some() {
++            reusable_pages * self.page_size
++        } else {
++            matched_pages * self.page_size
++        }
+     }
+ 
+     /// Insert a token sequence into the tree. Key is page-aligned before insertion.
+@@ -399,7 +519,8 @@
+         let mut key_offset = 0;
+ 
+         while key_offset < page_keys.len() {
+-            let can_extend_leaf = current != self.root
++            let can_extend_leaf = self.mamba.is_none()
++                && current != self.root
+                 && self.nodes[current].children.is_empty()
+                 && (self.nodes[current].lock_ref == 0
+                     || (allow_locked_tail_extension
+@@ -569,6 +690,9 @@
+     }
+ 
+     pub fn inc_lock_ref(&mut self, node_id: NodeId) {
++        if let Some(state) = self.mamba.as_mut().and_then(|m| m.states.get_mut(&node_id)) {
++            state.locks += 1;
++        }
+         let mut current = Some(node_id);
+         while let Some(id) = current {
+             if id == self.root {
+@@ -587,6 +711,12 @@
+     }
+ 
+     pub fn dec_lock_ref(&mut self, node_id: NodeId) {
++        if let Some(state) = self.mamba.as_mut().and_then(|m| m.states.get_mut(&node_id)) {
++            state.locks = state
++                .locks
++                .checked_sub(1)
++                .expect("Mamba checkpoint lock underflow");
++        }
+         let mut current = Some(node_id);
+         while let Some(id) = current {
+             if id == self.root {
+@@ -635,7 +765,7 @@
+ 
+             // A compressed leaf may span pages. Preserve its indexed prefix when
+             // only the newest suffix pages are needed to satisfy this eviction.
+-            if eviction_len < victim_tokens {
++            if self.mamba.is_none() && eviction_len < victim_tokens {
+                 let split_pos = victim_pages - eviction_pages;
+                 let (nodes, page_pool) = (&mut self.nodes, &mut self.page_pool);
+                 let victim_node = &mut nodes[victim_id];
+@@ -650,32 +780,42 @@
+                 continue;
+             }
+ 
+-            let victim_node = self
+-                .nodes
+-                .remove(victim_id)
+-                .expect("evictable leaf disappeared before removal");
+-            let tokens = victim_node.key.len() * self.page_size;
+-            let parent_id = victim_node.parent;
+-
+-            self.evictable_leaves.remove(&victim_id);
+-            self.evictable_size -= tokens;
+-            evicted += tokens;
+-
+-            evicted_indices.extend_from_slice(&victim_node.value);
+-            self.page_pool.free_pages(&victim_node.value);
+-
+-            if let Some(pid) = parent_id {
+-                self.nodes[pid].children.remove(&victim_node.key[0]);
+-
+-                if pid != self.root
+-                    && self.nodes[pid].children.is_empty()
+-                    && self.nodes[pid].lock_ref == 0
+-                {
+-                    self.evictable_leaves.insert(pid);
+-                }
+-            }
++            let before = evicted_indices.len();
++            self.remove_leaf_and_tombstones(victim_id, &mut evicted_indices);
++            evicted += (evicted_indices.len() - before) * self.page_size;
+         }
+         (evicted, evicted_indices)
++    }
++
++    fn remove_leaf_and_tombstones(&mut self, mut victim: NodeId, removed: &mut Vec<KvPageId>) {
++        loop {
++            assert!(victim != self.root && self.is_leaf(victim));
++            assert_eq!(self.nodes[victim].lock_ref, 0);
++            if let Some(mamba) = self.mamba.as_mut()
++                && let Some(state) = mamba.states.remove(&victim)
++            {
++                assert_eq!(state.locks, 0);
++            }
++            let node = self.nodes.remove(victim).expect("evicted leaf must exist");
++            self.evictable_leaves.remove(&victim);
++            self.evictable_size -= node.key.len() * self.page_size;
++            removed.extend_from_slice(&node.value);
++            self.page_pool.free_pages(&node.value);
++            let parent = node.parent.expect("non-root leaf must have a parent");
++            self.nodes[parent].children.remove(&node.key[0]);
++            if parent == self.root || !self.is_leaf(parent) || self.nodes[parent].lock_ref > 0 {
++                break;
++            }
++            self.evictable_leaves.insert(parent);
++            if self
++                .mamba
++                .as_ref()
++                .is_none_or(|m| m.states.contains_key(&parent))
++            {
++                break;
++            }
++            victim = parent;
++        }
+     }
+ 
+     pub fn available_tokens(&self) -> usize {
+@@ -690,6 +830,77 @@
+ #[cfg(test)]
+ mod tests {
+     use super::*;
++
++    #[test]
++    fn mamba_branch_match_requires_a_resident_checkpoint() {
++        let mut cache = RadixCache::new(128, 4);
++        cache.enable_mamba_cache(8);
++        let tokens: Vec<u32> = (0..16).collect();
++        let indices = cache.page_pool.allocate(16).unwrap();
++        let end = cache.insert(&tokens, &indices);
++        cache.record_mamba_checkpoint(end);
++        assert_eq!(cache.prefix_match_len(&tokens[..8]), 0);
++        assert_eq!(
++            cache.match_prefix(&tokens[..8]).0,
++            0,
++            "splitting an attention edge cannot synthesize a recurrent state"
++        );
++        assert_eq!(cache.match_prefix(&tokens).0, 16);
++        let middle = cache.insert(&tokens[..8], &indices[..8]);
++        cache.record_mamba_checkpoint(middle);
++        assert_eq!(cache.prefix_match_len(&tokens[..12]), 8);
++        assert_eq!(cache.match_prefix(&tokens[..12]).0, 8);
++        assert_eq!(cache.match_prefix(&tokens).0, 16);
++    }
++
++    #[test]
++    fn mamba_evicts_ancestor_state_without_invalidating_descendant_checkpoint() {
++        let mut cache = RadixCache::new(128, 4);
++        cache.enable_mamba_cache(4);
++        let tokens: Vec<u32> = (0..16).collect();
++        let indices = cache.page_pool.allocate(16).unwrap();
++        for end in [4, 8, 12, 16] {
++            let node = cache.insert(&tokens[..end], &indices[..end]);
++            cache.record_mamba_checkpoint(node);
++        }
++        let (fits, removed) = cache.reserve_mamba_states(3);
++        assert!(fits);
++        assert!(removed.is_empty());
++        assert_eq!(cache.available_tokens(), 112);
++        assert_eq!(cache.prefix_match_len(&tokens[..12]), 0);
++        assert_eq!(cache.prefix_match_len(&tokens), 16);
++        let end = cache.match_prefix(&tokens).1;
++        cache.inc_lock_ref(end);
++        assert!(
++            !cache.reserve_mamba_states(1).0,
++            "the consumed checkpoint is protected"
++        );
++        cache.dec_lock_ref(end);
++        let (fits, removed) = cache.reserve_mamba_states(1);
++        assert!(fits);
++        assert_eq!(
++            removed.len(),
++            4,
++            "leaf eviction also removes tombstone ancestors"
++        );
++        assert_eq!(cache.available_tokens(), 128);
++        assert_eq!(cache.num_nodes(), 1);
++        cache.release_mamba_states(4);
++    }
++
++    #[test]
++    fn hybrid_kv_eviction_drops_whole_checkpoint_leaf() {
++        let mut cache = RadixCache::new(128, 4);
++        cache.enable_mamba_cache(8);
++        let tokens: Vec<u32> = (0..16).collect();
++        let indices = cache.page_pool.allocate(16).unwrap();
++        let node = cache.insert(&tokens, &indices);
++        cache.record_mamba_checkpoint(node);
++        let (tokens, removed) = cache.evict(4);
++        assert_eq!(tokens, 16);
++        assert_eq!(removed.len(), 4);
++        assert!(cache.mamba.as_ref().unwrap().states.is_empty());
++    }
+ 
+     #[test]
+     fn test_page_pool_allocate_extend_and_free() {
+--- a/lib/mocker/src/common/protocols.rs
++++ b/lib/mocker/src/common/protocols.rs
+@@ -512,6 +512,14 @@
+ /// following the same pattern as [`ReasoningConfig`].
+ #[derive(Debug, Clone, Serialize, Deserialize, Validate, Default)]
+ pub struct SglangArgs {
++    /// Optional hybrid Mamba state-pool capacity (active plus cached states).
++    /// Uses page-aligned extra-buffer checkpoints; absent keeps attention-only caching.
++    #[validate(range(min = 5))]
++    pub mamba_state_capacity: Option<usize>,
++    /// False gives prefill priority and emits its first token without a decode
++    /// pass, as SGLang does with enable_mixed_chunk=false. None preserves the
++    /// existing mocker's interleaved prefill/decode behavior.
++    pub enable_mixed_chunk: Option<bool>,
+     /// Scheduling policy: "fifo"/"fcfs" or "lpm". Default: "fifo".
+     pub schedule_policy: Option<String>,
+     /// Radix cache page size in tokens. Default: 1.
+--- a/lib/mocker/src/kv_manager/sglang_backend.rs
++++ b/lib/mocker/src/kv_manager/sglang_backend.rs
+@@ -182,8 +182,18 @@
+         // eviction can remove the prefix used to size this allocation, and a
+         // second match would require more pages than were freed.
+         self.cache.inc_lock_ref(last_node);
++        // SGLang extra_buffer holds a live state and two ping-pong checkpoints
++        // for each admitted request. Cache checkpoints share the same pool.
++        let mamba_states = if self.cache.has_mamba_cache() { 3 } else { 0 };
++        let (fits, removed) = self.cache.reserve_mamba_states(mamba_states);
++        self.publish_removed_pages(&removed);
++        if !fits {
++            self.cache.dec_lock_ref(last_node);
++            return None;
++        }
+         let reservable = self.cache.available_tokens() + self.cache.evictable_size;
+         if required_tokens > reservable {
++            self.cache.release_mamba_states(mamba_states);
+             self.cache.dec_lock_ref(last_node);
+             return None;
+         }
+@@ -200,6 +210,7 @@
+             .page_pool
+             .allocate_indices_into(new_tokens, &mut kv_indices)
+         {
++            self.cache.release_mamba_states(mamba_states);
+             self.cache.dec_lock_ref(last_node);
+             return None;
+         }
+@@ -292,6 +303,7 @@
+             debug_assert_eq!(lease.cached_tokens, 0);
+             return;
+         };
++        self.release_active_mamba_states();
+         let complete_len =
+             token_ids.len().min(lease.len()) / self.cache.page_size() * self.cache.page_size();
+         assert!(
+@@ -338,6 +350,8 @@
+         let new_last_node =
+             self.cache
+                 .insert_from_node(last_node, first_new_token, token_ids, kv_indices);
++        let removed = self.cache.record_mamba_checkpoint(new_last_node);
++        self.publish_removed_pages(&removed);
+         let complete_len =
+             token_ids.len().min(kv_indices.len()) / self.cache.page_size() * self.cache.page_size();
+         self.release_unretained_finished_indices(
+@@ -378,6 +392,8 @@
+         let new_last_node =
+             self.cache
+                 .insert_from_node(last_node, first_new_token, token_ids, kv_indices);
++        let removed = self.cache.record_mamba_checkpoint(new_last_node);
++        self.publish_removed_pages(&removed);
+ 
+         // An interleaved insert can retain different physical pages for the same prefix.
+         // Move the active request to canonical pages before releasing its duplicates.
+@@ -425,6 +441,10 @@
+         &mut self,
+         token_ids: &[u32],
+     ) -> Option<SglangDestinationReservation> {
++        assert!(
++            !self.cache.has_mamba_cache(),
++            "hybrid destination caching is not modeled"
++        );
+         let (prefix_len, last_node) = self.cache.match_prefix(token_ids);
+         let mut prefix_indices = self.collect_path_indices(last_node);
+         prefix_indices.truncate(prefix_len);
+@@ -539,6 +559,7 @@
+             debug_assert_eq!(lease.cached_tokens, 0);
+             return false;
+         };
++        self.release_active_mamba_states();
+         assert!(
+             lease.cached_tokens <= lease.len(),
+             "invalid SGLang KV lease release: cached_tokens={}, owned_tokens={}",
+@@ -550,6 +571,12 @@
+         self.free_indices(owned_suffix);
+         self.cache.dec_lock_ref(last_node);
+         capacity_improved
++    }
++
++    fn release_active_mamba_states(&mut self) {
++        if self.cache.has_mamba_cache() {
++            self.cache.release_mamba_states(3);
++        }
+     }
+ 
+     /// Collect token indices from the matched prefix path by walking root→last_node.
+--- a/lib/mocker/src/scheduler/sglang/config.rs
++++ b/lib/mocker/src/scheduler/sglang/config.rs
+@@ -24,6 +24,7 @@
+ }
+ 
+ pub(super) struct SglangConfig {
++    pub(super) enable_mixed_chunk: bool,
+     pub(super) schedule_policy: SchedulePolicy,
+     pub(super) max_prefill_tokens: usize,
+     pub(super) max_running_requests: usize,
+@@ -69,8 +70,15 @@
+         };
+ 
+         Self {
++            enable_mixed_chunk: sglang.and_then(|s| s.enable_mixed_chunk).unwrap_or(true),
+             schedule_policy,
+-            max_running_requests: args.max_num_seqs.unwrap_or(usize::MAX),
++            // SGLang reserves a safety ratio of three plus two extra-buffer
++            // slots per concurrent request; actual live allocation is three.
++            max_running_requests: args.max_num_seqs.unwrap_or(usize::MAX).min(
++                sglang
++                    .and_then(|s| s.mamba_state_capacity)
++                    .map_or(usize::MAX, |capacity| capacity / 5),
++            ),
+             max_prefill_tokens: sglang
+                 .and_then(|s| s.max_prefill_tokens)
+                 .unwrap_or(DEFAULT_MAX_PREFILL_TOKENS),
+--- a/lib/mocker/src/scheduler/sglang/core.rs
++++ b/lib/mocker/src/scheduler/sglang/core.rs
+@@ -18,6 +18,7 @@
+ use super::config::SglangConfig;
+ use super::decode::{
+     cache_materialized_prefix, cleanup_completed_request, simulate_decode_step_with_sampler,
++    simulate_prefill_outputs,
+ };
+ use super::policy::apply_schedule_policy;
+ use super::prefill::get_new_batch_prefill;
+@@ -120,6 +121,15 @@
+         let args = args.normalized().expect("invalid MockEngineArgs");
+         let config = SglangConfig::from_args(&args);
+         let total_tokens = args.num_gpu_blocks * args.block_size;
++        let mut kv_manager =
++            SglangKvManager::new(total_tokens, args.block_size, kv_event_publishers, dp_rank);
++        if let Some(capacity) = args.sglang.as_ref().and_then(|s| s.mamba_state_capacity) {
++            assert!(
++                args.worker_type != WorkerType::Decode,
++                "hybrid destination caching requires separate state-transfer modeling"
++            );
++            kv_manager.cache_mut().enable_mamba_cache(capacity);
++        }
+         let speculative_sampler = args.aic_nextn.map(|nextn| {
+             let rates =
+                 normalize_conditional_accept_rates(nextn, args.aic_nextn_accept_rates.as_deref())
+@@ -134,12 +144,7 @@
+             prebuilt_ready: VecDeque::new(),
+             running: Vec::new(),
+             new_token_ratio: SglangConfig::from_args(&args).init_new_token_ratio,
+-            kv_manager: SglangKvManager::new(
+-                total_tokens,
+-                args.block_size,
+-                kv_event_publishers,
+-                dp_rank,
+-            ),
++            kv_manager,
+             speculative_sampler,
+             kv_event_buffer,
+             source_holds: SourceHolds::default(),
+@@ -643,10 +648,14 @@
+         let prefill_time =
+             simulate_prefill_duration(batch_size, mean_isl, mean_prefix, &self.config, true)?;
+ 
++        let prefill_only = batch_size > 0 && !self.config.enable_mixed_chunk;
++        let mut finished_prefills = Vec::new();
+         for mut req in admit.can_run {
+             if req.materialized_tokens < req.current_sequence_len() {
+                 cache_materialized_prefix(&mut req, &mut self.kv_manager, &self.config);
+                 self.waiting.push_front(req);
++            } else if prefill_only {
++                finished_prefills.push(req);
+             } else {
+                 self.running.push(req);
+             }
+@@ -656,19 +665,30 @@
+         let scheduled_decode_lens: Vec<u64> = self
+             .running
+             .iter()
+-            .filter(|req| req.remaining_output_tokens() > 0)
++            .filter(|req| !prefill_only && req.remaining_output_tokens() > 0)
+             .map(|req| req.current_sequence_len() as u64)
+             .collect();
+ 
+         let decode_start_ms = now_ms + prefill_time.as_secs_f64() * 1000.0;
+-        let mut decode = simulate_decode_step_with_sampler(
+-            &mut self.running,
+-            &mut self.kv_manager,
+-            &self.config,
+-            self.speculative_sampler.as_mut(),
+-            decode_start_ms,
+-            true,
+-        )?;
++        let mut decode = if prefill_only {
++            let result = simulate_prefill_outputs(
++                &mut finished_prefills,
++                &mut self.kv_manager,
++                &self.config,
++                decode_start_ms,
++            )?;
++            self.running.append(&mut finished_prefills);
++            result
++        } else {
++            simulate_decode_step_with_sampler(
++                &mut self.running,
++                &mut self.kv_manager,
++                &self.config,
++                self.speculative_sampler.as_mut(),
++                decode_start_ms,
++                true,
++            )?
++        };
+ 
+         for request in decode.completed_requests.drain(..) {
+             self.complete_source(request);
+--- a/lib/mocker/src/scheduler/sglang/decode.rs
++++ b/lib/mocker/src/scheduler/sglang/decode.rs
+@@ -57,7 +57,16 @@
+     kv_manager: &mut SglangKvManager,
+     config: &SglangConfig,
+ ) {
+-    let aligned_tokens = req.page_aligned_materialized_tokens(config.block_size);
++    // The real hybrid cache donates a state at prefill/chunk boundaries and
++    // on completion. Intermediate decode checkpoints remain request-private.
++    if kv_manager.cache().has_mamba_cache() && req.output_len() > 1 {
++        return;
++    }
++    let aligned_tokens = if kv_manager.cache().has_mamba_cache() && req.output_len() > 0 {
++        floor_to_block(req.materialized_tokens.saturating_sub(1), config.block_size)
++    } else {
++        req.page_aligned_materialized_tokens(config.block_size)
++    };
+     if aligned_tokens == 0 || aligned_tokens <= req.cached_tokens() {
+         return;
+     }
+@@ -161,7 +170,10 @@
+     kv_manager: &mut SglangKvManager,
+     block_size: usize,
+ ) {
+-    let tokens_to_cache = floor_to_block(request.current_sequence_len(), block_size);
++    let committed = request.current_sequence_len().saturating_sub(usize::from(
++        kv_manager.cache().has_mamba_cache() && request.output_len() > 0,
++    ));
++    let tokens_to_cache = floor_to_block(committed, block_size);
+     if !request.kv_lease.is_active() {
+         return;
+     }
+@@ -170,12 +182,51 @@
+ }
+ 
+ pub(super) fn simulate_decode_step_with_sampler(
++    running: &mut Vec<SglangRequest>,
++    kv_manager: &mut SglangKvManager,
++    config: &SglangConfig,
++    sampler: Option<&mut SpeculativeDecodeSampler>,
++    current_time_ms: f64,
++    apply_speedup: bool,
++) -> anyhow::Result<DecodeResult> {
++    simulate_output_step(
++        running,
++        kv_manager,
++        config,
++        sampler,
++        current_time_ms,
++        apply_speedup,
++        false,
++    )
++}
++
++/// A completed prefill already computes the first output token. Existing
++/// decodes are not part of this batch when SGLang mixed chunks are disabled.
++pub(super) fn simulate_prefill_outputs(
++    prefills: &mut Vec<SglangRequest>,
++    kv_manager: &mut SglangKvManager,
++    config: &SglangConfig,
++    current_time_ms: f64,
++) -> anyhow::Result<DecodeResult> {
++    simulate_output_step(
++        prefills,
++        kv_manager,
++        config,
++        None,
++        current_time_ms,
++        true,
++        true,
++    )
++}
++
++fn simulate_output_step(
+     running: &mut Vec<SglangRequest>,
+     kv_manager: &mut SglangKvManager,
+     config: &SglangConfig,
+     mut sampler: Option<&mut SpeculativeDecodeSampler>,
+     current_time_ms: f64,
+     apply_speedup: bool,
++    prefill_outputs: bool,
+ ) -> anyhow::Result<DecodeResult> {
+     if running.is_empty() {
+         return Ok(DecodeResult {
+@@ -225,11 +276,12 @@
+         });
+     }
+ 
+-    let max_burst = if config.worker_type == crate::common::protocols::WorkerType::Prefill {
+-        1
+-    } else {
+-        config.speculative_max_tokens.unwrap_or(1)
+-    };
++    let max_burst =
++        if prefill_outputs || config.worker_type == crate::common::protocols::WorkerType::Prefill {
++            1
++        } else {
++            config.speculative_max_tokens.unwrap_or(1)
++        };
+     let retracted = check_decode_mem_for_burst(running, kv_manager, config, max_burst);
+     let retracted_any = !retracted.is_empty();
+     if running.is_empty() {
+@@ -248,12 +300,16 @@
+         .sum();
+     let avg_context = total_context / running.len();
+     let active_kv_tokens = total_context.min(config.total_kv_tokens);
+-    let decode_time = config.perf_model.predict_decode_time(
+-        running.len(),
+-        active_kv_tokens,
+-        avg_context,
+-        config.total_kv_tokens,
+-    )?;
++    let decode_time = if prefill_outputs {
++        0.0
++    } else {
++        config.perf_model.predict_decode_time(
++            running.len(),
++            active_kv_tokens,
++            avg_context,
++            config.total_kv_tokens,
++        )?
++    };
+     let unscaled_time = Duration::from_secs_f64(decode_time / 1000.0);
+     let effective_ratio = config.speedup_ratio * config.decode_speedup_ratio;
+     let total_time = if apply_speedup && effective_ratio > 0.0 && unscaled_time > Duration::ZERO {
+--- a/lib/mocker/src/scheduler/sglang/tests.rs
++++ b/lib/mocker/src/scheduler/sglang/tests.rs
+@@ -63,6 +63,116 @@
+         dp_rank: 0,
+         arrival_timestamp_ms: None,
+         ..Default::default()
++    }
++}
++
++#[test]
++fn prefill_priority_pauses_existing_decodes_across_chunks() {
++    let mut args = test_args(128, 4, 8);
++    args.sglang.as_mut().unwrap().enable_mixed_chunk = Some(false);
++    let mut core = SglangCore::new(args);
++    let first = core.receive(direct_request(vec![1, 2, 3, 4], 4));
++    let pass = core.execute_pass_internal(None, 0.0);
++    assert_eq!(pass.output_signals.len(), 1);
++    assert_eq!(pass.output_signals[0].uuid, first);
++    assert_eq!(pass.fpm.as_ref().unwrap().num_decode_requests, 0);
++    let second = core.receive(direct_request((100..120).collect(), 3));
++    let mut now = pass.end_ms;
++    for _ in 0..2 {
++        let pass = core.execute_pass_internal(None, now);
++        assert!(
++            pass.output_signals.is_empty(),
++            "existing decode must pause during a prefill chunk"
++        );
++        assert_eq!(pass.fpm.as_ref().unwrap().num_decode_requests, 0);
++        now = pass.end_ms;
++    }
++    let pass = core.execute_pass_internal(None, now);
++    assert_eq!(pass.output_signals.len(), 1);
++    assert_eq!(pass.output_signals[0].uuid, second);
++    assert_eq!(pass.fpm.as_ref().unwrap().num_decode_requests, 0);
++    let pass = core.execute_pass_internal(None, pass.end_ms);
++    assert_eq!(pass.output_signals.len(), 2);
++    assert_eq!(pass.fpm.as_ref().unwrap().num_decode_requests, 2);
++}
++
++#[rstest]
++#[case(0)]
++#[case(1)]
++fn prefill_priority_completes_short_output_without_decode_forward(#[case] output_len: usize) {
++    let mut args = test_args(128, 4, 8);
++    args.sglang.as_mut().unwrap().enable_mixed_chunk = Some(false);
++    let mut core = SglangCore::new(args);
++    core.receive(direct_request(vec![1, 2, 3, 4], output_len));
++    let expected_ms = core
++        .config
++        .perf_model
++        .predict_prefill_time(1, 4, 0)
++        .unwrap();
++    let pass = core.execute_pass_internal(None, 0.0);
++    assert!((pass.end_ms - expected_ms).abs() < 0.001);
++    assert_eq!(pass.completed_requests, 1);
++    assert_eq!(pass.fpm.as_ref().unwrap().num_decode_requests, 0);
++    assert!(core.is_empty());
++}
++
++#[test]
++fn hybrid_cache_keeps_decode_checkpoints_private_until_completion() {
++    let mut args = test_args(128, 4, 4);
++    let sg = args.sglang.as_mut().unwrap();
++    sg.enable_mixed_chunk = Some(false);
++    sg.mamba_state_capacity = Some(16);
++    let mut core = SglangCore::new(args);
++    let mut request = direct_request((0..8).collect(), 10);
++    request.output_token_ids = Some((100..110).collect());
++    core.receive(request);
++    let mut now = 0.0;
++    for _ in 0..6 {
++        let pass = core.execute_pass_internal(None, now);
++        now = pass.end_ms;
++    }
++    let sequence = core.running[0].sequence_tokens().to_vec();
++    assert!(sequence.len() >= 12);
++    assert_eq!(
++        core.kv_manager.cache().prefix_match_len(&sequence),
++        8,
++        "generated tokens must not expose live private Mamba checkpoints"
++    );
++    while !core.is_empty() {
++        let pass = core.execute_pass_internal(None, now);
++        now = pass.end_ms;
++    }
++    let full: Vec<u32> = (0..8).chain(100..110).collect();
++    assert_eq!(core.kv_manager.cache().prefix_match_len(&full), 16);
++    assert_eq!(core.kv_manager.cache().prefix_match_len(&full[..12]), 8);
++}
++
++#[test]
++fn hybrid_state_pool_survives_repeated_branch_replay_and_cancellation() {
++    let mut args = test_args(128, 4, 8);
++    args.max_num_seqs = Some(2);
++    let sg = args.sglang.as_mut().unwrap();
++    sg.enable_mixed_chunk = Some(false);
++    sg.mamba_state_capacity = Some(16);
++    let mut core = SglangCore::new(args);
++    let mut now = 0.0;
++    for turn in 0..80 {
++        let mut tokens: Vec<u32> = (0..20).collect();
++        tokens[12] = 100 + turn % 7;
++        core.receive(direct_request(tokens, 5));
++        let mut steps = 0;
++        while !core.is_empty() {
++            let pass = core.execute_pass_internal(None, now);
++            now = pass.end_ms;
++            steps += 1;
++            assert!(steps < 20, "state capacity must be reclaimed on completion");
++        }
++        let request_id = core.receive(direct_request((200..220).collect(), 100));
++        let pass = core.execute_pass_internal(None, now);
++        now = pass.end_ms;
++        core.apply_command(SchedulerCommand::CancelRequest { request_id })
++            .unwrap();
++        assert!(core.is_empty());
+     }
+ }
+ 

@@ -1,0 +1,72 @@
+--- a/lib/mocker/src/scheduler/sglang/prefill.rs
++++ b/lib/mocker/src/scheduler/sglang/prefill.rs
+@@ -63,11 +63,20 @@
+     while can_run.len() < available_running_slots
+         && let Some(mut req) = waiting.pop_front()
+     {
+-        let extend_input = req.extend_input_len();
+-        if extend_input == 0 {
++        if req.extend_input_len() == 0 {
+             rejected.push_back(req);
+             break;
+         }
++
++        // Match the complete prompt before limiting new computation to a chunk.
++        // Matching only sequence_prefix(chunk_end) caps reuse at the first chunk;
++        // later chunks extend the active lease without looking up the cache again.
++        let materialized_prefix = if req.materialized_tokens == 0 {
++            kv_manager.cache().prefix_match_len(req.sequence_tokens())
++        } else {
++            req.materialized_tokens
++        };
++        let extend_input = req.current_sequence_len() - materialized_prefix;
+ 
+         let chunk_tokens = if extend_input <= config.chunked_prefill_size {
+             extend_input
+@@ -96,7 +105,7 @@
+             break;
+         }
+ 
+-        let chunk_end = req.materialized_tokens + chunk_tokens;
++        let chunk_end = materialized_prefix + chunk_tokens;
+         let old_allocated_tokens = req.allocated_tokens;
+         let mut lease = std::mem::take(&mut req.kv_lease);
+         let alloc_tokens = req.sequence_prefix(chunk_end);
+--- a/lib/mocker/src/scheduler/sglang/tests.rs
++++ b/lib/mocker/src/scheduler/sglang/tests.rs
+@@ -169,6 +169,35 @@
+             ..
+         }] if *signal_uuid == zero_uuid
+     ));
++}
++
++#[rstest]
++#[case(32, 0)]
++#[case(40, 8)]
++#[case(56, 8)]
++fn chunked_prefill_reuses_cached_prefix_beyond_first_chunk(
++    #[case] prompt_len: usize,
++    #[case] computed: usize,
++) {
++    let config = SglangConfig::from_args(&test_args(32, 4, 8));
++    let mut kv_manager = SglangKvManager::new(128, 4, KvEventPublishers::default(), 0);
++    let cached_prompt: Vec<u32> = (0..32).collect();
++    let cached = kv_manager.allocate_for_request(&cached_prompt).unwrap();
++    let cached_indices = cached.lease.indices().to_vec();
++    kv_manager.finish(&cached_prompt, cached.lease);
++    let prompt: Vec<u32> = (0..prompt_len as u32).collect();
++    let mut waiting = VecDeque::from([SglangRequest::from(direct_request(prompt, 1))]);
++
++    let batch = get_new_batch_prefill(&mut waiting, &mut kv_manager, &config, 0.7, &[]);
++
++    assert_eq!(batch.can_run.len(), 1);
++    assert_eq!(batch.admissions[0].reused_input_tokens, 32);
++    assert_eq!(batch.prefill_fpm[0].tokens_computed, computed);
++    let req = &batch.can_run[0];
++    assert_eq!(req.materialized_tokens, 32 + computed);
++    assert_eq!(&req.kv_indices()[..32], cached_indices);
++    assert_eq!(req.extend_input_len(), prompt_len - 32 - computed);
++    assert!(waiting.is_empty());
+ }
+ 
+ #[test]

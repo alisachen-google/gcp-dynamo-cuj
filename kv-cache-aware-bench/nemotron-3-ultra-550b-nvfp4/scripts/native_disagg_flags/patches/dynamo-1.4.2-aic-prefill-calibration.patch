@@ -1,0 +1,221 @@
+--- a/lib/mocker/src/common/protocols.rs
++++ b/lib/mocker/src/common/protocols.rs
+@@ -10,7 +10,7 @@
+ use uuid::Uuid;
+ use validator::{Validate, ValidationError};
+ 
+-use crate::common::perf_model::PerfModel;
++use crate::common::perf_model::{AicCalibration, PerfModel};
+ use dynamo_kv_router::protocols::{KvCacheEvent, StorageTier};
+ use dynamo_tokens::blocks::UniqueBlock;
+ use dynamo_tokens::{BlockHash, PositionalLineageHash, SequenceHash, Token};
+@@ -601,6 +601,7 @@
+     is_decode: OptionalConfigValue<bool>,
+     planner_profile_data: OptionalConfigValue<PathBuf>,
+     aic_backend: OptionalConfigValue<String>,
++    aic_calibration: OptionalConfigValue<AicCalibration>,
+     aic_system: OptionalConfigValue<String>,
+     aic_backend_version: OptionalConfigValue<String>,
+     aic_tp_size: OptionalConfigValue<usize>,
+@@ -756,6 +757,10 @@
+     #[builder(default = "None")]
+     pub aic_backend: Option<String>,
+ 
++    /// Optional hardware-derived calibration of native AIC prefill predictions.
++    #[builder(default = "None")]
++    pub aic_calibration: Option<AicCalibration>,
++
+     /// AIC GPU system name (e.g., "h200_sxm"). Required when aic_backend is set.
+     #[serde(skip)]
+     #[builder(default = "None")]
+@@ -1204,6 +1209,12 @@
+ 
+         if let Some(aic_backend) = compat.aic_backend.into_nullable() {
+             builder = builder.aic_backend(aic_backend);
++        }
++        if let Some(calibration) = compat.aic_calibration.into_nullable() {
++            if let Some(value) = calibration.as_ref() {
++                value.validate().map_err(|e| e.to_string())?;
++            }
++            builder = builder.aic_calibration(calibration);
+         }
+         if let Some(aic_system) = compat.aic_system.into_nullable() {
+             builder = builder.aic_system(aic_system);
+--- a/lib/mocker/src/common/perf_model.rs
++++ b/lib/mocker/src/common/perf_model.rs
+@@ -40,6 +40,69 @@
+     /// Predict decode (generation) latency in ms.
+     /// Parameters: (batch_size, isl, osl)
+     fn predict_decode(&self, batch_size: usize, isl: usize, osl: usize) -> Result<f64>;
++}
++
++/// Optional shared calibration of native AIC forward-pass predictions.
++/// Defaults preserve AIC predictions exactly. These parameters never alter the
++/// scheduler, arrival clock, cache decisions, or reported benchmark metrics.
++#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
++#[serde(default, deny_unknown_fields)]
++pub struct AicCalibration {
++    pub prefill_scale: f64,
++    /// Additional attention cost, in milliseconds per billion causal Q/K pairs.
++    pub prefill_attention_ms_per_billion_pairs: f64,
++}
++
++impl Default for AicCalibration {
++    fn default() -> Self {
++        Self {
++            prefill_scale: 1.0,
++            prefill_attention_ms_per_billion_pairs: 0.0,
++        }
++    }
++}
++
++impl AicCalibration {
++    pub fn validate(&self) -> Result<()> {
++        anyhow::ensure!(
++            self.prefill_scale.is_finite() && self.prefill_scale > 0.0,
++            "AIC prefill_scale must be finite and positive"
++        );
++        anyhow::ensure!(
++            self.prefill_attention_ms_per_billion_pairs.is_finite()
++                && self.prefill_attention_ms_per_billion_pairs >= 0.0,
++            "AIC prefill_attention_ms_per_billion_pairs must be finite and nonnegative"
++        );
++        Ok(())
++    }
++}
++
++struct CalibratedAicCallback {
++    inner: Arc<dyn AicCallback>,
++    calibration: AicCalibration,
++}
++
++impl AicCallback for CalibratedAicCallback {
++    fn predict_prefill(
++        &self,
++        batch_size: usize,
++        effective_isl: usize,
++        prefix: usize,
++    ) -> Result<f64> {
++        let base = self
++            .inner
++            .predict_prefill(batch_size, effective_isl, prefix)?;
++        let query = effective_isl as f64;
++        // The prefix participates in attention but does not require another
++        // prefill. The pair cost is additive across successive prefill chunks.
++        let pairs = batch_size as f64 * query * (prefix as f64 + query / 2.0);
++        Ok(base * self.calibration.prefill_scale
++            + pairs / 1e9 * self.calibration.prefill_attention_ms_per_billion_pairs)
++    }
++
++    fn predict_decode(&self, batch_size: usize, isl: usize, osl: usize) -> Result<f64> {
++        self.inner.predict_decode(batch_size, isl, osl)
++    }
+ }
+ 
+ /// Wrapper to implement PrefillInterpolator for the concrete Interp1D type
+@@ -217,6 +280,17 @@
+         PerfModel::Aiconfigurator { callback }
+     }
+ 
++    pub fn from_calibrated_aic_callback(
++        callback: Arc<dyn AicCallback>,
++        calibration: AicCalibration,
++    ) -> Result<Self> {
++        calibration.validate()?;
++        Ok(Self::from_aic_callback(Arc::new(CalibratedAicCallback {
++            inner: callback,
++            calibration,
++        })))
++    }
++
+     /// Predict prefill time in milliseconds.
+     ///
+     /// Callers always pass all parameters; each variant uses what it needs:
+@@ -298,7 +372,7 @@
+ 
+ #[cfg(test)]
+ mod tests {
+-    use super::{AicCallback, PerfModel};
++    use super::{AicCalibration, AicCallback, PerfModel};
+     use std::sync::Arc;
+ 
+     struct EchoBatchCallback;
+@@ -325,6 +399,61 @@
+ 
+     struct FailingCallback;
+ 
++    #[test]
++    fn aic_calibration_preserves_identity_decode_and_cached_prefill() {
++        let model = PerfModel::from_calibrated_aic_callback(
++            Arc::new(EchoBatchCallback),
++            AicCalibration::default(),
++        )
++        .unwrap();
++        assert_eq!(model.predict_prefill_time(7, 128, 32).unwrap(), 7.0);
++        assert_eq!(model.predict_prefill_time(7, 128, 128).unwrap(), 0.0);
++        assert_eq!(model.predict_decode_time(9, 0, 128, 0).unwrap(), 9.0);
++    }
++
++    #[test]
++    fn aic_calibration_attention_cost_is_additive_across_chunks() {
++        let model = PerfModel::from_calibrated_aic_callback(
++            Arc::new(EchoBatchCallback),
++            AicCalibration {
++                prefill_scale: 2.0,
++                prefill_attention_ms_per_billion_pairs: 100.0,
++            },
++        )
++        .unwrap();
++        // 100k new tokens in a batch of two, following a 20k cached prefix.
++        let whole_attention = model.predict_prefill_time(2, 120_000, 20_000).unwrap() - 4.0;
++        let first_attention = model.predict_prefill_time(2, 60_000, 20_000).unwrap() - 4.0;
++        let second_attention = model.predict_prefill_time(2, 120_000, 60_000).unwrap() - 4.0;
++        assert!((whole_attention - 1400.0).abs() < 1e-9);
++        assert!((whole_attention - first_attention - second_attention).abs() < 1e-9);
++        assert_eq!(model.predict_decode_time(9, 0, 128, 0).unwrap(), 9.0);
++    }
++
++    #[test]
++    fn aic_calibration_rejects_invalid_latency_parameters() {
++        for scale in [0.0, -1.0, f64::NAN, f64::INFINITY] {
++            assert!(
++                AicCalibration {
++                    prefill_scale: scale,
++                    ..Default::default()
++                }
++                .validate()
++                .is_err()
++            );
++        }
++        for attention in [-1.0, f64::NAN, f64::INFINITY] {
++            assert!(
++                AicCalibration {
++                    prefill_attention_ms_per_billion_pairs: attention,
++                    ..Default::default()
++                }
++                .validate()
++                .is_err()
++            );
++        }
++    }
++
+     impl AicCallback for FailingCallback {
+         fn predict_prefill(
+             &self,
+--- a/lib/bindings/python/rust/llm/entrypoint.rs
++++ b/lib/bindings/python/rust/llm/entrypoint.rs
+@@ -923,7 +923,13 @@
+                             model_name,
+                             backend_version
+                         );
+-                        mocker_args.perf_model = Arc::new(PerfModel::from_aic_callback(callback));
++                        let model = if let Some(calibration) = mocker_args.aic_calibration.clone() {
++                            tracing::info!(?calibration, "Applying shared AIC timing calibration");
++                            PerfModel::from_calibrated_aic_callback(callback, calibration)?
++                        } else {
++                            PerfModel::from_aic_callback(callback)
++                        };
++                        mocker_args.perf_model = Arc::new(model);
+                     }
+                     Err(e) => {
+                         return Err(anyhow::anyhow!(

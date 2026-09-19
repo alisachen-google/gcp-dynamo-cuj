@@ -1,0 +1,561 @@
+--- a/lib/bindings/python/rust/llm/replay.rs
++++ b/lib/bindings/python/rust/llm/replay.rs
+@@ -119,7 +119,7 @@
+ #[pymethods]
+ impl SglangArgs {
+     #[new]
+-    #[pyo3(signature = (schedule_policy=None, page_size=None, max_prefill_tokens=None, chunked_prefill_size=None, clip_max_new_tokens=None, schedule_conservativeness=None, enable_mixed_chunk=None, mamba_state_capacity=None, mamba_cache_chunk_size=None, mamba_track_interval=None))]
++    #[pyo3(signature = (schedule_policy=None, page_size=None, max_prefill_tokens=None, chunked_prefill_size=None, clip_max_new_tokens=None, schedule_conservativeness=None, enable_mixed_chunk=None, mamba_state_capacity=None, mamba_cache_chunk_size=None, mamba_track_interval=None, recurrent_state_transfer_bytes=None, disagg_reserved_decode_tokens=None, disagg_prefill_first_token=None))]
+     #[allow(clippy::too_many_arguments)]
+     fn new(
+         schedule_policy: Option<String>,
+@@ -132,6 +132,9 @@
+         mamba_state_capacity: Option<usize>,
+         mamba_cache_chunk_size: Option<usize>,
+         mamba_track_interval: Option<usize>,
++        recurrent_state_transfer_bytes: Option<usize>,
++        disagg_reserved_decode_tokens: Option<usize>,
++        disagg_prefill_first_token: Option<bool>,
+     ) -> PyResult<Self> {
+         let inner = RsSglangArgs {
+             schedule_policy,
+@@ -144,6 +147,9 @@
+             mamba_state_capacity,
+             mamba_cache_chunk_size,
+             mamba_track_interval,
++            recurrent_state_transfer_bytes,
++            disagg_reserved_decode_tokens,
++            disagg_prefill_first_token,
+         };
+         Ok(Self { inner })
+     }
+--- a/lib/bindings/python/src/dynamo/_core.pyi
++++ b/lib/bindings/python/src/dynamo/_core.pyi
+@@ -2050,6 +2050,9 @@
+         mamba_state_capacity: Optional[int] = None,
+         mamba_cache_chunk_size: Optional[int] = None,
+         mamba_track_interval: Optional[int] = None,
++        recurrent_state_transfer_bytes: Optional[int] = None,
++        disagg_reserved_decode_tokens: Optional[int] = None,
++        disagg_prefill_first_token: Optional[bool] = None,
+     ) -> None:
+         ...
+ 
+--- a/lib/llm/src/mocker/handoff_tests.rs
++++ b/lib/llm/src/mocker/handoff_tests.rs
+@@ -60,6 +60,7 @@
+         full_prompt_tokens: 1,
+         kv_bytes_per_token: delay_ms.map(|delay_ms| (delay_ms * 1_000_000.0) as usize),
+         bandwidth_gb_s: delay_ms.map(|_| 1.0),
++        recurrent_state_bytes: 0,
+     }
+ }
+ 
+@@ -70,6 +71,7 @@
+         full_prompt_tokens: 8,
+         kv_bytes_per_token: Some(1_000_000),
+         bandwidth_gb_s: Some(1.0),
++        recurrent_state_bytes: 0,
+     };
+     assert_eq!(transfer_timeout_delay(full, None), Some(Some(8.0)));
+ 
+--- a/lib/mocker/src/common/handoff.rs
++++ b/lib/mocker/src/common/handoff.rs
+@@ -49,6 +49,8 @@
+     pub full_prompt_tokens: usize,
+     pub kv_bytes_per_token: Option<usize>,
+     pub bandwidth_gb_s: Option<f64>,
++    #[serde(default)]
++    pub recurrent_state_bytes: usize,
+ }
+ 
+ impl HandoffTransferTiming {
+@@ -65,7 +67,8 @@
+         if bandwidth_gb_s <= 0.0 {
+             return None;
+         }
+-        Some(tokens as f64 * bytes_per_token as f64 / (bandwidth_gb_s * 1e9) * 1000.0)
++        let bytes = tokens as f64 * bytes_per_token as f64 + self.recurrent_state_bytes as f64;
++        Some(bytes / (bandwidth_gb_s * 1e9) * 1000.0)
+     }
+ 
+     pub fn full_prompt_delay_ms(self) -> Option<f64> {
+--- a/lib/mocker/src/common/handoff_tests.rs
++++ b/lib/mocker/src/common/handoff_tests.rs
+@@ -26,7 +26,33 @@
+         full_prompt_tokens: 1,
+         kv_bytes_per_token: delay_ms.map(|delay_ms| (delay_ms * 1_000_000.0) as usize),
+         bandwidth_gb_s: delay_ms.map(|_| 1.0),
+-    }
++        recurrent_state_bytes: 0,
++    }
++}
++
++#[test]
++fn recurrent_state_transfer_is_paid_once_even_for_a_full_kv_hit() {
++    let full = HandoffTransferTiming {
++        mode: KvTransferTimingMode::FullPrompt,
++        full_prompt_tokens: 8,
++        kv_bytes_per_token: Some(1_000_000),
++        bandwidth_gb_s: Some(1.0),
++        recurrent_state_bytes: 2_000_000,
++    };
++    assert_eq!(full.full_prompt_delay_ms(), Some(10.0));
++    let missing = HandoffTransferTiming { mode: KvTransferTimingMode::DestinationMissing, ..full };
++    assert_eq!(missing.delay_ms(4), Some(6.0));
++    assert_eq!(missing.delay_ms(0), Some(2.0));
++    assert_eq!(HandoffTransferTiming { bandwidth_gb_s: None, ..full }.delay_ms(0), None);
++}
++
++#[test]
++fn old_handoff_wire_payload_has_zero_recurrent_state_bytes() {
++    let decoded: HandoffTransferTiming = serde_json::from_str(
++        r#"{"mode":"full_prompt","full_prompt_tokens":8,"kv_bytes_per_token":1000000,"bandwidth_gb_s":1.0}"#,
++    ).unwrap();
++    assert_eq!(decoded.recurrent_state_bytes, 0);
++    assert_eq!(decoded.full_prompt_delay_ms(), Some(8.0));
+ }
+ 
+ fn destination_reserved(handoff_id: HandoffId) -> HandoffFact {
+@@ -133,6 +159,7 @@
+                     full_prompt_tokens: 8,
+                     kv_bytes_per_token: Some(1_000_000),
+                     bandwidth_gb_s: Some(1.0),
++                    recurrent_state_bytes: 0,
+                 },
+             })
+             .unwrap());
+@@ -165,6 +192,7 @@
+                 full_prompt_tokens: 8,
+                 kv_bytes_per_token: Some(1_000_000),
+                 bandwidth_gb_s: Some(1.0),
++                recurrent_state_bytes: 0,
+             },
+         })
+         .unwrap());
+--- a/lib/mocker/src/common/protocols.rs
++++ b/lib/mocker/src/common/protocols.rs
+@@ -516,6 +516,17 @@
+     /// Uses page-aligned extra-buffer checkpoints; absent keeps attention-only caching.
+     #[validate(range(min = 5))]
+     pub mamba_state_capacity: Option<usize>,
++    /// Recurrent-state bytes transferred with a prefill handoff. Must use the
++    /// same per-rank or per-worker scope as kv_bytes_per_token and bandwidth.
++    /// None keeps the attention-only transfer-size calculation.
++    pub recurrent_state_transfer_bytes: Option<usize>,
++    /// Logical decode growth headroom per admitted disaggregated request.
++    /// Explicitly set to the real SGLang num_reserved_decode_tokens (512 by
++    /// default). None preserves the existing physical-KV-only reservation.
++    pub disagg_reserved_decode_tokens: Option<usize>,
++    /// Emit the first token received from prefill when admitting a completed
++    /// handoff, without charging another decode forward. SGLang prebuilt mode.
++    pub disagg_prefill_first_token: Option<bool>,
+     /// Prefill checkpoint alignment. Default: max(page size, 64).
+     #[validate(range(min = 1))]
+     pub mamba_cache_chunk_size: Option<usize>,
+--- a/lib/mocker/src/common/utils.rs
++++ b/lib/mocker/src/common/utils.rs
+@@ -17,6 +17,7 @@
+         full_prompt_tokens: num_input_tokens,
+         kv_bytes_per_token,
+         bandwidth_gb_s: kv_transfer_bandwidth,
++        recurrent_state_bytes: 0,
+     }
+ }
+ 
+--- a/lib/mocker/src/kv_manager/sglang_backend.rs
++++ b/lib/mocker/src/kv_manager/sglang_backend.rs
+@@ -73,6 +73,7 @@
+ 
+ pub struct SglangKvManager {
+     cache: RadixCache,
++    enable_prefix_caching: bool,
+     kv_event_publishers: KvEventPublishers,
+     dp_rank: u32,
+     next_event_id: u64,
+@@ -153,6 +154,7 @@
+     ) -> Self {
+         Self {
+             cache: RadixCache::new(total_tokens, page_size),
++            enable_prefix_caching: true,
+             kv_event_publishers,
+             dp_rank,
+             next_event_id: 0,
+@@ -167,6 +169,11 @@
+ 
+     pub fn cache_mut(&mut self) -> &mut RadixCache {
+         &mut self.cache
++    }
++
++    /// Set once during worker construction, before any request owns pages.
++    pub(crate) fn set_prefix_caching_enabled(&mut self, enabled: bool) {
++        self.enable_prefix_caching = enabled;
+     }
+ 
+     /// SGLang matches a candidate before checking the prefill batch budget.
+@@ -303,6 +310,9 @@
+     }
+ 
+     pub(crate) fn extend_cached_prefix(&mut self, token_ids: &[u32], lease: &mut ActiveKvLease) {
++        if !self.enable_prefix_caching {
++            return;
++        }
+         let complete_len = token_ids.len() / self.cache.page_size() * self.cache.page_size();
+         if complete_len <= lease.cached_tokens {
+             return;
+@@ -336,6 +346,10 @@
+     }
+ 
+     pub(crate) fn finish(&mut self, token_ids: &[u32], mut lease: ActiveKvLease) {
++        if !self.enable_prefix_caching {
++            self.release_active_lease(lease);
++            return;
++        }
+         let Some(last_node) = lease.last_node.take() else {
+             debug_assert!(lease.kv_indices.is_empty());
+             debug_assert_eq!(lease.cached_tokens, 0);
+@@ -544,14 +558,21 @@
+             .page_pool
+             .expand_pages(&unpublished_pages, missing_tokens);
+         prefix_indices.append(&mut unpublished_indices);
+-        let new_last_node =
+-            self.cache_unfinished_req(token_ids, &mut prefix_indices, last_node, prefix_len);
++        let new_last_node = if self.enable_prefix_caching {
++            self.cache_unfinished_req(token_ids, &mut prefix_indices, last_node, prefix_len)
++        } else {
++            last_node
++        };
+         self.log_trace("activate_destination", missing_tokens);
+         AllocResult {
+             prefix_len,
+             lease: ActiveKvLease {
+                 kv_indices: prefix_indices,
+-                cached_tokens: token_ids.len() / self.cache.page_size() * self.cache.page_size(),
++                cached_tokens: if self.enable_prefix_caching {
++                    token_ids.len() / self.cache.page_size() * self.cache.page_size()
++                } else {
++                    0
++                },
+                 last_node: Some(new_last_node),
+             },
+         }
+@@ -830,7 +851,7 @@
+         indices: &[usize],
+         first_new_token: usize,
+     ) -> usize {
+-        if self.kv_event_publishers.is_empty() {
++        if !self.enable_prefix_caching || self.kv_event_publishers.is_empty() {
+             return 0;
+         }
+ 
+@@ -987,6 +1008,51 @@
+ 
+     const ROUTER_TEST_WORKER_ID: WorkerId = 31;
+ 
++    #[test]
++    fn disabled_prefix_cache_keeps_active_pages_private_and_frees_every_page() {
++        let sink = Arc::new(MockSink::new());
++        let mut mgr = SglangKvManager::new(
++            32, 4, KvEventPublishers::new(Some(sink.clone()), None), 0,
++        );
++        mgr.set_prefix_caching_enabled(false);
++        let prompt: Vec<u32> = (1..=9).collect();
++        for _ in 0..2 {
++            let mut allocation = mgr.allocate_for_request(&prompt[..6]).unwrap();
++            mgr.extend_cached_prefix(&prompt[..4], &mut allocation.lease);
++            assert_eq!(allocation.lease.cached_tokens(), 0);
++            assert!(mgr.extend_allocation(&prompt, &mut allocation.lease));
++            assert_eq!(mgr.cache().available_tokens(), 20);
++            mgr.finish(&prompt, allocation.lease);
++            assert_eq!(mgr.cache().available_tokens(), 32);
++            assert_eq!(mgr.lookup_prefill_prefix(&prompt), Some(0));
++        }
++        assert_eq!(sink.event_count(), 0);
++    }
++
++    #[test]
++    fn disabled_destination_cache_never_reuses_or_advertises_transferred_pages() {
++        let sink = Arc::new(MockSink::new());
++        let mut mgr = SglangKvManager::new(
++            32, 4, KvEventPublishers::new(Some(sink.clone()), None), 0,
++        );
++        mgr.set_prefix_caching_enabled(false);
++        let prompt: Vec<u32> = (1..=9).collect();
++        for _ in 0..2 {
++            let reservation = mgr.reserve_destination(&prompt).unwrap();
++            assert_eq!(reservation.transferable_prompt_tokens(), 12);
++            let allocation = mgr.activate_destination(reservation, &prompt);
++            assert_eq!(allocation.prefix_len, 0);
++            assert_eq!(allocation.lease.cached_tokens(), 0);
++            assert_eq!(mgr.cache().available_tokens(), 20);
++            mgr.finish(&prompt, allocation.lease);
++            assert_eq!(mgr.cache().available_tokens(), 32);
++        }
++        let reservation = mgr.reserve_destination(&prompt).unwrap();
++        mgr.cancel_destination(reservation);
++        assert_eq!(mgr.cache().available_tokens(), 32);
++        assert_eq!(sink.event_count(), 0);
++    }
++
+     struct MockSink {
+         events: Mutex<Vec<KvCacheEvent>>,
+     }
+--- a/lib/mocker/src/scheduler/sglang/config.rs
++++ b/lib/mocker/src/scheduler/sglang/config.rs
+@@ -30,6 +30,10 @@
+     pub(super) schedule_policy: SchedulePolicy,
+     pub(super) max_prefill_tokens: usize,
+     pub(super) max_running_requests: usize,
++    pub(super) decode_request_capacity: Option<usize>,
++    pub(super) disagg_reserved_decode_tokens: usize,
++    pub(super) recurrent_state_transfer_bytes: usize,
++    pub(super) disagg_prefill_first_token: bool,
+     pub(super) chunked_prefill_size: usize,
+     pub(super) clip_max_new_tokens: usize,
+     pub(super) init_new_token_ratio: f64,
+@@ -89,13 +93,34 @@
+             mamba_cache_chunk_size,
+             mamba_track_interval,
+             schedule_policy,
+-            // SGLang reserves a safety ratio of three plus two extra-buffer
+-            // slots per concurrent request; actual live allocation is three.
++            // Extra-buffer prefix caching uses a safety ratio of five.
++            // Decode workers without radix caching use one state per request,
++            // including preallocated and transferring requests.
+             max_running_requests: args.max_num_seqs.unwrap_or(usize::MAX).min(
+                 sglang
+                     .and_then(|s| s.mamba_state_capacity)
+-                    .map_or(usize::MAX, |capacity| capacity / 5),
++                    .map_or(usize::MAX, |capacity| {
++                        if args.worker_type == WorkerType::Decode && !args.enable_prefix_caching {
++                            capacity
++                        } else {
++                            capacity / 5
++                        }
++                    }),
+             ),
++            decode_request_capacity: if args.worker_type == WorkerType::Decode {
++                sglang.and_then(|s| s.mamba_state_capacity)
++            } else {
++                None
++            },
++            disagg_reserved_decode_tokens: sglang
++                .and_then(|s| s.disagg_reserved_decode_tokens)
++                .unwrap_or(0),
++            recurrent_state_transfer_bytes: sglang
++                .and_then(|s| s.recurrent_state_transfer_bytes)
++                .unwrap_or(0),
++            disagg_prefill_first_token: sglang
++                .and_then(|s| s.disagg_prefill_first_token)
++                .unwrap_or(false),
+             max_prefill_tokens: sglang
+                 .and_then(|s| s.max_prefill_tokens)
+                 .unwrap_or(DEFAULT_MAX_PREFILL_TOKENS),
+--- a/lib/mocker/src/scheduler/sglang/core.rs
++++ b/lib/mocker/src/scheduler/sglang/core.rs
+@@ -123,12 +123,20 @@
+         let total_tokens = args.num_gpu_blocks * args.block_size;
+         let mut kv_manager =
+             SglangKvManager::new(total_tokens, args.block_size, kv_event_publishers, dp_rank);
++        kv_manager.set_prefix_caching_enabled(args.enable_prefix_caching);
+         if let Some(capacity) = args.sglang.as_ref().and_then(|s| s.mamba_state_capacity) {
+-            assert!(
+-                args.worker_type != WorkerType::Decode,
+-                "hybrid destination caching requires separate state-transfer modeling"
+-            );
+-            kv_manager.cache_mut().enable_mamba_cache(capacity);
++            if args.worker_type == WorkerType::Decode {
++                assert!(
++                    !args.enable_prefix_caching,
++                    "hybrid destination prefix caching is not modeled; disable decode radix caching"
++                );
++                // The destination owns finite private recurrent states. Their
++                // lifetime is the handoff reservation plus active request;
++                // there are no reusable radix checkpoints on this worker.
++            } else {
++                assert!(args.enable_prefix_caching, "hybrid non-decode workers require prefix caching");
++                kv_manager.cache_mut().enable_mamba_cache(capacity);
++            }
+         }
+         let speculative_sampler = args.aic_nextn.map(|nextn| {
+             let rates =
+@@ -319,10 +327,29 @@
+         let Some((_, _, request)) = self.pending_destinations.front_due(generation) else {
+             return Vec::new();
+         };
+-        // TODO(disagg): Real SGLang also preserves logical decode headroom
+-        // (`num_reserved_decode_tokens`, default 512, plus a one-request
+-        // completion guard). This foundation physically reserves only the
+-        // page-rounded incoming prompt footprint.
++        let occupied = self.destination_holds.len() + self.active_destination_handoffs.len();
++        if self.config.decode_request_capacity.is_some_and(|capacity| occupied >= capacity) {
++            return Vec::new();
++        }
++        if self.config.disagg_reserved_decode_tokens > 0 {
++            let reserve = self.config.disagg_reserved_decode_tokens;
++            let retractable = self.running.iter().map(SglangRequest::current_sequence_len).sum::<usize>();
++            let completion_guard = self.running.iter().map(|r| {
++                (r.prompt_len() + r.max_output_tokens.min(self.config.clip_max_new_tokens))
++                    .saturating_sub(retractable)
++            }).max().unwrap_or(0);
++            let headroom = reserve.saturating_mul(occupied).max(completion_guard);
++            let footprint = request.prompt_len().div_ceil(self.config.block_size)
++                .saturating_mul(self.config.block_size);
++            let needed = footprint.saturating_add(reserve).max(
++                request.prompt_len().saturating_add(request.max_output_tokens.min(self.config.clip_max_new_tokens))
++                    .saturating_sub(retractable)
++            );
++            let available = self.kv_manager.cache().available_tokens() + self.kv_manager.cache().evictable_size;
++            if needed > available.saturating_sub(headroom) {
++                return Vec::new();
++            }
++        }
+         #[cfg(test)]
+         {
+             self.destination_reservation_attempts += 1;
+@@ -380,12 +407,13 @@
+ 
+     fn complete_source(&mut self, request: SglangRequest) {
+         let uuid = request.uuid;
+-        let transfer_timing = prefill_handoff_transfer_timing(
++        let mut transfer_timing = prefill_handoff_transfer_timing(
+             request.prompt_len(),
+             self.config.kv_transfer_bandwidth,
+             self.config.kv_bytes_per_token,
+             self.config.kv_transfer_timing_mode,
+         );
++        transfer_timing.recurrent_state_bytes = self.config.recurrent_state_transfer_bytes;
+         let payload = HeldSglangPrefill { request };
+         let released = match self.source_holds.complete_source(uuid, payload) {
+             SourceCompletion::Release(payload) => {
+@@ -648,8 +676,22 @@
+         let prefill_time =
+             simulate_prefill_duration(batch_size, mean_isl, mean_prefix, &self.config, true)?;
+ 
+-        let prefill_only = batch_size > 0 && !self.config.enable_mixed_chunk;
++        let has_handoff_outputs = self.config.disagg_prefill_first_token && self.running.iter().any(|r| {
++            r.output_len() == 0 && self.active_destination_handoffs.contains_request(r.uuid)
++        });
++        let prefill_only = (batch_size > 0 && !self.config.enable_mixed_chunk) || has_handoff_outputs;
+         let mut finished_prefills = Vec::new();
++        if has_handoff_outputs {
++            let mut remaining = Vec::with_capacity(self.running.len());
++            for request in self.running.drain(..) {
++                if request.output_len() == 0 && self.active_destination_handoffs.contains_request(request.uuid) {
++                    finished_prefills.push(request);
++                } else {
++                    remaining.push(request);
++                }
++            }
++            self.running = remaining;
++        }
+         for mut req in admit.can_run {
+             if req.materialized_tokens < req.current_sequence_len() {
+                 cache_materialized_prefix(&mut req, &mut self.kv_manager, &self.config);
+--- a/lib/mocker/src/scheduler/sglang/tests.rs
++++ b/lib/mocker/src/scheduler/sglang/tests.rs
+@@ -66,6 +66,91 @@
+         arrival_timestamp_ms: None,
+         ..Default::default()
+     }
++}
++
++#[test]
++fn private_decode_state_slots_include_transferring_and_activated_requests() {
++    let mut args = test_args(128, 4, 16);
++    args.worker_type = crate::common::protocols::WorkerType::Decode;
++    args.max_num_seqs = Some(5);
++    args.enable_prefix_caching = false;
++    args.sglang.as_mut().unwrap().mamba_state_capacity = Some(5);
++    assert_eq!(SglangConfig::from_args(&args).max_running_requests, 5);
++    let mut core = SglangCore::new(args);
++    let ids: Vec<_> = (1..=6).map(|n| HandoffId::from(Uuid::from_u128(n))).collect();
++    for (index, id) in ids.iter().enumerate() {
++        let effects = core.apply_command_effects(SchedulerCommand::ReserveDestination {
++            handoff_id: *id,
++            request: direct_request(vec![index as u32; 8], 4),
++        }, true).unwrap();
++        assert_eq!(effects.lifecycle_events.len(), usize::from(index < 5));
++    }
++    assert!(core.destination_indices(ids[5]).is_empty());
++    core.apply_command(SchedulerCommand::ActivateDestination { handoff_id: ids[0] }).unwrap();
++    assert!(core.retry_pending_destinations().is_empty());
++    let effects = core.apply_command_effects(
++        SchedulerCommand::CancelDestination { handoff_id: ids[0] }, true,
++    ).unwrap();
++    assert_eq!(effects.lifecycle_events.len(), 1);
++    assert_eq!(core.destination_indices(ids[5]).len(), 8);
++    for id in &ids[1..] {
++        core.apply_command(SchedulerCommand::CancelDestination { handoff_id: *id }).unwrap();
++    }
++    assert!(core.is_drained());
++}
++
++#[test]
++fn decode_headroom_blocks_an_incoming_prompt_until_a_reservation_is_released() {
++    let mut args = test_args(6, 4, 16);
++    args.worker_type = crate::common::protocols::WorkerType::Decode;
++    args.enable_prefix_caching = false;
++    args.sglang.as_mut().unwrap().disagg_reserved_decode_tokens = Some(8);
++    let mut core = SglangCore::new(args);
++    let first = HandoffId::from(Uuid::from_u128(51));
++    let second = HandoffId::from(Uuid::from_u128(52));
++    for (index, id) in [first, second].into_iter().enumerate() {
++        let result = core.apply_command_effects(SchedulerCommand::ReserveDestination {
++            handoff_id: id, request: direct_request(vec![index as u32; 8], 1),
++        }, true).unwrap();
++        assert_eq!(result.lifecycle_events.len(), usize::from(index == 0));
++    }
++    let released = core.apply_command_effects(
++        SchedulerCommand::CancelDestination { handoff_id: first }, true,
++    ).unwrap();
++    assert_eq!(released.lifecycle_events.len(), 1);
++    assert!(core.destination_is_held(second));
++}
++
++#[rstest]
++#[case(1)]
++#[case(4)]
++fn decode_handoff_emits_prefill_token_before_any_decode_forward(#[case] outputs: usize) {
++    let mut args = test_args(128, 4, 16);
++    args.worker_type = crate::common::protocols::WorkerType::Decode;
++    args.max_num_seqs = Some(5);
++    args.enable_prefix_caching = false;
++    let sg = args.sglang.as_mut().unwrap();
++    sg.mamba_state_capacity = Some(5);
++    sg.disagg_prefill_first_token = Some(true);
++    let mut core = SglangCore::new(args);
++    let id = HandoffId::from(Uuid::from_u128(71));
++    core.apply_command_effects(SchedulerCommand::ReserveDestination {
++        handoff_id: id, request: direct_request(vec![1; 8], outputs),
++    }, true).unwrap();
++    core.apply_command(SchedulerCommand::ActivateDestination { handoff_id: id }).unwrap();
++    let first = core.execute_hidden_pass(0.0);
++    assert_eq!(first.output_signals.len(), 1);
++    assert!(first.output_signals[0].token_id.is_some());
++    assert_eq!(first.fpm.as_ref().unwrap().num_decode_requests, 0);
++    assert_eq!(first.end_ms, 0.0);
++    let mut decode_forwards = 0;
++    for index in 1..outputs {
++        let next = core.execute_hidden_pass(index as f64);
++        assert_eq!(next.output_signals.len(), 1);
++        decode_forwards += next.fpm.unwrap().num_decode_requests;
++    }
++    assert_eq!(decode_forwards, outputs as u32 - 1);
++    assert!(core.is_drained());
+ }
+ 
+ #[rstest]
+--- a/lib/mocker/src/scheduler/source_holds.rs
++++ b/lib/mocker/src/scheduler/source_holds.rs
+@@ -215,6 +215,10 @@
+ }
+ 
+ impl ActiveHandoffRequests {
++    pub(crate) fn len(&self) -> usize {
++        self.by_handoff.len()
++    }
++
+     pub(crate) fn insert(&mut self, handoff_id: HandoffId, request_id: Uuid) {
+         let previous = self.by_handoff.insert(handoff_id, request_id);
+         debug_assert!(previous.is_none());

@@ -1,0 +1,151 @@
+--- a/lib/mocker/src/common/perf_model.rs
++++ b/lib/mocker/src/common/perf_model.rs
+@@ -51,6 +51,12 @@
+     pub prefill_scale: f64,
+     /// Additional attention cost, in milliseconds per billion causal Q/K pairs.
+     pub prefill_attention_ms_per_billion_pairs: f64,
++    /// Additional decode cost per model forward, independent of ready batch size.
++    /// Used only when the selected AIC kernels omit measured or modeled work.
++    pub decode_fixed_ms: f64,
++    /// Additional decode cost per ready request per model forward.
++    /// This is not the admitted request count or queued prefill work.
++    pub decode_ms_per_request: f64,
+ }
+ 
+ impl Default for AicCalibration {
+@@ -58,6 +64,8 @@
+         Self {
+             prefill_scale: 1.0,
+             prefill_attention_ms_per_billion_pairs: 0.0,
++            decode_fixed_ms: 0.0,
++            decode_ms_per_request: 0.0,
+         }
+     }
+ }
+@@ -73,6 +81,15 @@
+                 && self.prefill_attention_ms_per_billion_pairs >= 0.0,
+             "AIC prefill_attention_ms_per_billion_pairs must be finite and nonnegative"
+         );
++        for (name, value) in [
++            ("decode_fixed_ms", self.decode_fixed_ms),
++            ("decode_ms_per_request", self.decode_ms_per_request),
++        ] {
++            anyhow::ensure!(
++                value.is_finite() && value >= 0.0,
++                "AIC {name} must be finite and nonnegative"
++            );
++        }
+         Ok(())
+     }
+ }
+@@ -101,7 +118,18 @@
+     }
+ 
+     fn predict_decode(&self, batch_size: usize, isl: usize, osl: usize) -> Result<f64> {
+-        self.inner.predict_decode(batch_size, isl, osl)
++        let base = self.inner.predict_decode(batch_size, isl, osl)?;
++        // AIC's first output comes from prefill. Only the remaining outputs
++        // invoke decode forwards; an empty batch has no additional work.
++        let steps = if batch_size == 0 {
++            0
++        } else {
++            osl.saturating_sub(1)
++        };
++        Ok(base
++            + steps as f64
++                * (self.calibration.decode_fixed_ms
++                    + batch_size as f64 * self.calibration.decode_ms_per_request))
+     }
+ }
+ 
+@@ -372,7 +400,7 @@
+ 
+ #[cfg(test)]
+ mod tests {
+-    use super::{AicCalibration, AicCallback, PerfModel};
++    use super::{AicCalibration, AicCallback, CalibratedAicCallback, PerfModel};
+     use std::sync::Arc;
+ 
+     struct EchoBatchCallback;
+@@ -418,6 +446,7 @@
+             AicCalibration {
+                 prefill_scale: 2.0,
+                 prefill_attention_ms_per_billion_pairs: 100.0,
++                ..Default::default()
+             },
+         )
+         .unwrap();
+@@ -452,6 +481,73 @@
+                 .is_err()
+             );
+         }
++        for value in [-1.0, f64::NAN, f64::INFINITY] {
++            for calibration in [
++                AicCalibration {
++                    decode_fixed_ms: value,
++                    ..Default::default()
++                },
++                AicCalibration {
++                    decode_ms_per_request: value,
++                    ..Default::default()
++                },
++            ] {
++                assert!(calibration.validate().is_err());
++            }
++        }
++    }
++
++    #[test]
++    fn decode_calibration_accounts_for_ready_requests_and_decode_steps_only() {
++        let callback = CalibratedAicCallback {
++            inner: Arc::new(EchoBatchCallback),
++            calibration: AicCalibration {
++                decode_fixed_ms: 0.25,
++                decode_ms_per_request: 0.5,
++                ..Default::default()
++            },
++        };
++        // EchoBatchCallback contributes 4 ms. The remaining cost is one
++        // forward for four ready requests, irrespective of the context length.
++        assert_eq!(callback.predict_decode(4, 100_000, 2).unwrap(), 6.25);
++        assert_eq!(callback.predict_decode(4, 200_000, 3).unwrap(), 8.5);
++        // The prefill output is not an additional decode forward.
++        assert_eq!(callback.predict_decode(4, 100_000, 1).unwrap(), 4.0);
++        assert_eq!(callback.predict_decode(4, 100_000, 0).unwrap(), 4.0);
++        assert_eq!(callback.predict_decode(0, 100_000, 3).unwrap(), 0.0);
++        assert_eq!(callback.predict_prefill(4, 128, 32).unwrap(), 4.0);
++    }
++
++    #[test]
++    fn legacy_aic_calibration_json_keeps_decode_unchanged() {
++        let calibration: AicCalibration = serde_json::from_str(
++            r#"{"prefill_scale":1.7,"prefill_attention_ms_per_billion_pairs":165.0}"#,
++        )
++        .unwrap();
++        assert_eq!(calibration.decode_fixed_ms, 0.0);
++        assert_eq!(calibration.decode_ms_per_request, 0.0);
++        let model =
++            PerfModel::from_calibrated_aic_callback(Arc::new(EchoBatchCallback), calibration)
++                .unwrap();
++        assert_eq!(
++            model
++                .predict_decode_time(16, 1_000_000, 100_000, 3_000_000)
++                .unwrap(),
++            16.0
++        );
++    }
++
++    #[test]
++    fn decode_calibration_preserves_aic_errors() {
++        let model = PerfModel::from_calibrated_aic_callback(
++            Arc::new(FailingCallback),
++            AicCalibration {
++                decode_fixed_ms: 0.5,
++                ..Default::default()
++            },
++        )
++        .unwrap();
++        assert!(model.predict_decode_time(4, 0, 100_000, 0).is_err());
+     }
+ 
+     impl AicCallback for FailingCallback {

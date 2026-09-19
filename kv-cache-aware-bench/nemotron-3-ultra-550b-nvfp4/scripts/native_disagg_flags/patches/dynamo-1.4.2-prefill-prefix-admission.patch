@@ -1,0 +1,300 @@
+--- a/lib/mocker/src/kv_manager/sglang_backend.rs
++++ b/lib/mocker/src/kv_manager/sglang_backend.rs
+@@ -169,12 +169,45 @@
+         &mut self.cache
+     }
+ 
++    /// SGLang matches a candidate before checking the prefill batch budget.
++    /// A rejected candidate still refreshes the consumed prefix. A hybrid hit
++    /// also allocates a COW state, potentially evicting an older checkpoint.
++    /// Release that temporary reservation here: admission accounts for the
++    /// complete three-state lease, while rejection must retain no active state.
++    pub(crate) fn lookup_prefill_prefix(&mut self, token_ids: &[u32]) -> Option<usize> {
++        let (prefix_len, last_node) = self.cache.match_prefix(token_ids);
++        if prefix_len > 0 && self.cache.has_mamba_cache() {
++            self.cache.inc_lock_ref(last_node);
++            let (fits, removed) = self.cache.reserve_mamba_states(1);
++            self.publish_removed_pages(&removed);
++            if fits {
++                self.cache.release_mamba_states(1);
++            }
++            self.cache.dec_lock_ref(last_node);
++            if !fits {
++                return None;
++            }
++        }
++        Some(prefix_len)
++    }
++
+     /// Match and protect a reusable prefix, evict other cached pages if needed,
+     /// then allocate KV pages for a new request.
+     ///
+     /// Returns `None` if protected and free capacity cannot satisfy the request.
++    #[cfg(test)]
+     pub(crate) fn allocate_for_request(&mut self, token_ids: &[u32]) -> Option<AllocResult> {
+-        let (prefix_len, last_node) = self.cache.match_prefix(token_ids);
++        self.allocate_for_request_with_prefix_limit(token_ids, token_ids.len())
++    }
++
++    pub(crate) fn allocate_for_request_with_prefix_limit(
++        &mut self,
++        token_ids: &[u32],
++        max_prefix_tokens: usize,
++    ) -> Option<AllocResult> {
++        let (prefix_len, last_node) = self
++            .cache
++            .match_prefix(&token_ids[..max_prefix_tokens.min(token_ids.len())]);
+         let new_tokens = token_ids.len() - prefix_len;
+         let required_tokens = new_tokens.div_ceil(self.cache.page_size()) * self.cache.page_size();
+ 
+--- a/lib/mocker/src/scheduler/sglang/prefill.rs
++++ b/lib/mocker/src/scheduler/sglang/prefill.rs
+@@ -68,11 +68,22 @@
+             break;
+         }
+ 
+-        // Match the complete prompt before limiting new computation to a chunk.
+-        // Matching only sequence_prefix(chunk_end) caps reuse at the first chunk;
+-        // later chunks extend the active lease without looking up the cache again.
++        // Match before choosing a chunk or checking its budget, as SGLang's
++        // init_next_round_input does before PrefillAdder. Positive-output
++        // requests must recompute the last prompt token to obtain next-token
++        // logits; page alignment and hybrid checkpoint eligibility can require
++        // more than one token. Zero-output synthetic requests need no logits.
++        let lookup_len = req
++            .current_sequence_len()
++            .saturating_sub(usize::from(req.remaining_output_tokens() > 0));
+         let materialized_prefix = if req.materialized_tokens == 0 {
+-            kv_manager.cache().prefix_match_len(req.sequence_tokens())
++            let Some(prefix) = kv_manager.lookup_prefill_prefix(req.sequence_prefix(lookup_len))
++            else {
++                rejected.push_back(req);
++                oom = true;
++                break;
++            };
++            prefix
+         } else {
+             req.materialized_tokens
+         };
+@@ -81,7 +92,7 @@
+         if req.materialized_tokens == 0 && kv_manager.cache().has_mamba_cache() {
+             let matched = kv_manager
+                 .cache()
+-                .attention_prefix_match_len(req.sequence_tokens());
++                .attention_prefix_match_len(req.sequence_prefix(lookup_len));
+             let branch = matched / config.mamba_cache_chunk_size * config.mamba_cache_chunk_size;
+             req.mamba.branching_tokens = (branch > materialized_prefix).then_some(branch);
+         }
+@@ -137,10 +148,12 @@
+                 .extend_allocation(alloc_tokens, &mut lease)
+                 .then_some(req.materialized_tokens)
+         } else {
+-            kv_manager.allocate_for_request(alloc_tokens).map(|alloc| {
+-                lease = alloc.lease;
+-                alloc.prefix_len
+-            })
++            kv_manager
++                .allocate_for_request_with_prefix_limit(alloc_tokens, materialized_prefix)
++                .map(|alloc| {
++                    lease = alloc.lease;
++                    alloc.prefix_len
++                })
+         };
+ 
+         let Some(prefix_len) = prefix_len else {
+@@ -187,9 +200,9 @@
+         rem_chunk_tokens -= charged_input_tokens;
+         can_run.push(req);
+ 
+-        if rem_chunk_tokens <= 0.0 {
+-            break;
+-        }
++        // An available request slot lets SGLang examine the next candidate,
++        // even after this request consumes the chunk-token budget. Its prefix
++        // lookup can affect cache recency before the budget rejects it.
+     }
+ 
+     while let Some(req) = rejected.pop_back() {
+--- a/lib/mocker/src/scheduler/sglang/tests.rs
++++ b/lib/mocker/src/scheduler/sglang/tests.rs
+@@ -66,6 +66,80 @@
+         arrival_timestamp_ms: None,
+         ..Default::default()
+     }
++}
++
++#[rstest]
++#[case(false, 28, 4)]
++#[case(true, 0, 8)]
++fn positive_output_prefill_recomputes_the_final_prompt_token(
++    #[case] hybrid: bool,
++    #[case] expected_prefix: usize,
++    #[case] expected_computed: usize,
++) {
++    let mut args = test_args(32, 4, 8);
++    if hybrid {
++        args.sglang.as_mut().unwrap().mamba_state_capacity = Some(10);
++    }
++    let config = SglangConfig::from_args(&args);
++    let mut kv_manager = SglangKvManager::new(128, 4, KvEventPublishers::default(), 0);
++    if hybrid {
++        kv_manager.cache_mut().enable_mamba_cache(10);
++    }
++    let prompt: Vec<u32> = (0..32).collect();
++    let cached = kv_manager.allocate_for_request(&prompt).unwrap();
++    kv_manager.finish(&prompt, cached.lease);
++    let mut waiting = VecDeque::from([SglangRequest::from(direct_request(prompt, 1))]);
++
++    let batch = get_new_batch_prefill(&mut waiting, &mut kv_manager, &config, 0.7, &[]);
++
++    assert_eq!(batch.admissions[0].reused_input_tokens, expected_prefix);
++    assert_eq!(batch.prefill_fpm[0].tokens_computed, expected_computed);
++    assert_eq!(batch.can_run.len(), 1);
++}
++
++#[rstest]
++#[case(5)]
++#[case(7)]
++fn prefill_budget_rejection_still_refreshes_the_examined_cached_prefix(#[case] cached_count: u32) {
++    let mut args = test_args(64, 4, 8);
++    args.sglang.as_mut().unwrap().mamba_state_capacity = Some(10);
++    let config = SglangConfig::from_args(&args);
++    let mut kv_manager = SglangKvManager::new(256, 4, KvEventPublishers::default(), 0);
++    kv_manager.cache_mut().enable_mamba_cache(10);
++    // A is oldest, B is next. With seven checkpoints the cold prefill fills
++    // the pool, so the speculative lookup's COW state must evict B.
++    let cached: Vec<Vec<u32>> = (0..cached_count)
++        .map(|i| (i * 100..i * 100 + 8).collect())
++        .collect();
++    for prompt in &cached {
++        let alloc = kv_manager.allocate_for_request(prompt).unwrap();
++        kv_manager.finish(prompt, alloc.lease);
++    }
++    let mut hot = cached[0].clone();
++    hot.extend(500..504);
++    let mut waiting = VecDeque::from([
++        SglangRequest::from(direct_request((1000..1016).collect(), 1)),
++        SglangRequest::from(direct_request(hot, 1)),
++    ]);
++
++    let batch = get_new_batch_prefill(&mut waiting, &mut kv_manager, &config, 0.7, &[]);
++    assert_eq!(batch.can_run.len(), 1);
++    assert_eq!(batch.prefill_fpm[0].tokens_computed, 8);
++    assert_eq!(waiting.len(), 1);
++    if cached_count == 7 {
++        assert_eq!(kv_manager.cache().prefix_match_len(&cached[1]), 0);
++    }
++    // SGLang calls init_next_round_input before PrefillAdder rejects A for
++    // exhausted chunk tokens. That lookup consumes A's state and refreshes it.
++    assert!(kv_manager.cache_mut().reserve_mamba_states(3).0);
++    assert_eq!(kv_manager.cache().prefix_match_len(&cached[0]), 8);
++    assert_eq!(kv_manager.cache().prefix_match_len(&cached[1]), 0);
++    kv_manager.cache_mut().release_mamba_states(3);
++    for mut req in batch.can_run {
++        kv_manager.abort(std::mem::take(&mut req.kv_lease));
++    }
++    assert!(kv_manager.cache_mut().reserve_mamba_states(10).0);
++    kv_manager.cache_mut().release_mamba_states(10);
+ }
+ 
+ #[rstest]
+@@ -231,7 +305,9 @@
+         now = pass.end_ms;
+         assert!(core.is_empty());
+     }
+-    let mut branch = direct_request((0..12).collect(), 5);
++    // The final prompt token remains uncached; the preceding aligned branch
++    // position is 12, retaining this checkpoint-publication regression.
++    let mut branch = direct_request((0..13).collect(), 5);
+     branch.output_token_ids = Some((2000..2005).collect());
+     core.receive(branch);
+     let mut outputs = 0;
+@@ -449,11 +525,12 @@
+ }
+ 
+ #[rstest]
+-#[case(32, 0)]
+-#[case(40, 8)]
+-#[case(56, 8)]
++#[case(32, 28, 4)]
++#[case(40, 32, 8)]
++#[case(56, 32, 8)]
+ fn chunked_prefill_reuses_cached_prefix_beyond_first_chunk(
+     #[case] prompt_len: usize,
++    #[case] reused: usize,
+     #[case] computed: usize,
+ ) {
+     let config = SglangConfig::from_args(&test_args(32, 4, 8));
+@@ -468,12 +545,12 @@
+     let batch = get_new_batch_prefill(&mut waiting, &mut kv_manager, &config, 0.7, &[]);
+ 
+     assert_eq!(batch.can_run.len(), 1);
+-    assert_eq!(batch.admissions[0].reused_input_tokens, 32);
++    assert_eq!(batch.admissions[0].reused_input_tokens, reused);
+     assert_eq!(batch.prefill_fpm[0].tokens_computed, computed);
+     let req = &batch.can_run[0];
+-    assert_eq!(req.materialized_tokens, 32 + computed);
+-    assert_eq!(&req.kv_indices()[..32], cached_indices);
+-    assert_eq!(req.extend_input_len(), prompt_len - 32 - computed);
++    assert_eq!(req.materialized_tokens, reused + computed);
++    assert_eq!(&req.kv_indices()[..reused], &cached_indices[..reused]);
++    assert_eq!(req.extend_input_len(), prompt_len - reused - computed);
+     assert!(waiting.is_empty());
+ }
+ 
+@@ -482,12 +559,13 @@
+     let args = test_args(8, 4, 16);
+     let config = SglangConfig::from_args(&args);
+     let (buffer, sink) = capture_router_event_sink(ROUTER_TEST_WORKER_ID);
+-    let mut kv_manager = SglangKvManager::new(11, 4, KvEventPublishers::new(Some(sink), None), 0);
+-    let prompt = vec![1, 2, 3, 4];
+-
+-    let cached = kv_manager.allocate_for_request(&prompt).unwrap();
++    let mut kv_manager = SglangKvManager::new(15, 4, KvEventPublishers::new(Some(sink), None), 0);
++    let cached_prefix = vec![1, 2, 3, 4];
++    let prompt = vec![1, 2, 3, 4, 5, 6, 7, 8];
++
++    let cached = kv_manager.allocate_for_request(&cached_prefix).unwrap();
+     let cached_indices = cached.lease.indices().to_vec();
+-    kv_manager.finish(&prompt, cached.lease);
++    kv_manager.finish(&cached_prefix, cached.lease);
+     let mut waiting = VecDeque::from([SglangRequest {
+         uuid: Uuid::from_u128(90_002),
+         sequence_tokens: prompt.clone(),
+@@ -504,12 +582,12 @@
+         .pop()
+         .unwrap();
+ 
+-    assert_eq!(req.cached_tokens(), prompt.len());
+-    assert_eq!(req.kv_indices(), cached_indices);
+-
+-    // The three-token blocker owns a complete physical page. With two pages
+-    // total there is no free capacity, so the cache-hit request is retracted
+-    // while the blocker can fill the remainder of its existing page.
++    assert_eq!(req.cached_tokens(), cached_prefix.len());
++    assert_eq!(&req.kv_indices()[..cached_prefix.len()], cached_indices);
++
++    // The three-token blocker owns a complete physical page. Two pages for
++    // the request and a third for the blocker exhaust capacity, so the
++    // cache-hit request is retracted while the blocker fills its current page.
+     let blocker_tokens = vec![9, 10, 11];
+     let blocker_alloc = kv_manager.allocate_for_request(&blocker_tokens).unwrap();
+     let blocker = SglangRequest {
+@@ -529,9 +607,14 @@
+     let retracted = decode::check_decode_mem(&mut running, &mut kv_manager, &config);
+     assert_eq!(retracted.len(), 1);
+     assert_eq!(retracted[0].uuid, Uuid::from_u128(90_002));
+-    assert_eq!(removed_event_count(&buffer.drain()), 0);
+-    assert_eq!(kv_manager.cache().page_pool.available(), 0);
+-    assert_eq!(kv_manager.cache_mut().match_prefix(&prompt).0, prompt.len());
++    // Only the recomputed private page is removed; the cache-owned prefix
++    // remains available and retains its original physical indices.
++    assert_eq!(removed_event_count(&buffer.drain()), 1);
++    assert_eq!(kv_manager.cache().page_pool.available(), 4);
++    assert_eq!(
++        kv_manager.cache_mut().match_prefix(&cached_prefix).0,
++        cached_prefix.len()
++    );
+ }
+ 
+ mod source_holds {

@@ -1,0 +1,122 @@
+--- a/lib/mocker/src/cache/radix_cache.rs
++++ b/lib/mocker/src/cache/radix_cache.rs
+@@ -276,8 +276,9 @@
+         if node == self.root || self.mamba.is_none() {
+             return Vec::new();
+         }
+-        if let Some(state) = self.mamba.as_mut().unwrap().states.get_mut(&node) {
+-            state.last_access = Instant::now();
++        if self.mamba.as_ref().unwrap().states.contains_key(&node) {
++            // SGLang discards a duplicate donation. Inserting it does not
++            // consume the existing state and must not refresh its own LRU.
+             return Vec::new();
+         }
+         // This node can be a newly split, still-unprotected branch. Evicting
+@@ -299,6 +300,12 @@
+         );
+         self.dec_lock_ref(node);
+         removed
++    }
++
++    pub(crate) fn touch_mamba_checkpoint(&mut self, node: NodeId) {
++        if let Some(state) = self.mamba.as_mut().and_then(|m| m.states.get_mut(&node)) {
++            state.last_access = Instant::now();
++        }
+     }
+ 
+     fn make_mamba_room(&mut self, additional: usize) -> (bool, Vec<KvPageId>) {
+@@ -928,6 +935,32 @@
+     }
+ 
+     #[test]
++    fn mamba_duplicate_checkpoint_donation_does_not_refresh_state_lru() {
++        let mut cache = RadixCache::new(64, 4);
++        cache.enable_mamba_cache(5);
++        let first = vec![1, 2, 3, 4];
++        let second = vec![5, 6, 7, 8];
++        let first_indices = cache.page_pool.allocate(4).unwrap();
++        let first_node = cache.insert(&first, &first_indices);
++        cache.record_mamba_checkpoint(first_node);
++        let second_indices = cache.page_pool.allocate(4).unwrap();
++        let second_node = cache.insert(&second, &second_indices);
++        cache.record_mamba_checkpoint(second_node);
++        let now = Instant::now();
++        let states = &mut cache.mamba.as_mut().unwrap().states;
++        states.get_mut(&first_node).unwrap().last_access = now - std::time::Duration::from_secs(2);
++        states.get_mut(&second_node).unwrap().last_access = now - std::time::Duration::from_secs(1);
++
++        // SGLang frees a duplicate donated state. The existing checkpoint was
++        // not consumed by this insertion, so it stays the oldest state.
++        cache.record_mamba_checkpoint(first_node);
++        assert!(cache.reserve_mamba_states(4).0);
++        assert_eq!(cache.prefix_match_len(&first), 0);
++        assert_eq!(cache.prefix_match_len(&second), 4);
++        cache.release_mamba_states(4);
++    }
++
++    #[test]
+     fn mamba_checkpoint_publication_preserves_new_branch_when_descendant_is_evicted() {
+         let mut cache = RadixCache::new(256, 4);
+         cache.enable_mamba_cache(4);
+--- a/lib/mocker/src/kv_manager/sglang_backend.rs
++++ b/lib/mocker/src/kv_manager/sglang_backend.rs
+@@ -399,6 +399,11 @@
+                 .insert_from_node(last_node, first_new_token, token_ids, kv_indices);
+         let removed = self.cache.record_mamba_checkpoint(new_last_node);
+         self.publish_removed_pages(&removed);
++
++        // SGLang rematches an unfinished request's donated prefix before
++        // adopting its canonical KV/state. Unlike a finished donation, this
++        // consumes the terminal checkpoint and refreshes its state LRU.
++        self.cache.touch_mamba_checkpoint(new_last_node);
+ 
+         // An interleaved insert can retain different physical pages for the same prefix.
+         // Move the active request to canonical pages before releasing its duplicates.
+--- a/lib/mocker/src/scheduler/sglang/tests.rs
++++ b/lib/mocker/src/scheduler/sglang/tests.rs
+@@ -65,6 +65,45 @@
+         dp_rank: 0,
+         arrival_timestamp_ms: None,
+         ..Default::default()
++    }
++}
++
++#[rstest]
++#[case(true)]
++#[case(false)]
++fn mamba_completion_without_new_checkpoint_does_not_refresh_cached_prefix(
++    #[case] evict_state: bool,
++) {
++    let mut args = test_args(32, 64, 512);
++    let sg = args.sglang.as_mut().unwrap();
++    sg.enable_mixed_chunk = Some(false);
++    sg.mamba_state_capacity = Some(10);
++    sg.mamba_track_interval = Some(256);
++    let mut core = SglangCore::new(args);
++    let first: Vec<u32> = (0..128).collect();
++    let second: Vec<u32> = (1000..1128).collect();
++    core.receive(direct_request(first.clone(), 2));
++    let pass = core.execute_pass_internal(None, 0.0);
++    assert_eq!(pass.output_signals.len(), 1);
++    core.receive(direct_request(second.clone(), 1));
++    let pass = core.execute_pass_internal(None, pass.end_ms);
++    assert_eq!(pass.output_signals.len(), 1);
++    assert_eq!(core.kv_manager.cache().prefix_match_len(&second), 128);
++    let pass = core.execute_pass_internal(None, pass.end_ms);
++    assert_eq!(pass.output_signals.len(), 1);
++    assert!(core.running.is_empty());
++
++    // First completed later, but it never crossed a decode checkpoint boundary.
++    // It must release its lease without promoting the old prefill checkpoint.
++    if evict_state {
++        assert!(core.kv_manager.cache_mut().reserve_mamba_states(9).0);
++    } else {
++        assert_eq!(core.kv_manager.cache_mut().evict(64).0, 128);
++    }
++    assert_eq!(core.kv_manager.cache().prefix_match_len(&first), 0);
++    assert_eq!(core.kv_manager.cache().prefix_match_len(&second), 128);
++    if evict_state {
++        core.kv_manager.cache_mut().release_mamba_states(9);
+     }
+ }
+ 

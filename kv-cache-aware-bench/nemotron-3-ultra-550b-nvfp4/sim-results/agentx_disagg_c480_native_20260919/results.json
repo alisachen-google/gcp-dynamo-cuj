@@ -1,0 +1,218 @@
+{
+  "updated_utc": "2026-09-19 02:44 UTC",
+  "plan": {
+    "created_utc": "2026-09-19T02:28:47.085215+00:00",
+    "status": "running",
+    "topology": "p8d8",
+    "gpus": 64,
+    "concurrency": 480,
+    "concurrency_unit": "live AgentX sessions",
+    "engine": "Native DynoSim V11 disaggregation extension with frozen V10 AIC timing coefficients",
+    "native_core_sha256": "39e41354104490981f35f76850bd17973369fc8222dab9f7813e25f50146e36e",
+    "seed": 42,
+    "benchmark_id": "7335822747da",
+    "profile_seconds": 3600,
+    "grace_seconds": 60,
+    "request_timeout_seconds": 1200,
+    "cache_reset": "New native workers and empty caches for each run, followed by identical seeded trajectory warmup",
+    "temperature": 0,
+    "queue_policy": "fcfs",
+    "router_queue_threshold": null,
+    "slo": {
+      "p95_ttft_seconds": 10,
+      "e2e_normalized_interactivity_p90_tokens_per_second": 20
+    },
+    "quality": {
+      "require_valid_scenario": true,
+      "require_matching_warmup": true,
+      "maximum_error_fraction": 0.001
+    },
+    "selection": "Highest total input+output tok/s/GPU among valid points meeting both SLOs; if none, report no feasible winner and repeat the highest-interactivity valid point as exploratory",
+    "repeat_policy": "Repeat the default baseline and the best valid non-baseline candidate after the initial sweep; small deltas are compared with baseline repeat variation",
+    "max_parallel": 2,
+    "initial_settings": [
+      {
+        "name": "baseline",
+        "load_scale": 1,
+        "overlap_credit": 1,
+        "credit_decay": 0,
+        "repeat": false
+      },
+      {
+        "name": "credit08",
+        "load_scale": 1,
+        "overlap_credit": 0.8,
+        "credit_decay": 0,
+        "repeat": false
+      },
+      {
+        "name": "scale3-credit08",
+        "load_scale": 3,
+        "overlap_credit": 0.8,
+        "credit_decay": 0,
+        "repeat": false
+      },
+      {
+        "name": "scale2-credit08",
+        "load_scale": 2,
+        "overlap_credit": 0.8,
+        "credit_decay": 0,
+        "repeat": false
+      },
+      {
+        "name": "credit10-decay05",
+        "load_scale": 1,
+        "overlap_credit": 1,
+        "credit_decay": 0.5,
+        "repeat": false
+      },
+      {
+        "name": "credit10-decay10",
+        "load_scale": 1,
+        "overlap_credit": 1,
+        "credit_decay": 1,
+        "repeat": false
+      },
+      {
+        "name": "credit08-decay05",
+        "load_scale": 1,
+        "overlap_credit": 0.8,
+        "credit_decay": 0.5,
+        "repeat": false
+      },
+      {
+        "name": "credit08-decay10",
+        "load_scale": 1,
+        "overlap_credit": 0.8,
+        "credit_decay": 1,
+        "repeat": false
+      },
+      {
+        "name": "credit06",
+        "load_scale": 1,
+        "overlap_credit": 0.6,
+        "credit_decay": 0,
+        "repeat": false
+      },
+      {
+        "name": "credit06-decay05",
+        "load_scale": 1,
+        "overlap_credit": 0.6,
+        "credit_decay": 0.5,
+        "repeat": false
+      },
+      {
+        "name": "credit06-decay10",
+        "load_scale": 1,
+        "overlap_credit": 0.6,
+        "credit_decay": 1,
+        "repeat": false
+      },
+      {
+        "name": "baseline-repeat",
+        "load_scale": 1,
+        "overlap_credit": 1,
+        "credit_decay": 0,
+        "repeat": true
+      }
+    ],
+    "expected_initial_runs": 12,
+    "expected_finalist_repeats": 1,
+    "notes": [
+      "No hardware GPUs are provisioned: this is local native Mocker/AIC simulation.",
+      "The native V11 build is distinct from V10; AIC timing coefficients are identical.",
+      "Disaggregation TTFT is uncalibrated; SLO results are simulation estimates.",
+      "Load scale may be decision-invariant under deterministic pure-prefill scoring; credit and decay are the primary placement variables.",
+      "Credit decay is load-dependent, not wall-clock cache expiration.",
+      "No point is marked complete until its AIPerf exports, config proof, warmup, and per-request metrics are collected."
+    ],
+    "config_sha256": {
+      "configs/decode-engine.json": "9c57c7be984e6a2c5241cc89d825e60b4034636a6bdb520b99b9b1b93782133d",
+      "configs/disagg_live_correctness_v11.json": "8b22e18339bf9f73e143d2d7956c69bd3a52b00f04d7e0340ef5a072c032a3a7",
+      "configs/matrix_v10_throughput.json": "e89b6f942793b9bf3b5a86c20a79b811beeaa7c05077a7115df5e1f7d28518e8",
+      "configs/p12d6-hardware-validation.json": "c55e9da417e2fa85fded7ad0736774bf3cabc35615fd2bf1275400819eef4dbc",
+      "configs/p8d8.json": "f9ab63b3a6f06cb3816ca5c867860fa99401c12201dbcd77417c059926b48084",
+      "configs/prefill-engine.json": "5785671d648298c3edea091b9181941c964db207f14e008cd8bac6b09031445e",
+      "configs/v11_patch_reconstruction.json": "6e8bb22d502b9e2756acc59502f2bb6c833d492db065df60c94230183837777b",
+      "configs/workload-source.json": "4c166a44777419e95ee1b5b3cd98524385b933fad654a46d0ed20a77f4fc155b"
+    }
+  },
+  "state": {
+    "updated_unix": 1789785747.5851061,
+    "jobs": {
+      "baseline": {
+        "state": "running",
+        "controller_pid": 2607384,
+        "run_dir": "/tmp/agentx-disagg-c480-runs/baseline",
+        "started_unix": 1789784962.445663,
+        "attempt": 1,
+        "run_state": "running_aiperf"
+      },
+      "credit08": {
+        "state": "running",
+        "controller_pid": 2607607,
+        "run_dir": "/tmp/agentx-disagg-c480-runs/credit08",
+        "started_unix": 1789784963.4462814,
+        "attempt": 1,
+        "run_state": "running_aiperf"
+      },
+      "scale3-credit08": {
+        "state": "pending",
+        "run_dir": "/tmp/agentx-disagg-c480-runs/scale3-credit08"
+      },
+      "scale2-credit08": {
+        "state": "pending",
+        "run_dir": "/tmp/agentx-disagg-c480-runs/scale2-credit08"
+      },
+      "credit10-decay05": {
+        "state": "pending",
+        "run_dir": "/tmp/agentx-disagg-c480-runs/credit10-decay05"
+      },
+      "credit10-decay10": {
+        "state": "pending",
+        "run_dir": "/tmp/agentx-disagg-c480-runs/credit10-decay10"
+      },
+      "credit08-decay05": {
+        "state": "pending",
+        "run_dir": "/tmp/agentx-disagg-c480-runs/credit08-decay05"
+      },
+      "credit08-decay10": {
+        "state": "pending",
+        "run_dir": "/tmp/agentx-disagg-c480-runs/credit08-decay10"
+      },
+      "credit06": {
+        "state": "pending",
+        "run_dir": "/tmp/agentx-disagg-c480-runs/credit06"
+      },
+      "credit06-decay05": {
+        "state": "pending",
+        "run_dir": "/tmp/agentx-disagg-c480-runs/credit06-decay05"
+      },
+      "credit06-decay10": {
+        "state": "pending",
+        "run_dir": "/tmp/agentx-disagg-c480-runs/credit06-decay10"
+      },
+      "baseline-repeat": {
+        "state": "pending",
+        "run_dir": "/tmp/agentx-disagg-c480-runs/baseline-repeat"
+      }
+    },
+    "controller_pid": 2617708,
+    "state": "running",
+    "active": 2,
+    "resources": {
+      "available_memory_gib": 158.50442504882812,
+      "available_disk_gib": 66.07855987548828,
+      "other_controllers": 0,
+      "loadavg": [
+        0.67333984375,
+        1.0166015625,
+        1.1259765625
+      ]
+    },
+    "wait_reason": "parallel_limit"
+  },
+  "completed": 0,
+  "rows": [],
+  "interactivity_definition": "1 / P90(E2E_seconds / server_output_tokens), linear percentile; successful profiling requests only"
+}

@@ -1,0 +1,145 @@
+--- a/lib/mocker/src/cache/radix_cache.rs
++++ b/lib/mocker/src/cache/radix_cache.rs
+@@ -280,15 +280,24 @@
+             state.last_access = Instant::now();
+             return Vec::new();
+         }
++        // This node can be a newly split, still-unprotected branch. Evicting
++        // its older descendant must not recursively delete this KV prefix as
++        // a tombstone before its new recurrent state has been published.
++        self.inc_lock_ref(node);
+         let (fits, removed) = self.make_mamba_room(1);
+-        assert!(fits, "Mamba checkpoint cannot fit after admission");
++        if !fits {
++            self.dec_lock_ref(node);
++            panic!("Mamba checkpoint cannot fit after admission");
++        }
+         self.mamba.as_mut().unwrap().states.insert(
+             node,
+             MambaState {
+                 last_access: Instant::now(),
+-                locks: 0,
++                // Account for the temporary KV protection installed above.
++                locks: 1,
+             },
+         );
++        self.dec_lock_ref(node);
+         removed
+     }
+ 
+@@ -903,6 +912,36 @@
+     }
+ 
+     #[test]
++    fn mamba_checkpoint_publication_preserves_new_branch_when_descendant_is_evicted() {
++        let mut cache = RadixCache::new(256, 4);
++        cache.enable_mamba_cache(4);
++        let first: Vec<u32> = (0..16).collect();
++        let first_indices = cache.page_pool.allocate(16).unwrap();
++        let node = cache.insert(&first, &first_indices);
++        cache.record_mamba_checkpoint(node);
++        for offset in [100, 200, 300] {
++            let tokens: Vec<u32> = (offset..offset + 16).collect();
++            let indices = cache.page_pool.allocate(16).unwrap();
++            let node = cache.insert(&tokens, &indices);
++            cache.record_mamba_checkpoint(node);
++        }
++        // The newly computed branch has KV but no state until publication.
++        // Making room evicts its older descendant and must retain this prefix.
++        let branch = cache.insert(&first[..8], &first_indices[..8]);
++        cache.record_mamba_checkpoint(branch);
++        assert_eq!(cache.prefix_match_len(&first[..8]), 8);
++        assert!(
++            cache
++                .mamba
++                .as_ref()
++                .unwrap()
++                .states
++                .keys()
++                .all(|id| cache.nodes.contains_key(*id))
++        );
++    }
++
++    #[test]
+     fn test_page_pool_allocate_extend_and_free() {
+         let mut pool = PagePool::new(12, 4);
+         assert_eq!(pool.available(), 12);
+--- a/lib/mocker/src/scheduler/sglang/tests.rs
++++ b/lib/mocker/src/scheduler/sglang/tests.rs
+@@ -173,6 +173,76 @@
+         core.apply_command(SchedulerCommand::CancelRequest { request_id })
+             .unwrap();
+         assert!(core.is_empty());
++    }
++}
++
++#[test]
++fn hybrid_prefill_survives_eviction_of_its_cached_longer_descendant() {
++    let mut args = test_args(128, 4, 64);
++    let sg = args.sglang.as_mut().unwrap();
++    sg.enable_mixed_chunk = Some(false);
++    sg.mamba_state_capacity = Some(8);
++    let mut core = SglangCore::new(args);
++    let mut now = 0.0;
++    for offset in [0, 100, 200, 300, 400] {
++        core.receive(direct_request((offset..offset + 24).collect(), 1));
++        let pass = core.execute_pass_internal(None, now);
++        now = pass.end_ms;
++        assert!(core.is_empty());
++    }
++    let mut branch = direct_request((0..12).collect(), 5);
++    branch.output_token_ids = Some((2000..2005).collect());
++    core.receive(branch);
++    let mut outputs = 0;
++    while !core.is_empty() {
++        let pass = core.execute_pass_internal(None, now);
++        now = pass.end_ms;
++        outputs += pass
++            .output_signals
++            .iter()
++            .filter(|s| s.token_id.is_some())
++            .count();
++    }
++    assert_eq!(outputs, 5);
++    assert_eq!(
++        core.kv_manager
++            .cache()
++            .prefix_match_len(&(0..24).collect::<Vec<_>>()),
++        12
++    );
++}
++
++#[test]
++fn hybrid_concurrent_branch_pressure_preserves_leases() {
++    let mut args = test_args(128, 4, 8);
++    args.max_num_seqs = Some(3);
++    let sg = args.sglang.as_mut().unwrap();
++    sg.enable_mixed_chunk = Some(false);
++    sg.mamba_state_capacity = Some(16);
++    let mut core = SglangCore::new(args);
++    let mut now = 0.0;
++    for round in 0..200 {
++        let mut ids = Vec::new();
++        for branch in 0..3 {
++            let length = 32 + (round + branch * 7) % 25;
++            let mut tokens: Vec<u32> = (0..length as u32).collect();
++            tokens[12 + (round + branch) % 16] = 100 + (round % 5) as u32;
++            ids.push(core.receive(direct_request(tokens, 1 + (round + branch) % 11)));
++        }
++        let mut steps = 0;
++        while !core.is_empty() {
++            let pass = core.execute_pass_internal(None, now);
++            now = pass.end_ms;
++            if steps == 2 && round % 4 == 0 {
++                core.apply_command(SchedulerCommand::CancelRequest { request_id: ids[1] })
++                    .unwrap();
++            }
++            steps += 1;
++            assert!(
++                steps < 100,
++                "finite-state branch traffic must make progress"
++            );
++        }
+     }
+ }
+ 

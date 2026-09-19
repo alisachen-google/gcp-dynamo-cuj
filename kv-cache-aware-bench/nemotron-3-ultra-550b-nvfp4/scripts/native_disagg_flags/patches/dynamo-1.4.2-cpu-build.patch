@@ -1,0 +1,12 @@
+--- a/lib/bindings/python/Cargo.toml
++++ b/lib/bindings/python/Cargo.toml
+@@ -110,7 +110,8 @@
+ 
+ 
+ [target.'cfg(target_os = "linux")'.dependencies]
+-dynamo-llm = { path = "../../llm" }
++# Local CPU-only Mocker build; no CUDA/NIXL block-manager runtime is needed.
++dynamo-llm = { path = "../../llm", default-features = false }
+ 
+ [target.'cfg(not(target_os = "linux"))'.dependencies]
+ dynamo-llm = { path = "../../llm", default-features = false }
