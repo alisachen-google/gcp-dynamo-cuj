@@ -325,3 +325,8 @@ The winner rule was updated accordingly (a > 10 % TTFT p95 cut with throughput w
 2.0 at 480 (run 4), then the better of the two at the same-config cell and at 576 clients, to see whether tuned KV holds 10 s
 above 480.
 
+Run 4 (overlap credit 2.0, 480 clients): 12,239 tok/s/GPU (+0.3 %), TTFT p50 / p95 0.72 / 6.55 s (p95 −8 %), hit rate 0.917,
+stationary, guard PASS ([artifact 1789787390](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789787390_alisachen-n3u-mnnvl-88-agentx-kvc20-c480)). More credit than 1.5 buys a marginally higher hit rate but no further TTFT gain
+(6.55 s vs 6.02 s) — the benefit has saturated — so **overlap credit 1.5 is the phase-A winner** and goes to the same-config cell
+and to 576 clients.
+
