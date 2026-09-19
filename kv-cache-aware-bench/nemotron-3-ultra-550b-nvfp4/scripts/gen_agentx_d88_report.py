@@ -13,9 +13,9 @@ FLAGS = {"kv": "`--router-mode kv --router-temperature 0.0 --router-queue-policy
          "kvs3c08": "kv + `--router-prefill-load-scale 3.0 --router-kv-overlap-score-credit 0.8`",
          "kvs2c08": "kv + `--router-prefill-load-scale 2.0 --router-kv-overlap-score-credit 0.8`",
          "kvd05": "kv + `--router-kv-overlap-score-credit-decay 0.5`", "kvd10": "kv + `--router-kv-overlap-score-credit-decay 1.0`",
-         "kvc15": "kv + `--router-kv-overlap-score-credit 1.5`", "kvc20": "kv + `--router-kv-overlap-score-credit 2.0`"}
+         "kvc15": "kv + `--router-kv-overlap-score-credit 1.5`", "kvt05": "kv with `--router-temperature 0.5`", "kvt02": "kv with `--router-temperature 0.2`", "kvc20": "kv + `--router-kv-overlap-score-credit 2.0`"}
 NAME = {"kv": "default KV", "rr": "round-robin", "kvs3c08": "load scale 3, overlap credit 0.8", "kvs2c08": "load scale 2, overlap credit 0.8",
-        "kvd05": "overlap credit decay 0.5", "kvd10": "overlap credit decay 1.0", "kvc15": "overlap credit 1.5", "kvc20": "overlap credit 2.0"}
+        "kvd05": "overlap credit decay 0.5", "kvd10": "overlap credit decay 1.0", "kvc15": "overlap credit 1.5", "kvt05": "router temperature 0.5", "kvt02": "router temperature 0.2", "kvc20": "overlap credit 2.0"}
 logs = ""
 for f in ("/tmp/agentx_88.log", "/tmp/agentx_88_rest.log"):
     try: logs += open(f, errors="ignore").read()
