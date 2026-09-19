@@ -1,0 +1,216 @@
+{
+  "observed_utc": "2026-09-19T22:35:11.287035+00:00",
+  "state": "completed_with_failures",
+  "runs": [
+    {
+      "run": "baseline",
+      "state": "failed",
+      "failure": {
+        "state": "failed",
+        "updated_unix": 1789788274.5103204,
+        "error": "AIPerf exit=1, exports=0"
+      },
+      "handoff_limit_evidence": [
+        {
+          "file": "/tmp/agentx-disagg-c480-runs/baseline/prefill-5.log",
+          "sha256": "47db8eabb7f98e1c5cabb8426829b640eb5c50dafc8111b515e93c5426684543",
+          "line": 144,
+          "message": "mocker handoff session limit reached for DP rank 0"
+        }
+      ]
+    },
+    {
+      "run": "credit08",
+      "state": "failed",
+      "failure": {
+        "state": "failed",
+        "updated_unix": 1789788285.5181923,
+        "error": "AIPerf exit=1, exports=0"
+      },
+      "handoff_limit_evidence": [
+        {
+          "file": "/tmp/agentx-disagg-c480-runs/credit08/prefill-4.log",
+          "sha256": "c74b93c29f16a487f4d398d617dfd36e12f3e3b7346a61cf69fb7a0544d64bc2",
+          "line": 136,
+          "message": "mocker handoff session limit reached for DP rank 0"
+        }
+      ]
+    },
+    {
+      "run": "scale3-credit08",
+      "state": "failed",
+      "failure": {
+        "state": "failed",
+        "updated_unix": 1789791595.6288419,
+        "error": "AIPerf exit=1, exports=0"
+      },
+      "handoff_limit_evidence": [
+        {
+          "file": "/tmp/agentx-disagg-c480-runs/scale3-credit08/prefill-7.log",
+          "sha256": "b3ec029f3de92c9333d91a87d23261bc63a1cb497acca72bbcf30e017b05426d",
+          "line": 164,
+          "message": "mocker handoff session limit reached for DP rank 0"
+        }
+      ]
+    },
+    {
+      "run": "scale2-credit08",
+      "state": "failed",
+      "failure": {
+        "state": "failed",
+        "updated_unix": 1789791627.333784,
+        "error": "AIPerf exit=1, exports=0"
+      },
+      "handoff_limit_evidence": [
+        {
+          "file": "/tmp/agentx-disagg-c480-runs/scale2-credit08/prefill-7.log",
+          "sha256": "69f1dfc3b88f3df7c1e9f0145fb36e8c66171a57d3db6670af5da6c5a29ba477",
+          "line": 152,
+          "message": "mocker handoff session limit reached for DP rank 0"
+        }
+      ]
+    },
+    {
+      "run": "credit10-decay05",
+      "state": "failed",
+      "failure": {
+        "state": "failed",
+        "updated_unix": 1789794945.5321896,
+        "error": "AIPerf exit=1, exports=0"
+      },
+      "handoff_limit_evidence": [
+        {
+          "file": "/tmp/agentx-disagg-c480-runs/credit10-decay05/prefill-3.log",
+          "sha256": "3c2d7b512049f4b728127e9aad3092e3d7ab8f933ee79527afcc2ce345bde420",
+          "line": 150,
+          "message": "mocker handoff session limit reached for DP rank 0"
+        }
+      ]
+    },
+    {
+      "run": "credit10-decay10",
+      "state": "failed",
+      "failure": {
+        "state": "failed",
+        "updated_unix": 1789794968.2725818,
+        "error": "AIPerf exit=1, exports=0"
+      },
+      "handoff_limit_evidence": [
+        {
+          "file": "/tmp/agentx-disagg-c480-runs/credit10-decay10/prefill-4.log",
+          "sha256": "a5b0ea1fa0308c933d7feedc8fa65610c5cd654922e5a480519ddcd27d224a09",
+          "line": 140,
+          "message": "mocker handoff session limit reached for DP rank 0"
+        }
+      ]
+    },
+    {
+      "run": "credit08-decay05",
+      "state": "failed",
+      "failure": {
+        "state": "failed",
+        "updated_unix": 1789798276.4271016,
+        "error": "AIPerf exit=1, exports=0"
+      },
+      "handoff_limit_evidence": [
+        {
+          "file": "/tmp/agentx-disagg-c480-runs/credit08-decay05/prefill-4.log",
+          "sha256": "71eaf244a883b348bd8f8eb7f4b7c22454b79ced2afae72c45960d1dcccbdab6",
+          "line": 170,
+          "message": "mocker handoff session limit reached for DP rank 0"
+        }
+      ]
+    },
+    {
+      "run": "credit08-decay10",
+      "state": "failed",
+      "failure": {
+        "state": "failed",
+        "updated_unix": 1789798308.7124016,
+        "error": "AIPerf exit=1, exports=0"
+      },
+      "handoff_limit_evidence": [
+        {
+          "file": "/tmp/agentx-disagg-c480-runs/credit08-decay10/prefill-6.log",
+          "sha256": "daa32655e51f86000425c8b5eccf4ca4e7659098b5edbb7d37d0d7fec5e0d8c9",
+          "line": 138,
+          "message": "mocker handoff session limit reached for DP rank 0"
+        }
+      ]
+    },
+    {
+      "run": "credit06",
+      "state": "failed",
+      "failure": {
+        "state": "failed",
+        "updated_unix": 1789801616.7929273,
+        "error": "AIPerf exit=1, exports=0"
+      },
+      "handoff_limit_evidence": [
+        {
+          "file": "/tmp/agentx-disagg-c480-runs/credit06/prefill-3.log",
+          "sha256": "b31cd3478f29e7de6078fe670420d27b9d03c9d57dfc8928e23f6b44b20a7e7a",
+          "line": 140,
+          "message": "mocker handoff session limit reached for DP rank 0"
+        }
+      ]
+    },
+    {
+      "run": "credit06-decay05",
+      "state": "failed",
+      "failure": {
+        "state": "failed",
+        "updated_unix": 1789801648.8612406,
+        "error": "AIPerf exit=1, exports=0"
+      },
+      "handoff_limit_evidence": [
+        {
+          "file": "/tmp/agentx-disagg-c480-runs/credit06-decay05/prefill-1.log",
+          "sha256": "4f1931812293258d950c54deb02653d75af13edab80c74942b0eb59997933f68",
+          "line": 148,
+          "message": "mocker handoff session limit reached for DP rank 0"
+        }
+      ]
+    },
+    {
+      "run": "credit06-decay10",
+      "state": "failed",
+      "failure": {
+        "state": "failed",
+        "updated_unix": 1789804957.0139372,
+        "error": "AIPerf exit=1, exports=0"
+      },
+      "handoff_limit_evidence": [
+        {
+          "file": "/tmp/agentx-disagg-c480-runs/credit06-decay10/prefill-3.log",
+          "sha256": "32a5a18c24913913c6b8315fe480f30ba8c700de52d3c5521bab117ec42105e1",
+          "line": 142,
+          "message": "mocker handoff session limit reached for DP rank 0"
+        }
+      ]
+    },
+    {
+      "run": "baseline-repeat",
+      "state": "failed",
+      "failure": {
+        "state": "failed",
+        "updated_unix": 1789804989.204273,
+        "error": "AIPerf exit=1, exports=0"
+      },
+      "handoff_limit_evidence": [
+        {
+          "file": "/tmp/agentx-disagg-c480-runs/baseline-repeat/prefill-0.log",
+          "sha256": "886a95293ee2a84346796c4b73ddf3f2808ca3c9f7fca4479cf3596f2fed9a3c",
+          "line": 141,
+          "message": "mocker handoff session limit reached for DP rank 0"
+        },
+        {
+          "file": "/tmp/agentx-disagg-c480-runs/baseline-repeat/prefill-2.log",
+          "sha256": "1a66baf4d6ee312a88997b52caa436dba9cb7747822bee69f6006dd9a7a3160e",
+          "line": 160,
+          "message": "mocker handoff session limit reached for DP rank 0"
+        }
+      ]
+    }
+  ]
+}

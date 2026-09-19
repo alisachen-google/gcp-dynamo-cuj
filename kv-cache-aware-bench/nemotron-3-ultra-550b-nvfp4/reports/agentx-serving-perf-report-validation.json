@@ -1,0 +1,36 @@
+{
+  "passed": true,
+  "hardware_runs": 34,
+  "new_hardware_runs": 8,
+  "by_architecture": {
+    "agg": 14,
+    "disagg": 20
+  },
+  "native_v10_agg_runs_revalidated": 12,
+  "input_manifests": {
+    "agentx-disagg-kv-rr-data": {
+      "manifest_sha256": "1f1e556392924fd49558e889e9335b104a2e5c56a4856527ba6162315a0ba635",
+      "files": 54
+    },
+    "agentx-serving-perf-data": {
+      "manifest_sha256": "483751c374f137114ebc008322544a735d5101270b4743c3cc80dbb61009f430",
+      "files": 35
+    },
+    "agentx-agg-kv-rr-data": {
+      "manifest_sha256": "a9ea919c3a97a28bb951ae09c4a326ccd74195ad8c0c27a717cdf32ff2ff6937",
+      "files": 155
+    }
+  },
+  "profiling_successes": 509088,
+  "profiling_errors": 149,
+  "excluded_successes_from_I90": 0,
+  "checks": [
+    "source hashes",
+    "shared replay configuration",
+    "canonical inverse-P90 E2E calculation",
+    "TTFT/E2E percentiles reconciled to summaries",
+    "request and error counts",
+    "D88 rounded source metrics, warmup, inflight, queue verdicts",
+    "existing native V10 inputs and hardware matches"
+  ]
+}
