@@ -330,3 +330,10 @@ stationary, guard PASS ([artifact 1789787390](https://console.cloud.google.com/s
 (6.55 s vs 6.02 s) — the benefit has saturated — so **overlap credit 1.5 is the phase-A winner** and goes to the same-config cell
 and to 576 clients.
 
+**RR knee bracketed (2026-09-19): between 192 and 384 clients.** RR at 384 is post-knee — 3,504 total tok/s/GPU (below its
+192-client cell, 4,419), TTFT p50 50 s / p95 289 s, hit rate 0.37, 231 requests in flight, 400 requests hitting the 300 s
+disaggregation queue-wait timeout with the transport healthy ([artifact 1789795836](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789795836_alisachen-n3u-mnnvl-88-agentx-rr-c384)). RR's measured ladder is therefore 72 → 1,763,
+96 → 2,671, 144 → 3,588, 192 → 4,419 (peak, stationary), 384 → 3,504 and 480 → 3,219 (both saturated). At 384 clients default KV
+delivers 9,993 tok/s/GPU at TTFT p95 4.8 s: **2.9× RR's throughput and 60× lower TTFT p95 at identical load.** RR's peak
+throughput (4,419) is 28 % of KV's (15,543 at 768).
+
