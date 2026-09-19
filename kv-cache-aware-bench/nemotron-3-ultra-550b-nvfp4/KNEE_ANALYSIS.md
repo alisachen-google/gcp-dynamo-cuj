@@ -303,3 +303,17 @@ cache affinity and both lose in proportion to the hit rate they give up: 0.891 �
 12,018 at 10.5 s, 0.841 → 11,839 at 13.1 s. Credit decay 1.0 and load scale 2 push the same way, so they were dropped as
 predictable losers; the remaining phase-A budget probes the other direction — *more* affinity: overlap credit 1.5 (run 3), and
 credit 2.0 (run 4) only if 1.5 beats default KV.
+
+**RR inside the 10 s SLO (2026-09-19): 72 clients.** RR 96 missed the SLO (13.0 s), so RR was searched downward: **72 clients →
+1,763 total tok/s/GPU, TTFT p50 0.79 s / p95 9.91 s**, P90 interactivity 120, hit rate 0.66, stationary, guard PASS
+([artifact 1789773750](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789773750_alisachen-n3u-mnnvl-88-agentx-rr-c72)). The 48-client cell was not needed. This replaces the 20 s fallback in the same-SLO comparison:
+
+| comparison (8:8, 64 GPU, SLO = TTFT p95 ≤ 10 s for BOTH policies) | KV cell | RR cell | total tok/s/GPU | TTFT p95 | P90 interactivity | hit rate |
+|---|---|---|---|---|---|---|
+| same SLO | 480 clients | 72 clients | 12,204 vs 1,763 = **6.9×** | 7.12 s vs 9.91 s | 65 vs 120 | 0.89 vs 0.66 |
+| same config, light load | 192 | 192 | 5,142 vs 4,419 = 1.16× | 2.40 s vs 31.45 s | 100 vs 95 | 0.93 vs 0.61 |
+| same config, KV's SLO load | 480 | 480 | 12,204 vs 3,219 = 3.8× | 7.12 s vs 387.5 s | 65 vs 101 | 0.89 vs 0.29 |
+
+Inside a 10 s TTFT budget the KV-aware router serves 6.7× the clients and 6.9× the tokens per GPU that round-robin can; RR's
+only advantage is interactivity, which is simply the effect of running the decode tier almost empty (12.6 requests in flight on 64 GPUs).
+
