@@ -1,5 +1,5 @@
 {
-  "updated_utc": "2026-09-19 06:12 UTC",
+  "updated_utc": "2026-09-19 07:07 UTC",
   "plan": {
     "created_utc": "2026-09-19T02:28:47.085215+00:00",
     "status": "running",
@@ -138,7 +138,7 @@
     }
   },
   "state": {
-    "updated_unix": 1789798336.7761648,
+    "updated_unix": 1789801644.9093735,
     "jobs": {
       "baseline": {
         "state": "failed",
@@ -253,23 +253,33 @@
         "last_error": "AIPerf exit=1, exports=0"
       },
       "credit06": {
-        "state": "running",
+        "state": "failed",
         "run_dir": "/tmp/agentx-disagg-c480-runs/credit06",
         "controller_pid": 2692006,
         "started_unix": 1789798304.7210102,
         "attempt": 1,
-        "run_state": "running_aiperf"
+        "run_state": "running_aiperf",
+        "failure": {
+          "state": "failed",
+          "updated_unix": 1789801616.7929273,
+          "error": "AIPerf exit=1, exports=0"
+        },
+        "last_error": "AIPerf exit=1, exports=0"
       },
       "credit06-decay05": {
         "state": "running",
         "run_dir": "/tmp/agentx-disagg-c480-runs/credit06-decay05",
         "controller_pid": 2696705,
         "started_unix": 1789798336.7761407,
-        "attempt": 1
+        "attempt": 1,
+        "run_state": "running_aiperf"
       },
       "credit06-decay10": {
-        "state": "pending",
-        "run_dir": "/tmp/agentx-disagg-c480-runs/credit06-decay10"
+        "state": "running",
+        "run_dir": "/tmp/agentx-disagg-c480-runs/credit06-decay10",
+        "controller_pid": 2707411,
+        "started_unix": 1789801644.9093475,
+        "attempt": 1
       },
       "baseline-repeat": {
         "state": "pending",
@@ -280,13 +290,13 @@
     "state": "running",
     "active": 2,
     "resources": {
-      "available_memory_gib": 178.73125076293945,
-      "available_disk_gib": 61.058616638183594,
+      "available_memory_gib": 187.35884475708008,
+      "available_disk_gib": 60.73460006713867,
       "other_controllers": 0,
       "loadavg": [
-        24.60205078125,
-        7.2109375,
-        2.9072265625
+        0.5673828125,
+        0.7548828125,
+        0.80322265625
       ]
     },
     "wait_reason": null,
@@ -297,6 +307,7 @@
         "baseline",
         "credit08",
         "credit08-decay05",
+        "credit08-decay10",
         "credit10-decay05",
         "credit10-decay10",
         "scale2-credit08",
@@ -305,9 +316,9 @@
     ],
     "publication": {
       "state": "published",
-      "updated_unix": 1789798306.7289307,
-      "commit": "f1189e6dadfcc208634aa9f76cdd591f4c0a8a8c",
-      "remote_main": "f1189e6dadfcc208634aa9f76cdd591f4c0a8a8c",
+      "updated_unix": 1789798338.6375396,
+      "commit": "8e126951da8f74716cb452825aeae08788ffe412",
+      "remote_main": "8e126951da8f74716cb452825aeae08788ffe412",
       "report_url": "https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/reports/agentx-disagg-c480-kv-flags.md",
       "html_url": "https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/reports/agentx-disagg-c480-kv-flags.html"
     }
