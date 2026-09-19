@@ -170,6 +170,7 @@ Measured so far (AgentX definition; total = input + output tokens per second per
 | disagg 8:8 KV (64 GPU) | 144 | 3,964 | 44.1 | 0.36 / 1.1 / 1.87 s | 8.4 / 9.9 ms | 101 | 26.0 | stationary ([artifact](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789803115_alisachen-n3u-mnnvl-88-agentx-kv-c144); hit rate 0.93; guard PASS) |
 | disagg 8:8 KV (64 GPU) | 96 | 2,810 | 31.5 | 0.34 / 0.9 / 1.56 s | 7.7 / 8.8 ms | 114 | 16.5 | stationary ([artifact](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789808919_alisachen-n3u-mnnvl-88-agentx-kv-c96); hit rate 0.94; guard PASS) |
 | disagg 8:8 KV overlap credit 1.5 (64 GPU) | 192 | 5,138 | 50.7 | 0.42 / 1.4 / 2.30 s | 9.0 / 10.1 ms | 99 | 31.4 | stationary ([artifact](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789814379_alisachen-n3u-mnnvl-88-agentx-kvc15-c192); hit rate 0.93; same-config cell: −0.1% total, TTFT p95 −4% vs default KV) |
+| disagg 8:8 KV overlap credit 1.5 (64 GPU) | 576 | 14,024 | 136.1 | 0.95 / 5.1 / 8.75 s | 14.8 / 16.3 ms | 61 | 145.0 | stationary ([artifact](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789820579_alisachen-n3u-mnnvl-88-agentx-kvc15-c576); hit rate 0.90; inside the 10 s SLO at 576 clients) |
 | agg KV | 48 | 3,334 | 32.3 | 0.42 / 2.5 / 3.83 s | 7.3 / 9.8 ms | 102 | 6.8 | stationary |
 | agg KV | 96 | 6,844 | 75.1 | 0.67 / 3.4 / 5.36 s | 11.9 / 23.5 ms | 43 | 27.5 | stationary |
 | agg KV | 192 | 9,655 | 96.8 | 1.56 / 8.4 / 11.68 s | 23.9 / 50.6 ms | 20 | 74.5 | stationary |

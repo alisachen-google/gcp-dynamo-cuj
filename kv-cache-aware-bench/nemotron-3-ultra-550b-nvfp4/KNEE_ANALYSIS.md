@@ -343,3 +343,9 @@ from default KV, as expected: the prefill tier is ~13 % utilised, so there is no
 at 192 clients is therefore RR 4,419 / 31.5 s vs default KV 5,142 / 2.40 s vs tuned KV 5,138 / 2.30 s. (Warm-up wall 1,623 s vs
 1,699–1,706 s for the other 192-client cells — 5 % *shorter*, the only cell outside the ±0.5 % band, on the fast side.)
 
+Run 6 (overlap credit 1.5 at 576 clients): **14,024 total tok/s/GPU, TTFT p50 / p95 0.95 / 8.75 s — inside the 10 s SLO**, P90
+interactivity 61, hit rate 0.903, stationary (q1 1.02 s → q4 0.84 s), guard PASS ([artifact 1789820579](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789820579_alisachen-n3u-mnnvl-88-agentx-kvc15-c576)). Tuned KV therefore holds the
+SLO at 576 clients, 20 % more clients than the default-KV SLO cell (480 → 12,204): **+14.9 % throughput inside the same SLO, and 8.0× RR's
+SLO cell (72 clients, 1,763)**. Caveat: default KV was not measured at 576 (it sits between 7.1 s at 480 and 17.0 s at 672; a
+straight line gives ≈ 12 s), so the size of the gain attributable to the flag at this exact load needs a default-KV 576 cell.
+

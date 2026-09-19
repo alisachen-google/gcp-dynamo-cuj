@@ -135,6 +135,9 @@ o.append(f"\n### Round-robin\n\n{HDR}"); o += [row(x) for x in rr]
 o.append("\n### KV vs RR — the comparison points, measured\n\n| comparison | KV cell | RR cell | total tok/s/GPU (KV vs RR) | TTFT p50 / p95 (KV vs RR) | P90 interactivity | in-flight | hit rate | logs |\n|---|---|---|---|---|---|---|---|---|")
 if kslo and rslo:
     o.append(f"| **same SLO** (TTFT p95 ≤ {SLO:g} s, both policies) | {kslo['clients']} | {rslo['clients']} | {kslo['tot']:,.0f} vs {rslo['tot']:,.0f} = **{kslo['tot'] / rslo['tot']:.1f}×** | {kslo['p50']:.2f} / {kslo['p95']:.2f} s vs {rslo['p50']:.2f} / {rslo['p95']:.2f} s | {kslo['p90i']:.0f} vs {rslo['p90i']:.0f} | {kslo['infl']:.0f} vs {rslo['infl']:.0f} | {kslo['hit']:.2f} vs {rslo['hit']:.2f} | {L(kslo)} · {L(rslo)} |")
+tslo = max((x for x in fl if ok(x)), key=lambda x: x["tot"], default=None)
+if tslo and rslo and kslo and tslo["tot"] > kslo["tot"]:
+    o.append(f"| **same SLO, tuned KV** ({NAME.get(tslo['pol'], tslo['pol'])}) | {tslo['clients']} | {rslo['clients']} | {tslo['tot']:,.0f} vs {rslo['tot']:,.0f} = **{tslo['tot'] / rslo['tot']:.1f}×** ({(tslo['tot'] / kslo['tot'] - 1) * 100:+.1f}% vs default KV's SLO cell) | {tslo['p50']:.2f} / {tslo['p95']:.2f} s vs {rslo['p50']:.2f} / {rslo['p95']:.2f} s | {tslo['p90i']:.0f} vs {rslo['p90i']:.0f} | {tslo['infl']:.0f} vs {rslo['infl']:.0f} | {tslo['hit']:.2f} vs {rslo['hit']:.2f} | {L(tslo)} · {L(rslo)} |")
 for c in sorted(set(x["clients"] for x in kv) & set(x["clients"] for x in rr)):
     a, b = C[("kv", c)], C[("rr", c)]
     o.append(f"| same config, {c} clients | {c} | {c} | {a['tot']:,.0f} vs {b['tot']:,.0f} = **{a['tot'] / b['tot']:.2f}×** | {a['p50']:.2f} / {a['p95']:.2f} s vs {b['p50']:.2f} / {b['p95']:.2f} s | {a['p90i']:.0f} vs {b['p90i']:.0f} | {a['infl']:.0f} vs {b['infl']:.0f} | {a['hit']:.2f} vs {b['hit']:.2f} | {L(a)} · {L(b)} |")
