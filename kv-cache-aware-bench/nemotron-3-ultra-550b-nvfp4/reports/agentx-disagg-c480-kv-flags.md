@@ -1,6 +1,6 @@
 # AgentX disagg KV flag sweep at concurrency 480
 
-Updated: 2026-09-19 02:44 UTC. Completed: **0/12** scheduled runs. Queue: **running**.
+Updated: 2026-09-19 03:24 UTC. Completed: **0/12** scheduled runs. Queue: **running**.
 
 64 GPUs, 8 prefill + 8 decode TP4 workers; 480 live AgentX sessions. Native DynoSim V11 disaggregation extension with frozen V10 AIC timing coefficients. These are simulation forecasts; disaggregated TTFT is not calibrated to hardware.
 
@@ -8,9 +8,9 @@ The initial grid uses scale 1, credit {0.6, 0.8, 1.0}, and decay {0, 0.5, 1.0}. 
 
 | Run | Scale | Credit | Decay | Total tok/s/GPU | Δ vs baseline | P95 TTFT | E2E I90 | Errors | Quality / both SLOs |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| baseline | 1 | 1 | 0 | — | — | — | — | — | running |
+| baseline | 1 | 1 | 0 | — | — | — | — | — | failed |
 | credit08 | 1 | 0.8 | 0 | — | — | — | — | — | running |
-| scale3-credit08 | 3 | 0.8 | 0 | — | — | — | — | — | pending |
+| scale3-credit08 | 3 | 0.8 | 0 | — | — | — | — | — | running |
 | scale2-credit08 | 2 | 0.8 | 0 | — | — | — | — | — | pending |
 | credit10-decay05 | 1 | 1 | 0.5 | — | — | — | — | — | pending |
 | credit10-decay10 | 1 | 1 | 1 | — | — | — | — | — | pending |
