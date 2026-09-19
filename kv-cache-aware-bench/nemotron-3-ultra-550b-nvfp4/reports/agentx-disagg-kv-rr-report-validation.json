@@ -1,0 +1,29 @@
+{
+  "passed": true,
+  "hardware_runs": 14,
+  "counts": {
+    "kv": 6,
+    "rr": 5,
+    "kvc15": 1,
+    "kvs3c08": 1,
+    "kvd05": 1
+  },
+  "source_commit": "57260092dc15e5fd5de5343501c61836c60dc312",
+  "verified_input_hashes": 54,
+  "checks": [
+    "source hashes",
+    "scenario validity and shared replay configuration",
+    "request counts/errors",
+    "canonical E2E I90 from per-request records",
+    "TTFT p95, E2E p95 and P10 output/E2E versus original summaries",
+    "rounded source summary agreement",
+    "frontend cache ratio",
+    "client in-flight mean and peak",
+    "warmup durations",
+    "source queue-check verdicts"
+  ],
+  "profiling_successes": 301473,
+  "profiling_errors": 39,
+  "excluded_successes_from_interactivity": 0,
+  "single_trials_no_confidence_intervals": true
+}
