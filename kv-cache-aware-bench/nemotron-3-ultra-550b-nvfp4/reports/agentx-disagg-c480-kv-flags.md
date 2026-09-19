@@ -17,9 +17,9 @@ The initial grid uses scale 1, credit {0.6, 0.8, 1.0}, and decay {0, 0.5, 1.0}. 
 | credit08-decay05 | 1 | 0.8 | 0.5 | — | — | — | — | — | failed |
 | credit08-decay10 | 1 | 0.8 | 1 | — | — | — | — | — | failed |
 | credit06 | 1 | 0.6 | 0 | — | — | — | — | — | failed |
-| credit06-decay05 | 1 | 0.6 | 0.5 | — | — | — | — | — | running |
+| credit06-decay05 | 1 | 0.6 | 0.5 | — | — | — | — | — | failed |
 | credit06-decay10 | 1 | 0.6 | 1 | — | — | — | — | — | running |
-| baseline-repeat | 1 | 1 | 0 | — | — | — | — | — | pending |
+| baseline-repeat | 1 | 1 | 0 | — | — | — | — | — | running |
 
 ## Interpretation and controls
 
