@@ -137,6 +137,8 @@ Selection rules (KNEE_ANALYSIS.md, AgentX section):
 
 ## 5. Real results and analysis (updated 2026-09-18 17:40 UTC; RUN_INDEX.md is the authoritative job list)
 
+Disagg 8:8 (64 GPU) full report with per-run config and log links: [AGENTX_D88_RESULTS.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/AGENTX_D88_RESULTS.md).
+
 Measured so far (AgentX definition; total = input + output tokens per second per GPU):
 
 | arm | clients | total/GPU | output/GPU | TTFT p50 / p90 / p95 | ITL p50 / p90 | P90 interactivity | in-flight | knee |
