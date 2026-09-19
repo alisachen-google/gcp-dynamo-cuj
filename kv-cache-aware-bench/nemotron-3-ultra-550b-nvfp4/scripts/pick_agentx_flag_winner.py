@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """Pick the winning KV-router flag variant at one client count from MEASURED cells.
-Winner = highest total tok/s/GPU among variants whose KNEE-CHECK is not POST-KNEE and whose TTFT p95 is not worse than
-default KV's; it must beat default KV by > --min-gain (2 %), else prints 'kv' (no tuned winner).
+AgentX is a closed loop (fixed client count, recorded think-time), so below the knee throughput is pinned by the clients and a
+better router shows up as a shorter TTFT tail, i.e. headroom to carry more clients inside the SLO.  A variant therefore wins if
+it is not POST-KNEE, its total tok/s/GPU is not below default KV's by more than --tol (1 %), and EITHER it gains > --min-gain
+(2 %) throughput with TTFT p95 no worse, OR it cuts TTFT p95 by > --min-ttft-cut (10 %).  Among winners the lowest TTFT p95
+wins (ties: higher throughput).  Prints 'kv' when nothing wins.
 Prints: <winner> <total/GPU> <ttft_p95_s>
 usage: pick_agentx_flag_winner.py <jobprefix> <gpus> <clients> <variants csv> --logs <runner logs...>"""
 import sys, csv, io, re, subprocess, argparse
 ap = argparse.ArgumentParser(); ap.add_argument("jp"); ap.add_argument("gpus", type=int); ap.add_argument("clients", type=int); ap.add_argument("variants")
-ap.add_argument("--logs", nargs="*", default=[]); ap.add_argument("--min-gain", type=float, default=0.02); a = ap.parse_args()
+ap.add_argument("--logs", nargs="*", default=[]); ap.add_argument("--min-gain", type=float, default=0.02); ap.add_argument("--min-ttft-cut", type=float, default=0.10); ap.add_argument("--tol", type=float, default=0.01); a = ap.parse_args()
 sh = lambda c: subprocess.run(c, shell=True, capture_output=True, text=True).stdout
 knee = {}
 for lg in a.logs:
@@ -25,6 +28,11 @@ def cell(pol):
 base = cell("kv"); cand = [c for c in (cell(v) for v in a.variants.split(",") if v) if c]
 for c in [base] + cand:
     if c: print(f"# {c['pol']}: {c['tot']:,.0f} tok/s/GPU, TTFT p95 {c['p95']:.2f} s, {c['knee']}", file=sys.stderr)
-good = [c for c in cand if not c["knee"].startswith("POST") and (not base or (c["tot"] > base["tot"] * (1 + a.min_gain) and c["p95"] <= base["p95"]))]
-w = max(good, key=lambda c: c["tot"], default=None)
+def wins(c):
+    if c["knee"].startswith("POST"): return False
+    if not base: return True
+    if c["tot"] < base["tot"] * (1 - a.tol): return False
+    return (c["tot"] > base["tot"] * (1 + a.min_gain) and c["p95"] <= base["p95"]) or c["p95"] < base["p95"] * (1 - a.min_ttft_cut)
+good = [c for c in cand if wins(c)]
+w = min(good, key=lambda c: (c["p95"], -c["tot"]), default=None)
 print(f"{w['pol']} {w['tot']:.0f} {w['p95']:.2f}" if w else f"kv {base['tot'] if base else 0:.0f} {base['p95'] if base else 0:.2f}")

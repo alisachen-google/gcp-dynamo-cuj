@@ -161,11 +161,12 @@ for x in ([base] if base else []) + sorted((y for y in fl if y["clients"] == 480
     d = "" if x is base else f" ({(x['tot'] / base['tot'] - 1) * 100:+.1f}%)"
     o.append(f"| {NAME.get(x['pol'], x['pol'])}{' (baseline)' if x is base else ''} | {x['tot']:,.0f}{d} | {x['out']:,.0f} ({x['outg']:.1f}) | {x['p50']:.2f} / {x['p95']:.2f} / {x['p99']:.1f} s | {x['itl50']:.1f} / {x['itl90']:.1f} → {x['p90i']:.0f} | {x['infl']:.1f} (peak {x['peak']}) | {x['hit']:.3f} | {x['wu_wall']:,.0f} s | {'stationary' if not x['knee'].startswith('POST') else 'POST-KNEE'} | {L(x)} |")
 o.append("""
-**Reading.** Every variant measured so far that *weakens* cache affinity loses, in proportion to the hit rate it gives up. On agg the
-load-scale 3 / credit 0.8 pair won (+14 %) because it relieved decode batches the router over-packed onto a few workers; disagg
-has no such problem (decode is its own tier), so on a prefill-bound fleet every request steered off its cached prefix just adds
-prefill work to the bottleneck. Remaining runs probe the opposite direction (overlap credit above 1); if that does not win either,
-default KV is the tuned configuration for 8:8.
+**Reading.** Every variant that *weakens* cache affinity (load scale 3 / credit 0.8, credit decay) loses, in proportion to the hit
+rate it gives up; the variant that *strengthens* it (overlap credit 1.5) raises the hit rate and cuts the TTFT tail. On agg the load-scale 3 /
+credit 0.8 pair won (+14 %) because it relieved decode batches the router over-packed onto a few workers; disagg has no such
+problem (decode is its own tier), so on a prefill-bound fleet every request steered off its cached prefix just adds prefill work
+to the bottleneck. Throughput at a fixed client count barely moves in either direction because AgentX is a closed loop (the
+clients set the request rate below the knee); the router's effect is on the TTFT tail, i.e. on how many clients fit inside the SLO.
 
 ## v. Run health (warm-up reproducibility)
 

@@ -317,3 +317,11 @@ credit 2.0 (run 4) only if 1.5 beats default KV.
 Inside a 10 s TTFT budget the KV-aware router serves 6.7× the clients and 6.9× the tokens per GPU that round-robin can; RR's
 only advantage is interactivity, which is simply the effect of running the decode tier almost empty (12.6 requests in flight on 64 GPUs).
 
+Run 3 (overlap credit 1.5, 480 clients): **12,239 tok/s/GPU (+0.3 %), TTFT p50 / p95 0.72 / 6.02 s (p95 −15 %), hit rate 0.912
+(up from 0.891)**, stationary, guard PASS, warm-up 3,329 s ([artifact 1789778938](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789778938_alisachen-n3u-mnnvl-88-agentx-kvc15-c480)). Valuing a cached prefix more than default is the
+first variant that helps. Throughput barely moves because AgentX is a closed loop — below the knee the clients, not the fleet,
+set the request rate — so a better router shows up as a shorter TTFT tail, i.e. headroom to carry more clients inside the SLO.
+The winner rule was updated accordingly (a > 10 % TTFT p95 cut with throughput within 1 % counts as a win). Follow-ups: credit
+2.0 at 480 (run 4), then the better of the two at the same-config cell and at 576 clients, to see whether tuned KV holds 10 s
+above 480.
+
