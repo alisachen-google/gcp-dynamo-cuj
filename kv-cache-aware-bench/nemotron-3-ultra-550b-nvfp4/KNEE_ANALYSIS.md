@@ -337,3 +337,9 @@ disaggregation queue-wait timeout with the transport healthy ([artifact 17897958
 delivers 9,993 tok/s/GPU at TTFT p95 4.8 s: **2.9× RR's throughput and 60× lower TTFT p95 at identical load.** RR's peak
 throughput (4,419) is 28 % of KV's (15,543 at 768).
 
+Run 5 (overlap credit 1.5 at the same-config cell, 192 clients): 5,138 tok/s/GPU (−0.1 %), TTFT p50 / p95 0.42 / 2.30 s (p95 −4 %),
+hit rate 0.933 (default 0.926), stationary, guard PASS ([artifact 1789814379](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789814379_alisachen-n3u-mnnvl-88-agentx-kvc15-c192)). At light load the tuned router is indistinguishable
+from default KV, as expected: the prefill tier is ~13 % utilised, so there is no queue for better placement to shorten. Same-config
+at 192 clients is therefore RR 4,419 / 31.5 s vs default KV 5,142 / 2.40 s vs tuned KV 5,138 / 2.30 s. (Warm-up wall 1,623 s vs
+1,699–1,706 s for the other 192-client cells — 5 % *shorter*, the only cell outside the ±0.5 % band, on the fast side.)
+

@@ -162,6 +162,13 @@ clients, same warm-up and window as the baseline.
 for x in ([base] if base else []) + sorted((y for y in fl if y["clients"] == 480), key=lambda y: y["ts"]):
     d = "" if x is base else f" ({(x['tot'] / base['tot'] - 1) * 100:+.1f}%)"
     o.append(f"| {NAME.get(x['pol'], x['pol'])}{' (baseline)' if x is base else ''} | {x['tot']:,.0f}{d} | {x['out']:,.0f} ({x['outg']:.1f}) | {x['p50']:.2f} / {x['p95']:.2f} / {x['p99']:.1f} s | {x['itl50']:.1f} / {x['itl90']:.1f} → {x['p90i']:.0f} | {x['infl']:.1f} (peak {x['peak']}) | {x['hit']:.3f} | {x['wu_wall']:,.0f} s | {'stationary' if not x['knee'].startswith('POST') else 'POST-KNEE'} | {L(x)} |")
+o.append("\n### Tuned KV at the comparison cells (winner of the sweep vs default KV at the same client count)\n\n| cell | flags | total tok/s/GPU | TTFT p50 / p95 / p99 | P90 interactivity | hit rate | knee | logs + artifacts |\n|---|---|---|---|---|---|---|---|")
+for x in sorted((y for y in fl if y["clients"] != 480), key=lambda y: y["clients"]):
+    b = C.get(("kv", x["clients"])); r_ = C.get(("rr", x["clients"]))
+    if b: o.append(f"| {x['clients']} clients | default KV | {b['tot']:,.0f} | {b['p50']:.2f} / {b['p95']:.2f} / {b['p99']:.1f} s | {b['p90i']:.0f} | {b['hit']:.3f} | {'POST-KNEE' if b['knee'].startswith('POST') else 'stationary'} | {L(b)} |")
+    d = f" ({(x['tot'] / b['tot'] - 1) * 100:+.1f}%)" if b else ""
+    o.append(f"| {x['clients']} clients | {NAME.get(x['pol'], x['pol'])} | {x['tot']:,.0f}{d} | {x['p50']:.2f} / {x['p95']:.2f} / {x['p99']:.1f} s | {x['p90i']:.0f} | {x['hit']:.3f} | {'POST-KNEE' if x['knee'].startswith('POST') else 'stationary'} | {L(x)} |")
+    if r_: o.append(f"| {x['clients']} clients | round-robin | {r_['tot']:,.0f} | {r_['p50']:.2f} / {r_['p95']:.2f} / {r_['p99']:.1f} s | {r_['p90i']:.0f} | {r_['hit']:.3f} | {'POST-KNEE' if r_['knee'].startswith('POST') else 'stationary'} | {L(r_)} |")
 o.append("""
 **Reading.** Every variant that *weakens* cache affinity (load scale 3 / credit 0.8, credit decay) loses, in proportion to the hit
 rate it gives up; the variant that *strengthens* it (overlap credit 1.5) raises the hit rate and cuts the TTFT tail. On agg the load-scale 3 /
