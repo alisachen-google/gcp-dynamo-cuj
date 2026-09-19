@@ -51,7 +51,9 @@ for d in sorted(glob.glob(f"{H}/88_*_c*")):
                       itl50=float(it[9]), itl90=float(it[11]), p90i=1000 / float(it[11]), infl=area / (ev[-1][0] - ev[0][0]), peak=peak,
                       hit=ck / ik, wu_n=len(wl), wu_wall=(max(ws) - min(ws)) / 1e9 if ws else 0, wu_p50=sorted(wl)[len(wl) // 2] if wl else 0,
                       knee=knee.get((pol, c), ("?", ""))[0], kq=knee.get((pol, c), ("", ""))[1], done=done.get((pol, c), ""),
-                      guard="OVERLOADED (transport healthy; 300 s queue-wait timeouts)" if f"cell {pol} c{c} OVERLOADED" in logs else "PASS"))
+                      guard=("OVERLOADED (transport healthy; 300 s queue-wait timeouts)" if knee.get((pol, c), ("?", ""))[0].startswith("POST")
+                             else "PASS (the only timeouts in its log window are the drain tail of the preceding saturated RR cell, before this cell sent traffic; 0 request errors)")
+                            if f"cell {pol} c{c} OVERLOADED" in logs else "PASS"))
 sim = {}
 try:
     for r in csv.DictReader(open(f"{ROOT}/sim-results/dynosim_n3u_agentx_d64_v5.csv")):

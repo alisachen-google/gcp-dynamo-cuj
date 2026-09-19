@@ -42,7 +42,7 @@ for point in $PTS; do
   st=""; for i in $(seq 1 $(( ${JOB_WAIT_ITERS:-100} * 4 ))); do st=$(kubectl get jobs -n $NS "$JOB" --no-headers 2>/dev/null | awk '{print $2}'); [ "$st" = "Complete" ] && break; [ "$st" = "Failed" ] && break; sleep 30; done
   say "$ARM AgentX $v c$C done (job=$st)"
   [ "$st" != "Complete" ] && { say "$([ $first = 1 ] && echo 'AGENTX SMOKE FAIL' || echo 'BENCH VIOLATION') on $v c$C - HALTING"; kubectl logs -n $NS -l job-name=$JOB --tail=30 2>/dev/null | grep -iE "error|scenario|unknown" | tail -8 >> "$LOG"; exit 2; }
-  if [ "$POOL" = "np-3" ] || [ "${MNNVL_GUARD:-0}" = "1" ]; then GUARD_SINCE=$T0 bash "$GUARD" "$ARM" >> "$LOG" 2>&1; grc=$?; if [ $grc = 3 ]; then say "MNNVL gate: transport healthy; cell $v c$C OVERLOADED (requests hit the 300 s prefill-wait timeout)"; elif [ $grc != 0 ]; then say "MNNVL TRANSPORT VIOLATION - HALTING"; exit 2; else say "MNNVL gate PASS"; fi; fi
+  if [ "$POOL" = "np-3" ] || [ "${MNNVL_GUARD:-0}" = "1" ]; then GUARD_SINCE=$T0 bash "$GUARD" "$ARM" >> "$LOG" 2>&1; grc=$?; if [ $grc = 3 ]; then say "MNNVL gate: transport healthy; cell $v c$C OVERLOADED (requests hit the 300 s prefill-wait timeout)"; say "draining the saturated queue for 330 s so its timeouts cannot fall into the next cell"; sleep 330; elif [ $grc != 0 ]; then say "MNNVL TRANSPORT VIOLATION - HALTING"; exit 2; else say "MNNVL gate PASS"; fi; fi
   python3 "$HOME/kv-cache-aware-bench/sglang/scripts/knee_check.py" "${JP}-agentx-${v}-c${C}" >> "$LOG" 2>&1 || true
   first=0
 done

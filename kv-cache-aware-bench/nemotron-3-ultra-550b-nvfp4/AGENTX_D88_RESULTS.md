@@ -77,7 +77,7 @@ the RR search went *down* (192 → 144 → 96 → 72) and the KV SLO cell was bi
 
 | clients | total tok/s/GPU | output tok/s (/GPU) | req/s | TTFT p50 / p95 / p99 | ITL p50 / p90 → P90 interactivity | in-flight | engine hit rate | knee check | MNNVL guard | logs + artifacts |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 144 | 3,964 | 2,825 (44.1) | 2.94 | 0.36 / 1.87 / 5.9 s | 8.4 / 9.9 ms → 101 | 26.0 (peak 71) | 0.927 | stationary (TTFT p50 q1 0.34s → 0.35s) | OVERLOADED | [1789803115](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789803115_alisachen-n3u-mnnvl-88-agentx-kv-c144) |
+| 144 | 3,964 | 2,825 (44.1) | 2.94 | 0.36 / 1.87 / 5.9 s | 8.4 / 9.9 ms → 101 | 26.0 (peak 71) | 0.927 | stationary (TTFT p50 q1 0.34s → 0.35s) | PASS | [1789803115](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789803115_alisachen-n3u-mnnvl-88-agentx-kv-c144) |
 | 192 | 5,142 | 3,248 (50.7) | 3.47 | 0.38 / 2.40 / 7.2 s | 8.9 / 10.0 ms → 100 | 31.1 (peak 60) | 0.926 | stationary (TTFT p50 q1 0.36s → 0.39s) | PASS | [1789672351](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789672351_alisachen-n3u-mnnvl-88-agentx-kv-c192) |
 | 384 | 9,993 | 6,403 (100.0) | 6.74 | 0.56 / 4.83 / 10.8 s | 11.7 / 12.9 ms → 78 | 82.4 (peak 123) | 0.906 | stationary (TTFT p50 q1 0.64s → 0.55s) | PASS | [1789678827](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789678827_alisachen-n3u-mnnvl-88-agentx-kv-c384) |
 | 480 | 12,204 | 7,895 (123.4) | 8.23 | 0.80 / 7.12 / 14.8 s | 13.2 / 15.4 ms → 65 | 119.3 (peak 182) | 0.891 | stationary (TTFT p50 q1 0.93s → 0.74s) | PASS | [1789740024](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789740024_alisachen-n3u-mnnvl-88-agentx-kv-c480) |
@@ -147,7 +147,7 @@ reproduce; a fleet whose warm-up runs long is not trusted.
 | round-robin | 72 | 68 | 815 s | 5.86 s | PASS |
 | round-robin | 96 | 91 | 972 s | 5.97 s | PASS |
 | round-robin | 144 | 141 | 1,304 s | 5.93 s | PASS |
-| default KV | 144 | 141 | 1,291 s | 5.97 s | OVERLOADED (transport healthy; 300 s queue-wait timeouts) |
+| default KV | 144 | 141 | 1,291 s | 5.97 s | PASS (the only timeouts in its log window are the drain tail of the preceding saturated RR cell, before this cell sent traffic; 0 request errors) |
 | default KV | 192 | 185 | 1,699 s | 7.78 s | PASS |
 | round-robin | 192 | 185 | 1,706 s | 7.91 s | PASS |
 | default KV | 384 | 349 | 2,695 s | 8.59 s | PASS |

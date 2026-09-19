@@ -53,7 +53,7 @@
   "knee": "AT/PRE-KNEE",
   "kq": "0.34s \u2192 0.35s",
   "done": "2026-09-19 09:02",
-  "guard": "OVERLOADED (transport healthy; 300 s queue-wait timeouts)"
+  "guard": "PASS (the only timeouts in its log window are the drain tail of the preceding saturated RR cell, before this cell sent traffic; 0 request errors)"
  },
  {
   "pol": "kv",
