@@ -244,6 +244,36 @@ no regime on agg where the default beats it. Against RR at 96 (6,137, p95 12.6 s
 with a 4× shorter tail, and the same-SLO pair under the P90 ≥ 20 budget becomes tuned KV 96 (7,045, P90 55) vs RR 96
 (6,137, P90 34) = 1.15×.
 
+## vi. Cells that saturate the TTFT p95 ≤ 10 s SLO, and the KV flag sweep at that point (np-2 fleets, 2026-09-20)
+
+The §iii ladder brackets 10 s but has no cell near it (default KV: 96 → 5.4 s, 192 → 11.2–11.7 s; RR: 48 → 8.3 s, 96 → 12.6 s), so the same-SLO
+comparison under-sold every policy. These cells sit just inside the budget. Two agg fleets in parallel on np-2
+([`run_agentx_agg_slo10_np2_v2.sh`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/run_agentx_agg_slo10_np2_v2.sh); manifests [`n3u-agg-newstack-np2.yaml`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/sglang/manifests/n3u-agg-newstack-np2.yaml) /
+[`n3u-agg-newstack2-np2.yaml`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/sglang/manifests/n3u-agg-newstack2-np2.yaml); job template [`sgl-d72-agentx.yaml`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/manifests/perf/sgl-d72-agentx.yaml); runner + flag variants
+[`agentx_runner_flags.sh`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/agentx_runner_flags.sh)); same AgentX scenario, 3,600 s window, 24 GPUs.
+
+### Near-saturated cells per policy
+
+| policy | clients | router flags | total tok/s/GPU | output tok/s (/GPU) | TTFT p50 / p95 / p99 | ITL p50 / p90 → P90 | in-flight | hit rate | warm-up wall | stationary | logs + artifacts |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| round-robin | 64 | `--router-mode round-robin` | 3,910 | 1,029 (42.9) | 0.74 / 9.21 / 15.7 s | 8.6 / 13.7 → 73.1 | 13.2 (peak 29) | 0.71 | 861 s | yes (q1 0.80 → q4 0.64 s) | [1789895323](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895323_alisachen-n3u-agg-ns2-agentx-rr-c64) |
+| default KV | 160 | `--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs` | 8,755 | 2,256 (94.0) | 1.15 / 9.57 / 15.9 s | 20.8 / 43.4 → 23.1 | 60.5 (peak 118) | 0.75 | 1,492 s | yes (q1 1.43 → q4 0.93 s) | [1789895318](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895318_alisachen-n3u-agg-ns-agentx-kv-c160) |
+
+### KV vs RR inside the same SLO (TTFT p95 ≤ 10 s, stationary)
+
+| policy | cell | total tok/s/GPU | vs RR | TTFT p50 / p95 | P90 interactivity | hit rate | logs |
+|---|---|---|---|---|---|---|---|
+| round-robin | 64 clients | 3,910 | 1.00× | 0.74 / 9.21 s | 73 | 0.71 | [1789895323](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895323_alisachen-n3u-agg-ns2-agentx-rr-c64) |
+| default KV | 160 clients | 8,755 | 2.24× | 1.15 / 9.57 s | 23 | 0.75 | [1789895318](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895318_alisachen-n3u-agg-ns-agentx-kv-c160) |
+| tuned KV (load scale 3, credit 0.8) | 192 clients | 10,992 | 2.81× | 0.82 / 6.20 s | 26 | 0.82 | [1789856381](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789856381_alisachen-n3u-agg-ns2-agentx-kvs3c08-c192) |
+
+### KV flag sweep at the KV 10 s point (160 clients; same variants as the 192-client sweep)
+
+| router flags | total tok/s/GPU | output tok/s (/GPU) | TTFT p50 / p95 / p99 | ITL p50 / p90 → P90 | in-flight | hit rate | warm-up wall | stationary | logs + artifacts |
+|---|---|---|---|---|---|---|---|---|---|
+| default KV (baseline) | 8,755 | 2,256 (94.0) | 1.15 / 9.57 / 15.9 s | 20.8 / 43.4 → 23.1 | 60.5 (peak 118) | 0.75 | 1,492 s | yes (q1 1.43 → q4 0.93 s) | [1789895318](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895318_alisachen-n3u-agg-ns-agentx-kv-c160) |
+| (flag cells running) | | | | | | | | | |
+
 ## iv. Simulation-vs-real gap, with the apple-to-apple decomposition
 
 Method (same ladder as the disagg report and AGG24 §5.2): start from the published simulator, substitute one measured
