@@ -355,4 +355,8 @@ straight line gives ≈ 12 s), so the size of the gain attributable to the flag 
 hit rate falls from 0.891 to 0.36 and the fleet behaves like round-robin at the same load (RR 480: 3,219 tok/s/GPU, hit rate 0.29, TTFT
 p95 388 s). On agg the same flag cost 19 %; on disagg, where the prefill tier is the bottleneck and every lost prefix is re-prefilled
 there, it turns a cell that default KV serves inside the 10 s SLO (12,204, 7.1 s) into a saturated one.
+`--router-temperature 0.2` (same cell): **5,900 tok/s/GPU (−52 %), TTFT p50 / p95 56.2 / 99.0 s, hit rate 0.597**, 286 requests in
+flight ([artifact 1789877236](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789877236_alisachen-n3u-mnnvl-88-agentx-kvt02-c480)). The dose-response is monotone and steep — temperature 0 → 0.2 → 0.5 gives hit rate 0.891 → 0.60 → 0.36
+and throughput 12,204 → 5,900 → 3,678 — so even a small amount of sampling is enough to break cache affinity on a prefill-bound
+disagg fleet. Router temperature is rejected on disagg at every value tested; keep it at 0.
 
