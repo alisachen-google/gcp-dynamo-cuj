@@ -1,0 +1,139 @@
+{
+  "candidate": "v10",
+  "observed_unix": 1789704526.9425218,
+  "relative_error_limit": 0.2,
+  "calibration_targets": [
+    "total_tok_s_per_gpu"
+  ],
+  "metric_definitions": {
+    "total_tok_s_per_gpu": "AIPerf input+output tok/s / 24 GPUs",
+    "p95_ttft_ms": "AIPerf time_to_first_token.p95 in ms"
+  },
+  "all_runs_complete": true,
+  "one_shared_build": true,
+  "one_shared_engine": true,
+  "issues": [],
+  "points": [
+    {
+      "run": "agg-rr-c192-calibrated-v10",
+      "router": "rr",
+      "clients": 192,
+      "state": "completed",
+      "all_targets_pass": true,
+      "native_core_sha256": "5e298de426f7b27f1cc3d0647ac8eefec49d0abd989a01ac93e673e5bedd0d02",
+      "shared_engine_sha256": "2f03549ffb13a3ad6bea8aa1717c32fcd03ce3ede0ea08e013f83d0ec5bfb276",
+      "gpu_count": 24,
+      "hardware_settings_match": true,
+      "hardware_serving_shape_matches": true,
+      "path1_method_matches": true,
+      "metrics": {
+        "total_tok_s_per_gpu": {
+          "hardware": 6802.289469097507,
+          "simulation": 6829.794567128188,
+          "relative_error": 0.00404350596304881,
+          "within_20_percent": true,
+          "calibration_target": true
+        },
+        "p95_ttft_ms": {
+          "hardware": 60081.522396249995,
+          "simulation": 53964.443404399986,
+          "relative_error": -0.10181298255904059,
+          "within_20_percent": true,
+          "calibration_target": false
+        }
+      },
+      "replay_valid": true
+    },
+    {
+      "run": "agg-rr-c384-calibrated-v10",
+      "router": "rr",
+      "clients": 384,
+      "state": "completed",
+      "all_targets_pass": true,
+      "native_core_sha256": "5e298de426f7b27f1cc3d0647ac8eefec49d0abd989a01ac93e673e5bedd0d02",
+      "shared_engine_sha256": "2f03549ffb13a3ad6bea8aa1717c32fcd03ce3ede0ea08e013f83d0ec5bfb276",
+      "gpu_count": 24,
+      "hardware_settings_match": true,
+      "hardware_serving_shape_matches": true,
+      "path1_method_matches": true,
+      "metrics": {
+        "total_tok_s_per_gpu": {
+          "hardware": 5076.007624767205,
+          "simulation": 5324.211245447474,
+          "relative_error": 0.04889740895368555,
+          "within_20_percent": true,
+          "calibration_target": true
+        },
+        "p95_ttft_ms": {
+          "hardware": 494981.526287,
+          "simulation": 305057.1490025998,
+          "relative_error": -0.3836999305995883,
+          "within_20_percent": false,
+          "calibration_target": false
+        }
+      },
+      "replay_valid": true
+    },
+    {
+      "run": "agg-kv-c192-calibrated-v10",
+      "router": "kv",
+      "clients": 192,
+      "state": "completed",
+      "all_targets_pass": true,
+      "native_core_sha256": "5e298de426f7b27f1cc3d0647ac8eefec49d0abd989a01ac93e673e5bedd0d02",
+      "shared_engine_sha256": "2f03549ffb13a3ad6bea8aa1717c32fcd03ce3ede0ea08e013f83d0ec5bfb276",
+      "gpu_count": 24,
+      "hardware_settings_match": true,
+      "hardware_serving_shape_matches": true,
+      "path1_method_matches": true,
+      "metrics": {
+        "total_tok_s_per_gpu": {
+          "hardware": 9654.845403825839,
+          "simulation": 10182.398378165768,
+          "relative_error": 0.05464126583848561,
+          "within_20_percent": true,
+          "calibration_target": true
+        },
+        "p95_ttft_ms": {
+          "hardware": 11657.26274620001,
+          "simulation": 8714.692493599994,
+          "relative_error": -0.25242377363066837,
+          "within_20_percent": false,
+          "calibration_target": false
+        }
+      },
+      "replay_valid": true
+    },
+    {
+      "run": "agg-kv-c384-calibrated-v10",
+      "router": "kv",
+      "clients": 384,
+      "state": "completed",
+      "all_targets_pass": true,
+      "native_core_sha256": "5e298de426f7b27f1cc3d0647ac8eefec49d0abd989a01ac93e673e5bedd0d02",
+      "shared_engine_sha256": "2f03549ffb13a3ad6bea8aa1717c32fcd03ce3ede0ea08e013f83d0ec5bfb276",
+      "gpu_count": 24,
+      "hardware_settings_match": true,
+      "hardware_serving_shape_matches": true,
+      "path1_method_matches": true,
+      "metrics": {
+        "total_tok_s_per_gpu": {
+          "hardware": 8257.49339510182,
+          "simulation": 9433.301922975937,
+          "relative_error": 0.14239291170024848,
+          "within_20_percent": true,
+          "calibration_target": true
+        },
+        "p95_ttft_ms": {
+          "hardware": 119439.31245299999,
+          "simulation": 94315.13748719997,
+          "relative_error": -0.2103509677827936,
+          "within_20_percent": false,
+          "calibration_target": false
+        }
+      },
+      "replay_valid": true
+    }
+  ],
+  "all_targets_pass": true
+}

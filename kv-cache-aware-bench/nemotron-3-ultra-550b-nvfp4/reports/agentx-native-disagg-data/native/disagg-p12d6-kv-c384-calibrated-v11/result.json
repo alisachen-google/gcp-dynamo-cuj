@@ -1,0 +1,30 @@
+{
+  "topology": "p12d6-hardware-validation",
+  "router": "kv",
+  "concurrency": 384,
+  "gpu_count": 72,
+  "benchmark_id": "1e1a5c4a5b1f",
+  "total_tok_s_per_gpu": 8692.990433555591,
+  "output_tok_s_per_gpu": 87.3129835540136,
+  "p95_ttft_ms": 2728.1610905,
+  "p95_itl_ms": 14.6731209545467,
+  "request_throughput": 6.63923526567463,
+  "requests": 24366.0,
+  "errors": null,
+  "error_summary": [],
+  "effective_concurrency": {
+    "unit": "requests",
+    "avg": 87.82654749074399,
+    "p50": 90.0,
+    "p90": 106.0,
+    "p95": 110.0,
+    "p99": 118.0,
+    "min": 0.0,
+    "max": 128.0,
+    "std": 18.198737553825286
+  },
+  "valid_agentx_submission": true,
+  "warmup_input_sha256": "f8dd85238253427f62f87b750a7d56c02cf99be4f570757f3a3977b21543233b",
+  "summary": "/tmp/n3u-path1-topology-runs/disagg-p12d6-kv-c384-calibrated-v11/artifacts/profile_export_aiperf.json",
+  "measured_hardware": false
+}

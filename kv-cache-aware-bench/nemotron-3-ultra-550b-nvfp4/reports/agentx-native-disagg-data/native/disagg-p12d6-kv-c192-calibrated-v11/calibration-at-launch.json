@@ -1,0 +1,68 @@
+{
+  "candidate": "v10",
+  "observed_unix": 1789669355.6996408,
+  "relative_error_limit": 0.2,
+  "metric_definitions": {
+    "total_tok_s_per_gpu": "AIPerf input+output tok/s / 24 GPUs",
+    "p95_ttft_ms": "AIPerf time_to_first_token.p95 in ms"
+  },
+  "all_runs_complete": false,
+  "one_shared_build": true,
+  "one_shared_engine": true,
+  "issues": [],
+  "points": [
+    {
+      "run": "agg-rr-c192-calibrated-v10",
+      "router": "rr",
+      "clients": 192,
+      "state": "running_aiperf",
+      "all_targets_pass": false,
+      "native_core_sha256": "5e298de426f7b27f1cc3d0647ac8eefec49d0abd989a01ac93e673e5bedd0d02",
+      "shared_engine_sha256": "2f03549ffb13a3ad6bea8aa1717c32fcd03ce3ede0ea08e013f83d0ec5bfb276",
+      "gpu_count": 24,
+      "hardware_settings_match": true,
+      "hardware_serving_shape_matches": true,
+      "path1_method_matches": true
+    },
+    {
+      "run": "agg-rr-c384-calibrated-v10",
+      "router": "rr",
+      "clients": 384,
+      "state": "running_aiperf",
+      "all_targets_pass": false,
+      "native_core_sha256": "5e298de426f7b27f1cc3d0647ac8eefec49d0abd989a01ac93e673e5bedd0d02",
+      "shared_engine_sha256": "2f03549ffb13a3ad6bea8aa1717c32fcd03ce3ede0ea08e013f83d0ec5bfb276",
+      "gpu_count": 24,
+      "hardware_settings_match": true,
+      "hardware_serving_shape_matches": true,
+      "path1_method_matches": true
+    },
+    {
+      "run": "agg-kv-c192-calibrated-v10",
+      "router": "kv",
+      "clients": 192,
+      "state": "running_aiperf",
+      "all_targets_pass": false,
+      "native_core_sha256": "5e298de426f7b27f1cc3d0647ac8eefec49d0abd989a01ac93e673e5bedd0d02",
+      "shared_engine_sha256": "2f03549ffb13a3ad6bea8aa1717c32fcd03ce3ede0ea08e013f83d0ec5bfb276",
+      "gpu_count": 24,
+      "hardware_settings_match": true,
+      "hardware_serving_shape_matches": true,
+      "path1_method_matches": true
+    },
+    {
+      "run": "agg-kv-c384-calibrated-v10",
+      "router": "kv",
+      "clients": 384,
+      "state": "running_aiperf",
+      "all_targets_pass": false,
+      "native_core_sha256": "5e298de426f7b27f1cc3d0647ac8eefec49d0abd989a01ac93e673e5bedd0d02",
+      "shared_engine_sha256": "2f03549ffb13a3ad6bea8aa1717c32fcd03ce3ede0ea08e013f83d0ec5bfb276",
+      "gpu_count": 24,
+      "hardware_settings_match": true,
+      "hardware_serving_shape_matches": true,
+      "path1_method_matches": true
+    }
+  ],
+  "all_targets_pass": false
+}

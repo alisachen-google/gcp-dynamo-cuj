@@ -1,10 +1,21 @@
-# AgentX performance: setup, hardware comparisons and simulation
+# KV-Aware vs. Round-Robin Routing: NVIDIA Dynamo on Google Cloud
 
-**Evidence snapshot: 2026-09-20 02:53 UTC · 37 completed hardware jobs (17 agg / 20 disagg) · 12 completed Native DynoSim V10 agg runs**
+*How routing affects throughput, time to first token, and end-to-end responsiveness for coding-agent workloads.*
 
-This report separates three questions: **KV versus RR at the same concurrency**, **capacity under TTFT p95 <10 seconds**, and **capacity when E2E interactivity must also reach 20 output tokens/s at P90**. Each architecture has its own measured curves, full data table, comparison at a sampled knee, and SLO table. The baseline curves show **default KV and RR only**; tuned settings remain in the data and tuning tables.
+A coding agent sends much of its conversation history again on each turn. The worker that receives that request determines whether the service can reuse a resident prefix or must recompute more of the prompt. Across a fleet, routing therefore affects both cache reuse and how work is distributed—and ultimately how long the user waits.
 
-[Standalone HTML](agentx-serving-perf-report.html) · [hardware CSV](agentx-serving-perf-report.csv) · [comparison JSON](agentx-serving-perf-report.json) · [AIC and simulation configurations](agentx-serving-perf-report-methodology.json) · [validation](agentx-serving-perf-report-validation.json)
+This Google Cloud **customer use journey (CUJ)** compares NVIDIA Dynamo's **KV-aware routing** with **round-robin (RR) routing** using recorded AgentX coding sessions and Nemotron-3-Ultra on GB300 GPUs. We follow each turn from the client, through Dynamo's router, to the streamed response. The study covers **aggregated serving**, where a worker handles prefill and decode, and **disaggregated serving**, where separate worker pools handle those stages.
+
+The comparison follows two customer decisions: how the routing policies perform at the **same session concurrency**, and how much traffic each can serve under the **same latency SLO**. We measure TTFT p95 <10 seconds and separately require E2E-normalized interactivity ≥20 output tokens/s at P90. Default KV/RR curves establish the routing impact; the tuning tables show how that impact changes with router settings. The measured results also show why an agg tuning choice must be checked again on disagg.
+
+At each policy's best sampled point meeting **both** latency criteria, default KV delivered **2.11× total served tokens/s/GPU for agg** and **6.92× for disagg** relative to RR. These compare different selected session counts: C96 versus C48 for agg, and C480 versus C72 for disagg. The same-concurrency tables show the routing differences at a fixed population of users.
+
+
+**Evidence snapshot: 2026-09-20 02:53 UTC · 37 completed hardware jobs (17 agg / 20 disagg)**
+
+Each architecture has its own measured curves, full data table, comparison at a sampled knee, and SLO table. The baseline curves show **default KV and RR only**; tuned settings remain in the data and tuning tables. Total served tokens include cached prompt tokens; output-token throughput is reported alongside them.
+
+[Standalone HTML](agentx-serving-perf-report.html) · [hardware CSV](agentx-serving-perf-report.csv) · [comparison JSON](agentx-serving-perf-report.json) · [configuration provenance](agentx-serving-perf-report-methodology.json) · [validation](agentx-serving-perf-report-validation.json)
 
 ## 1. Setup, agentic workload and benchmarking methodology
 
@@ -308,21 +319,57 @@ The four-point acceptance gate covered **±20% total throughput**, not TTFT or I
 
 **SLO errors matter:** simulated default KV192 passes TTFT (8.71 s) while hardware fails (11.66 s). Simulated tuned KV192 gives I90 **22.5354** while hardware gives **19.7795**; it incorrectly passes the combined SLO and selects C192 where hardware selects C96. There is **one combined-SLO classification disagreement among 12 pairs**. Throughput calibration therefore supports candidate screening, not automatic SLO approval. [Original paired inputs and calibration/holdout provenance](agentx-agg-kv-rr-report.md#31-native-dynosim-v10-current-completed-calibration-samples).
 
-### 4.2 Disagg: measured hardware exists, but no usable native comparison for this ladder
 
-The C480 native flag sweep used a **V11 disaggregation extension with frozen V10 timing coefficients**, not the unchanged V10 agg binary. **All 12 attempted runs failed during warmup** with `mocker handoff session limit reached`; no completed profiling exports are available. This is a mocker admission/handoff failure, not evidence of a hardware capacity limit. The grid's credits were 0.6/0.8/1.0; it did not produce a credit-1.5 forecast for the current hardware winner.
+### 4.2 D88: native forecasts alongside the measured KV/RR curves
+
+Six completed native runs cover **8 prefill + 8 decode TP4 workers / 64 GPUs**, with default KV and RR at **C16, C64 and C256**. They use the **V11 disaggregation extension with frozen V10 timing**, the same Weka corpus and replay settings, and the engine configurations in section 5.3. These are existing September 17–18 runs, separate from the failed C480 flag sweep.
+
+**No sampled concurrency values coincide between hardware and native runs.** The graph shows their collected trends; it does not compute accuracy by interpolating an unmeasured hardware or simulation point. No tuned KV points enter these curves.
 
 
-| Hardware setting | C | Real total/GPU | Real TTFT p95 (s) | Real I90 | Usable paired native result |
-| --- | --- | --- | --- | --- | --- |
-| Default KV | 192 | 5,142 | 2.40 | 67.3601 | Unavailable |
-| Default KV | 480 | 12,204 | 7.12 | 33.5225 | Unavailable |
-| RR | 192 | 4,419 | 31.45 | 8.3783 | Unavailable |
-| RR | 480 | 3,219 | 387.54 | 0.6525 | Unavailable |
-| KV credit 1.5 | 480 | 12,239 | 6.02 | 37.9246 | Unavailable |
-| KV credit 1.5 | 576 | 14,024 | 8.75 | 30.2479 | Unavailable |
+![D88 default KV and RR: hardware and native results at different concurrency grids, with errored native results marked](agentx-serving-perf-report-simulation-disagg-d88.png)
 
-[Failure evidence and log hashes](agentx-serving-perf-data/source/native-c480-status.json) and the [native sweep manifest](../sim-results/agentx_disagg_c480_native_20260919/plan.json) document the gap. The report does not replace missing native results with old custom Python forecasts or interpolate a disagg simulation curve. Fix admission/backpressure at the intended batch limits, validate one complete hardware-matched baseline, then sweep. Transfer contention and disagg cache sizing must also be validated before using the simulation to select a recipe.
+[SVG](agentx-serving-perf-report-simulation-disagg-d88.svg) · [PDF](agentx-serving-perf-report-simulation-disagg-d88.pdf)
+
+
+| Native run / summary | C | Total tok/s/GPU | TTFT p95 (s) | E2E I90 | Successes / errors | Error rate | Use |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [Default KV](agentx-native-disagg-data/native/topo64-v11-p8d8-kv-c16/summary.json) | 16 | 275 | 1.90 | 85.6826 | 601 / 0 | 0.000% | Completed forecast |
+| [Default KV](agentx-native-disagg-data/native/topo64-v11-p8d8-kv-c64/summary.json) | 64 | 1,615 | 1.35 | 85.8976 | 4,288 / 0 | 0.000% | Completed forecast |
+| [Default KV](agentx-native-disagg-data/native/topo64-v11-p8d8-kv-c256/summary.json) | 256 | 7,399 | 3.13 | 58.0122 | 17,289 / 11 | 0.064% | Forecast with errors |
+| [RR](agentx-native-disagg-data/native/topo64-v11-p8d8-rr-c16/summary.json) | 16 | 267 | 8.35 | 41.2092 | 584 / 0 | 0.000% | Completed forecast |
+| [RR](agentx-native-disagg-data/native/topo64-v11-p8d8-rr-c64/summary.json) | 64 | 1,561 | 9.17 | 39.6434 | 4,065 / 0 | 0.000% | Completed forecast |
+| [RR](agentx-native-disagg-data/native/topo64-v11-p8d8-rr-c256/summary.json) | 256 | 4,740 | 32.53 | 6.9169 | 11,161 / 3,710 | 24.948% | Diagnostic only |
+
+**RR256 is an admission-failure diagnostic, not a usable capacity prediction:** 3,710 of 14,871 profiling requests fail (24.95%). Its TTFT and I90 describe successful requests only, so dropping those errors would make the curve misleading. KV256 also has 11 errors (0.064%). Both are crosses outside the zero-error prediction lines. Worker logs contain handoff-session-limit failures; counts and log hashes are preserved with each run. The scenario-valid stamp alone does not validate the serving model.
+
+The lower-concurrency native points show the direction of KV's latency advantage. They do not validate the measured D88 knee, credit-1.5 tuning, or C480/C576 SLO choices. Those require successful native runs at the same hardware concurrency and settings.
+
+### 4.3 Matched disagg comparison: 12P+6D, 72 GPUs, KV only
+
+Two completed native checks **do** have matching real hardware jobs: the earlier **12P+6D TP4 / 72-GPU KV** recipe at **C192 and C384**. These two historical hardware references are additional to the 37 agg/D88 jobs in sections 2–3; they are not substituted for 64-GPU D88 or for RR. Structured pool counts and launch commands establish 72 GPUs; the original topology JSON retains a stale 64-GPU sentence, documented in the source manifest.
+
+
+![Matched 72-GPU 12P+6D KV hardware and native throughput, TTFT and E2E interactivity at C192 and C384](agentx-serving-perf-report-simulation-disagg-p12d6.png)
+
+[SVG](agentx-serving-perf-report-simulation-disagg-p12d6.svg) · [PDF](agentx-serving-perf-report-simulation-disagg-p12d6.pdf)
+
+
+| Matched job | Total/GPU real / native | Throughput error | TTFT p95 real / native (s) | TTFT error | I90 real / native | Errors real / native |
+| --- | --- | --- | --- | --- | --- | --- |
+| [C192 hardware](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789560095_alisachen-n3u-mnnvl-126-agentx-kv-c192) / [native](agentx-native-disagg-data/native/disagg-p12d6-kv-c192-calibrated-v11/summary.json) | 4,511 / 4,461 | -1.10% | 1.768 / 1.778 | +0.54% | 66.6203 / 66.7212 | 0 / 0 |
+| [C384 hardware](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789566460_alisachen-n3u-mnnvl-126-agentx-kv-c384) / [native](agentx-native-disagg-data/native/disagg-p12d6-kv-c384-calibrated-v11/summary.json) | 8,637 / 8,693 | +0.65% | 2.580 / 2.728 | +5.74% | 48.5505 / 51.9892 | 0 / 0 |
+
+The throughput errors are **−1.10% at C192** and **+0.65% at C384**; TTFT p95 errors are **+0.54%** and **+5.74%**. Both native runs complete without profiling errors. Their 185/349 warmup requests match the respective hardware source/turn/input-token identities; the report independently recomputes request-level TTFT and I90. The timing coefficients remain those derived for agg, and transfer bandwidth/prefill cache sizing remain assumptions. Two checks on this earlier topology do not establish general disagg accuracy or a knee.
+
+### 4.4 The remaining C480 tuning gap
+
+All **12 C480 native flag attempts failed during warmup** with `mocker handoff session limit reached`; no full profiling result exists at that load. The grid tested credits 0.6/0.8/1.0 and did not produce a forecast for the hardware credit-1.5 winner. Failed warmups are not plotted as zero throughput or as hardware limits.
+
+Fix native handoff admission/backpressure while preserving the intended batch limits, then collect matched D88 default-KV/RR points at C96/C192 and C480. Only after those complete should the tuning grid and C576 SLO choice be evaluated. Validate transfer contention and the prefill cache allocation alongside that work.
+
+[Native disagg input manifest](agentx-native-disagg-data/manifest.json) · [numeric request provenance](agentx-native-disagg-data/request-metrics/manifest.json) · [C480 failure evidence](agentx-serving-perf-data/source/native-c480-status.json) · [C480 sweep manifest](../sim-results/agentx_disagg_c480_native_20260919/plan.json)
+
 
 ## 5. How we simulate performance: AIC, DynoSim and recipe selection
 
@@ -394,7 +441,7 @@ The timing identity below is common: **AIC 0.11.0, GB300, SGLang 0.5.14 tables, 
 
 **Cache size provenance:** the agg attention allocation (443,697 pages ×64 =28,396,608 tokens/worker) comes from observed serving metadata. The 769 Mamba slots and checkpoint settings remain assumptions because the live state pool was not captured. Disagg prefill inherits that allocation as an assumption; decode uses 809,406 observed attention pages and 64 state/request slots in the saved model. AIC did not measure these fleet cache allocations. Cache-hit rate emerges from the replay, placement and finite cache state.
 
-**Transfer provenance:** the 64 GB/s value is a per-rank modeling assumption, not measured Mooncake bandwidth. The native handoff moves the full prompt's modeled KV plus recurrent state; independent delays omit shared-link contention. These assumptions need a matched disagg hardware check. The saved input files are linked above; the failed sweep is not evidence that these values are accurate.
+**Transfer provenance:** the 64 GB/s value is a per-rank modeling assumption, not measured Mooncake bandwidth. The native handoff moves the full prompt's modeled KV plus recurrent state; independent delays omit shared-link contention. These assumptions need direct transfer/cache measurements and a matched D88 hardware check. The saved input files are linked above; the failed sweep is not evidence that these values are accurate.
 
 ### 5.4 Shared timing calibration and what DynoSim tells us
 
@@ -412,7 +459,8 @@ The prefill fit uses **93 isolated one-token RR192 hardware warmup requests**. D
 | --- | --- | --- |
 | Agg 6×TP4, default KV versus RR | Reproduces the sampled C192 throughput peak and C384 decline, and the direction of the KV advantage. Eight holdouts average 1.7% absolute throughput error. | TTFT tails remain biased; the simulator falsely passes default KV192 under TTFT-only. |
 | Agg router tuning | Frozen V10 reproduces the original scale-3/credit-0.8 throughput benefit and temperature-0.5 loss. | Tuned KV192 falsely passes combined SLO in simulation. Decay variants lack native counterparts. Use measured C96 under both limits; measure C144 next. |
-| Disagg 8P+8D TP4 | The saved recipe specifies separate admission/cache budgets and a transfer model. Flag propagation was checked. | All C480 attempts fail warmup. No usable native tuning ranking, knee, or SLO capacity is established for this ladder. |
+| Disagg 8P+8D TP4 | Six completed native runs at C16/C64/C256 show the sampled routing trends, with separate admission/cache budgets and transfer timing. | No native point matches the hardware concurrency grid; RR256 has 24.95% errors. All C480 tuning attempts fail warmup, so no native tuning ranking or high-load SLO capacity is established. |
+| Earlier disagg 12P+6D TP4 | Two matched 72-GPU KV checks have throughput errors of −1.10%/+0.65% and TTFT errors of +0.54%/+5.74%. | These are two historical KV points, not validation of D88, RR, or the full latency boundary. Transfer/cache assumptions still need measurement. |
 | Choosing TP or the P:D ratio | AIC supplies candidate shapes; a working replay model can compare them under the workload. | The current evidence does not establish that 6×TP4 or 8P+8D is globally optimal. Compare candidates at fixed total GPUs and validate on hardware. |
 
 Fix native disagg admission/backpressure while preserving the intended batch limits, complete one full matched baseline, and only then repeat the flag grid. Validate transfer timing/contended bandwidth, prefill cache capacity and SGLang-version effects. For agg, use the frozen model to prioritize measurements; the real-job SLO remains the decision source.
@@ -427,4 +475,4 @@ From the repository root, with NumPy, Matplotlib, PyYAML and markdown-it-py inst
 python kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/gen_agentx_serving_report.py
 ```
 
-The earlier [agg report](agentx-agg-kv-rr-report.md) and [disagg report](agentx-disagg-kv-rr-report.md) remain dated snapshots. This organized report preserves all 37 collected hardware jobs and all 12 original native agg comparisons; unfinished directories and failed native runs contribute no performance point.
+The earlier [agg report](agentx-agg-kv-rr-report.md) and [disagg report](agentx-disagg-kv-rr-report.md) remain dated snapshots. This report preserves all 37 current agg/D88 hardware jobs and all 12 original native agg comparisons. Section 4 additionally preserves eight existing native disagg runs and two historical 72-GPU hardware references; errored profiling runs remain visible as diagnostics, and failed warmups contribute no performance point.

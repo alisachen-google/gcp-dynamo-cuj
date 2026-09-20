@@ -1,0 +1,210 @@
+{
+  "warmup": {
+    "hardware_requests": 185,
+    "simulation_requests": 185,
+    "identity_fields": [
+      "source_trace_id",
+      "conversation_id",
+      "source_kind",
+      "source_outer_idx",
+      "turn_index",
+      "usage_prompt_tokens"
+    ],
+    "inputs_match": true,
+    "missing_count": 0,
+    "unexpected_count": 0,
+    "missing_examples": [],
+    "unexpected_examples": [],
+    "simulation_all_successful": true,
+    "simulation_all_one_token": true,
+    "all_checks_pass": true
+  },
+  "profiling": {
+    "scope": "Successful completed requests only; input lengths are not payload hashes. Runtime lane/cache-bust markers can change prompt token counts.",
+    "hardware_successes": 12610,
+    "simulation_successes": 12454,
+    "hardware_unique_source_identities": 12610,
+    "simulation_unique_source_identities": 12454,
+    "common_unique_source_identities": 12454,
+    "common_identities_occurring_once_in_each": 12454,
+    "prompt_token_delta_counts": {
+      "-3": 16,
+      "-2": 708,
+      "-1": 907,
+      "0": 9673,
+      "1": 750,
+      "2": 221,
+      "3": 179
+    },
+    "output_token_delta_counts": {
+      "0": 12454
+    },
+    "differing_count_examples": [
+      {
+        "identity": [
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "weka_main",
+          0,
+          0
+        ],
+        "prompt_token_delta": 1,
+        "output_token_delta": 0
+      },
+      {
+        "identity": [
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "weka_main",
+          1,
+          1
+        ],
+        "prompt_token_delta": 1,
+        "output_token_delta": 0
+      },
+      {
+        "identity": [
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "weka_main",
+          10,
+          10
+        ],
+        "prompt_token_delta": 1,
+        "output_token_delta": 0
+      },
+      {
+        "identity": [
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "weka_main",
+          11,
+          11
+        ],
+        "prompt_token_delta": 1,
+        "output_token_delta": 0
+      },
+      {
+        "identity": [
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "weka_main",
+          12,
+          12
+        ],
+        "prompt_token_delta": 1,
+        "output_token_delta": 0
+      },
+      {
+        "identity": [
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "weka_main",
+          13,
+          13
+        ],
+        "prompt_token_delta": 1,
+        "output_token_delta": 0
+      },
+      {
+        "identity": [
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "weka_main",
+          14,
+          14
+        ],
+        "prompt_token_delta": 1,
+        "output_token_delta": 0
+      },
+      {
+        "identity": [
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "weka_main",
+          15,
+          15
+        ],
+        "prompt_token_delta": 1,
+        "output_token_delta": 0
+      },
+      {
+        "identity": [
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "weka_main",
+          16,
+          16
+        ],
+        "prompt_token_delta": 1,
+        "output_token_delta": 0
+      },
+      {
+        "identity": [
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "weka_main",
+          17,
+          17
+        ],
+        "prompt_token_delta": 1,
+        "output_token_delta": 0
+      },
+      {
+        "identity": [
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "weka_main",
+          18,
+          18
+        ],
+        "prompt_token_delta": 1,
+        "output_token_delta": 0
+      },
+      {
+        "identity": [
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "weka_main",
+          19,
+          19
+        ],
+        "prompt_token_delta": 1,
+        "output_token_delta": 0
+      },
+      {
+        "identity": [
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "weka_main",
+          2,
+          2
+        ],
+        "prompt_token_delta": 1,
+        "output_token_delta": 0
+      },
+      {
+        "identity": [
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "weka_main",
+          20,
+          20
+        ],
+        "prompt_token_delta": 1,
+        "output_token_delta": 0
+      },
+      {
+        "identity": [
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "79ea3049f1c4977e9457ffc2feeae309e24b",
+          "weka_main",
+          21,
+          21
+        ],
+        "prompt_token_delta": 1,
+        "output_token_delta": 0
+      }
+    ]
+  }
+}

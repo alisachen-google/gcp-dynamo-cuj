@@ -1,0 +1,106 @@
+{
+  "runs": {
+    "topo64-v11-p8d8-kv-c16": {
+      "file": "request-metrics/topo64-v11-p8d8-kv-c16.csv.gz",
+      "source": "/tmp/n3u-path1-topology-runs/topo64-v11-p8d8-kv-c16/artifacts/profile_export.jsonl",
+      "source_sha256": "289a00860063d9e64453d9090cccf332188a78f561b4b566316c6e86a8fedafa",
+      "source_bytes": 9098274,
+      "rows_by_phase_and_status": {
+        "warmup/success": 16,
+        "profiling/success": 601
+      }
+    },
+    "topo64-v11-p8d8-kv-c64": {
+      "file": "request-metrics/topo64-v11-p8d8-kv-c64.csv.gz",
+      "source": "/tmp/n3u-path1-topology-runs/topo64-v11-p8d8-kv-c64/artifacts/profile_export.jsonl",
+      "source_sha256": "040daeb281926886cc7a3ab12b45f2877f4c22a5ef4fb4edf31331a1ea6c4e1e",
+      "source_bytes": 55839578,
+      "rows_by_phase_and_status": {
+        "warmup/success": 62,
+        "profiling/success": 4288
+      }
+    },
+    "topo64-v11-p8d8-kv-c256": {
+      "file": "request-metrics/topo64-v11-p8d8-kv-c256.csv.gz",
+      "source": "/tmp/n3u-path1-topology-runs/topo64-v11-p8d8-kv-c256/artifacts/profile_export.jsonl",
+      "source_sha256": "ef4979df2131d52a5520e7c845e2c0beeb34ee981ae2645a7b4f8936e1156a0c",
+      "source_bytes": 207814376,
+      "rows_by_phase_and_status": {
+        "warmup/success": 244,
+        "profiling/success": 17289,
+        "profiling/error": 11
+      }
+    },
+    "topo64-v11-p8d8-rr-c16": {
+      "file": "request-metrics/topo64-v11-p8d8-rr-c16.csv.gz",
+      "source": "/tmp/n3u-path1-topology-runs/topo64-v11-p8d8-rr-c16/artifacts/profile_export.jsonl",
+      "source_sha256": "310ee9f2212590a8c1a70a4ce2216772e83d01adb6b3cf47fa8d00b254541c66",
+      "source_bytes": 8884037,
+      "rows_by_phase_and_status": {
+        "warmup/success": 16,
+        "profiling/success": 584
+      }
+    },
+    "topo64-v11-p8d8-rr-c64": {
+      "file": "request-metrics/topo64-v11-p8d8-rr-c64.csv.gz",
+      "source": "/tmp/n3u-path1-topology-runs/topo64-v11-p8d8-rr-c64/artifacts/profile_export.jsonl",
+      "source_sha256": "e7c8f18db3232898b42e341c26512ea23338bcf1a0cc61a63b60215795e6f529",
+      "source_bytes": 52186823,
+      "rows_by_phase_and_status": {
+        "warmup/success": 62,
+        "profiling/success": 4065
+      }
+    },
+    "topo64-v11-p8d8-rr-c256": {
+      "file": "request-metrics/topo64-v11-p8d8-rr-c256.csv.gz",
+      "source": "/tmp/n3u-path1-topology-runs/topo64-v11-p8d8-rr-c256/artifacts/profile_export.jsonl",
+      "source_sha256": "752846b8a869f3cae5cd8f83a30a78ebe28a05808f11976e32688294454b557e",
+      "source_bytes": 139679059,
+      "rows_by_phase_and_status": {
+        "warmup/success": 244,
+        "profiling/success": 11161,
+        "profiling/error": 3710
+      }
+    },
+    "disagg-p12d6-kv-c192-calibrated-v11": {
+      "file": "request-metrics/disagg-p12d6-kv-c192-calibrated-v11.csv.gz",
+      "source": "/tmp/n3u-path1-topology-runs/disagg-p12d6-kv-c192-calibrated-v11/artifacts/profile_export.jsonl",
+      "source_sha256": "15facff55c63c04f56c6248ec9fb7d75f4211ad9709c6bb585b02f9e5f857e84",
+      "source_bytes": 153237233,
+      "rows_by_phase_and_status": {
+        "warmup/success": 185,
+        "profiling/success": 12454
+      }
+    },
+    "n3u-mnnvl-126-agentx-kv-c192": {
+      "file": "request-metrics/n3u-mnnvl-126-agentx-kv-c192.csv.gz",
+      "source": "/tmp/n3u-path1-hardware/n3u-mnnvl-126-agentx-kv-c192/records.jsonl",
+      "source_sha256": "4ebd56b2d1872d204737e01d17c30db35c049547b7ef64ef0bd1cafca9211e2e",
+      "source_bytes": 147697372,
+      "rows_by_phase_and_status": {
+        "warmup/success": 185,
+        "profiling/success": 12610
+      }
+    },
+    "disagg-p12d6-kv-c384-calibrated-v11": {
+      "file": "request-metrics/disagg-p12d6-kv-c384-calibrated-v11.csv.gz",
+      "source": "/tmp/n3u-path1-topology-runs/disagg-p12d6-kv-c384-calibrated-v11/artifacts/profile_export.jsonl",
+      "source_sha256": "43dd55cee173ab64419f9759401df68edba98c2637a443a56aa6f937ca21e0e8",
+      "source_bytes": 318542275,
+      "rows_by_phase_and_status": {
+        "warmup/success": 349,
+        "profiling/success": 24366
+      }
+    },
+    "n3u-mnnvl-126-agentx-kv-c384": {
+      "file": "request-metrics/n3u-mnnvl-126-agentx-kv-c384.csv.gz",
+      "source": "/tmp/n3u-path1-hardware/n3u-mnnvl-126-agentx-kv-c384/records.jsonl",
+      "source_sha256": "360833d345f97b768b93aa9bce8655c6a9e5ada64a9508e10e6a71cfb01c4aa8",
+      "source_bytes": 304278464,
+      "rows_by_phase_and_status": {
+        "warmup/success": 349,
+        "profiling/success": 24230
+      }
+    }
+  }
+}

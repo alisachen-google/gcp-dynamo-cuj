@@ -1,0 +1,49 @@
+{
+  "state": "completed",
+  "updated_unix": 1789710459.3820999,
+  "topology": "p8d8",
+  "router": "round-robin",
+  "concurrency": 256,
+  "gpu_count": 64,
+  "benchmark_id": "0adec2fba17f",
+  "total_tok_s_per_gpu": 4739.877235206234,
+  "output_tok_s_per_gpu": 44.90585446085119,
+  "p95_ttft_ms": 32532.408208999997,
+  "p95_itl_ms": 11.371937787654106,
+  "request_throughput": 3.041143865123144,
+  "requests": 11161.0,
+  "errors": 3710.0,
+  "error_summary": [
+    {
+      "error_details": {
+        "code": 500,
+        "type": "Internal Server Error",
+        "message": "{\"message\":\"Failed to generate completions\",\"type\":\"Internal Server Error\",\"code\":500}"
+      },
+      "count": 2340
+    },
+    {
+      "error_details": {
+        "code": 503,
+        "type": "Service Unavailable",
+        "message": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      "count": 1370
+    }
+  ],
+  "effective_concurrency": {
+    "unit": "requests",
+    "avg": 66.15688657285075,
+    "p50": 68.0,
+    "p90": 80.0,
+    "p95": 83.0,
+    "p99": 86.0,
+    "min": 0.0,
+    "max": 93.0,
+    "std": 13.335612555496743
+  },
+  "valid_agentx_submission": true,
+  "warmup_input_sha256": "0ba7d96a50e7dd5cd7668339d3d15157a363be2086b9f294632ea14fa8564241",
+  "summary": "/tmp/n3u-path1-topology-runs/topo64-v11-p8d8-rr-c256/artifacts/profile_export_aiperf.json",
+  "measured_hardware": false
+}

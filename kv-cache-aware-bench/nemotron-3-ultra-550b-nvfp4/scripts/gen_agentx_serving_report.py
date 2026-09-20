@@ -64,6 +64,8 @@ FIGURES = [
     "disagg-flags",
     "operating-points",
     "simulation-agg",
+    "simulation-disagg-d88",
+    "simulation-disagg-p12d6",
 ]
 
 
@@ -225,6 +227,107 @@ def cells(points, arch, policy=None):
         for p in points
         if p["architecture"] == arch and (policy is None or p["policy"] == policy)
     ]
+
+
+def load_native_disagg():
+    folder = REPORTS / "agentx-native-disagg-data"
+    manifest = read(folder / "manifest.json")
+    for filename, spec in manifest["files"].items():
+        assert sha(folder / filename) == spec["sha256"], filename
+    requests = read(folder / manifest["request_metrics_manifest"])
+    points = []
+    for entry in manifest["native_runs"] + manifest["legacy_hardware"]:
+        summary = read(folder / entry["summary"])
+        agg.validate_client(summary, entry["clients"])
+        cfg = summary["input_config"]
+        assert (
+            cfg["datasets"][0]["dataset"] == "semianalysis_cc_traces_weka_062126_256k"
+        )
+        assert cfg["datasets"][0]["cache_bust"]["target"] == "first_turn_prefix"
+        assert cfg["endpoint"]["timeout"] == 1200
+        assert (
+            cfg["endpoint"]["use_server_token_count"] and cfg["endpoint"]["streaming"]
+        )
+        assert cfg["endpoint"]["extra"]["ignore_eos"]
+        point = entry | agg.metrics(summary, entry["gpus"])
+        point.update(agg.request_metrics(folder, requests, point, summary))
+        point.update(audit(folder, requests["runs"][point["id"]]))
+        point["ttft_slo_pass"] = point["ttft_p95_s"] < 10
+        point["combined_slo_pass"] = (
+            point["ttft_slo_pass"] and point["interactivity_slo_pass"]
+        )
+        point["benchmark_id"] = summary["benchmark_id"]
+        point["summary_link"] = f"agentx-native-disagg-data/{entry['summary']}"
+        point["diagnostic_only"] = point["request_error_rate_pct"] > 5
+        if entry["kind"] == "simulation":
+            root = folder / "native" / entry["id"]
+            assert (
+                read(root / "server-environment.json")["core_sha256"]
+                == manifest["native_core_sha256"]
+            )
+            provenance = read(root / "provenance.json")
+            assert provenance["clock"] == "wall" and provenance["speedup"] == 1
+            topology = read(root / "topology.json")
+            assert sum(p["workers"] * 4 for p in topology["pools"]) == entry["gpus"]
+            for role in ["prefill", "decode"]:
+                engine = read(root / role / "engine.json")
+                shared = read(
+                    ROOT
+                    / "sim-results/agentx_disagg_c480_native_20260919/configs"
+                    / f"{role}-engine.json"
+                )
+                assert engine == shared, (entry["id"], role)
+            assert read(root / "warmup-inputs.json")["all_successful_one_token"]
+        points.append(point)
+    by_id = {p["id"]: p for p in points}
+    pairs = []
+    for point in points:
+        if not point.get("hardware_id"):
+            continue
+        real = by_id[point["hardware_id"]]
+        assert point["benchmark_id"] == real["benchmark_id"]
+        assert point["gpus"] == real["gpus"] == 72
+        assert (
+            point["clients"] == real["clients"]
+            and point["policy"] == real["policy"] == "kv"
+        )
+
+        def warmup_identity(p):
+            with gzip.open(folder / p["request_metrics_file"], "rt") as stream:
+                rows = [r for r in csv.DictReader(stream) if r["phase"] == "warmup"]
+            assert all(
+                r["status"] == "success" and float(r["output_sequence_length"]) == 1
+                for r in rows
+            )
+            return Counter(
+                tuple(
+                    r[k]
+                    for k in [
+                        "source_trace_id",
+                        "conversation_id",
+                        "source_kind",
+                        "source_outer_idx",
+                        "turn_index",
+                        "input_sequence_length",
+                    ]
+                )
+                for r in rows
+            )
+
+        assert warmup_identity(point) == warmup_identity(real)
+        errors = {
+            m: delta(point, real, m) for m in ["total_tok_s_gpu", "ttft_p95_s", I90]
+        }
+        pairs.append(
+            {
+                "simulation_id": point["id"],
+                "hardware_id": real["id"],
+                "relative_error_pct": errors,
+                "warmup_inputs_match": True,
+            }
+        )
+    assert len(points) == 10 and len(pairs) == 2
+    return {"manifest": manifest, "points": points, "pairs": pairs}
 
 
 def one(points, arch, policy, concurrency, campaign=None):
@@ -830,20 +933,300 @@ def simulation_plot(points, native):
     save(fig, "simulation-agg")
 
 
-def markdown(points, native, manifest, status, methodology):
+def disagg_simulation_plots(points, data):
+    native = [
+        p
+        for p in data["points"]
+        if p["kind"] == "simulation" and p["topology"] == "p8d8"
+    ]
+    fig, axes = plt.subplots(1, 3, figsize=(16, 5.8))
+    for ax, metric, title in zip(
+        axes,
+        ["total_tok_s_gpu", "ttft_p95_s", I90],
+        [
+            "Total input + output tok/s/GPU",
+            "TTFT p95 (seconds; log)",
+            "E2E I90 (output tok/s/user; log)",
+        ],
+    ):
+        for policy in ["kv", "rr"]:
+            real = cells(points, "disagg", policy)
+            clean = [
+                p for p in native if p["policy"] == policy and p["request_errors"] == 0
+            ]
+            errored = [
+                p for p in native if p["policy"] == policy and p["request_errors"] > 0
+            ]
+            for group, style, marker, label in [
+                (real, "-", "o", "hardware"),
+                (clean, "--", "s", "native, zero errors"),
+            ]:
+                ax.plot(
+                    [p["clients"] for p in group],
+                    [p[metric] for p in group],
+                    color=COLORS[policy],
+                    linestyle=style,
+                    marker=marker,
+                    markersize=4,
+                    label=f"{LABELS[policy]} {label}",
+                )
+            ax.scatter(
+                [p["clients"] for p in errored],
+                [p[metric] for p in errored],
+                color=COLORS[policy],
+                marker="x",
+                s=85,
+                linewidths=2,
+                zorder=5,
+            )
+        ax.set_title(title, loc="left", fontsize=11)
+        ax.set_xlabel("Concurrency · live sessions")
+        ax.set_xscale("log", base=2)
+        ticks = [16, 64, 96, 192, 256, 480, 768, 1152]
+        ax.set_xticks(ticks, [str(t) for t in ticks], rotation=45)
+        ax.grid(alpha=0.18)
+        ax.spines[["top", "right"]].set_visible(False)
+        if metric == "total_tok_s_gpu":
+            ax.set_ylim(0, 18500)
+            ax.legend(fontsize=7.5, frameon=False, loc="upper left")
+            ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:,.0f}"))
+        else:
+            ax.set_yscale("log")
+            ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:g}"))
+            threshold = 10 if metric == "ttft_p95_s" else 20
+            ax.axhline(threshold, color="#a62b3a", linestyle=":")
+            ax.text(
+                0.02,
+                threshold * 1.12,
+                "TTFT <10 s" if threshold == 10 else "I90 ≥20 tok/s",
+                transform=ax.get_yaxis_transform(),
+                color="#a62b3a",
+                fontsize=8,
+            )
+    fig.suptitle(
+        "Disagg · 8P+8D / 64 GPUs · collected native forecasts alongside hardware",
+        x=0.04,
+        ha="left",
+        fontsize=15,
+    )
+    fig.text(
+        0.04,
+        0.02,
+        "No sampled concurrency values coincide: these curves do not establish matched-point accuracy. Native V11 uses frozen V10 timing.\n"
+        "× = native C256 with errors: KV 11/17,300 (0.064%); RR 3,710/14,871 (24.95%, diagnostic only). No native result at C480 or above.",
+        fontsize=9,
+        color="#52657a",
+    )
+    fig.subplots_adjust(left=0.065, right=0.99, top=0.83, bottom=0.25, wspace=0.25)
+    save(fig, "simulation-disagg-d88")
+
+    matched = [p for p in data["points"] if p["topology"] == "p12d6"]
+    fig, axes = plt.subplots(1, 3, figsize=(16, 5.3))
+    for ax, metric, title in zip(
+        axes,
+        ["total_tok_s_gpu", "ttft_p95_s", I90],
+        [
+            "Total input + output tok/s/GPU",
+            "TTFT p95 (seconds)",
+            "E2E I90 (output tok/s/user)",
+        ],
+    ):
+        for kind, color, style, marker in [
+            ("hardware", "#2463b3", "-", "o"),
+            ("simulation", "#16836b", "--", "s"),
+        ]:
+            group = sorted(
+                [p for p in matched if p["kind"] == kind], key=lambda p: p["clients"]
+            )
+            ax.plot(
+                [p["clients"] for p in group],
+                [p[metric] for p in group],
+                color=color,
+                linestyle=style,
+                marker=marker,
+                label="KV hardware" if kind == "hardware" else "KV native V11",
+            )
+            for p in group:
+                offset = (0, -17 if kind == "hardware" else 9)
+                ax.annotate(
+                    f"{p[metric]:,.0f}"
+                    if metric == "total_tok_s_gpu"
+                    else f"{p[metric]:.2f}",
+                    xy=(p["clients"], p[metric]),
+                    xytext=offset,
+                    textcoords="offset points",
+                    ha="center",
+                    color=color,
+                    fontsize=8,
+                )
+        ax.set_title(title, fontsize=11, loc="left")
+        ax.set_xticks([192, 384], ["192", "384"])
+        ax.set_xlim(165, 411)
+        ax.set_ylim(bottom=0, top=max(p[metric] for p in matched) * 1.25)
+        ax.set_xlabel("Concurrency · live sessions")
+        ax.grid(alpha=0.18)
+        ax.spines[["top", "right"]].set_visible(False)
+        if metric == "total_tok_s_gpu":
+            ax.legend(frameon=False, fontsize=9)
+            ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:,.0f}"))
+    fig.suptitle(
+        "Matched disagg checks · 12P+6D / 72 GPUs · KV routing only",
+        x=0.04,
+        ha="left",
+        fontsize=16,
+    )
+    fig.text(
+        0.04,
+        0.02,
+        "Same topology and concurrency, matched warmup inputs, one-hour profiles; native V11 with frozen V10 timing.\n"
+        "Two historical reference points, not the current 64-GPU D88 fleet or an RR validation. Lines connect samples; they do not locate a knee.",
+        fontsize=9,
+        color="#52657a",
+    )
+    fig.subplots_adjust(left=0.065, right=0.99, top=0.82, bottom=0.23, wspace=0.25)
+    save(fig, "simulation-disagg-p12d6")
+
+
+def disagg_simulation_markdown(data, status):
+    native = [
+        p
+        for p in data["points"]
+        if p["kind"] == "simulation" and p["topology"] == "p8d8"
+    ]
+    out = [
+        """### 4.2 D88: native forecasts alongside the measured KV/RR curves
+
+Six completed native runs cover **8 prefill + 8 decode TP4 workers / 64 GPUs**, with default KV and RR at **C16, C64 and C256**. They use the **V11 disaggregation extension with frozen V10 timing**, the same Weka corpus and replay settings, and the engine configurations in section 5.3. These are existing September 17–18 runs, separate from the failed C480 flag sweep.
+
+**No sampled concurrency values coincide between hardware and native runs.** The graph shows their collected trends; it does not compute accuracy by interpolating an unmeasured hardware or simulation point. No tuned KV points enter these curves.
+""",
+        figure(
+            "simulation-disagg-d88",
+            "D88 default KV and RR: hardware and native results at different concurrency grids, with errored native results marked",
+        ),
+    ]
+    out.append(
+        table(
+            [
+                "Native run / summary",
+                "C",
+                "Total tok/s/GPU",
+                "TTFT p95 (s)",
+                "E2E I90",
+                "Successes / errors",
+                "Error rate",
+                "Use",
+            ],
+            [
+                [
+                    f"[{LABELS[p['policy']]}]({p['summary_link']})",
+                    p["clients"],
+                    f"{p['total_tok_s_gpu']:,.0f}",
+                    f"{p['ttft_p95_s']:.2f}",
+                    f"{p[I90]:.4f}",
+                    f"{p['successful_requests']:,} / {p['request_errors']:,}",
+                    f"{p['request_error_rate_pct']:.3f}%",
+                    "Diagnostic only"
+                    if p["diagnostic_only"]
+                    else "Forecast with errors"
+                    if p["request_errors"]
+                    else "Completed forecast",
+                ]
+                for p in native
+            ],
+        )
+    )
+    out.append("""**RR256 is an admission-failure diagnostic, not a usable capacity prediction:** 3,710 of 14,871 profiling requests fail (24.95%). Its TTFT and I90 describe successful requests only, so dropping those errors would make the curve misleading. KV256 also has 11 errors (0.064%). Both are crosses outside the zero-error prediction lines. Worker logs contain handoff-session-limit failures; counts and log hashes are preserved with each run. The scenario-valid stamp alone does not validate the serving model.
+
+The lower-concurrency native points show the direction of KV's latency advantage. They do not validate the measured D88 knee, credit-1.5 tuning, or C480/C576 SLO choices. Those require successful native runs at the same hardware concurrency and settings.
+
+### 4.3 Matched disagg comparison: 12P+6D, 72 GPUs, KV only
+
+Two completed native checks **do** have matching real hardware jobs: the earlier **12P+6D TP4 / 72-GPU KV** recipe at **C192 and C384**. These two historical hardware references are additional to the 37 agg/D88 jobs in sections 2–3; they are not substituted for 64-GPU D88 or for RR. Structured pool counts and launch commands establish 72 GPUs; the original topology JSON retains a stale 64-GPU sentence, documented in the source manifest.
+""")
+    out.append(
+        figure(
+            "simulation-disagg-p12d6",
+            "Matched 72-GPU 12P+6D KV hardware and native throughput, TTFT and E2E interactivity at C192 and C384",
+        )
+    )
+    by_id = {p["id"]: p for p in data["points"]}
+    rows = []
+    for pair in data["pairs"]:
+        s, h = by_id[pair["simulation_id"]], by_id[pair["hardware_id"]]
+        rows.append(
+            [
+                f"[C{h['clients']} hardware]({h['gcs_console']}) / [native]({s['summary_link']})",
+                f"{h['total_tok_s_gpu']:,.0f} / {s['total_tok_s_gpu']:,.0f}",
+                f"{pair['relative_error_pct']['total_tok_s_gpu']:+.2f}%",
+                f"{h['ttft_p95_s']:.3f} / {s['ttft_p95_s']:.3f}",
+                f"{pair['relative_error_pct']['ttft_p95_s']:+.2f}%",
+                f"{h[I90]:.4f} / {s[I90]:.4f}",
+                f"{h['request_errors']} / {s['request_errors']}",
+            ]
+        )
+    out.append(
+        table(
+            [
+                "Matched job",
+                "Total/GPU real / native",
+                "Throughput error",
+                "TTFT p95 real / native (s)",
+                "TTFT error",
+                "I90 real / native",
+                "Errors real / native",
+            ],
+            rows,
+        )
+    )
+    out.append("""The throughput errors are **−1.10% at C192** and **+0.65% at C384**; TTFT p95 errors are **+0.54%** and **+5.74%**. Both native runs complete without profiling errors. Their 185/349 warmup requests match the respective hardware source/turn/input-token identities; the report independently recomputes request-level TTFT and I90. The timing coefficients remain those derived for agg, and transfer bandwidth/prefill cache sizing remain assumptions. Two checks on this earlier topology do not establish general disagg accuracy or a knee.
+
+### 4.4 The remaining C480 tuning gap
+
+All **12 C480 native flag attempts failed during warmup** with `mocker handoff session limit reached`; no full profiling result exists at that load. The grid tested credits 0.6/0.8/1.0 and did not produce a forecast for the hardware credit-1.5 winner. Failed warmups are not plotted as zero throughput or as hardware limits.
+
+Fix native handoff admission/backpressure while preserving the intended batch limits, then collect matched D88 default-KV/RR points at C96/C192 and C480. Only after those complete should the tuning grid and C576 SLO choice be evaluated. Validate transfer contention and the prefill cache allocation alongside that work.
+
+[Native disagg input manifest](agentx-native-disagg-data/manifest.json) · [numeric request provenance](agentx-native-disagg-data/request-metrics/manifest.json) · [C480 failure evidence](agentx-serving-perf-data/source/native-c480-status.json) · [C480 sweep manifest](../sim-results/agentx_disagg_c480_native_20260919/plan.json)
+""")
+    if status:
+        assert len(status["runs"]) == 12 and all(
+            r["state"] == "failed" and r["handoff_limit_evidence"]
+            for r in status["runs"]
+        )
+    return "\n\n".join(out)
+
+
+def markdown(points, native, manifest, status, methodology, disagg):
     date = manifest["collected_utc"][:16].replace("T", " ") + " UTC"
     decisions = comparison_data(points)
     by_id = {p["id"]: p for p in points}
     link = lambda p: f"[{LABELS[p['policy']]}]({p['gcs_console']})"
     records = lambda ids: [by_id[i] for i in ids]
+    routing_gains = {
+        arch: best(points, arch, "kv")["total_tok_s_gpu"]
+        / best(points, arch, "rr")["total_tok_s_gpu"]
+        for arch in ["agg", "disagg"]
+    }
     out = [
-        f"""# AgentX performance: setup, hardware comparisons and simulation
+        f"""# KV-Aware vs. Round-Robin Routing: NVIDIA Dynamo on Google Cloud
 
-**Evidence snapshot: {date} · {len(points)} completed hardware jobs ({len(cells(points, "agg"))} agg / {len(cells(points, "disagg"))} disagg) · 12 completed Native DynoSim V10 agg runs**
+*How routing affects throughput, time to first token, and end-to-end responsiveness for coding-agent workloads.*
 
-This report separates three questions: **KV versus RR at the same concurrency**, **capacity under TTFT p95 <10 seconds**, and **capacity when E2E interactivity must also reach 20 output tokens/s at P90**. Each architecture has its own measured curves, full data table, comparison at a sampled knee, and SLO table. The baseline curves show **default KV and RR only**; tuned settings remain in the data and tuning tables.
+A coding agent sends much of its conversation history again on each turn. The worker that receives that request determines whether the service can reuse a resident prefix or must recompute more of the prompt. Across a fleet, routing therefore affects both cache reuse and how work is distributed—and ultimately how long the user waits.
 
-[Standalone HTML]({STEM}.html) · [hardware CSV]({STEM}.csv) · [comparison JSON]({STEM}.json) · [AIC and simulation configurations]({STEM}-methodology.json) · [validation]({STEM}-validation.json)
+This Google Cloud **customer use journey (CUJ)** compares NVIDIA Dynamo's **KV-aware routing** with **round-robin (RR) routing** using recorded AgentX coding sessions and Nemotron-3-Ultra on GB300 GPUs. We follow each turn from the client, through Dynamo's router, to the streamed response. The study covers **aggregated serving**, where a worker handles prefill and decode, and **disaggregated serving**, where separate worker pools handle those stages.
+
+The comparison follows two customer decisions: how the routing policies perform at the **same session concurrency**, and how much traffic each can serve under the **same latency SLO**. We measure TTFT p95 <10 seconds and separately require E2E-normalized interactivity ≥20 output tokens/s at P90. Default KV/RR curves establish the routing impact; the tuning tables show how that impact changes with router settings. The measured results also show why an agg tuning choice must be checked again on disagg.
+
+At each policy's best sampled point meeting **both** latency criteria, default KV delivered **{routing_gains["agg"]:.2f}× total served tokens/s/GPU for agg** and **{routing_gains["disagg"]:.2f}× for disagg** relative to RR. These compare different selected session counts: C96 versus C48 for agg, and C480 versus C72 for disagg. The same-concurrency tables show the routing differences at a fixed population of users.
+
+
+**Evidence snapshot: {date} · {len(points)} completed hardware jobs ({len(cells(points, "agg"))} agg / {len(cells(points, "disagg"))} disagg)**
+
+Each architecture has its own measured curves, full data table, comparison at a sampled knee, and SLO table. The baseline curves show **default KV and RR only**; tuned settings remain in the data and tuning tables. Total served tokens include cached prompt tokens; output-token throughput is reported alongside them.
+
+[Standalone HTML]({STEM}.html) · [hardware CSV]({STEM}.csv) · [comparison JSON]({STEM}.json) · [configuration provenance]({STEM}-methodology.json) · [validation]({STEM}-validation.json)
 
 ## 1. Setup, agentic workload and benchmarking methodology
 
@@ -1232,52 +1615,8 @@ These are **12 actual native simulations paired with the original 12 agg hardwar
     out.append("""The four-point acceptance gate covered **±20% total throughput**, not TTFT or I90. All eight holdouts also fall within ±20% throughput. The original model reproduces the sampled default-policy throughput decline from C192 to C384 and the direction of the scale-3/credit-0.8 and temperature-0.5 effects, but it underestimates the RR384 TTFT tail by **38.4%**.
 
 **SLO errors matter:** simulated default KV192 passes TTFT (8.71 s) while hardware fails (11.66 s). Simulated tuned KV192 gives I90 **22.5354** while hardware gives **19.7795**; it incorrectly passes the combined SLO and selects C192 where hardware selects C96. There is **one combined-SLO classification disagreement among 12 pairs**. Throughput calibration therefore supports candidate screening, not automatic SLO approval. [Original paired inputs and calibration/holdout provenance](agentx-agg-kv-rr-report.md#31-native-dynosim-v10-current-completed-calibration-samples).
-
-### 4.2 Disagg: measured hardware exists, but no usable native comparison for this ladder
-
-The C480 native flag sweep used a **V11 disaggregation extension with frozen V10 timing coefficients**, not the unchanged V10 agg binary. **All 12 attempted runs failed during warmup** with `mocker handoff session limit reached`; no completed profiling exports are available. This is a mocker admission/handoff failure, not evidence of a hardware capacity limit. The grid's credits were 0.6/0.8/1.0; it did not produce a credit-1.5 forecast for the current hardware winner.
 """)
-    d88_rows = [
-        one(points, "disagg", pol, c)
-        for pol, c in [
-            ("kv", 192),
-            ("kv", 480),
-            ("rr", 192),
-            ("rr", 480),
-            ("kvc15", 480),
-            ("kvc15", 576),
-        ]
-    ]
-    out.append(
-        table(
-            [
-                "Hardware setting",
-                "C",
-                "Real total/GPU",
-                "Real TTFT p95 (s)",
-                "Real I90",
-                "Usable paired native result",
-            ],
-            [
-                [
-                    LABELS[p["policy"]],
-                    p["clients"],
-                    f"{p['total_tok_s_gpu']:,.0f}",
-                    f"{p['ttft_p95_s']:.2f}",
-                    f"{p[I90]:.4f}",
-                    "Unavailable",
-                ]
-                for p in d88_rows
-            ],
-        )
-    )
-    if status:
-        failures = [r for r in status["runs"] if r["state"] == "failed"]
-        assert len(failures) == len(status["runs"]) == 12
-        assert all(r["handoff_limit_evidence"] for r in failures)
-    out.append(
-        "[Failure evidence and log hashes](agentx-serving-perf-data/source/native-c480-status.json) and the [native sweep manifest](../sim-results/agentx_disagg_c480_native_20260919/plan.json) document the gap. The report does not replace missing native results with old custom Python forecasts or interpolate a disagg simulation curve. Fix admission/backpressure at the intended batch limits, validate one complete hardware-matched baseline, then sweep. Transfer contention and disagg cache sizing must also be validated before using the simulation to select a recipe."
-    )
+    out.append(disagg_simulation_markdown(disagg, status))
 
     out.append("""## 5. How we simulate performance: AIC, DynoSim and recipe selection
 
@@ -1442,7 +1781,7 @@ The timing identity below is common: **AIC 0.11.0, GB300, SGLang 0.5.14 tables, 
     )
     out.append("""**Cache size provenance:** the agg attention allocation (443,697 pages ×64 =28,396,608 tokens/worker) comes from observed serving metadata. The 769 Mamba slots and checkpoint settings remain assumptions because the live state pool was not captured. Disagg prefill inherits that allocation as an assumption; decode uses 809,406 observed attention pages and 64 state/request slots in the saved model. AIC did not measure these fleet cache allocations. Cache-hit rate emerges from the replay, placement and finite cache state.
 
-**Transfer provenance:** the 64 GB/s value is a per-rank modeling assumption, not measured Mooncake bandwidth. The native handoff moves the full prompt's modeled KV plus recurrent state; independent delays omit shared-link contention. These assumptions need a matched disagg hardware check. The saved input files are linked above; the failed sweep is not evidence that these values are accurate.
+**Transfer provenance:** the 64 GB/s value is a per-rank modeling assumption, not measured Mooncake bandwidth. The native handoff moves the full prompt's modeled KV plus recurrent state; independent delays omit shared-link contention. These assumptions need direct transfer/cache measurements and a matched D88 hardware check. The saved input files are linked above; the failed sweep is not evidence that these values are accurate.
 
 ### 5.4 Shared timing calibration and what DynoSim tells us
 
@@ -1460,7 +1799,8 @@ The prefill fit uses **93 isolated one-token RR192 hardware warmup requests**. D
 | --- | --- | --- |
 | Agg 6×TP4, default KV versus RR | Reproduces the sampled C192 throughput peak and C384 decline, and the direction of the KV advantage. Eight holdouts average 1.7% absolute throughput error. | TTFT tails remain biased; the simulator falsely passes default KV192 under TTFT-only. |
 | Agg router tuning | Frozen V10 reproduces the original scale-3/credit-0.8 throughput benefit and temperature-0.5 loss. | Tuned KV192 falsely passes combined SLO in simulation. Decay variants lack native counterparts. Use measured C96 under both limits; measure C144 next. |
-| Disagg 8P+8D TP4 | The saved recipe specifies separate admission/cache budgets and a transfer model. Flag propagation was checked. | All C480 attempts fail warmup. No usable native tuning ranking, knee, or SLO capacity is established for this ladder. |
+| Disagg 8P+8D TP4 | Six completed native runs at C16/C64/C256 show the sampled routing trends, with separate admission/cache budgets and transfer timing. | No native point matches the hardware concurrency grid; RR256 has 24.95% errors. All C480 tuning attempts fail warmup, so no native tuning ranking or high-load SLO capacity is established. |
+| Earlier disagg 12P+6D TP4 | Two matched 72-GPU KV checks have throughput errors of −1.10%/+0.65% and TTFT errors of +0.54%/+5.74%. | These are two historical KV points, not validation of D88, RR, or the full latency boundary. Transfer/cache assumptions still need measurement. |
 | Choosing TP or the P:D ratio | AIC supplies candidate shapes; a working replay model can compare them under the workload. | The current evidence does not establish that 6×TP4 or 8P+8D is globally optimal. Compare candidates at fixed total GPUs and validate on hardware. |
 
 Fix native disagg admission/backpressure while preserving the intended batch limits, complete one full matched baseline, and only then repeat the flag grid. Validate transfer timing/contended bandwidth, prefill cache capacity and SGLang-version effects. For agg, use the frozen model to prioritize measurements; the real-job SLO remains the decision source.
@@ -1475,7 +1815,7 @@ From the repository root, with NumPy, Matplotlib, PyYAML and markdown-it-py inst
 python kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/gen_agentx_serving_report.py
 ```
 
-The earlier [agg report](agentx-agg-kv-rr-report.md) and [disagg report](agentx-disagg-kv-rr-report.md) remain dated snapshots. This organized report preserves all 37 collected hardware jobs and all 12 original native agg comparisons; unfinished directories and failed native runs contribute no performance point.
+The earlier [agg report](agentx-agg-kv-rr-report.md) and [disagg report](agentx-disagg-kv-rr-report.md) remain dated snapshots. This report preserves all 37 current agg/D88 hardware jobs and all 12 original native agg comparisons. Section 4 additionally preserves eight existing native disagg runs and two historical 72-GPU hardware references; errored profiling runs remain visible as diagnostics, and failed warmups contribute no performance point.
 """)
     return "\n\n".join(out)
 
@@ -1536,7 +1876,8 @@ def html(markdown_text):
     )
     document = (
         """<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AgentX serving performance · measured agg and disagg decisions</title><style>
+<title>KV-Aware vs. Round-Robin Routing: NVIDIA Dynamo on Google Cloud</title>
+<meta name="description" content="A Google Cloud customer use journey comparing KV-aware and round-robin routing in NVIDIA Dynamo: throughput, TTFT and end-to-end responsiveness for AgentX coding workloads across aggregated and disaggregated serving."><style>
 :root{color-scheme:light;--ink:#162b45;--muted:#52657a;--line:#dce4ed}*{box-sizing:border-box}
 body{margin:0;background:#f3f6fa;color:var(--ink);font:16px/1.65 system-ui,-apple-system,Segoe UI,sans-serif}
 main{max-width:1360px;margin:28px auto 64px;padding:38px 54px 64px;background:#fff;border:1px solid var(--line);border-radius:14px;min-width:0}
@@ -1547,7 +1888,7 @@ img{width:100%;height:auto;border:1px solid var(--line);border-radius:8px;margin
 pre{padding:18px;background:#edf2f7;border-radius:8px;overflow:auto}pre code{padding:0;overflow-wrap:normal}nav{display:flex;gap:20px;flex-wrap:wrap;font-size:14px;margin:0 0 26px}.eyebrow{font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
 @media(max-width:800px){main{margin:0;padding:24px 18px;border-radius:0}h1{font-size:29px}h2{font-size:23px}table{font-size:12px}th,td{padding:8px}}
 @media print{body{background:#fff}main{border:0;max-width:none;margin:0;padding:0}nav{display:none}h2,h3{break-after:avoid}img,table{break-inside:avoid}a{color:inherit}.table-scroll{overflow:visible}table{font-size:9px}}
-</style></head><body><main><div class="eyebrow">Nemotron-3-Ultra 550B · AgentX · measured hardware</div>
+</style></head><body><main><div class="eyebrow">Google Cloud CUJ · NVIDIA Dynamo · AgentX</div>
 <nav><a href="#1-setup-agentic-workload-and-benchmarking-methodology">1. Setup and methodology</a><a href="#2-aggregated-serving-measured-kv-and-rr">2. Agg hardware</a><a href="#3-disaggregated-serving-measured-kv-and-rr">3. Disagg hardware</a><a href="#4-simulation-versus-real-hardware-jobs">4. Simulation vs hardware</a><a href="#5-how-we-simulate-performance-aic-dynosim-and-recipe-selection">5. AIC and DynoSim</a></nav>
 """
         + body
@@ -1558,6 +1899,7 @@ pre{padding:18px;background:#edf2f7;border-radius:8px;overflow:auto}pre code{pad
 
 def main():
     manifest, points, native, status, verified = load()
+    disagg = load_native_disagg()
     methodology = load_methodology()
     methodology["source_commit"] = manifest["source_commit"]
     (REPORTS / f"{STEM}-methodology.json").write_text(
@@ -1572,6 +1914,9 @@ def main():
         ),
         "by_architecture": dict(Counter(p["architecture"] for p in points)),
         "native_v10_agg_runs_revalidated": len(native),
+        "native_disagg_runs_revalidated": len(disagg["manifest"]["native_runs"]),
+        "additional_legacy_disagg_hardware_runs": len(disagg["pairs"]),
+        "native_disagg_source_files_hashed": len(disagg["manifest"]["files"]),
         "methodology_sources_hashed": len(methodology["sources"]),
         "aic_saved_recipes": len(methodology["aic_recommendations"]),
         "input_manifests": verified,
@@ -1588,6 +1933,8 @@ def main():
             "request and error counts",
             "D88 rounded source metrics, warmup, inflight, queue verdicts",
             "existing native V10 inputs and hardware matches",
+            "native disagg core, engine, replay, request counts and error rates",
+            "two 72-GPU KV hardware pairs and exact warmup input matches",
         ],
     }
     (REPORTS / f"{STEM}-validation.json").write_text(
@@ -1606,6 +1953,14 @@ def main():
         "selected_operating_points": chosen(points),
         "agg_c192_current_campaign_contrasts": agg_contrasts(points),
         "native_v10_agg": native,
+        "native_disagg": {
+            "input_manifest": "agentx-native-disagg-data/manifest.json",
+            "input_manifest_sha256": sha(
+                REPORTS / "agentx-native-disagg-data/manifest.json"
+            ),
+            "points": disagg["points"],
+            "matched_pairs": disagg["pairs"],
+        },
         "native_disagg_status": status,
         "unavailable": manifest["unavailable"],
     }
@@ -1619,7 +1974,8 @@ def main():
         writer.writerows(points)
     plots(points)
     simulation_plot(points, native)
-    document = markdown(points, native, manifest, status, methodology)
+    disagg_simulation_plots(points, disagg)
+    document = markdown(points, native, manifest, status, methodology, disagg)
     (REPORTS / f"{STEM}.md").write_text(document)
     html(document)
     print(json.dumps(validation, indent=2))

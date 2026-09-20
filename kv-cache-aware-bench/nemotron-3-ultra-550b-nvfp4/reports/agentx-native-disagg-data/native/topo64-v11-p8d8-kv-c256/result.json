@@ -1,0 +1,39 @@
+{
+  "topology": "p8d8",
+  "router": "kv",
+  "concurrency": 256,
+  "gpu_count": 64,
+  "benchmark_id": "0adec2fba17f",
+  "total_tok_s_per_gpu": 7399.234666137693,
+  "output_tok_s_per_gpu": 67.0089310931322,
+  "p95_ttft_ms": 3128.8563295999916,
+  "p95_itl_ms": 11.79554130604991,
+  "request_throughput": 4.710896708789861,
+  "requests": 17289.0,
+  "errors": 11.0,
+  "error_summary": [
+    {
+      "error_details": {
+        "code": 500,
+        "type": "Internal Server Error",
+        "message": "{\"message\":\"Failed to generate completions\",\"type\":\"Internal Server Error\",\"code\":500}"
+      },
+      "count": 11
+    }
+  ],
+  "effective_concurrency": {
+    "unit": "requests",
+    "avg": 48.4398886635435,
+    "p50": 46.0,
+    "p90": 68.0,
+    "p95": 73.0,
+    "p99": 80.0,
+    "min": 0.0,
+    "max": 89.0,
+    "std": 13.960183706059327
+  },
+  "valid_agentx_submission": true,
+  "warmup_input_sha256": "0ba7d96a50e7dd5cd7668339d3d15157a363be2086b9f294632ea14fa8564241",
+  "summary": "/tmp/n3u-path1-topology-runs/topo64-v11-p8d8-kv-c256/artifacts/profile_export_aiperf.json",
+  "measured_hardware": false
+}

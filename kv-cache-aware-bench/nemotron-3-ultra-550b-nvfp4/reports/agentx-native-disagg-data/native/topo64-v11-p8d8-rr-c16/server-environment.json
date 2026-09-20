@@ -1,0 +1,8 @@
+{
+  "versions": {
+    "ai-dynamo": "1.4.2",
+    "ai-dynamo-runtime": "1.4.2",
+    "aiconfigurator-core": "0.11.0"
+  },
+  "core_sha256": "39e41354104490981f35f76850bd17973369fc8222dab9f7813e25f50146e36e"
+}

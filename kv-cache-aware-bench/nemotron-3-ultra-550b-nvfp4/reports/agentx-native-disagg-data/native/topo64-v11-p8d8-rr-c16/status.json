@@ -1,0 +1,32 @@
+{
+  "state": "completed",
+  "updated_unix": 1789677658.9056547,
+  "topology": "p8d8",
+  "router": "round-robin",
+  "concurrency": 16,
+  "gpu_count": 64,
+  "benchmark_id": "0adec2fba17f",
+  "total_tok_s_per_gpu": 266.6034547104476,
+  "output_tok_s_per_gpu": 2.953048213966006,
+  "p95_ttft_ms": 8352.753761750002,
+  "p95_itl_ms": 7.949805057649572,
+  "request_throughput": 0.15956284467632004,
+  "requests": 584.0,
+  "errors": null,
+  "error_summary": [],
+  "effective_concurrency": {
+    "unit": "requests",
+    "avg": 1.7737243175302475,
+    "p50": 1.0,
+    "p90": 3.0,
+    "p95": 4.0,
+    "p99": 6.0,
+    "min": 0.0,
+    "max": 8.0,
+    "std": 1.2252811757811775
+  },
+  "valid_agentx_submission": true,
+  "warmup_input_sha256": "7d3ad4a35260bc873dddbdb21fba25c727d3d326c0e8069d679126e71e4ae741",
+  "summary": "/tmp/n3u-path1-topology-runs/topo64-v11-p8d8-rr-c16/artifacts/profile_export_aiperf.json",
+  "measured_hardware": false
+}

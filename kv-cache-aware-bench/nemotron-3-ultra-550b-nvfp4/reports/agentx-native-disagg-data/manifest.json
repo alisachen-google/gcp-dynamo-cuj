@@ -1,0 +1,660 @@
+{
+  "collected_utc": "2026-09-20T06:50:39.248734+00:00",
+  "native_core_sha256": "39e41354104490981f35f76850bd17973369fc8222dab9f7813e25f50146e36e",
+  "native_runs": [
+    {
+      "id": "topo64-v11-p8d8-kv-c16",
+      "kind": "simulation",
+      "build": "Native V11 disaggregation extension; frozen V10 timing",
+      "policy": "kv",
+      "clients": 16,
+      "gpus": 64,
+      "topology": "p8d8",
+      "summary": "native/topo64-v11-p8d8-kv-c16/summary.json",
+      "source_directory": "/tmp/n3u-path1-topology-runs/topo64-v11-p8d8-kv-c16",
+      "handoff_limit_mentions": 0,
+      "hardware_id": null
+    },
+    {
+      "id": "topo64-v11-p8d8-kv-c64",
+      "kind": "simulation",
+      "build": "Native V11 disaggregation extension; frozen V10 timing",
+      "policy": "kv",
+      "clients": 64,
+      "gpus": 64,
+      "topology": "p8d8",
+      "summary": "native/topo64-v11-p8d8-kv-c64/summary.json",
+      "source_directory": "/tmp/n3u-path1-topology-runs/topo64-v11-p8d8-kv-c64",
+      "handoff_limit_mentions": 0,
+      "hardware_id": null
+    },
+    {
+      "id": "topo64-v11-p8d8-kv-c256",
+      "kind": "simulation",
+      "build": "Native V11 disaggregation extension; frozen V10 timing",
+      "policy": "kv",
+      "clients": 256,
+      "gpus": 64,
+      "topology": "p8d8",
+      "summary": "native/topo64-v11-p8d8-kv-c256/summary.json",
+      "source_directory": "/tmp/n3u-path1-topology-runs/topo64-v11-p8d8-kv-c256",
+      "handoff_limit_mentions": 22,
+      "hardware_id": null
+    },
+    {
+      "id": "topo64-v11-p8d8-rr-c16",
+      "kind": "simulation",
+      "build": "Native V11 disaggregation extension; frozen V10 timing",
+      "policy": "rr",
+      "clients": 16,
+      "gpus": 64,
+      "topology": "p8d8",
+      "summary": "native/topo64-v11-p8d8-rr-c16/summary.json",
+      "source_directory": "/tmp/n3u-path1-topology-runs/topo64-v11-p8d8-rr-c16",
+      "handoff_limit_mentions": 0,
+      "hardware_id": null
+    },
+    {
+      "id": "topo64-v11-p8d8-rr-c64",
+      "kind": "simulation",
+      "build": "Native V11 disaggregation extension; frozen V10 timing",
+      "policy": "rr",
+      "clients": 64,
+      "gpus": 64,
+      "topology": "p8d8",
+      "summary": "native/topo64-v11-p8d8-rr-c64/summary.json",
+      "source_directory": "/tmp/n3u-path1-topology-runs/topo64-v11-p8d8-rr-c64",
+      "handoff_limit_mentions": 0,
+      "hardware_id": null
+    },
+    {
+      "id": "topo64-v11-p8d8-rr-c256",
+      "kind": "simulation",
+      "build": "Native V11 disaggregation extension; frozen V10 timing",
+      "policy": "rr",
+      "clients": 256,
+      "gpus": 64,
+      "topology": "p8d8",
+      "summary": "native/topo64-v11-p8d8-rr-c256/summary.json",
+      "source_directory": "/tmp/n3u-path1-topology-runs/topo64-v11-p8d8-rr-c256",
+      "handoff_limit_mentions": 4680,
+      "hardware_id": null
+    },
+    {
+      "id": "disagg-p12d6-kv-c192-calibrated-v11",
+      "kind": "simulation",
+      "build": "Native V11 disaggregation extension; frozen V10 timing",
+      "policy": "kv",
+      "clients": 192,
+      "gpus": 72,
+      "topology": "p12d6",
+      "summary": "native/disagg-p12d6-kv-c192-calibrated-v11/summary.json",
+      "source_directory": "/tmp/n3u-path1-topology-runs/disagg-p12d6-kv-c192-calibrated-v11",
+      "handoff_limit_mentions": 0,
+      "hardware_id": "n3u-mnnvl-126-agentx-kv-c192"
+    },
+    {
+      "id": "disagg-p12d6-kv-c384-calibrated-v11",
+      "kind": "simulation",
+      "build": "Native V11 disaggregation extension; frozen V10 timing",
+      "policy": "kv",
+      "clients": 384,
+      "gpus": 72,
+      "topology": "p12d6",
+      "summary": "native/disagg-p12d6-kv-c384-calibrated-v11/summary.json",
+      "source_directory": "/tmp/n3u-path1-topology-runs/disagg-p12d6-kv-c384-calibrated-v11",
+      "handoff_limit_mentions": 0,
+      "hardware_id": "n3u-mnnvl-126-agentx-kv-c384"
+    }
+  ],
+  "legacy_hardware": [
+    {
+      "id": "n3u-mnnvl-126-agentx-kv-c192",
+      "kind": "hardware",
+      "policy": "kv",
+      "clients": 192,
+      "gpus": 72,
+      "topology": "p12d6",
+      "artifact": "1789560095_alisachen-n3u-mnnvl-126-agentx-kv-c192",
+      "summary": "hardware/n3u-mnnvl-126-agentx-kv-c192/summary.json",
+      "gcs_console": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789560095_alisachen-n3u-mnnvl-126-agentx-kv-c192"
+    },
+    {
+      "id": "n3u-mnnvl-126-agentx-kv-c384",
+      "kind": "hardware",
+      "policy": "kv",
+      "clients": 384,
+      "gpus": 72,
+      "topology": "p12d6",
+      "artifact": "1789566460_alisachen-n3u-mnnvl-126-agentx-kv-c384",
+      "summary": "hardware/n3u-mnnvl-126-agentx-kv-c384/summary.json",
+      "gcs_console": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789566460_alisachen-n3u-mnnvl-126-agentx-kv-c384"
+    }
+  ],
+  "request_metrics_manifest": "request-metrics/manifest.json",
+  "files": {
+    "hardware/n3u-mnnvl-126-agentx-kv-c192/summary.json": {
+      "sha256": "a334d17f62aae46b78aef4e962d2470ffbf144cfb2a5b272cb79edc5b9ec61f3",
+      "bytes": 42191
+    },
+    "hardware/n3u-mnnvl-126-agentx-kv-c384/summary.json": {
+      "sha256": "ba2b5fc58475a1ae650271f2717b7b429487c67cde3fbce9a6d5678e99270c1f",
+      "bytes": 42370
+    },
+    "native/disagg-p12d6-kv-c192-calibrated-v11/aic-callback-confirmation.json": {
+      "sha256": "a2afddd020c7d2c1b71cfae3e429ca20ad70d5b10940098ef3fb6c7422dc7f6c",
+      "bytes": 3977
+    },
+    "native/disagg-p12d6-kv-c192-calibrated-v11/calibration-at-launch.json": {
+      "sha256": "9e28de85db94b76f28acbaa0ef5433192353adf2f70ae0029251dbf244452f9d",
+      "bytes": 2412
+    },
+    "native/disagg-p12d6-kv-c192-calibrated-v11/client-config.json": {
+      "sha256": "efeca74c59512d1763605c18568998af7a8a976e1b70e9b7c5b284e79c1613ae",
+      "bytes": 2024
+    },
+    "native/disagg-p12d6-kv-c192-calibrated-v11/decode/engine.json": {
+      "sha256": "9c57c7be984e6a2c5241cc89d825e60b4034636a6bdb520b99b9b1b93782133d",
+      "bytes": 1435
+    },
+    "native/disagg-p12d6-kv-c192-calibrated-v11/handoff-error-evidence.json": {
+      "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+      "bytes": 3
+    },
+    "native/disagg-p12d6-kv-c192-calibrated-v11/hardware-comparison-throughput.json": {
+      "sha256": "32e98dd558d7ebe671a5da9981337eb2c953e3bc7231f304beb3d844bd2a24be",
+      "bytes": 1143
+    },
+    "native/disagg-p12d6-kv-c192-calibrated-v11/hardware-input-audit.json": {
+      "sha256": "973aaa47185ace858d79df951ba62baa0dd3f943d7568784eea869b1f8137c1f",
+      "bytes": 5168
+    },
+    "native/disagg-p12d6-kv-c192-calibrated-v11/prefill/engine.json": {
+      "sha256": "5785671d648298c3edea091b9181941c964db207f14e008cd8bac6b09031445e",
+      "bytes": 1434
+    },
+    "native/disagg-p12d6-kv-c192-calibrated-v11/provenance.json": {
+      "sha256": "735335c3f3fd81b2cd247b14051648ac323c12537a7cd7fd12a4915c7a95f380",
+      "bytes": 18235
+    },
+    "native/disagg-p12d6-kv-c192-calibrated-v11/result.json": {
+      "sha256": "552b55d7020f3fd1db249698d9a1cd6f2aa05834d3fd19cd9bc200c035532e8d",
+      "bytes": 904
+    },
+    "native/disagg-p12d6-kv-c192-calibrated-v11/server-environment.json": {
+      "sha256": "614825598eafd76db56287aa35de5b82239256511e714c335e4a1d27831d4d33",
+      "bytes": 205
+    },
+    "native/disagg-p12d6-kv-c192-calibrated-v11/status.json": {
+      "sha256": "db610be5ac22daf1eee675af8c65641971464688a0d091ee7c83d7d649ccbeb6",
+      "bytes": 966
+    },
+    "native/disagg-p12d6-kv-c192-calibrated-v11/summary.json": {
+      "sha256": "50b39710be69f7c199ee598a4553805debf9d812b272e66a3a1edbb3416249a8",
+      "bytes": 39797
+    },
+    "native/disagg-p12d6-kv-c192-calibrated-v11/topology.json": {
+      "sha256": "c55e9da417e2fa85fded7ad0736774bf3cabc35615fd2bf1275400819eef4dbc",
+      "bytes": 1579
+    },
+    "native/disagg-p12d6-kv-c192-calibrated-v11/warmup-inputs.json": {
+      "sha256": "aba54ca5723db087ba6083bd8f0946ca46dc68052bc0ca7bc12d0c1850ae65d6",
+      "bytes": 36887
+    },
+    "native/disagg-p12d6-kv-c192-calibrated-v11/workload-source.json": {
+      "sha256": "0071c4311d37efc2425e3bc7c845447edfe868084dd0a9bca15a7a165d578514",
+      "bytes": 42192
+    },
+    "native/disagg-p12d6-kv-c384-calibrated-v11/aic-callback-confirmation.json": {
+      "sha256": "56cd4f6fa3bfd241298340dbef0fb5ad75a9135279aed8c0b1dd3cb6d2211805",
+      "bytes": 3977
+    },
+    "native/disagg-p12d6-kv-c384-calibrated-v11/calibration-at-launch.json": {
+      "sha256": "b5f006b20d65f97482e726dcd0ea47ce4484db0709e848d91912e030a193703a",
+      "bytes": 4648
+    },
+    "native/disagg-p12d6-kv-c384-calibrated-v11/client-config.json": {
+      "sha256": "d5127541c746a1f8fad30ca2d4404e931ddad4f4acad82648cbbc1401ff50355",
+      "bytes": 2024
+    },
+    "native/disagg-p12d6-kv-c384-calibrated-v11/decode/engine.json": {
+      "sha256": "9c57c7be984e6a2c5241cc89d825e60b4034636a6bdb520b99b9b1b93782133d",
+      "bytes": 1435
+    },
+    "native/disagg-p12d6-kv-c384-calibrated-v11/handoff-error-evidence.json": {
+      "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+      "bytes": 3
+    },
+    "native/disagg-p12d6-kv-c384-calibrated-v11/hardware-comparison-throughput.json": {
+      "sha256": "fcb8317de111b734f2197a44359af0145613658278597fb19bd6c064e4d4c64d",
+      "bytes": 1136
+    },
+    "native/disagg-p12d6-kv-c384-calibrated-v11/hardware-input-audit.json": {
+      "sha256": "aa148c6423decf91926303a557f421faef264eafdbf9fb96b1e0c085601d0d21",
+      "bytes": 5207
+    },
+    "native/disagg-p12d6-kv-c384-calibrated-v11/prefill/engine.json": {
+      "sha256": "5785671d648298c3edea091b9181941c964db207f14e008cd8bac6b09031445e",
+      "bytes": 1434
+    },
+    "native/disagg-p12d6-kv-c384-calibrated-v11/provenance.json": {
+      "sha256": "b13e5ff592bf88b6616171735256d1d3a81b2cdf0ddf81b1c17d0e9bd68404ab",
+      "bytes": 18247
+    },
+    "native/disagg-p12d6-kv-c384-calibrated-v11/result.json": {
+      "sha256": "8aabe827492f829b5acce6df333792817d0d989d9a39db6bacad4c45f8b444dc",
+      "bytes": 897
+    },
+    "native/disagg-p12d6-kv-c384-calibrated-v11/server-environment.json": {
+      "sha256": "614825598eafd76db56287aa35de5b82239256511e714c335e4a1d27831d4d33",
+      "bytes": 205
+    },
+    "native/disagg-p12d6-kv-c384-calibrated-v11/status.json": {
+      "sha256": "a0479adf708098a76f50ff56e416808807af2ea9da8b236c0c72d0620719eff7",
+      "bytes": 957
+    },
+    "native/disagg-p12d6-kv-c384-calibrated-v11/summary.json": {
+      "sha256": "d225e7b6d9cf9ebbe60fe87447d2469586d6ee80768fed7bcf9e228a27ff1d9a",
+      "bytes": 39583
+    },
+    "native/disagg-p12d6-kv-c384-calibrated-v11/topology.json": {
+      "sha256": "c55e9da417e2fa85fded7ad0736774bf3cabc35615fd2bf1275400819eef4dbc",
+      "bytes": 1579
+    },
+    "native/disagg-p12d6-kv-c384-calibrated-v11/warmup-inputs.json": {
+      "sha256": "269b313e09721465076f5368ec8558b4923663d1cd8e29203c64d93e0f976b79",
+      "bytes": 69247
+    },
+    "native/disagg-p12d6-kv-c384-calibrated-v11/workload-source.json": {
+      "sha256": "1361db9b5fa7a5ddb8362ef03d690d7ce6cb721bec1ecfdf6019bd9f59a1b19d",
+      "bytes": 42371
+    },
+    "native/topo64-v11-p8d8-kv-c16/aic-callback-confirmation.json": {
+      "sha256": "ac1127d35543a002866ad376fadb047db9e72f5f7dd8219c08d20bd1a18cac47",
+      "bytes": 3531
+    },
+    "native/topo64-v11-p8d8-kv-c16/calibration-at-launch.json": {
+      "sha256": "42c87c15843e6d30d2a9b9e3f0ce3111b33c939a797f78dd4ac97054858ee7dc",
+      "bytes": 4648
+    },
+    "native/topo64-v11-p8d8-kv-c16/client-config.json": {
+      "sha256": "107368551702fcb68f3bbaf0261cf3b270adcf60c32cf94af07933e75762ab04",
+      "bytes": 2010
+    },
+    "native/topo64-v11-p8d8-kv-c16/decode/engine.json": {
+      "sha256": "9c57c7be984e6a2c5241cc89d825e60b4034636a6bdb520b99b9b1b93782133d",
+      "bytes": 1435
+    },
+    "native/topo64-v11-p8d8-kv-c16/handoff-error-evidence.json": {
+      "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+      "bytes": 3
+    },
+    "native/topo64-v11-p8d8-kv-c16/prefill/engine.json": {
+      "sha256": "5785671d648298c3edea091b9181941c964db207f14e008cd8bac6b09031445e",
+      "bytes": 1434
+    },
+    "native/topo64-v11-p8d8-kv-c16/provenance.json": {
+      "sha256": "df3f056292decce2f80282d2d33633b47d4bedaa18070fcf01cf7550c183e397",
+      "bytes": 15957
+    },
+    "native/topo64-v11-p8d8-kv-c16/result.json": {
+      "sha256": "b64fd1d43dbece19ddc00eaedfdf14e7813619b08a8e7adc04c5a6b8390c270f",
+      "bytes": 856
+    },
+    "native/topo64-v11-p8d8-kv-c16/server-environment.json": {
+      "sha256": "614825598eafd76db56287aa35de5b82239256511e714c335e4a1d27831d4d33",
+      "bytes": 205
+    },
+    "native/topo64-v11-p8d8-kv-c16/status.json": {
+      "sha256": "899aa852c7de096b4c86542ec0321cb26d8da44fc8400b5a93c8c9adcb0f9ad2",
+      "bytes": 918
+    },
+    "native/topo64-v11-p8d8-kv-c16/summary.json": {
+      "sha256": "c16bdf08919c493ee8add8d581d28c1c0563e60739e182f2a1ac3180719930e4",
+      "bytes": 38679
+    },
+    "native/topo64-v11-p8d8-kv-c16/topology.json": {
+      "sha256": "f9ab63b3a6f06cb3816ca5c867860fa99401c12201dbcd77417c059926b48084",
+      "bytes": 1557
+    },
+    "native/topo64-v11-p8d8-kv-c16/warmup-inputs.json": {
+      "sha256": "d539e92b70a875719bd2c81ae33f91b7de798311773b6bc934ba3eec8cfeda2c",
+      "bytes": 3344
+    },
+    "native/topo64-v11-p8d8-kv-c16/workload-source.json": {
+      "sha256": "9f0a01e8f804f11225bd7c54a4260fea1d0c7c7d455ba5df1f061b383a81b5c3",
+      "bytes": 43942
+    },
+    "native/topo64-v11-p8d8-kv-c256/aic-callback-confirmation.json": {
+      "sha256": "2ccbd6889fc8fdb4f95186a2cf457afd27f527e267bc608791dae2498163dc9d",
+      "bytes": 3531
+    },
+    "native/topo64-v11-p8d8-kv-c256/calibration-at-launch.json": {
+      "sha256": "a7ea247a7e3d539e481476a36e05697a718166df9b58e52125d271fda2cf24d8",
+      "bytes": 4648
+    },
+    "native/topo64-v11-p8d8-kv-c256/client-config.json": {
+      "sha256": "69ecb8d164f724af9517aa8f60d07180307fd9cbcd34d320984b1709e5abceab",
+      "bytes": 2012
+    },
+    "native/topo64-v11-p8d8-kv-c256/decode/engine.json": {
+      "sha256": "9c57c7be984e6a2c5241cc89d825e60b4034636a6bdb520b99b9b1b93782133d",
+      "bytes": 1435
+    },
+    "native/topo64-v11-p8d8-kv-c256/handoff-error-evidence.json": {
+      "sha256": "5dca46df32fc6a5499232f459d5a3c437142310ab95f682289c353fdaf332035",
+      "bytes": 424
+    },
+    "native/topo64-v11-p8d8-kv-c256/prefill/engine.json": {
+      "sha256": "5785671d648298c3edea091b9181941c964db207f14e008cd8bac6b09031445e",
+      "bytes": 1434
+    },
+    "native/topo64-v11-p8d8-kv-c256/provenance.json": {
+      "sha256": "3edafe3532c8ae0c93f796dde3d7547886593dda663f723a22262045c9e5e1cc",
+      "bytes": 15998
+    },
+    "native/topo64-v11-p8d8-kv-c256/result.json": {
+      "sha256": "d98050af6f72c1c2361363c4f1b2ba536ea373b585e2bc291946cc09149cbf7e",
+      "bytes": 1114
+    },
+    "native/topo64-v11-p8d8-kv-c256/server-environment.json": {
+      "sha256": "614825598eafd76db56287aa35de5b82239256511e714c335e4a1d27831d4d33",
+      "bytes": 205
+    },
+    "native/topo64-v11-p8d8-kv-c256/status.json": {
+      "sha256": "249a9a150f15e0c3ce30f82dc0a1a0b522f8670b71d03449b962f9c44f187257",
+      "bytes": 1176
+    },
+    "native/topo64-v11-p8d8-kv-c256/summary.json": {
+      "sha256": "af87e950847ef8d82fcd3c655b03c28e4840b20090dd4b2949e6645719022cdf",
+      "bytes": 41470
+    },
+    "native/topo64-v11-p8d8-kv-c256/topology.json": {
+      "sha256": "f9ab63b3a6f06cb3816ca5c867860fa99401c12201dbcd77417c059926b48084",
+      "bytes": 1557
+    },
+    "native/topo64-v11-p8d8-kv-c256/warmup-inputs.json": {
+      "sha256": "5c08f6d0adde6077497a40d0f0e2eab17647c70b715bd4b936b25a458bc1dbf9",
+      "bytes": 48631
+    },
+    "native/topo64-v11-p8d8-kv-c256/workload-source.json": {
+      "sha256": "9f0a01e8f804f11225bd7c54a4260fea1d0c7c7d455ba5df1f061b383a81b5c3",
+      "bytes": 43942
+    },
+    "native/topo64-v11-p8d8-kv-c64/aic-callback-confirmation.json": {
+      "sha256": "5a82df1919a0560157590cd28ad162fa8f25711a7273836830c88f20e3de322b",
+      "bytes": 3531
+    },
+    "native/topo64-v11-p8d8-kv-c64/calibration-at-launch.json": {
+      "sha256": "d6f447b62cd07a380bb4f067ae202a08dc56405162bec18bd11236114480b8d4",
+      "bytes": 4647
+    },
+    "native/topo64-v11-p8d8-kv-c64/client-config.json": {
+      "sha256": "4df323fded2f3998e6a8afeefb01aefaa8cddb80bda8ae948cf628a92f309789",
+      "bytes": 2010
+    },
+    "native/topo64-v11-p8d8-kv-c64/decode/engine.json": {
+      "sha256": "9c57c7be984e6a2c5241cc89d825e60b4034636a6bdb520b99b9b1b93782133d",
+      "bytes": 1435
+    },
+    "native/topo64-v11-p8d8-kv-c64/handoff-error-evidence.json": {
+      "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+      "bytes": 3
+    },
+    "native/topo64-v11-p8d8-kv-c64/prefill/engine.json": {
+      "sha256": "5785671d648298c3edea091b9181941c964db207f14e008cd8bac6b09031445e",
+      "bytes": 1434
+    },
+    "native/topo64-v11-p8d8-kv-c64/provenance.json": {
+      "sha256": "3584c46ae9cc4215c1f14c490594b79afc54e2fff3c6cfbceedccf42a4092b45",
+      "bytes": 15958
+    },
+    "native/topo64-v11-p8d8-kv-c64/result.json": {
+      "sha256": "64d5196c9ffca4967000f5f602163f0dc21fb45d24e0cd26421aa3d9560d9870",
+      "bytes": 867
+    },
+    "native/topo64-v11-p8d8-kv-c64/server-environment.json": {
+      "sha256": "614825598eafd76db56287aa35de5b82239256511e714c335e4a1d27831d4d33",
+      "bytes": 205
+    },
+    "native/topo64-v11-p8d8-kv-c64/status.json": {
+      "sha256": "30f7f35daf0f90e9c87e66d002cbe452d9317fe4a55825c5aeacf26fad46bd0b",
+      "bytes": 927
+    },
+    "native/topo64-v11-p8d8-kv-c64/summary.json": {
+      "sha256": "4d15070b31135b4a8ecfd13ccc61c1c121978950812fd8b734550ae0385f88b0",
+      "bytes": 39508
+    },
+    "native/topo64-v11-p8d8-kv-c64/topology.json": {
+      "sha256": "f9ab63b3a6f06cb3816ca5c867860fa99401c12201dbcd77417c059926b48084",
+      "bytes": 1557
+    },
+    "native/topo64-v11-p8d8-kv-c64/warmup-inputs.json": {
+      "sha256": "113ca9fa5152e18ae410c8f18ad2b96bcf4eef997b9c02d0978c6f5a6e45746a",
+      "bytes": 12380
+    },
+    "native/topo64-v11-p8d8-kv-c64/workload-source.json": {
+      "sha256": "9f0a01e8f804f11225bd7c54a4260fea1d0c7c7d455ba5df1f061b383a81b5c3",
+      "bytes": 43942
+    },
+    "native/topo64-v11-p8d8-rr-c16/aic-callback-confirmation.json": {
+      "sha256": "2dff18713ff83d4abd7902da30d9f1a8f6c6de01f1c77bd342145df62a4a8bd6",
+      "bytes": 3531
+    },
+    "native/topo64-v11-p8d8-rr-c16/calibration-at-launch.json": {
+      "sha256": "9a0b10320aa961812eda31446086ca30fbc180e348e1c95ca3e21f57c207a1c0",
+      "bytes": 4648
+    },
+    "native/topo64-v11-p8d8-rr-c16/client-config.json": {
+      "sha256": "78813a58df901cf38cf3cfbe2ef2028534fb474462fb98d55a9cdbe700b49b29",
+      "bytes": 2010
+    },
+    "native/topo64-v11-p8d8-rr-c16/decode/engine.json": {
+      "sha256": "9c57c7be984e6a2c5241cc89d825e60b4034636a6bdb520b99b9b1b93782133d",
+      "bytes": 1435
+    },
+    "native/topo64-v11-p8d8-rr-c16/handoff-error-evidence.json": {
+      "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+      "bytes": 3
+    },
+    "native/topo64-v11-p8d8-rr-c16/prefill/engine.json": {
+      "sha256": "5785671d648298c3edea091b9181941c964db207f14e008cd8bac6b09031445e",
+      "bytes": 1434
+    },
+    "native/topo64-v11-p8d8-rr-c16/provenance.json": {
+      "sha256": "a2fa2f7d612e291849e49d8b3bc7e1f9958f4713bdb055652402617725dacfcb",
+      "bytes": 15889
+    },
+    "native/topo64-v11-p8d8-rr-c16/result.json": {
+      "sha256": "baab96cd109925785f30dbad4e47b0e11ed0ceff80bc547390876b5bca7d108c",
+      "bytes": 871
+    },
+    "native/topo64-v11-p8d8-rr-c16/server-environment.json": {
+      "sha256": "614825598eafd76db56287aa35de5b82239256511e714c335e4a1d27831d4d33",
+      "bytes": 205
+    },
+    "native/topo64-v11-p8d8-rr-c16/status.json": {
+      "sha256": "7cd587c87445cccc012cfa71ee46080fb72c82d30e8f1ae50dbeb7f08b5e22f2",
+      "bytes": 933
+    },
+    "native/topo64-v11-p8d8-rr-c16/summary.json": {
+      "sha256": "9afc8bd3e7710dc28b0a08f6304e97d1cae4a69c4b404126e5a55f8d92350df5",
+      "bytes": 39467
+    },
+    "native/topo64-v11-p8d8-rr-c16/topology.json": {
+      "sha256": "f9ab63b3a6f06cb3816ca5c867860fa99401c12201dbcd77417c059926b48084",
+      "bytes": 1557
+    },
+    "native/topo64-v11-p8d8-rr-c16/warmup-inputs.json": {
+      "sha256": "d539e92b70a875719bd2c81ae33f91b7de798311773b6bc934ba3eec8cfeda2c",
+      "bytes": 3344
+    },
+    "native/topo64-v11-p8d8-rr-c16/workload-source.json": {
+      "sha256": "9f0a01e8f804f11225bd7c54a4260fea1d0c7c7d455ba5df1f061b383a81b5c3",
+      "bytes": 43942
+    },
+    "native/topo64-v11-p8d8-rr-c256/aic-callback-confirmation.json": {
+      "sha256": "7c7db6948665bb5c5d57cde68795cf4d7df35b483d6dd616fc77df30b101b7f1",
+      "bytes": 3531
+    },
+    "native/topo64-v11-p8d8-rr-c256/calibration-at-launch.json": {
+      "sha256": "c14574813e627d10eb56a8d1c39f84ea5505e3590f03a352d5c40211e83e3bd0",
+      "bytes": 4648
+    },
+    "native/topo64-v11-p8d8-rr-c256/client-config.json": {
+      "sha256": "c3dadab6e32532f571b69558dc4a49d32c538ffb38c58ffb654635d6916fb5c1",
+      "bytes": 2012
+    },
+    "native/topo64-v11-p8d8-rr-c256/decode/engine.json": {
+      "sha256": "9c57c7be984e6a2c5241cc89d825e60b4034636a6bdb520b99b9b1b93782133d",
+      "bytes": 1435
+    },
+    "native/topo64-v11-p8d8-rr-c256/handoff-error-evidence.json": {
+      "sha256": "ea347d60ba0ae7175c09c7eec26ab87e3cf42e374596cd8d9d5e29128f0b3c3a",
+      "bytes": 1139
+    },
+    "native/topo64-v11-p8d8-rr-c256/prefill/engine.json": {
+      "sha256": "5785671d648298c3edea091b9181941c964db207f14e008cd8bac6b09031445e",
+      "bytes": 1434
+    },
+    "native/topo64-v11-p8d8-rr-c256/provenance.json": {
+      "sha256": "12c4590fe88428428eebc6a904a7e9153cce09fa76dfcb54a4209211727d6ac3",
+      "bytes": 15928
+    },
+    "native/topo64-v11-p8d8-rr-c256/result.json": {
+      "sha256": "ebafa1f8bd401104008eabff48b436031e2765c30bab63a5228d2b6a55aaac01",
+      "bytes": 1374
+    },
+    "native/topo64-v11-p8d8-rr-c256/server-environment.json": {
+      "sha256": "614825598eafd76db56287aa35de5b82239256511e714c335e4a1d27831d4d33",
+      "bytes": 205
+    },
+    "native/topo64-v11-p8d8-rr-c256/status.json": {
+      "sha256": "b84bb854af8bb098d74548128dc2f7ae0a2443df56e1fe6e0248291baaa5c036",
+      "bytes": 1436
+    },
+    "native/topo64-v11-p8d8-rr-c256/summary.json": {
+      "sha256": "e970bf41a311136536a16607721164a32635a831a0b84b5df51a8c3626e7b078",
+      "bytes": 41312
+    },
+    "native/topo64-v11-p8d8-rr-c256/topology.json": {
+      "sha256": "f9ab63b3a6f06cb3816ca5c867860fa99401c12201dbcd77417c059926b48084",
+      "bytes": 1557
+    },
+    "native/topo64-v11-p8d8-rr-c256/warmup-inputs.json": {
+      "sha256": "5c08f6d0adde6077497a40d0f0e2eab17647c70b715bd4b936b25a458bc1dbf9",
+      "bytes": 48631
+    },
+    "native/topo64-v11-p8d8-rr-c256/workload-source.json": {
+      "sha256": "9f0a01e8f804f11225bd7c54a4260fea1d0c7c7d455ba5df1f061b383a81b5c3",
+      "bytes": 43942
+    },
+    "native/topo64-v11-p8d8-rr-c64/aic-callback-confirmation.json": {
+      "sha256": "a9f4f8b6b1bfb05e9837d75e9c1519ccfc24767d04c4b3278e38552e16193826",
+      "bytes": 3531
+    },
+    "native/topo64-v11-p8d8-rr-c64/calibration-at-launch.json": {
+      "sha256": "6dd9b2ed7f38428e374dcb679f1222f29a22bcf57289400582429cfc6c05cfc0",
+      "bytes": 4648
+    },
+    "native/topo64-v11-p8d8-rr-c64/client-config.json": {
+      "sha256": "0fc1f7789a244d7f65475ac76b2f44f74c5d099279db6c2c7f24a70892814725",
+      "bytes": 2010
+    },
+    "native/topo64-v11-p8d8-rr-c64/decode/engine.json": {
+      "sha256": "9c57c7be984e6a2c5241cc89d825e60b4034636a6bdb520b99b9b1b93782133d",
+      "bytes": 1435
+    },
+    "native/topo64-v11-p8d8-rr-c64/handoff-error-evidence.json": {
+      "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+      "bytes": 3
+    },
+    "native/topo64-v11-p8d8-rr-c64/prefill/engine.json": {
+      "sha256": "5785671d648298c3edea091b9181941c964db207f14e008cd8bac6b09031445e",
+      "bytes": 1434
+    },
+    "native/topo64-v11-p8d8-rr-c64/provenance.json": {
+      "sha256": "16f023df25d7d0ff94383883558aabf0d42a17192766989b4b396d7eed898c52",
+      "bytes": 15889
+    },
+    "native/topo64-v11-p8d8-rr-c64/result.json": {
+      "sha256": "8407c28196118ace672d17074c737dccb32235bc3a05b50cfef1dff914cf8305",
+      "bytes": 876
+    },
+    "native/topo64-v11-p8d8-rr-c64/server-environment.json": {
+      "sha256": "614825598eafd76db56287aa35de5b82239256511e714c335e4a1d27831d4d33",
+      "bytes": 205
+    },
+    "native/topo64-v11-p8d8-rr-c64/status.json": {
+      "sha256": "9335d1b8c11d9f47488150b382eea0342a267605018e7d76ca6d0ed4d733b0ea",
+      "bytes": 937
+    },
+    "native/topo64-v11-p8d8-rr-c64/summary.json": {
+      "sha256": "bc1dc36662bc91f02b2c7dcc62f93d6769ec0b044b5e215b0e62861bb74bc9d4",
+      "bytes": 39493
+    },
+    "native/topo64-v11-p8d8-rr-c64/topology.json": {
+      "sha256": "f9ab63b3a6f06cb3816ca5c867860fa99401c12201dbcd77417c059926b48084",
+      "bytes": 1557
+    },
+    "native/topo64-v11-p8d8-rr-c64/warmup-inputs.json": {
+      "sha256": "113ca9fa5152e18ae410c8f18ad2b96bcf4eef997b9c02d0978c6f5a6e45746a",
+      "bytes": 12380
+    },
+    "native/topo64-v11-p8d8-rr-c64/workload-source.json": {
+      "sha256": "9f0a01e8f804f11225bd7c54a4260fea1d0c7c7d455ba5df1f061b383a81b5c3",
+      "bytes": 43942
+    },
+    "request-metrics/disagg-p12d6-kv-c192-calibrated-v11.csv.gz": {
+      "sha256": "66633a6b0bd6ccf01c0acbeb133b7407b36ffbf3c51649978f13f79659b366c7",
+      "bytes": 625035
+    },
+    "request-metrics/disagg-p12d6-kv-c384-calibrated-v11.csv.gz": {
+      "sha256": "563fbeb81c42710fc6cbdfbec341448a86ef6687b589a6be751db208b617c71c",
+      "bytes": 1350218
+    },
+    "request-metrics/manifest.json": {
+      "sha256": "7ae04898e3cfce838a4323bd237c4d8e930d3ac823f94f44f5512a0d5a07908c",
+      "bytes": 4523
+    },
+    "request-metrics/n3u-mnnvl-126-agentx-kv-c192.csv.gz": {
+      "sha256": "c603c34756a1ae32a7ab913d38f78b3ad2dac1e756ab16d3e0c83d48ff1ae5f5",
+      "bytes": 631707
+    },
+    "request-metrics/n3u-mnnvl-126-agentx-kv-c384.csv.gz": {
+      "sha256": "7d3ca98941fb1b35086fb68dbfb857839aadd9b91b0ab220fd3c3e3f88841021",
+      "bytes": 1348556
+    },
+    "request-metrics/topo64-v11-p8d8-kv-c16.csv.gz": {
+      "sha256": "2ebadd13fec3ef18a58d53f639072c94fb1df28b4ff0bc121f877f42190e206c",
+      "bytes": 28577
+    },
+    "request-metrics/topo64-v11-p8d8-kv-c256.csv.gz": {
+      "sha256": "34067bc5e146fa691f1a9e74859851f65cb6ce3864591fd5a060091e2f12786f",
+      "bytes": 890011
+    },
+    "request-metrics/topo64-v11-p8d8-kv-c64.csv.gz": {
+      "sha256": "59541daa191907dca292c2b54cf58b7fc89128b592f7f66894ee6a5d97f65154",
+      "bytes": 199680
+    },
+    "request-metrics/topo64-v11-p8d8-rr-c16.csv.gz": {
+      "sha256": "9a9e8f6093ea575ff5e4e21a4b6d4a078c6c3f8ef3f3712fb2e5515e52b7cf7a",
+      "bytes": 27959
+    },
+    "request-metrics/topo64-v11-p8d8-rr-c256.csv.gz": {
+      "sha256": "d5deaf8e22651d1f5e35a073a798015c50b6445f6fee8fded163e6974a426d23",
+      "bytes": 730757
+    },
+    "request-metrics/topo64-v11-p8d8-rr-c64.csv.gz": {
+      "sha256": "1f8271c1e8e5c7cafb2c0a2190ae3caff5487d5d3155e7e00cbebe815d2736e9",
+      "bytes": 191766
+    }
+  },
+  "scope": "Eight existing September 17\u201318 native simulations, two matched legacy 72-GPU KV hardware references; no new executions.",
+  "limitations": [
+    "P8D8 simulation C16/C64/C256 do not coincide with the report's hardware concurrency points.",
+    "P8D8 RR256 has 3710 errors and is a diagnostic only; KV256 has 11 errors.",
+    "The original P12D6 topology file contains a stale 64-GPU prose note; structured pools and launch commands specify 12P+6D TP4 = 72 GPUs.",
+    "Transfer bandwidth and prefill cache capacity remain unmeasured assumptions."
+  ]
+}

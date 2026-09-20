@@ -1,0 +1,30 @@
+{
+  "concurrency": 192,
+  "run": "/tmp/n3u-path1-topology-runs/disagg-p12d6-kv-c192-calibrated-v11",
+  "state": "completed",
+  "throughput_target_pass": true,
+  "nominal_hardware_settings_match": true,
+  "native_core_sha256": "39e41354104490981f35f76850bd17973369fc8222dab9f7813e25f50146e36e",
+  "shared_engine_sha256": "10e6f4eae91129525b8d15b262efe8df5cf50c938095b1e2864a85665a95fb43",
+  "gpu_count": 72,
+  "assumptions": "P cache allocation and effective transfer bandwidth are unmeasured; see topology.json. Nominal deployment matches are not a claim of complete hardware-state identity.",
+  "metrics": {
+    "total_tok_s_per_gpu": {
+      "hardware": 4510.500155223113,
+      "simulation": 4460.870767967489,
+      "relative_error": -0.011003078494111973,
+      "within_20_percent": true,
+      "calibration_target": true
+    },
+    "p95_ttft_ms": {
+      "hardware": 1768.3527387499996,
+      "simulation": 1777.9493225499978,
+      "relative_error": 0.005426849287309965,
+      "within_20_percent": true,
+      "calibration_target": false
+    }
+  },
+  "replay_valid": true,
+  "warmup_requests": 185,
+  "common_profiling_turns": 12454
+}
