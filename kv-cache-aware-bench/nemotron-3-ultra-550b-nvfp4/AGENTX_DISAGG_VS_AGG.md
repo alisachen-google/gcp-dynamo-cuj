@@ -1,7 +1,5 @@
 # Nemotron-3-Ultra 550B — disaggregated vs aggregated under the AgentX concurrency definition (simulation, with measured anchors)
 
-Simulation status, 2026-09-17: v3/v5 curves and simulated comparisons in this document are historical and superseded by the [actual AIPerf replay results](reports/agentx-aiperf-results.md). Use that index for current performance and topology decisions. Measured hardware points retain their original provenance.
-
 Companion to [AGENTX_D72_RESULTS.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/AGENTX_D72_RESULTS.md) and [AGENTX_AGG_RESULTS.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/AGENTX_AGG_RESULTS.md).
 Page: [agg vs disagg curve](https://htmlpreview.github.io/?https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/reports/n3u-agentx-agg-vs-disagg.html)
 (three panels: throughput per GPU, TTFT, P90 interactivity; x = clients or clients per GPU; disagg split selector; KV / tuned KV / RR).
@@ -136,3 +134,59 @@ clients is the verification that would confirm the simulated optimum and is queu
 The sim under-predicts absolute totals ~1.6–2× (trace representation; AGENTX_D72_RESULTS.md §iv) on both arms alike,
 so the ratios above are the claim, not the absolute levels. Busy-stream (always-busy streams) results for the same
 arms are in D72_RESULTS.md §2 (disagg 9:9 beats agg 1.17× on total, 1.36× on output at their bounded peaks).
+
+
+## 7. Measured comparison (regenerated from harvested cells by `scripts/gen_agentx_disagg_vs_agg_measured.py`)
+
+All cells: AgentX scenario, 3,600 s window, total = (input + output) tok/s per GPU, TTFT standard = p95, SLO = TTFT p95 ≤ 10 s with a stationary
+knee check. Fleets: **agg** 6 × TP4 = 24 GPU; **disagg 8:8** 8 prefill + 8 decode TP4 = 64 GPU; **disagg 12:6** = 72 GPU (default KV only,
+measured 2026-09-16 before the pools were resized). Per-run logs: AGENTX_AGG_RESULTS.md, AGENTX_D88_RESULTS.md, AGENTX_D72_RESULTS.md, RUN_INDEX.md.
+
+### 7.1 Framing A — best throughput per GPU inside the same SLO (the number that ranks architectures)
+
+| fleet | policy | best cell inside the SLO | clients / GPU | total tok/s/GPU | TTFT p50 / p95 | P90 interactivity | hit rate | GPUs per 1,000 sessions | logs |
+|---|---|---|---|---|---|---|---|---|---|
+| agg 24 GPU | round-robin | 48 clients | 2.0 | **3,250** | 0.79 / 8.27 s | 91 | 0.74 | 500 | [1789550745](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789550745_alisachen-n3u-agg-ns2-agentx-rr-c48) |
+| agg 24 GPU | default KV | 96 clients | 4.0 | **6,844** | 0.67 / 5.36 s | 43 | 0.79 | 250 | [1789550601](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789550601_alisachen-n3u-agg-ns-agentx-kv-c96) |
+| agg 24 GPU | tuned KV (load scale 3 / credit 0.8) | 192 clients | 8.0 | **10,992** | 0.82 / 6.20 s | 26 | 0.82 | 125 | [1789856381](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789856381_alisachen-n3u-agg-ns2-agentx-kvs3c08-c192) |
+| disagg 8:8, 64 GPU | round-robin | 72 clients | 1.1 | **1,763** | 0.79 / 9.91 s | 120 | 0.65 | 889 | [1789773750](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789773750_alisachen-n3u-mnnvl-88-agentx-rr-c72) |
+| disagg 8:8, 64 GPU | default KV | 480 clients | 7.5 | **12,204** | 0.80 / 7.12 s | 65 | 0.89 | 133 | [1789740024](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789740024_alisachen-n3u-mnnvl-88-agentx-kv-c480) |
+| disagg 8:8, 64 GPU | tuned KV (overlap credit 1.5) | 576 clients | 9.0 | **14,024** | 0.95 / 8.75 s | 61 | 0.90 | 111 | [1789820579](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789820579_alisachen-n3u-mnnvl-88-agentx-kvc15-c576) |
+| disagg 12:6, 72 GPU | default KV | 768 clients | 10.7 | **15,004** | 0.80 / 7.00 s | 45 | 0.88 | 94 | [1789582655](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789582655_alisachen-n3u-mnnvl-126-agentx-kv-c768) |
+
+Reading (same SLO):
+- **default KV**: disagg 8:8 12,204 vs agg 6,844 tok/s/GPU = **1.78×** per GPU; clients per GPU 7.5 vs 4.0 → 133 vs 250 GPUs per 1,000 sessions; P90 interactivity 65 vs 43 tok/s/user.
+- **tuned KV (best flag set)**: disagg 8:8 14,024 vs agg 10,992 tok/s/GPU = **1.28×** per GPU; clients per GPU 9.0 vs 8.0 → 111 vs 125 GPUs per 1,000 sessions; P90 interactivity 61 vs 26 tok/s/user.
+- **round-robin**: disagg 8:8 1,763 vs agg 3,250 tok/s/GPU = **0.54×** per GPU; clients per GPU 1.1 vs 2.0 → 889 vs 500 GPUs per 1,000 sessions; P90 interactivity 120 vs 91 tok/s/user.
+- The agg cells inside the SLO are the *measured* ones; a cell is only as close to the 10 s boundary as the ladder allows (see the TTFT p95 column — a value well
+  below 10 s means the true SLO point lies between that cell and the next one up, so the fleet's SLO throughput is a lower bound).
+
+### 7.2 Framing C — equal load per GPU (default KV)
+
+| clients / GPU | agg: clients → total/GPU · TTFT p95 · P90 | disagg 8:8: clients → total/GPU · TTFT p95 · P90 | disagg 12:6: clients → total/GPU · TTFT p95 · P90 | disagg 8:8 ÷ agg |
+|---|---|---|---|---|
+| 2 | 48 → 3,334 · 3.8 s · 102 | 144 → 3,964 · 1.9 s · 101 | — | 1.19× |
+| 3 | — | 192 → 5,142 · 2.4 s · 100 | 192 → 4,510 · 1.8 s · 89 | — |
+| 4 | 96 → 6,844 · 5.4 s · 43 | — | — | — |
+| 6 | — | 384 → 9,993 · 4.8 s · 78 | 384 → 8,637 · 2.6 s · 64 | — |
+| 8 | 192 → 9,468 · 11.2 s · 19 | 480 → 12,204 · 7.1 s · 65 | — | 1.29× |
+| 10.5 | — | 672 → 15,184 · 17.0 s · 59 | 768 → 15,004 · 7.0 s · 45 | — |
+| 12 | — | 768 → 15,543 · 27.1 s · 57 | 768 → 15,004 · 7.0 s · 45 | — |
+| 16 | 384 → 8,257 · 119.4 s · 13 (post-knee) | 1152 → 10,697 · 164.3 s · 61 (post-knee) | — | — |
+| 18 | 384 → 8,257 · 119.4 s · 13 (post-knee) | 1152 → 10,697 · 164.3 s · 61 (post-knee) | — | — |
+
+Cells are matched to the nearest measured client count within ±15 % of the target load per GPU; “—” = no cell that close.
+
+### 7.3 Peak (stationary) throughput and where each fleet saturates
+
+| fleet | default KV peak (stationary) | clients / GPU at the peak | first post-knee cell | RR peak (stationary) |
+|---|---|---|---|---|
+| agg 24 GPU | 9,468 at 192 clients (TTFT p95 11.2 s) | 8.0 | 384 clients (16.0/GPU) | 6,802 at 192 clients (TTFT p95 60.1 s) |
+| disagg 8:8, 64 GPU | 15,543 at 768 clients (TTFT p95 27.1 s) | 12.0 | 1152 clients (18.0/GPU) | 4,419 at 192 clients (TTFT p95 31.5 s) |
+
+**Verdict from the measured cells.** Per GPU, disagg 8:8's stationary default-KV peak is 15,543 vs agg's 9,468 (**1.64×**), reached at
+12.0 vs 8.0 clients per GPU. Agg is the better fleet only at light load per GPU, where its packed decode batches are fuller and no KV
+transfer is paid; from mid load upward disagg serves more tokens per GPU with a shorter TTFT tail *and* 2–3× the per-user interactivity, because decode runs on
+its own tier. The router matters as much as the architecture: inside the SLO round-robin gives up 70 % on agg 24 GPU and 87 % on disagg 8:8 of the best KV configuration's throughput.
+The best flags differ by fleet — disagg wants *more* cache affinity (overlap credit 1.5; prefill is its bottleneck), agg wants *load awareness* (load scale 3 / credit 0.8;
+its problem is over-packed workers); credit decay and router temperature lose on both.

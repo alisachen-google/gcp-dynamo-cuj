@@ -264,6 +264,8 @@ the over-packing diagnosed in AGENTX_AGG_RESULTS.md §iv. Disagg cells are not r
 
 ### 5.4 Disagg or agg, so far
 
+**Measured comparison (agg 24 GPU vs disagg 8:8 64 GPU vs disagg 12:6 72 GPU, same 10 s SLO, equal load per GPU, peaks): [AGENTX_DISAGG_VS_AGG.md §7](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/AGENTX_DISAGG_VS_AGG.md#7-measured-comparison-regenerated-from-harvested-cells-by-scriptsgen_agentx_disagg_vs_agg_measuredpy), regenerated after every new cell.** The paragraphs below predate the 8:8 runs.
+
 At equal clients the 72-GPU disagg fleet is diluted 3× until it saturates, so the comparison is made at equal load
 per GPU or at equal SLO (AGENTX_DISAGG_VS_AGG.md §0). Measured: agg's best stationary cell is KV 192 (9,655 total/GPU,
 8 clients/GPU, p95 11.7 s) and its ceiling is there; disagg 12:6 KV at 768 clients (10.7 clients/GPU) is at **15,004**
