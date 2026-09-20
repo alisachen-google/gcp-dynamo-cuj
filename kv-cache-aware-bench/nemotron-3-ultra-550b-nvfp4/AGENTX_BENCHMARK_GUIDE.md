@@ -135,7 +135,27 @@ Selection rules (KNEE_ANALYSIS.md, AgentX section):
 5. **Flag sweep** at the chosen KV cells (prefill-load-scale 3 / credit 0.8, scale 2 / credit 0.8, temperature 0.5),
    because the sim says tuned routing pays only on disagg past the prefill knee.
 
-## 5. Real results and analysis (updated 2026-09-18 17:40 UTC; RUN_INDEX.md is the authoritative job list)
+## 5. Real results and analysis (updated 2026-09-20 15:40 UTC; RUN_INDEX.md is the authoritative job list)
+
+### 5.0 Final measured summary (2026-09-20; all runs complete)
+
+SLO = TTFT p95 ≤ 10 s, stationary knee check, total = (input + output) tok/s per GPU. Full per-run tables with router flags and log links:
+[AGENTX_D88_RESULTS.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/AGENTX_D88_RESULTS.md) (disagg 8 prefill : 8 decode, 64 GPU, 23 cells) and
+[AGENTX_AGG_RESULTS.md §v–vi](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/AGENTX_AGG_RESULTS.md) (agg 6 × TP4, 24 GPU).
+
+| fleet | policy | same-SLO cell | total tok/s/GPU | TTFT p50 / p95 | vs RR |
+|---|---|---|---|---|---|
+| disagg 8:8 | round-robin | 72 clients | 1,763 | 0.79 / 9.91 s | 1.0× |
+| disagg 8:8 | default KV | 480 clients | 12,204 | 0.80 / 7.12 s | 6.9× |
+| disagg 8:8 | tuned KV: `--router-kv-overlap-score-credit 1.5` | 576 clients | 14,024 | 0.95 / 8.75 s | 8.0× |
+| agg | round-robin | 64 clients | 3,910 | 0.74 / 9.21 s | 1.0× |
+| agg | default KV | 160 clients | 8,755 | 1.15 / 9.57 s | 2.24× |
+| agg | tuned KV: `--router-prefill-load-scale 3.0` (credit 0.8 or default, equivalent) | 192 clients | 10,992 | 0.82 / 6.20 s | 2.81× |
+
+Same concurrency (disagg 8:8, KV ÷ RR): 96 → 1.05×, 144 → 1.10×, 192 → 1.16×, 384 → 2.85×, 480 → 3.79×; RR's knee is between 192 and 384 clients, default KV's between 768 and 1,152.
+Flag verdicts: disagg wants *more cache affinity* (overlap credit 1.5: TTFT p95 −15 % at 480, brings 576 clients inside the SLO; credit 2.0 no further gain); agg wants *load awareness*
+(load scale 3: +13–16 % throughput, TTFT p95 −45–50 %; scale 2 about half of that; the 0.8 credit adds nothing). Rejected on both fleets: overlap-credit decay (neutral to −3 %) and router temperature
+(agg −15 to −19 %; disagg −52 % at 0.2 and −70 % at 0.5, i.e. round-robin-like).
 
 Disagg 8:8 (64 GPU) full report with per-run config and log links: [AGENTX_D88_RESULTS.md](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/AGENTX_D88_RESULTS.md).
 

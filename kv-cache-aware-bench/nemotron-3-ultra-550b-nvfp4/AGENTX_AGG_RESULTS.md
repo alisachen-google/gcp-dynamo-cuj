@@ -276,6 +276,19 @@ comparison under-sold every policy. These cells sit just inside the budget. Two 
 | load scale 3, credit 0.8: kv + `--router-prefill-load-scale 3.0 --router-kv-overlap-score-credit 0.8` | 9,894 (+13.0%) | 2,525 (105.2) | 0.71 / 4.85 (-49%) / 9.7 s | 16.0 / 30.5 → 32.8 | 49.8 (peak 95) | 0.83 | 1,396 s | yes (q1 0.72 → q4 0.67 s) | [1789901101](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789901101_alisachen-n3u-agg-ns-agentx-kvs3c08-c160) |
 | load scale 2, credit 0.8: kv + `--router-prefill-load-scale 2.0 --router-kv-overlap-score-credit 0.8` | 9,270 (+5.9%) | 2,389 (99.5) | 0.86 / 7.16 (-25%) / 13.6 s | 17.8 / 36.2 → 27.6 | 54.7 (peak 104) | 0.79 | 1,397 s | yes (q1 1.05 → q4 0.77 s) | [1789906804](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789906804_alisachen-n3u-agg-ns2-agentx-kvs2c08-c160) |
 | credit decay 0.5: kv + `--router-kv-overlap-score-credit-decay 0.5` | 8,697 (-0.7%) | 2,246 (93.6) | 1.15 / 9.24 (-3%) / 15.3 s | 21.0 / 46.6 → 21.5 | 61.0 (peak 111) | 0.74 | 1,389 s | yes (q1 1.32 → q4 0.89 s) | [1789906836](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789906836_alisachen-n3u-agg-ns-agentx-kvd05-c160) |
+| router temperature 0.5: kv with `--router-temperature 0.5` | 7,419 (-15.3%) | 1,921 (80.0) | 3.51 / 19.17 (+100%) / 27.8 s | 27.7 / 69.1 → 14.5 | 79.0 (peak 132) | 0.62 | 1,394 s | yes (q1 3.58 → q4 1.43 s) | [1789912551](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789912551_alisachen-n3u-agg-ns-agentx-kvt05-c160) |
+| load scale 3, default credit 1.0: kv + `--router-prefill-load-scale 3.0` (overlap credit left at its default 1.0) | 10,073 (+15.0%) | 2,605 (108.5) | 0.65 / 4.75 (-50%) / 9.7 s | 15.6 / 28.3 → 35.3 | 48.6 (peak 95) | 0.85 | 1,389 s | yes (q1 0.72 → q4 0.65 s) | [1789912551](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789912551_alisachen-n3u-agg-ns2-agentx-kvs3c10-c160) |
+
+### Reading (section vi)
+
+- **Load awareness is the active ingredient.** Load scale 3 with the overlap credit left at its default 1.0 gives 10,073 tok/s/GPU (+15.0 %), TTFT p95 4.75 s (-50 %), hit rate 0.85;
+  the same load scale with credit 0.8 gives 9,894 (+13.0 %), 4.85 s (-49 %), hit rate 0.83. The two are within run-to-run noise of each other, with credit 1.0 marginally ahead on every metric:
+  the 0.8 credit carried over from the simulator's policy sweep contributes nothing on silicon, so the recommended agg setting is simply `--router-prefill-load-scale 3.0`.
+- **Dose-response in load scale:** scale 2 / credit 0.8 → 9,270 (+5.9 %), TTFT p95 7.16 s (-25 %), hit rate 0.79 — about half the gain of scale 3, the same ordering as at 192 clients.
+- **Credit decay 0.5 is neutral** at this load (8,697, -0.7 %; TTFT p95 9.24 s, -3 %); at 192 clients it lost 1–2.5 %. Nothing to keep.
+- **Router temperature 0.5 loses**: 7,419 (-15.3 %), TTFT p95 19.17 s (+100 %), hit rate 0.62 (from 0.75) — sampling the worker breaks cache affinity, and the cell falls outside the SLO.
+- **Same SLO on agg, final:** RR 64 clients → 3,910; default KV 160 → 8,755 (2.24× RR); tuned KV at the same 160 clients → 10,073 (2.58× RR) with TTFT p95 4.75 s, i.e. half the budget still unused; tuned KV's best measured cell inside the SLO is 192 clients → 10,992 (2.81× RR, TTFT p95 6.20 s), and at 256 clients it is already outside (18.9 s), so its true 10 s point lies between 192 and 256 clients.
+- Warm-up wall times agree within 0.6 % across the five flag cells at this client count (1,389–1,397 s; the default-KV cell was the first after the fleets were deployed, 1,492 s), so every cell ran on a healthy fleet.
 
 ## iv. Simulation-vs-real gap, with the apple-to-apple decomposition
 

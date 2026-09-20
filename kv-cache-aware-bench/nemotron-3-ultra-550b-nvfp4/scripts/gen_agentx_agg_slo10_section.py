@@ -76,6 +76,22 @@ if PT:
           f"| {NAME['kv']} (baseline) " + row(base, base)]
     o += [f"| {NAME.get(x['pol'], x['pol'])}: {FLAGS.get(x['pol'], '')} " + row(x, base) for x in fl]
     if not fl: o.append("| (flag cells running) | | | | | | | | | |")
+if PT:
+    base = cells[("kv", PT)]; g = lambda p: cells.get((p, PT)); pc = lambda x: f"{(x['tot'] / base['tot'] - 1) * 100:+.1f} %"; tc = lambda x: f"{(x['p95'] / base['p95'] - 1) * 100:+.0f} %"
+    rd = ["", "### Reading (section vi)", ""]
+    if g("kvs3c08") and g("kvs3c10"):
+        a_, b_ = g("kvs3c08"), g("kvs3c10")
+        rd += [f"- **Load awareness is the active ingredient.** Load scale 3 with the overlap credit left at its default 1.0 gives {b_['tot']:,.0f} tok/s/GPU ({pc(b_)}), TTFT p95 {b_['p95']:.2f} s ({tc(b_)}), hit rate {b_['hit']:.2f};",
+               f"  the same load scale with credit 0.8 gives {a_['tot']:,.0f} ({pc(a_)}), {a_['p95']:.2f} s ({tc(a_)}), hit rate {a_['hit']:.2f}. The two are within run-to-run noise of each other, with credit 1.0 marginally ahead on every metric:",
+               "  the 0.8 credit carried over from the simulator's policy sweep contributes nothing on silicon, so the recommended agg setting is simply `--router-prefill-load-scale 3.0`."]
+    if g("kvs2c08"): x = g("kvs2c08"); rd.append(f"- **Dose-response in load scale:** scale 2 / credit 0.8 → {x['tot']:,.0f} ({pc(x)}), TTFT p95 {x['p95']:.2f} s ({tc(x)}), hit rate {x['hit']:.2f} — about half the gain of scale 3, the same ordering as at 192 clients.")
+    if g("kvd05"): x = g("kvd05"); rd.append(f"- **Credit decay 0.5 is neutral** at this load ({x['tot']:,.0f}, {pc(x)}; TTFT p95 {x['p95']:.2f} s, {tc(x)}); at 192 clients it lost 1–2.5 %. Nothing to keep.")
+    if g("kvt05"): x = g("kvt05"); rd.append(f"- **Router temperature 0.5 loses**: {x['tot']:,.0f} ({pc(x)}), TTFT p95 {x['p95']:.2f} s ({tc(x)}), hit rate {x['hit']:.2f} (from {base['hit']:.2f}) — sampling the worker breaks cache affinity, and the cell falls outside the SLO.")
+    w = min((x for x in (g("kvs3c08"), g("kvs3c10"), g("kvs2c08")) if x), key=lambda x: x["p95"], default=None)
+    if w and rr: rd.append(f"- **Same SLO on agg, final:** RR {rr['clients']} clients → {rr['tot']:,.0f}; default KV {PT} → {base['tot']:,.0f} ({base['tot'] / rr['tot']:.2f}× RR); tuned KV at the same {PT} clients → {w['tot']:,.0f} ({w['tot'] / rr['tot']:.2f}× RR) with TTFT p95 {w['p95']:.2f} s, i.e. half the budget still unused;"
+                           f" tuned KV's best measured cell inside the SLO is {tn['clients']} clients → {tn['tot']:,.0f} ({tn['tot'] / rr['tot']:.2f}× RR, TTFT p95 {tn['p95']:.2f} s), and at 256 clients it is already outside (18.9 s), so its true 10 s point lies between 192 and 256 clients.")
+    rd.append("- Warm-up wall times agree within 0.6 % across the five flag cells at this client count (1,389–1,397 s; the default-KV cell was the first after the fleets were deployed, 1,492 s), so every cell ran on a healthy fleet.")
+    o += rd
 s = open(f"{ROOT}/AGENTX_AGG_RESULTS.md").read(); i = s.find("\n## vi. Cells that saturate")
 if i >= 0:
     j = s.find("\n## ", i + 5); s = s[:i] + "\n" + "\n".join(o) + "\n" + (s[j:] if j >= 0 else "")
