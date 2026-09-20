@@ -70,7 +70,9 @@ The inventory now contains **17 agg and 20 D88 hardware runs**: **3 newly comple
 
 ## 3. Curves, knees and same-concurrency comparisons
 
-![Agg and disagg throughput, TTFT p95 and E2E interactivity versus concurrency, including measured tuned curves and knee evidence](agentx-serving-perf-report-curves.png)
+This section compares **default KV and RR** for agg and disagg.
+
+![Agg and disagg default KV versus RR: throughput, TTFT p95 and E2E interactivity versus concurrency, with knee evidence](agentx-serving-perf-report-curves.png)
 
 [SVG](agentx-serving-perf-report-curves.svg) · [PDF](agentx-serving-perf-report-curves.pdf)
 
@@ -81,12 +83,10 @@ The inventory now contains **17 agg and 20 D88 hardware runs**: **3 newly comple
 | --- | --- | --- | --- |
 | Agg default KV | Highest sampled throughput C192; C384 falls 14.5% | C96 passes both; C192 fails both | Sample 144 to narrow 96–192. |
 | Agg RR | Highest sampled throughput C192; C384 falls 25.4% | C48 passes both; C96 fails both | Repeat C48, then test 72 if RR capacity matters. |
-| Agg scale 3 / credit 0.8 | C96 and two C192 trials; throughput still rises | Both C192 trials pass TTFT but miss I90 by **1.10% / 1.31%** | Test C144, then bisect 144–192 if it passes; no tuned throughput knee is known. |
-| D88 default KV | C672→768 adds only 2.4% throughput for 59% more TTFT; C1152 then falls 31.2% | Both SLO boundaries lie in 480–672 | Default C576 is the missing direct control for the tuned result. |
+| D88 default KV | C672→768 adds only 2.4% throughput for 59% more TTFT; C1152 then falls 31.2% | Both SLO boundaries lie in 480–672 | Test C576 to narrow the 480–672 boundary. |
 | D88 RR | New C384 is 20.7% below C192; C480 falls further | TTFT crossing 72–96; I90 crossing 96–144 | Repeat C72, then C84; throughput overload bracket is now 192–384. |
-| D88 credit 1.5 | C192, C480 and C576 measured; throughput still rises | All three pass both; C576 is the highest tested pass | Repeat C576, then C624 or C672 to bracket this setting's boundary. |
 
-Most cells have one trial. Default agg KV192 and scale-3/credit-0.8 C192 each have two trials, across deployment campaigns; the fresh results appear as crosses on the original curves. These two repeats are useful reproducibility checks, not a calibrated tail-variance distribution. The figures mark sampled points and unsampled intervals, not exact optimized knees. A one-point flag variant has no measurable concurrency knee. GPU utilization is not used to pick these knees because no aligned per-engine GPU series is supplied here.
+Most cells have one trial. Default agg KV192 has two trials across deployment campaigns; the fresh result appears as a cross on the original curves. This repeat is a useful reproducibility check, not a calibrated tail-variance distribution. The figures mark sampled points and unsampled intervals, not exact optimized knees. GPU utilization is not used to pick these knees because no aligned per-engine GPU series is supplied here.
 
 ### Default KV versus RR at the same concurrency
 

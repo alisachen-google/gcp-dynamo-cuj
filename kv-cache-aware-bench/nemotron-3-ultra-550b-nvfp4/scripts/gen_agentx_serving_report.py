@@ -316,11 +316,10 @@ def plots(points):
     )
     fig, axes = plt.subplots(2, 3, figsize=(16, 10.2))
     for row, arch in enumerate(["agg", "disagg"]):
-        tuned = "kvs3c08" if arch == "agg" else "kvc15"
         ticks = (
             [48, 96, 192, 384]
             if arch == "agg"
-            else [72, 96, 144, 192, 384, 480, 576, 768, 1152]
+            else [72, 96, 144, 192, 384, 480, 672, 768, 1152]
         )
         for column, metric, title in [
             (0, "total_tok_s_gpu", "Total input + output tok/s/GPU"),
@@ -328,7 +327,7 @@ def plots(points):
             (2, I90, "E2E I90 (output tok/s/user)"),
         ]:
             ax = axes[row, column]
-            for pol in ["kv", "rr", tuned]:
+            for pol in ["kv", "rr"]:
                 series = [
                     p
                     for p in cells(points, arch, pol)
@@ -445,26 +444,28 @@ def plots(points):
                     color="#a62b3a",
                 )
         if arch == "agg":
+            boundary = one(points, "agg", "kv", 192, "agg-20260916")
             axes[row, 2].annotate(
-                "Tuned C192: 19.7795 / 19.7385 <20\nBoth trials fail; C96 remains the choice",
-                xy=(192, 19.7795),
+                "Default KV: C96 passes both SLOs\nC192 fails; boundary lies in 96–192",
+                xy=(192, boundary[I90]),
                 xytext=(0.06, 0.27),
                 textcoords="axes fraction",
                 fontsize=8,
                 arrowprops={"arrowstyle": "->"},
             )
         else:
+            boundary = one(points, "disagg", "kv", 480)
             axes[row, 1].axvspan(480, 672, alpha=0.07, color=COLORS["kv"])
             axes[row, 1].annotate(
-                "Tuned C576: 8.75 s, passes\nIts next failing point is unmeasured",
-                xy=(576, 8.75054),
+                "Default KV: C480 passes both SLOs\nC672 fails; boundary lies in 480–672",
+                xy=(480, boundary["ttft_p95_s"]),
                 xytext=(0.04, 0.20),
                 textcoords="axes fraction",
                 fontsize=8,
                 arrowprops={"arrowstyle": "->"},
             )
     fig.suptitle(
-        "Measured AgentX curves · default KV, RR and each architecture's selected tuning",
+        "Measured AgentX curves · default KV versus round-robin",
         x=0.04,
         ha="left",
         fontsize=16,
@@ -472,7 +473,7 @@ def plots(points):
     fig.text(
         0.04,
         0.015,
-        "Rings: sampled throughput peaks. Stars: samples passing both SLOs with highest throughput. Crosses: fresh agg C192 references.\nLines show the original ladders; single-point variants follow. Most cells have one trial; shaded intervals do not locate an exact knee.",
+        "Rings: sampled throughput peaks. Stars: highest-throughput samples passing both SLOs. Crosses: fresh agg default-KV C192 reference.\nLines show the original default-KV and RR ladders. Most cells have one trial; shaded intervals do not locate an exact knee.",
         fontsize=10,
         color="#52657a",
     )
@@ -796,7 +797,9 @@ The inventory now contains **{len(cells(points, "agg"))} agg and {len(cells(poin
 
 ## 3. Curves, knees and same-concurrency comparisons
 
-{figure("curves", "Agg and disagg throughput, TTFT p95 and E2E interactivity versus concurrency, including measured tuned curves and knee evidence")}
+This section compares **default KV and RR** for agg and disagg.
+
+{figure("curves", "Agg and disagg default KV versus RR: throughput, TTFT p95 and E2E interactivity versus concurrency, with knee evidence")}
 
 ### Throughput peak, SLO crossing and highest tested pass are distinct
 
@@ -804,12 +807,10 @@ The inventory now contains **{len(cells(points, "agg"))} agg and {len(cells(poin
 | --- | --- | --- | --- |
 | Agg default KV | Highest sampled throughput C192; C384 falls 14.5% | C96 passes both; C192 fails both | Sample 144 to narrow 96–192. |
 | Agg RR | Highest sampled throughput C192; C384 falls 25.4% | C48 passes both; C96 fails both | Repeat C48, then test 72 if RR capacity matters. |
-| Agg scale 3 / credit 0.8 | C96 and two C192 trials; throughput still rises | Both C192 trials pass TTFT but miss I90 by **{100 * (1 - a192[I90] / 20):.2f}% / {100 * (1 - a192_repeat[I90] / 20):.2f}%** | Test C144, then bisect 144–192 if it passes; no tuned throughput knee is known. |
-| D88 default KV | C672→768 adds only 2.4% throughput for 59% more TTFT; C1152 then falls 31.2% | Both SLO boundaries lie in 480–672 | Default C576 is the missing direct control for the tuned result. |
+| D88 default KV | C672→768 adds only 2.4% throughput for 59% more TTFT; C1152 then falls 31.2% | Both SLO boundaries lie in 480–672 | Test C576 to narrow the 480–672 boundary. |
 | D88 RR | New C384 is 20.7% below C192; C480 falls further | TTFT crossing 72–96; I90 crossing 96–144 | Repeat C72, then C84; throughput overload bracket is now 192–384. |
-| D88 credit 1.5 | C192, C480 and C576 measured; throughput still rises | All three pass both; C576 is the highest tested pass | Repeat C576, then C624 or C672 to bracket this setting's boundary. |
 
-Most cells have one trial. Default agg KV192 and scale-3/credit-0.8 C192 each have two trials, across deployment campaigns; the fresh results appear as crosses on the original curves. These two repeats are useful reproducibility checks, not a calibrated tail-variance distribution. The figures mark sampled points and unsampled intervals, not exact optimized knees. A one-point flag variant has no measurable concurrency knee. GPU utilization is not used to pick these knees because no aligned per-engine GPU series is supplied here.
+Most cells have one trial. Default agg KV192 has two trials across deployment campaigns; the fresh result appears as a cross on the original curves. This repeat is a useful reproducibility check, not a calibrated tail-variance distribution. The figures mark sampled points and unsampled intervals, not exact optimized knees. GPU utilization is not used to pick these knees because no aligned per-engine GPU series is supplied here.
 
 ### Default KV versus RR at the same concurrency
 
