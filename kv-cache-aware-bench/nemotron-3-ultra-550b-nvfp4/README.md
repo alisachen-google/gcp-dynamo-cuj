@@ -4,7 +4,7 @@ Second model of the KV-cache-aware routing study: agg + disagg KV-vs-RR on
 GB300 NVL72, sglang backend, replaying `semianalysisai/cc-traces-weka-062126-256k`
 (same dataset as the Kimi-K2.5 study for cross-model comparability).
 
-Latest measured comparison (2026-09-20): [agg and 8:8 disagg operating choices, tuned KV, knees and both latency SLOs](reports/agentx-serving-perf-report.md) · [standalone HTML](reports/agentx-serving-perf-report.html). Includes **37 hardware runs**, fresh agg default/tuned controls, the combined credit-decay test, and disagg credit-1.5 C576. Both tuned agg C192 trials narrowly miss the E2E SLO; the new controls show no observed benefit from decay. Completed results, queued controls and failed native simulations are identified separately.
+Latest measured comparison (2026-09-20): [AgentX performance report](reports/agentx-serving-perf-report.md) · [standalone HTML](reports/agentx-serving-perf-report.html). Organized into **setup and methodology; agg results; disagg results; simulation versus hardware; and AIC/DynoSim methods and recipes**. Includes **37 hardware runs**, separate default-KV/RR curves with knee annotations, full tables including tuned KV, and tuned-KV/RR comparisons at the same concurrency and under **TTFT p95 <10 s**. The additional E2E requirement is shown separately: tuned agg C192 passes TTFT but narrowly misses E2E in both trials. The simulation section pairs all 12 completed native agg runs with hardware and identifies the failed disagg attempts. Saved AIC recommendations, deployed recipes, cache assumptions and timing calibration are linked and documented.
 
 Current AgentX simulation performance (2026-09-17) uses the **new AIPerf replay** for agg and disagg; v3/v5 results are historical. Start with the [current result index](reports/agentx-aiperf-results.md): [64-GPU KV/RR topology curves](reports/agentx-64gpu-topology.md), [replay audit and simulation-vs-hardware gaps](reports/agentx-faithful-replay.md), and [reproduction commands](reports/agentx-replay-howto.md).
 
@@ -32,8 +32,11 @@ abundant (pure placement value) — see `DESIGN.md` for the full walkthrough.
 
 Model source: `nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4` (ungated; FP8
 mamba mixers / FP4 MoE), staged at `/model-cache/alisachen/Nemotron-3-Ultra-550B-A55B-NVFP4`.
-Toolchain pins: aiconfigurator **0.11.0** (0.10.0 lacks NemotronH), sglang
-0.5.14 + ai-dynamo 1.3.1 (pending NemotronH smoke), dynamo KV router v1.3.1.
+Original design pins: aiconfigurator **0.11.0**, SGLang 0.5.14 and ai-dynamo 1.3.1.
+The current measured recipes use Dynamo **1.4.2** with SGLang **0.5.16**;
+the [setup and simulation sections](reports/agentx-serving-perf-report.md) distinguish
+these from the older AIC timing tables and generated templates.
 
-Methodology: `../SWEEP_METHODOLOGY.md` (knee = queue-drain stationarity, no
-latency SLO), `../SIMULATION_GUIDE.md`, Kimi baseline `../sglang/AGG24_RESULTS.md`.
+Original methodology: `../SWEEP_METHODOLOGY.md` (queue-drain stationarity),
+`../SIMULATION_GUIDE.md`, Kimi baseline `../sglang/AGG24_RESULTS.md`.
+The current report separates sampled throughput knees from the TTFT and E2E SLO boundaries.

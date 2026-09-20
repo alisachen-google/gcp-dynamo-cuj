@@ -8,14 +8,16 @@
     "disagg": 20
   },
   "native_v10_agg_runs_revalidated": 12,
+  "methodology_sources_hashed": 27,
+  "aic_saved_recipes": 8,
   "input_manifests": {
-    "agentx-agg-kv-rr-data": {
-      "manifest_sha256": "a9ea919c3a97a28bb951ae09c4a326ccd74195ad8c0c27a717cdf32ff2ff6937",
-      "files": 155
-    },
     "agentx-disagg-kv-rr-data": {
       "manifest_sha256": "1f1e556392924fd49558e889e9335b104a2e5c56a4856527ba6162315a0ba635",
       "files": 54
+    },
+    "agentx-agg-kv-rr-data": {
+      "manifest_sha256": "a9ea919c3a97a28bb951ae09c4a326ccd74195ad8c0c27a717cdf32ff2ff6937",
+      "files": 155
     },
     "agentx-serving-perf-data": {
       "manifest_sha256": "0a3ee8fbd30412706734e84bf8339b91644a3290f9ba08722a029bc59ded931a",

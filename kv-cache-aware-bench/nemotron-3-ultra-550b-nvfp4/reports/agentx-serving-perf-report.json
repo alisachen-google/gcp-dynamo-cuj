@@ -8,6 +8,46 @@
     "hardware_runs": 34
   },
   "slo_ttft_p95_s": 10,
+  "slo_ttft_operator": "<",
+  "comparisons": {
+    "agg": {
+      "same_concurrency_reference": 192,
+      "same_concurrency_ids": [
+        "n3u-agg-ns2-agentx-rr-c192",
+        "n3u-agg-ns-agentx-kv-c192",
+        "n3u-agg-ns-agentx-kvs3c08-c192"
+      ],
+      "ttft_only_selected_ids": [
+        "n3u-agg-ns2-agentx-rr-c48",
+        "n3u-agg-ns-agentx-kv-c96",
+        "n3u-agg-ns-agentx-kvs3c08-c192"
+      ],
+      "joint_slo_selected_ids": [
+        "n3u-agg-ns2-agentx-rr-c48",
+        "n3u-agg-ns-agentx-kv-c96",
+        "n3u-agg-ns2-agentx-kvs3c08-c96"
+      ]
+    },
+    "disagg": {
+      "same_concurrency_reference": 192,
+      "same_concurrency_ids": [
+        "n3u-mnnvl-88-agentx-rr-c192",
+        "n3u-mnnvl-88-agentx-kv-c192",
+        "1789814379_alisachen-n3u-mnnvl-88-agentx-kvc15-c192"
+      ],
+      "ttft_only_selected_ids": [
+        "n3u-mnnvl-88-agentx-rr-c72",
+        "n3u-mnnvl-88-agentx-kv-c480",
+        "1789820579_alisachen-n3u-mnnvl-88-agentx-kvc15-c576"
+      ],
+      "joint_slo_selected_ids": [
+        "n3u-mnnvl-88-agentx-rr-c72",
+        "n3u-mnnvl-88-agentx-kv-c480",
+        "1789820579_alisachen-n3u-mnnvl-88-agentx-kvc15-c576"
+      ]
+    }
+  },
+  "methodology_file": "agentx-serving-perf-report-methodology.json",
   "slo_e2e_normalized_interactivity_p90_tps": 20,
   "hardware": [
     {
