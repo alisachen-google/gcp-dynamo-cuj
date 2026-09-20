@@ -1,10 +1,10 @@
 {
   "passed": true,
-  "hardware_runs": 37,
-  "new_hardware_runs": 11,
-  "new_since_previous_report": 3,
+  "hardware_runs": 45,
+  "new_hardware_runs": 19,
+  "new_since_previous_report": 8,
   "by_architecture": {
-    "agg": 17,
+    "agg": 25,
     "disagg": 20
   },
   "native_v10_agg_runs_revalidated": 12,
@@ -14,21 +14,21 @@
   "methodology_sources_hashed": 27,
   "aic_saved_recipes": 8,
   "input_manifests": {
-    "agentx-disagg-kv-rr-data": {
-      "manifest_sha256": "1f1e556392924fd49558e889e9335b104a2e5c56a4856527ba6162315a0ba635",
-      "files": 54
+    "agentx-serving-perf-data": {
+      "manifest_sha256": "73ba15cc89af429281a79eae5a0af24e2d462737fa1565d16c7ab15914de263f",
+      "files": 58
     },
     "agentx-agg-kv-rr-data": {
       "manifest_sha256": "a9ea919c3a97a28bb951ae09c4a326ccd74195ad8c0c27a717cdf32ff2ff6937",
       "files": 155
     },
-    "agentx-serving-perf-data": {
-      "manifest_sha256": "0a3ee8fbd30412706734e84bf8339b91644a3290f9ba08722a029bc59ded931a",
-      "files": 41
+    "agentx-disagg-kv-rr-data": {
+      "manifest_sha256": "1f1e556392924fd49558e889e9335b104a2e5c56a4856527ba6162315a0ba635",
+      "files": 54
     }
   },
-  "profiling_successes": 539671,
-  "profiling_errors": 157,
+  "profiling_successes": 609888,
+  "profiling_errors": 172,
   "excluded_successes_from_I90": 0,
   "checks": [
     "source hashes",

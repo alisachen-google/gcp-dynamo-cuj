@@ -8,12 +8,16 @@ This Google Cloud **customer use journey (CUJ)** compares NVIDIA Dynamo's **KV-a
 
 The comparison follows two customer decisions: how the routing policies perform at the **same session concurrency**, and how much traffic each can serve under the **same latency SLO**. We measure TTFT p95 <10 seconds and separately require E2E-normalized interactivity ≥20 output tokens/s at P90. Default KV/RR curves establish the routing impact; the tuning tables show how that impact changes with router settings. The measured results also show why an agg tuning choice must be checked again on disagg.
 
-At each policy's best sampled point meeting **both** latency criteria, default KV delivered **2.11× total served tokens/s/GPU for agg** and **6.92× for disagg** relative to RR. These compare different selected session counts: C96 versus C48 for agg, and C480 versus C72 for disagg. The same-concurrency tables show the routing differences at a fixed population of users.
+With the new agg measurements, **TTFT p95 <10 s** admits default KV at **C160** versus RR at **C64**: **8,755 versus 3,910 total served tokens/s/GPU**, a **2.24×** difference. Their TTFT p95 values are **9.57 s** and **9.21 s**. The best sampled tuned KV point under TTFT alone remains C192; its E2E result does not meet the additional criterion.
+
+At each policy's best sampled point meeting **both** latency criteria, default KV delivered **1.75× total served tokens/s/GPU for agg** and **6.92× for disagg** relative to RR. These compare different selected session counts: C96 versus C64 for agg, and C480 versus C72 for disagg. Tuned agg with **load scale 3 and default overlap credit 1.0** now passes both criteria at **C160**, delivering **2.58× RR throughput/GPU**. The same-concurrency tables show the routing differences at a fixed population of users.
 
 
-**Evidence snapshot: 2026-09-20 02:53 UTC · 37 completed hardware jobs (17 agg / 20 disagg)**
+**Evidence snapshot: 2026-09-20 20:42 UTC · 45 completed hardware jobs (25 agg / 20 disagg)**
 
 Each architecture has its own measured curves, full data table, comparison at a sampled knee, and SLO table. The baseline curves show **default KV and RR only**; tuned settings remain in the data and tuning tables. Total served tokens include cached prompt tokens; output-token throughput is reported alongside them.
+
+This update adds **eight agg jobs** from [AGENTX_AGG_RESULTS.md, section vi](../AGENTX_AGG_RESULTS.md): RR64, default KV160, five KV variants at C160, and scale-3/credit-0.8 at C256. The D88 measurement cohort is retained from **2026-09-20 02:53 UTC**; later D88 follow-ups are outside this agg update.
 
 [Standalone HTML](agentx-serving-perf-report.html) · [hardware CSV](agentx-serving-perf-report.csv) · [comparison JSON](agentx-serving-perf-report.json) · [configuration provenance](agentx-serving-perf-report-methodology.json) · [validation](agentx-serving-perf-report-validation.json)
 
@@ -35,7 +39,7 @@ Both fleets serve **NVIDIA Nemotron-3-Ultra-550B-A55B-NVFP4** on **GB300**, with
 | Speculative decoding | Not enabled in the saved recipe | Not enabled in the saved recipe |
 | Sources | [agg manifest](agentx-serving-perf-data/source/n3u-agg-newstack-np2.yaml.txt) | [disagg manifest](agentx-serving-perf-data/source/n3u-mnnvl-88.yaml.txt) |
 
-The original agg ladder was collected on September 16; two fresh references and three decay variants form the later np-2 campaign. The agg recipes use two separate fleets (`n3u-agg-ns` / `n3u-agg-ns2`). The same-concurrency comparison at C192 uses the original matched campaign; new references are shown individually. GPU-normalized comparisons across agg and disagg remain observations from different fleet sizes, not controlled architecture-scaling estimates.
+The original agg ladder was collected on September 16; two fresh references and three decay variants form the later np-2 campaign. The September 20 SLO campaign adds RR64, default KV160, five C160 flag variants and tuned KV256. The agg recipes use two separate fleets (`n3u-agg-ns` / `n3u-agg-ns2`). The same-concurrency comparison at C192 uses the original matched campaign; new references and the C160 tuning campaign are shown separately. GPU-normalized comparisons across agg and disagg remain observations from different fleet sizes, not controlled architecture-scaling estimates.
 
 ### 1.2 Agentic workload and replay
 
@@ -52,7 +56,7 @@ AIPerf **0.12.0** runs `inferencex-agentx-mvp` on **`semianalysisai/cc-traces-we
 | Recycled traces | A fresh first-turn-prefix cache-bust marker per play |
 | Validation | Included runs pass the scenario stamp; success and error counts are retained separately |
 
-The run template and exact router variants are preserved in the [benchmark template](agentx-serving-perf-data/source/sgl-d72-agentx.yaml.txt) and [runner](agentx-serving-perf-data/source/agentx_runner_flags.sh.txt). A fixed seed controls sampling, but a faster arm can complete more turns in the same hour. Compare the ISL/OSL, depth and trace mix in the exported data; do not assume identical completed request cohorts. Busy-stream runs that remove think time are a different workload and are excluded.
+The run template and exact router variants are preserved in the [benchmark template](agentx-serving-perf-data/source/sgl-d72-agentx.yaml.txt), [runner](agentx-serving-perf-data/source/agentx_runner_flags.sh.txt) and [agg SLO sweep](agentx-serving-perf-data/source/run_agentx_agg_slo10_np2_v2.sh.txt). Completed artifact exports establish what actually ran; the planned sweep queue is not completion evidence. A fixed seed controls sampling, but a faster arm can complete more turns in the same hour. Compare the ISL/OSL, depth and trace mix in the exported data; do not assume identical completed request cohorts. Busy-stream runs that remove think time are a different workload and are excluded.
 
 ### 1.3 Fair KV/RR comparison and metric definitions
 
@@ -65,13 +69,15 @@ The run template and exact router variants are preserved in the [benchmark templ
 | TTFT | p95 over successful profiling requests, in seconds. The requested table uses **strict TTFT p95 <10 s**. No current point is exactly 10 s. |
 | E2E interactivity I90 | Per request, compute `r_i = E2E_seconds / output_tokens`; then `I90 = 1 / P90(r_i)` using linear interpolation. The additional SLO is **I90 ≥20 tok/s/user**. |
 | Same configuration | Same topology, GPU count, workload and session concurrency; only router settings differ. |
-| Same SLO | Each policy selects its highest-throughput sampled point passing TTFT <10 s, excluding points with post-knee queue evidence. Its concurrency may differ. |
+| Same SLO | Each policy selects its highest-throughput sampled point passing TTFT <10 s, excluding points with post-knee queue evidence. Its concurrency may differ. Repeats stay separate; this is the highest observed sample, not a mean or confidence bound. |
 | Combined SLO | Apply TTFT <10 s **and** I90 ≥20. This is shown separately from the TTFT-only table. |
 | Errors | Failed profiling requests are excluded from latency percentiles and reported explicitly. No new availability threshold is imposed. |
 
 **Knee evidence:** use the throughput slope/decline, TTFT tail, errors and within-run queue progression. A sampled throughput peak is not an exact continuous knee; an SLO crossing is a separate boundary. The existing queue check flags a high sustained TTFT median, a growing first-to-last-quarter TTFT median, or an error rate above 5%. GPU utilization alone does not determine the knee.
 
 Most cells have one trial. The two agg C192 references have repeats across deployment campaigns, but that is not a complete noise distribution. Caches were not explicitly flushed between every hardware cell. Cache busting and successful warmup reduce some biases without establishing identical physical cache state. The client cached-input metric is `overall_usage_prompt_cache_read_pct`, not per-engine KV occupancy. A scenario-valid closed-loop replay result is not an open-loop production arrival-rate guarantee.
+
+**E2E accounting:** the source results log's “P90 interactivity” uses inverse P90 inter-token latency. It excludes TTFT and is not the E2E-normalized I90 above. This report recomputes I90 from each successful profiling request's full latency and output length; consequently, default KV160 and scale-2/credit-0.8 C160 pass TTFT but fail I90 ≥20.
 
 
 ## 2. Aggregated serving: measured KV and RR
@@ -85,43 +91,52 @@ Most cells have one trial. The two agg C192 references have repeats across deplo
 
 | Policy | Sampled throughput / knee evidence | TTFT <10 s boundary | Additional E2E boundary |
 | --- | --- | --- | --- |
-| Default KV | Peak at **C192**; C384 loses **14.5%** throughput and TTFT p95 rises **11.66→119.44 s**. Saturation transition lies in 192–384. | C96 passes; C192 fails. Refine **96–192**. | I90 also crosses between 96 and 192. |
-| RR | C96→192 adds only **10.8%** throughput; C384 loses **25.4%** versus C192. C192 is the sampled peak; diminishing returns begin over 96–192. | C48 passes; C96 fails. Refine **48–96**. | I90 also crosses between 48 and 96. |
+| Default KV | Peak at **C192**; C384 loses **14.5%** throughput and TTFT p95 rises **11.66→119.44 s**. Saturation transition lies in 192–384. | **C160 passes at 9.57 s**; both C192 references fail. Refine **160–192**. | C96 passes; **C160 fails at I90 16.1267**. Refine **96–160**. |
+| RR | C96→192 adds only **10.8%** throughput; C384 loses **25.4%** versus C192. C192 is the sampled peak; diminishing returns begin over 96–192. | **C64 passes at 9.21 s**; C96 fails. Refine **64–96**. | **C64 passes at I90 35.3472**; C96 fails. Refine **64–96**. |
 
-The throughput-knee comparison below uses **C192 for both arms**. It does not claim that C192 meets the latency SLO. A cross marks the fresh default-KV192 reference; the original ladder remains the line so campaigns are not silently combined.
+The throughput-knee comparison below uses **C192 for both arms**. It does not claim that C192 meets the latency SLO. Diamonds mark the new RR64/default-KV160 samples and a cross marks the fresh default-KV192 reference; the original ladder remains the line so campaigns are not silently combined. Stars in the TTFT panel select the best TTFT-only points; stars in the I90 panel select the best points meeting both limits. These SLO brackets combine dated campaigns and need matched repeats before claiming an exact crossing.
 
 ### 2.2 All collected data points, including tuned KV
 
-Every completed agg run is shown, including repeated references. The flags identify the recipe; each linked name opens its hardware artifacts.
+Every completed agg run in the scoped inventory is shown, including repeated references. The flags identify the recipe; each linked name opens its hardware artifacts.
 
 | Setting / artifacts | C | Campaign | Total tok/s/GPU | Output tok/s/GPU | TTFT p95 (s) | E2E I90 | TTFT <10 | Both SLOs | Errors |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789545801_alisachen-n3u-agg-ns-agentx-kv-c48) | 48 | Sep 16 | 3,334 | 32.27 | 3.83 | 51.8257 | Pass | Pass | 0 |
 | [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789550601_alisachen-n3u-agg-ns-agentx-kv-c96) | 96 | Sep 16 | 6,844 | 75.11 | 5.36 | 29.5030 | Pass | Pass | 0 |
+| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895318_alisachen-n3u-agg-ns-agentx-kv-c160) | 160 | Sep 20 SLO | 8,755 | 94.00 | 9.57 | 16.1267 | Pass | Fail | 3 |
 | [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789555981_alisachen-n3u-agg-ns-agentx-kv-c192) | 192 | Sep 16 | 9,655 | 96.81 | 11.66 | 13.5367 | Fail | Fail | 3 |
 | [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789856222_alisachen-n3u-agg-ns-agentx-kv-c192) | 192 | np-2 | 9,468 | 95.42 | 11.18 | 12.9310 | Fail | Fail | 3 |
 | [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789562076_alisachen-n3u-agg-ns-agentx-kv-c384) | 384 | Sep 16 | 8,257 | 77.74 | 119.44 | 1.1372 | Fail | Fail | 7 |
 | [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789550745_alisachen-n3u-agg-ns2-agentx-rr-c48) | 48 | Sep 16 | 3,250 | 31.32 | 8.27 | 40.5349 | Pass | Pass | 0 |
+| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895323_alisachen-n3u-agg-ns2-agentx-rr-c64) | 64 | Sep 20 SLO | 3,910 | 42.88 | 9.21 | 35.3472 | Pass | Pass | 0 |
 | [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789555623_alisachen-n3u-agg-ns2-agentx-rr-c96) | 96 | Sep 16 | 6,137 | 67.11 | 12.56 | 17.7260 | Fail | Fail | 0 |
 | [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789560983_alisachen-n3u-agg-ns2-agentx-rr-c192) | 192 | Sep 16 | 6,802 | 71.38 | 60.08 | 3.8961 | Fail | Fail | 3 |
 | [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789567077_alisachen-n3u-agg-ns2-agentx-rr-c384) | 384 | Sep 16 | 5,076 | 49.65 | 494.98 | 0.6059 | Fail | Fail | 14 |
+| [KV scale 3 / default credit 1.0](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789912551_alisachen-n3u-agg-ns2-agentx-kvs3c10-c160) | 160 | Sep 20 SLO | 10,073 | 108.52 | 4.75 | 26.3229 | Pass | Pass | 0 |
 | [KV scale 3 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789582550_alisachen-n3u-agg-ns2-agentx-kvs3c08-c96) | 96 | Sep 16 | 7,045 | 78.35 | 3.11 | 39.4930 | Pass | Pass | 0 |
+| [KV scale 3 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789901101_alisachen-n3u-agg-ns-agentx-kvs3c08-c160) | 160 | Sep 20 SLO | 9,894 | 105.19 | 4.85 | 24.6528 | Pass | Pass | 1 |
 | [KV scale 3 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789569414_alisachen-n3u-agg-ns-agentx-kvs3c08-c192) | 192 | Sep 16 | 11,012 | 108.87 | 6.33 | 19.7795 | Pass | Fail | 3 |
 | [KV scale 3 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789856381_alisachen-n3u-agg-ns2-agentx-kvs3c08-c192) | 192 | np-2 | 10,992 | 110.04 | 6.20 | 19.7385 | Pass | Fail | 2 |
+| [KV scale 3 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789900377_alisachen-n3u-agg-ns2-agentx-kvs3c08-c256) | 256 | Sep 20 SLO | 12,328 | 114.70 | 18.87 | 9.1777 | Fail | Fail | 3 |
+| [KV scale 2 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789906804_alisachen-n3u-agg-ns2-agentx-kvs2c08-c160) | 160 | Sep 20 SLO | 9,270 | 99.54 | 7.16 | 19.6589 | Pass | Fail | 2 |
 | [KV scale 2 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789575514_alisachen-n3u-agg-ns-agentx-kvs2c08-c192) | 192 | Sep 16 | 10,241 | 102.43 | 8.11 | 16.1477 | Pass | Fail | 3 |
+| [KV temperature 0.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789912551_alisachen-n3u-agg-ns-agentx-kvt05-c160) | 160 | Sep 20 SLO | 7,419 | 80.04 | 19.17 | 7.8906 | Fail | Fail | 3 |
 | [KV temperature 0.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789574468_alisachen-n3u-agg-ns2-agentx-kvt05-c192) | 192 | Sep 16 | 7,816 | 79.49 | 22.15 | 7.0315 | Fail | Fail | 3 |
+| [KV decay 0.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789906836_alisachen-n3u-agg-ns-agentx-kvd05-c160) | 160 | Sep 20 SLO | 8,697 | 93.57 | 9.24 | 15.4845 | Pass | Fail | 3 |
 | [KV decay 0.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789831067_alisachen-n3u-agg-ns-agentx-kvd05-c192) | 192 | np-2 | 9,362 | 94.58 | 12.70 | 12.0259 | Fail | Fail | 3 |
 | [KV decay 1.0](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789831039_alisachen-n3u-agg-ns2-agentx-kvd10-c192) | 192 | np-2 | 9,233 | 93.40 | 13.85 | 11.4805 | Fail | Fail | 3 |
 | [KV scale 3 / credit 0.8 / decay 0.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789862417_alisachen-n3u-agg-ns-agentx-kvs3c08d05-c192) | 192 | np-2 | 10,713 | 106.29 | 6.97 | 18.2395 | Pass | Fail | 3 |
 
 | Recipe | Collected concurrency | Exact router arguments |
 | --- | --- | --- |
-| Default KV | 48, 96, 192 (2 runs), 384 | `--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs` |
-| RR | 48, 96, 192, 384 | `--router-mode round-robin` |
-| KV scale 3 / credit 0.8 | 96, 192 (2 runs) | `--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-prefill-load-scale 3.0 --router-kv-overlap-score-credit 0.8` |
-| KV scale 2 / credit 0.8 | 192 | `--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-prefill-load-scale 2.0 --router-kv-overlap-score-credit 0.8` |
-| KV temperature 0.5 | 192 | `--router-mode kv --router-temperature 0.5 --router-queue-policy fcfs` |
-| KV decay 0.5 | 192 | `--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-kv-overlap-score-credit-decay 0.5` |
+| Default KV | 48, 96, 160, 192 (2 runs), 384 | `--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs` |
+| RR | 48, 64, 96, 192, 384 | `--router-mode round-robin` |
+| KV scale 3 / default credit 1.0 | 160 | `--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-prefill-load-scale 3.0` |
+| KV scale 3 / credit 0.8 | 96, 160, 192 (2 runs), 256 | `--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-prefill-load-scale 3.0 --router-kv-overlap-score-credit 0.8` |
+| KV scale 2 / credit 0.8 | 160, 192 | `--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-prefill-load-scale 2.0 --router-kv-overlap-score-credit 0.8` |
+| KV temperature 0.5 | 160, 192 | `--router-mode kv --router-temperature 0.5 --router-queue-policy fcfs` |
+| KV decay 0.5 | 160, 192 | `--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-kv-overlap-score-credit-decay 0.5` |
 | KV decay 1.0 | 192 | `--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-kv-overlap-score-credit-decay 1.0` |
 | KV scale 3 / credit 0.8 / decay 0.5 | 192 | `--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs --router-prefill-load-scale 3.0 --router-kv-overlap-score-credit 0.8 --router-kv-overlap-score-credit-decay 0.5` |
 
@@ -141,37 +156,65 @@ Select the highest measured total throughput passing the **TTFT-only** limit and
 
 | Policy / selected run | C | Total tok/s/GPU | Output tok/s/GPU | TTFT p95 (s) | E2E I90 | Throughput / RR | I90 ≥20 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789550745_alisachen-n3u-agg-ns2-agentx-rr-c48) | 48 | 3,250 | 31.32 | 8.27 | 40.5349 | 1.00× | Pass |
-| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789550601_alisachen-n3u-agg-ns-agentx-kv-c96) | 96 | 6,844 | 75.11 | 5.36 | 29.5030 | 2.11× | Pass |
-| [KV scale 3 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789569414_alisachen-n3u-agg-ns-agentx-kvs3c08-c192) | 192 | 11,012 | 108.87 | 6.33 | 19.7795 | 3.39× | Fail |
+| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895323_alisachen-n3u-agg-ns2-agentx-rr-c64) | 64 | 3,910 | 42.88 | 9.21 | 35.3472 | 1.00× | Pass |
+| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895318_alisachen-n3u-agg-ns-agentx-kv-c160) | 160 | 8,755 | 94.00 | 9.57 | 16.1267 | 2.24× | Fail |
+| [KV scale 3 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789569414_alisachen-n3u-agg-ns-agentx-kvs3c08-c192) | 192 | 11,012 | 108.87 | 6.33 | 19.7795 | 2.82× | Fail |
 
-**TTFT-only:** tuned KV192 versus RR48 gives **3.39× total throughput/GPU**. The selected tuned job is the highest-throughput original sample; its fresh C192 repeat gives 10,992 total tok/s/GPU and 6.20 s TTFT, close to the original 11,012 and 6.33 s. Both tuned C192 trials fail the E2E requirement. The TTFT-only selection has three client errors, shown in the complete table.
+**TTFT-only:** default KV160 versus RR64 now gives **2.24× total throughput/GPU**. Tuned KV192 versus RR64 gives **2.82×** using the highest-throughput original sample. Its fresh np-2 C192 repeat gives **10,992 total tok/s/GPU, 6.20 s TTFT and 2.81× RR64**, which is the comparison in the updated source log. Both C192 trials remain visible; the selection rule is unchanged. They have three and two client errors respectively. Default KV160 has three errors; RR64 has zero.
+
+The new tuned C256 sample reaches **12,328 total tok/s/GPU** but **18.87 s TTFT**, so it is excluded from the SLO selection. For scale 3/credit 0.8, the TTFT boundary is now bracketed by **C192–256**. Both tuned C192 trials and default KV160 fail the additional E2E requirement.
 
 **If E2E is also required**, apply both SLOs:
 
 | Policy | Selected C | Total tok/s/GPU | TTFT p95 (s) | E2E I90 | Throughput / RR |
 | --- | --- | --- | --- | --- | --- |
-| RR | 48 | 3,250 | 8.27 | 40.5349 | 1.00× |
-| Default KV | 96 | 6,844 | 5.36 | 29.5030 | 2.11× |
-| KV scale 3 / credit 0.8 | 96 | 7,045 | 3.11 | 39.4930 | 2.17× |
+| RR | 64 | 3,910 | 9.21 | 35.3472 | 1.00× |
+| Default KV | 96 | 6,844 | 5.36 | 29.5030 | 1.75× |
+| KV scale 3 / default credit 1.0 | 160 | 10,073 | 4.75 | 26.3229 | 2.58× |
+
+The default-KV combined-SLO ratio is now **1.75×**, versus 2.11× in the previous snapshot, because the new RR64 point replaces RR48 as the selected RR reference. Default KV96's measured performance is unchanged.
 
 ### 2.5 What the flag sweep establishes
 
-![Measured agg KV routing flags, with TTFT and E2E thresholds](agentx-serving-perf-report-agg-flags.png)
+**New C160 sweep:** load scale 3 with default overlap credit 1.0 is the highest-throughput measured agg setting meeting both SLOs.
+
+![New agg C160 flag sweep: measured throughput, TTFT and E2E interactivity](agentx-serving-perf-report-agg-flags-c160.png)
+
+[SVG](agentx-serving-perf-report-agg-flags-c160.svg) · [PDF](agentx-serving-perf-report-agg-flags-c160.pdf)
+
+
+| C160 KV setting | Total tok/s/GPU | Δ throughput | TTFT p95 (s) | E2E I90 | Cached input | Both SLOs | Errors |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895318_alisachen-n3u-agg-ns-agentx-kv-c160) | 8,755 | +0.00% | 9.57 | 16.1267 | 74.8% | Fail | 3 |
+| [KV scale 3 / default credit 1.0](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789912551_alisachen-n3u-agg-ns2-agentx-kvs3c10-c160) | 10,073 | +15.05% | 4.75 | 26.3229 | 85.0% | Pass | 0 |
+| [KV scale 3 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789901101_alisachen-n3u-agg-ns-agentx-kvs3c08-c160) | 9,894 | +13.01% | 4.85 | 24.6528 | 83.5% | Pass | 1 |
+| [KV scale 2 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789906804_alisachen-n3u-agg-ns2-agentx-kvs2c08-c160) | 9,270 | +5.88% | 7.16 | 19.6589 | 79.1% | Fail | 2 |
+| [KV decay 0.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789906836_alisachen-n3u-agg-ns-agentx-kvd05-c160) | 8,697 | -0.67% | 9.24 | 15.4845 | 74.2% | Fail | 3 |
+| [KV temperature 0.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789912551_alisachen-n3u-agg-ns-agentx-kvt05-c160) | 7,419 | -15.26% | 19.17 | 7.8906 | 62.4% | Fail | 3 |
+
+**Use load scale 3 as the current agg candidate**, with temperature 0, default overlap credit 1.0 and default decay 0. The only added flag is `--router-prefill-load-scale 3.0`. At C160 it delivers **+15.0% throughput**, **-50.4% TTFT p95**, **I90 26.3229** and zero exported client errors. Cached input rises from **74.8% to 85.0%**.
+
+Scale 3 with credit 0.8 also passes both limits at C160, with one error. Keeping the default credit gives **+1.8%** observed throughput versus credit 0.8; repeat both before treating that small difference as a reliable credit effect. The default-credit comparison changes only load scale versus default KV, isolating that flag within the saved recipe, though the trials used separate fleets.
+
+Scale 2/credit 0.8 passes TTFT but misses I90 at **19.6589**. Decay 0.5 changes throughput by **−0.7%** at C160 and still fails I90; it does not establish an improvement. Temperature 0.5 lowers throughput **15.3%** and fails TTFT at **19.17 s**. C160 flag-cell warmups span about **1,389–1,397 s**, versus **1,492 s** for default KV; comparable durations do not replace repeated trials.
+
+**Retained C192 evidence:** the earlier flag sweep below tests a heavier concurrency. No measured C192 setting passes both SLOs.
+
+![Retained agg C192 flag sweep, with TTFT and E2E thresholds](agentx-serving-perf-report-agg-flags.png)
 
 [SVG](agentx-serving-perf-report-agg-flags.svg) · [PDF](agentx-serving-perf-report-agg-flags.pdf)
 
 
-| np-2 treatment | np-2 reference | Δ total throughput | Δ TTFT p95 | Δ E2E I90 | Δ cached input |
+| C192 np-2 treatment | C192 np-2 reference | Δ total throughput | Δ TTFT p95 | Δ E2E I90 | Δ cached input |
 | --- | --- | --- | --- | --- | --- |
 | KV scale 3 / credit 0.8 | Default KV | +16.09% | -44.6% | +52.6% | +9.06 pp |
 | KV decay 0.5 | Default KV | -1.13% | +13.6% | -7.0% | -0.71 pp |
 | KV decay 1.0 | Default KV | -2.48% | +23.9% | -11.2% | -1.49 pp |
 | KV scale 3 / credit 0.8 / decay 0.5 | KV scale 3 / credit 0.8 | -2.53% | +12.6% | -7.6% | -1.83 pp |
 
-**Retain scale 3 / credit 0.8 with decay 0.** The fresh references reproduce original throughput within 2%; the fresh tuned result gives I90 **19.7385**, versus **19.7795** originally, so the C192 miss has repeated. Decay 0.5/1.0 alone and decay 0.5 added to the tuned setting all lose in observed throughput and latency. Their small throughput deltas still need repeats for statistical precision. The first decay-only warmups took about 1,733 s, while later controls took about 1,632–1,634 s; this is consistent with a startup transient, not proof that every np-2 run is slower.
+The fresh C192 references reproduce original throughput within 2%; the fresh tuned result gives I90 **19.7385**, versus **19.7795** originally, so the C192 E2E miss has repeated. At C192, decay 0.5/1.0 alone and decay 0.5 added to scale 3/credit 0.8 all lose in observed throughput and latency. Their small throughput deltas still need repeats. The first decay-only warmups took about 1,733 s, while later controls took about 1,632–1,634 s; this is consistent with a startup transient, not proof that every np-2 run is slower.
 
-**Next useful points:** tuned C144, then C168 if it passes both limits; repeat the selected operating point. For further flag isolation, compare scale 4/credit 0.8 with scale 3/credit 0.8, and separately scale 3/credit 0. The existing comparisons do not isolate scale from credit when both change against default KV.
+**Next useful points:** repeat default KV160, RR64 and both scale-3 C160 variants; collect **scale 3/default credit 1.0 at C192**, which has not been measured. For the measured credit-0.8 recipe, refine **C160–192** for the combined SLO and **C192–256** for TTFT alone. Refine default KV160–192 and RR64–96 only if the aim is to localize their TTFT limits. No RR160 measurement exists, so the C160 flag table compares KV variants with default KV, not RR at the same concurrency.
 
 ## 3. Disaggregated serving: measured KV and RR
 
@@ -191,7 +234,7 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
 
 ### 3.2 All collected data points, including tuned KV
 
-Every completed disagg run is shown, including repeated references. The flags identify the recipe; each linked name opens its hardware artifacts.
+Every completed disagg run in the scoped inventory is shown, including repeated references. The flags identify the recipe; each linked name opens its hardware artifacts.
 
 | Setting / artifacts | C | Campaign | Total tok/s/GPU | Output tok/s/GPU | TTFT p95 (s) | E2E I90 | TTFT <10 | Both SLOs | Errors |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -245,7 +288,7 @@ Select the highest measured total throughput passing the **TTFT-only** limit and
 | [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789740024_alisachen-n3u-mnnvl-88-agentx-kv-c480) | 480 | 12,204 | 123.36 | 7.12 | 33.5225 | 6.92× | Pass |
 | [KV credit 1.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789820579_alisachen-n3u-mnnvl-88-agentx-kvc15-c576) | 576 | 14,024 | 136.13 | 8.75 | 30.2479 | 7.95× | Pass |
 
-**TTFT-only:** credit-1.5 KV576 versus RR72 gives **7.95× total throughput/GPU**. Both also pass I90 ≥20 and have zero client errors. RR72 has almost no TTFT headroom and needs a repeat. Default KV576 is not yet measured in this snapshot, so the tuned-versus-default capacity gain is not isolated at equal concurrency.
+**TTFT-only:** credit-1.5 KV576 versus RR72 gives **7.95× total throughput/GPU**. Both also pass I90 ≥20 and have zero client errors. RR72 has almost no TTFT headroom and needs a repeat. Default KV576 is outside the retained D88 snapshot, so this table does not isolate the tuned-versus-default capacity gain at equal concurrency.
 
 **If E2E is also required**, apply both SLOs:
 
@@ -272,11 +315,11 @@ Select the highest measured total throughput passing the **TTFT-only** limit and
 
 **Credit 1.5 remains the strongest observed C480 latency candidate:** TTFT −15.4%, I90 +13.1%, throughput +0.29% versus default. Credit 2.0 has essentially identical throughput but worse measured TTFT and I90 than 1.5. Scale 3/credit 0.8 misses TTFT; decay 0.5 misses both limits. Do not transfer the agg winner to disagg without measuring it.
 
-**Next useful points:** collect default KV576 and repeat credit 1.5 at C576, then test credit 1.5 at C624/C672 to bracket its latency boundary. The existing follow-up runs temperature 0.5/0.2 at C480 before default KV576; none had a completed summary in this evidence snapshot. RR384 and RR480 have 68 and 39 client errors respectively; the separate 353 server timeout events reported for RR480 are not a client-error count.
+**D88 follow-up scope:** temperature 0.5/0.2 at C480 and default KV576 are outside the retained D88 cohort. Import those follow-ups in a separate D88 update before revising this architecture's recommendation; this agg update leaves its measured decisions unchanged. RR384 and RR480 have 68 and 39 client errors respectively; the separate 353 server timeout events reported for RR480 are not a client-error count.
 
 ### 3.6 Agg and disagg under both SLOs
 
-At their best sampled points satisfying **both** limits, tuned agg uses C96 and tuned D88 uses C576. D88 delivers **1.99× total throughput/GPU** and **1.74× output throughput/GPU**, on 64 versus 24 GPUs. The fleet totals are **897,553 versus 169,089 total tok/s**. Different fleet sizes and completed request mixes prevent interpreting this as a controlled scaling or cost result.
+At their best sampled points satisfying **both** limits, tuned agg uses **C160 with load scale 3/default credit 1.0** and tuned D88 uses **C576 with credit 1.5**. D88 delivers **1.39× total throughput/GPU** and **1.25× output throughput/GPU**, on 64 versus 24 GPUs. The fleet totals are **897,553 versus 241,754 total tok/s**. Different fleet sizes and completed request mixes prevent interpreting this as a controlled scaling or cost result.
 
 ![Best measured agg and disagg operating points passing both SLOs](agentx-serving-perf-report-operating-points.png)
 
@@ -287,7 +330,7 @@ At their best sampled points satisfying **both** limits, tuned agg uses C96 and 
 
 ### 4.1 Agg: twelve paired Native DynoSim V10 results
 
-These are **12 actual native simulations paired with the original 12 agg hardware jobs**: four calibration points (default KV/RR at C192/C384) and eight holdouts (default KV/RR at C48/C96 and the four original tuned jobs). The simulator build, engine configuration and timing coefficients are shared. Five later agg hardware jobs have no new native execution paired to their run IDs; two are repeats of already simulated settings, and three are decay variants.
+These are **12 actual native simulations paired with the original 12 agg hardware jobs**: four calibration points (default KV/RR at C192/C384) and eight holdouts (default KV/RR at C48/C96 and the four original tuned jobs). The simulator build, engine configuration and timing coefficients are shared. **13 later agg hardware jobs** have no new native execution paired to their run IDs: two repeats, three C192 decay variants, and the eight new C64/C160/C256 jobs. In particular, the new load-scale-3/default-credit C160 selection is supported by hardware measurements, not a new simulation.
 
 ![Default KV and RR: original hardware versus Native DynoSim V10 throughput, TTFT and E2E interactivity](agentx-serving-perf-report-simulation-agg.png)
 
@@ -317,7 +360,7 @@ These are **12 actual native simulations paired with the original 12 agg hardwar
 
 The four-point acceptance gate covered **±20% total throughput**, not TTFT or I90. All eight holdouts also fall within ±20% throughput. The original model reproduces the sampled default-policy throughput decline from C192 to C384 and the direction of the scale-3/credit-0.8 and temperature-0.5 effects, but it underestimates the RR384 TTFT tail by **38.4%**.
 
-**SLO errors matter:** simulated default KV192 passes TTFT (8.71 s) while hardware fails (11.66 s). Simulated tuned KV192 gives I90 **22.5354** while hardware gives **19.7795**; it incorrectly passes the combined SLO and selects C192 where hardware selects C96. There is **one combined-SLO classification disagreement among 12 pairs**. Throughput calibration therefore supports candidate screening, not automatic SLO approval. [Original paired inputs and calibration/holdout provenance](agentx-agg-kv-rr-report.md#31-native-dynosim-v10-current-completed-calibration-samples).
+**SLO errors matter:** simulated default KV192 passes TTFT (8.71 s) while hardware fails (11.66 s). Simulated tuned KV192 gives I90 **22.5354** while hardware gives **19.7795**; it incorrectly passes the combined SLO and selects C192 where hardware selects C96 **within the original paired cohort**. The expanded hardware inventory now selects tuned C160, which has no native counterpart. There is **one combined-SLO classification disagreement among 12 pairs**. Throughput calibration therefore supports candidate screening, not automatic SLO approval. [Original paired inputs and calibration/holdout provenance](agentx-agg-kv-rr-report.md#31-native-dynosim-v10-current-completed-calibration-samples).
 
 
 ### 4.2 D88: native forecasts alongside the measured KV/RR curves
@@ -458,7 +501,7 @@ The prefill fit uses **93 isolated one-token RR192 hardware warmup requests**. D
 | Recipe question | What the completed native evidence tells us | What still needs hardware or a simulator fix |
 | --- | --- | --- |
 | Agg 6×TP4, default KV versus RR | Reproduces the sampled C192 throughput peak and C384 decline, and the direction of the KV advantage. Eight holdouts average 1.7% absolute throughput error. | TTFT tails remain biased; the simulator falsely passes default KV192 under TTFT-only. |
-| Agg router tuning | Frozen V10 reproduces the original scale-3/credit-0.8 throughput benefit and temperature-0.5 loss. | Tuned KV192 falsely passes combined SLO in simulation. Decay variants lack native counterparts. Use measured C96 under both limits; measure C144 next. |
+| Agg router tuning | Frozen V10 reproduces the original scale-3/credit-0.8 throughput benefit and temperature-0.5 loss. | Tuned KV192 falsely passes combined SLO in simulation. Decay variants and the new C160/C256 samples lack native counterparts. Hardware now selects scale 3/default credit 1.0 at C160 under both limits; repeat it and measure C192 with those flags. |
 | Disagg 8P+8D TP4 | Six completed native runs at C16/C64/C256 show the sampled routing trends, with separate admission/cache budgets and transfer timing. | No native point matches the hardware concurrency grid; RR256 has 24.95% errors. All C480 tuning attempts fail warmup, so no native tuning ranking or high-load SLO capacity is established. |
 | Earlier disagg 12P+6D TP4 | Two matched 72-GPU KV checks have throughput errors of −1.10%/+0.65% and TTFT errors of +0.54%/+5.74%. | These are two historical KV points, not validation of D88, RR, or the full latency boundary. Transfer/cache assumptions still need measurement. |
 | Choosing TP or the P:D ratio | AIC supplies candidate shapes; a working replay model can compare them under the workload. | The current evidence does not establish that 6×TP4 or 8P+8D is globally optimal. Compare candidates at fixed total GPUs and validate on hardware. |
@@ -475,4 +518,4 @@ From the repository root, with NumPy, Matplotlib, PyYAML and markdown-it-py inst
 python kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/gen_agentx_serving_report.py
 ```
 
-The earlier [agg report](agentx-agg-kv-rr-report.md) and [disagg report](agentx-disagg-kv-rr-report.md) remain dated snapshots. This report preserves all 37 current agg/D88 hardware jobs and all 12 original native agg comparisons. Section 4 additionally preserves eight existing native disagg runs and two historical 72-GPU hardware references; errored profiling runs remain visible as diagnostics, and failed warmups contribute no performance point.
+The earlier [agg report](agentx-agg-kv-rr-report.md) and [disagg report](agentx-disagg-kv-rr-report.md) remain dated snapshots. This report preserves 45 hardware jobs in the scoped inventory (25 agg and the retained 20 D88 jobs) and all 12 original native agg comparisons. Section 4 additionally preserves eight existing native disagg runs and two historical 72-GPU hardware references; errored profiling runs remain visible as diagnostics, and failed warmups contribute no performance point.

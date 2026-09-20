@@ -128,6 +128,100 @@
       "file": "request-metrics/1789862417_alisachen-n3u-agg-ns-agentx-kvs3c08d05-c192.csv.gz",
       "source": "gs://alisachen-models/perf/1789862417_alisachen-n3u-agg-ns-agentx-kvs3c08d05-c192/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c192_20260920_000033/profile_export.jsonl"
     },
+    "1789895318_alisachen-n3u-agg-ns-agentx-kv-c160": {
+      "sha256": "46713d9adbf78cf00fa51da978570dcd50d80a3eff7c440384a0eb4eb3c1c9b5",
+      "source_sha256": "f7379c5f27a87f5002a242ee526a3d0de8ec76cbb86d7789d606f2e02f0917cc",
+      "source_bytes": 107871175,
+      "rows_by_phase_and_status": {
+        "profiling/error": 3,
+        "profiling/success": 8952,
+        "warmup/success": 158
+      },
+      "file": "request-metrics/1789895318_alisachen-n3u-agg-ns-agentx-kv-c160.csv.gz",
+      "source": "gs://alisachen-models/perf/1789895318_alisachen-n3u-agg-ns-agentx-kv-c160/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c160_20260920_090854/profile_export.jsonl"
+    },
+    "1789895323_alisachen-n3u-agg-ns2-agentx-rr-c64": {
+      "sha256": "bd8612988293bdd846c091686f43610a4c38ae6dcaa5d3dc8b20689a211356f7",
+      "source_sha256": "9693ff5a023a6a3ed4fdb0cecce6fe1e7408ff3eba8c25ce8fbc6cd662b05921",
+      "source_bytes": 46180015,
+      "rows_by_phase_and_status": {
+        "profiling/success": 3739,
+        "warmup/success": 62
+      },
+      "file": "request-metrics/1789895323_alisachen-n3u-agg-ns2-agentx-rr-c64.csv.gz",
+      "source": "gs://alisachen-models/perf/1789895323_alisachen-n3u-agg-ns2-agentx-rr-c64/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c64_20260920_090856/profile_export.jsonl"
+    },
+    "1789900377_alisachen-n3u-agg-ns2-agentx-kvs3c08-c256": {
+      "sha256": "573889f34f4410c178f1ef42737e8d02f826f215eb0713d4991ec7d2a3114bcc",
+      "source_sha256": "d74b6770e1072a25a3d43580b755ad4e70d123280674dad078a19d0ee1c506fd",
+      "source_bytes": 136858114,
+      "rows_by_phase_and_status": {
+        "profiling/error": 3,
+        "profiling/success": 11536,
+        "warmup/success": 244
+      },
+      "file": "request-metrics/1789900377_alisachen-n3u-agg-ns2-agentx-kvs3c08-c256.csv.gz",
+      "source": "gs://alisachen-models/perf/1789900377_alisachen-n3u-agg-ns2-agentx-kvs3c08-c256/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c256_20260920_103312/profile_export.jsonl"
+    },
+    "1789901101_alisachen-n3u-agg-ns-agentx-kvs3c08-c160": {
+      "sha256": "a895d54c8ddcba4c456174275f3e90a2b7ec18bbd16769a3290244001a34172d",
+      "source_sha256": "d036f0c684ddceca1538bf31fcb6b4672dd76ff7bb69d8cfeefc81f25ccf7ff6",
+      "source_bytes": 119764629,
+      "rows_by_phase_and_status": {
+        "profiling/error": 1,
+        "profiling/success": 9845,
+        "warmup/success": 158
+      },
+      "file": "request-metrics/1789901101_alisachen-n3u-agg-ns-agentx-kvs3c08-c160.csv.gz",
+      "source": "gs://alisachen-models/perf/1789901101_alisachen-n3u-agg-ns-agentx-kvs3c08-c160/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c160_20260920_104516/profile_export.jsonl"
+    },
+    "1789906804_alisachen-n3u-agg-ns2-agentx-kvs2c08-c160": {
+      "sha256": "3fdd84a3aaec69a0329538f715458cbf3e77039f64b9e6d8f1ec0236901807d0",
+      "source_sha256": "7bf6f116c341c20d8f8aba73c59a6b68dd32c75cc57fb68a657a1bcc379ee968",
+      "source_bytes": 113213446,
+      "rows_by_phase_and_status": {
+        "profiling/error": 2,
+        "profiling/success": 9426,
+        "warmup/success": 158
+      },
+      "file": "request-metrics/1789906804_alisachen-n3u-agg-ns2-agentx-kvs2c08-c160.csv.gz",
+      "source": "gs://alisachen-models/perf/1789906804_alisachen-n3u-agg-ns2-agentx-kvs2c08-c160/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c160_20260920_122029/profile_export.jsonl"
+    },
+    "1789906836_alisachen-n3u-agg-ns-agentx-kvd05-c160": {
+      "sha256": "70b8372eb3fc6aa0d41b728aa334d433ef8a9b171982ea68a5ecb2daf5763105",
+      "source_sha256": "bd3e3d2ddba60bed610866c242f727b83419f02bde06561e86f5398dc61aff9b",
+      "source_bytes": 106599312,
+      "rows_by_phase_and_status": {
+        "profiling/error": 3,
+        "profiling/success": 8905,
+        "warmup/success": 158
+      },
+      "file": "request-metrics/1789906836_alisachen-n3u-agg-ns-agentx-kvd05-c160.csv.gz",
+      "source": "gs://alisachen-models/perf/1789906836_alisachen-n3u-agg-ns-agentx-kvd05-c160/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c160_20260920_122059/profile_export.jsonl"
+    },
+    "1789912551_alisachen-n3u-agg-ns-agentx-kvt05-c160": {
+      "sha256": "2e9db29680bb9db2da8d16ec2415e92012f0fb34791e6e675e2ecc1e7d4dceec",
+      "source_sha256": "18ec937dd7e156d5c1755d18a876fb1fa72e48ad37a0f550c199ecd6d7631ecf",
+      "source_bytes": 93010410,
+      "rows_by_phase_and_status": {
+        "profiling/error": 3,
+        "profiling/success": 7825,
+        "warmup/success": 158
+      },
+      "file": "request-metrics/1789912551_alisachen-n3u-agg-ns-agentx-kvt05-c160.csv.gz",
+      "source": "gs://alisachen-models/perf/1789912551_alisachen-n3u-agg-ns-agentx-kvt05-c160/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c160_20260920_135607/profile_export.jsonl"
+    },
+    "1789912551_alisachen-n3u-agg-ns2-agentx-kvs3c10-c160": {
+      "sha256": "fd7109b1aa622eb1e0e402936fab41c4ab96d2e162df388402e1f944cdc36dd7",
+      "source_sha256": "e6330529fc7e01b960e514c42276f450255fffe6d7cd1bd90dd69e2e84077ae9",
+      "source_bytes": 122618028,
+      "rows_by_phase_and_status": {
+        "profiling/success": 9989,
+        "warmup/success": 158
+      },
+      "file": "request-metrics/1789912551_alisachen-n3u-agg-ns2-agentx-kvs3c10-c160.csv.gz",
+      "source": "gs://alisachen-models/perf/1789912551_alisachen-n3u-agg-ns2-agentx-kvs3c10-c160/Nemotron-3-Ultra-550B-A55B-NVFP4_trace_c160_20260920_135606/profile_export.jsonl"
+    },
     "n3u-agg-ns-agentx-kv-c192": {
       "sha256": "0148e50a428a42924e259cd505fd20d8b9425674fd6738f2750b428c0eee229f",
       "source_sha256": "38f7c8fea507a6949158039ceb518f3d85d321a7d2ec9c93f8e512da41b5d456",

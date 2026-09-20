@@ -71,6 +71,7 @@ def main():
         "sim-results/measured_agentx_d88.json",
         "scripts/agentx_runner_flags.sh",
         "scripts/run_agentx_agg_decay_np2_v2.sh",
+        "scripts/run_agentx_agg_slo10_np2_v2.sh",
         "scripts/run_agentx_88_followup.sh",
         "../sglang/manifests/n3u-mnnvl-88.yaml",
         "../sglang/manifests/n3u-agg-newstack-np2.yaml",
@@ -91,7 +92,10 @@ def main():
     inventory_path = folder / "source/gcs-inventory.txt"
     files["source/gcs-inventory.txt"] = {
         "sha256": sha(inventory_path),
-        "source": "GCS listing at " + stamp,
+        "source": (
+            "Supplied artifact inventory at " if args.inventory else "GCS listing at "
+        )
+        + stamp,
     }
     cells = json.loads((ROOT / "sim-results/measured_agentx_d88.json").read_text())
     by_art = {c["art"]: c for c in cells}
@@ -139,7 +143,11 @@ def main():
             "policy": match[1],
             "clients": int(match[2]),
             "architecture": architecture,
-            "campaign": "agg-np2-20260919"
+            "campaign": (
+                "agg-slo10-20260920"
+                if int(art.split("_")[0]) >= 1789895318
+                else "agg-np2-20260919"
+            )
             if architecture == "agg"
             else "d88-20260917-19",
             "is_new": True,

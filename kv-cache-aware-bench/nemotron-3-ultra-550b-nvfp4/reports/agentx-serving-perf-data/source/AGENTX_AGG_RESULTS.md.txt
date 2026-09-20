@@ -244,6 +244,52 @@ no regime on agg where the default beats it. Against RR at 96 (6,137, p95 12.6 s
 with a 4× shorter tail, and the same-SLO pair under the P90 ≥ 20 budget becomes tuned KV 96 (7,045, P90 55) vs RR 96
 (6,137, P90 34) = 1.15×.
 
+## vi. Cells that saturate the TTFT p95 ≤ 10 s SLO, and the KV flag sweep at that point (np-2 fleets, 2026-09-20)
+
+The §iii ladder brackets 10 s but has no cell near it (default KV: 96 → 5.4 s, 192 → 11.2–11.7 s; RR: 48 → 8.3 s, 96 → 12.6 s), so the same-SLO
+comparison under-sold every policy. These cells sit just inside the budget. Two agg fleets in parallel on np-2
+([`run_agentx_agg_slo10_np2_v2.sh`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/run_agentx_agg_slo10_np2_v2.sh); manifests [`n3u-agg-newstack-np2.yaml`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/sglang/manifests/n3u-agg-newstack-np2.yaml) /
+[`n3u-agg-newstack2-np2.yaml`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/sglang/manifests/n3u-agg-newstack2-np2.yaml); job template [`sgl-d72-agentx.yaml`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/manifests/perf/sgl-d72-agentx.yaml); runner + flag variants
+[`agentx_runner_flags.sh`](https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/agentx_runner_flags.sh)); same AgentX scenario, 3,600 s window, 24 GPUs.
+
+### Near-saturated cells per policy
+
+| policy | clients | router flags | total tok/s/GPU | output tok/s (/GPU) | TTFT p50 / p95 / p99 | ITL p50 / p90 → P90 | in-flight | hit rate | warm-up wall | stationary | logs + artifacts |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| round-robin | 64 | `--router-mode round-robin` | 3,910 | 1,029 (42.9) | 0.74 / 9.21 / 15.7 s | 8.6 / 13.7 → 73.1 | 13.2 (peak 29) | 0.71 | 861 s | yes (q1 0.80 → q4 0.64 s) | [1789895323](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895323_alisachen-n3u-agg-ns2-agentx-rr-c64) |
+| default KV | 160 | `--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs` | 8,755 | 2,256 (94.0) | 1.15 / 9.57 / 15.9 s | 20.8 / 43.4 → 23.1 | 60.5 (peak 118) | 0.75 | 1,492 s | yes (q1 1.43 → q4 0.93 s) | [1789895318](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895318_alisachen-n3u-agg-ns-agentx-kv-c160) |
+| load scale 3, credit 0.8 | 256 | kv + `--router-prefill-load-scale 3.0 --router-kv-overlap-score-credit 0.8` | 12,328 | 2,753 (114.7) | 4.69 / 18.87 / 26.3 s | 26.5 / 48.5 → 20.6 | 105.9 (peak 156) | 0.80 | 2,016 s | yes (q1 7.12 → q4 1.35 s) | [1789900377](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789900377_alisachen-n3u-agg-ns2-agentx-kvs3c08-c256) |
+
+### KV vs RR inside the same SLO (TTFT p95 ≤ 10 s, stationary)
+
+| policy | cell | total tok/s/GPU | vs RR | TTFT p50 / p95 | P90 interactivity | hit rate | logs |
+|---|---|---|---|---|---|---|---|
+| round-robin | 64 clients | 3,910 | 1.00× | 0.74 / 9.21 s | 73 | 0.71 | [1789895323](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895323_alisachen-n3u-agg-ns2-agentx-rr-c64) |
+| default KV | 160 clients | 8,755 | 2.24× | 1.15 / 9.57 s | 23 | 0.75 | [1789895318](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895318_alisachen-n3u-agg-ns-agentx-kv-c160) |
+| tuned KV (load scale 3, credit 0.8) | 192 clients | 10,992 | 2.81× | 0.82 / 6.20 s | 26 | 0.82 | [1789856381](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789856381_alisachen-n3u-agg-ns2-agentx-kvs3c08-c192) |
+
+### KV flag sweep at the KV 10 s point (160 clients; same variants as the 192-client sweep)
+
+| router flags | total tok/s/GPU | output tok/s (/GPU) | TTFT p50 / p95 / p99 | ITL p50 / p90 → P90 | in-flight | hit rate | warm-up wall | stationary | logs + artifacts |
+|---|---|---|---|---|---|---|---|---|---|
+| default KV (baseline) | 8,755 | 2,256 (94.0) | 1.15 / 9.57 / 15.9 s | 20.8 / 43.4 → 23.1 | 60.5 (peak 118) | 0.75 | 1,492 s | yes (q1 1.43 → q4 0.93 s) | [1789895318](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895318_alisachen-n3u-agg-ns-agentx-kv-c160) |
+| load scale 3, credit 0.8: kv + `--router-prefill-load-scale 3.0 --router-kv-overlap-score-credit 0.8` | 9,894 (+13.0%) | 2,525 (105.2) | 0.71 / 4.85 (-49%) / 9.7 s | 16.0 / 30.5 → 32.8 | 49.8 (peak 95) | 0.83 | 1,396 s | yes (q1 0.72 → q4 0.67 s) | [1789901101](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789901101_alisachen-n3u-agg-ns-agentx-kvs3c08-c160) |
+| load scale 2, credit 0.8: kv + `--router-prefill-load-scale 2.0 --router-kv-overlap-score-credit 0.8` | 9,270 (+5.9%) | 2,389 (99.5) | 0.86 / 7.16 (-25%) / 13.6 s | 17.8 / 36.2 → 27.6 | 54.7 (peak 104) | 0.79 | 1,397 s | yes (q1 1.05 → q4 0.77 s) | [1789906804](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789906804_alisachen-n3u-agg-ns2-agentx-kvs2c08-c160) |
+| credit decay 0.5: kv + `--router-kv-overlap-score-credit-decay 0.5` | 8,697 (-0.7%) | 2,246 (93.6) | 1.15 / 9.24 (-3%) / 15.3 s | 21.0 / 46.6 → 21.5 | 61.0 (peak 111) | 0.74 | 1,389 s | yes (q1 1.32 → q4 0.89 s) | [1789906836](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789906836_alisachen-n3u-agg-ns-agentx-kvd05-c160) |
+| router temperature 0.5: kv with `--router-temperature 0.5` | 7,419 (-15.3%) | 1,921 (80.0) | 3.51 / 19.17 (+100%) / 27.8 s | 27.7 / 69.1 → 14.5 | 79.0 (peak 132) | 0.62 | 1,394 s | yes (q1 3.58 → q4 1.43 s) | [1789912551](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789912551_alisachen-n3u-agg-ns-agentx-kvt05-c160) |
+| load scale 3, default credit 1.0: kv + `--router-prefill-load-scale 3.0` (overlap credit left at its default 1.0) | 10,073 (+15.0%) | 2,605 (108.5) | 0.65 / 4.75 (-50%) / 9.7 s | 15.6 / 28.3 → 35.3 | 48.6 (peak 95) | 0.85 | 1,389 s | yes (q1 0.72 → q4 0.65 s) | [1789912551](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789912551_alisachen-n3u-agg-ns2-agentx-kvs3c10-c160) |
+
+### Reading (section vi)
+
+- **Load awareness is the active ingredient.** Load scale 3 with the overlap credit left at its default 1.0 gives 10,073 tok/s/GPU (+15.0 %), TTFT p95 4.75 s (-50 %), hit rate 0.85;
+  the same load scale with credit 0.8 gives 9,894 (+13.0 %), 4.85 s (-49 %), hit rate 0.83. The two are within run-to-run noise of each other, with credit 1.0 marginally ahead on every metric:
+  the 0.8 credit carried over from the simulator's policy sweep contributes nothing on silicon, so the recommended agg setting is simply `--router-prefill-load-scale 3.0`.
+- **Dose-response in load scale:** scale 2 / credit 0.8 → 9,270 (+5.9 %), TTFT p95 7.16 s (-25 %), hit rate 0.79 — about half the gain of scale 3, the same ordering as at 192 clients.
+- **Credit decay 0.5 is neutral** at this load (8,697, -0.7 %; TTFT p95 9.24 s, -3 %); at 192 clients it lost 1–2.5 %. Nothing to keep.
+- **Router temperature 0.5 loses**: 7,419 (-15.3 %), TTFT p95 19.17 s (+100 %), hit rate 0.62 (from 0.75) — sampling the worker breaks cache affinity, and the cell falls outside the SLO.
+- **Same SLO on agg, final:** RR 64 clients → 3,910; default KV 160 → 8,755 (2.24× RR); tuned KV at the same 160 clients → 10,073 (2.58× RR) with TTFT p95 4.75 s, i.e. half the budget still unused; tuned KV's best measured cell inside the SLO is 192 clients → 10,992 (2.81× RR, TTFT p95 6.20 s), and at 256 clients it is already outside (18.9 s), so its true 10 s point lies between 192 and 256 clients.
+- Warm-up wall times agree within 0.6 % across the five flag cells at this client count (1,389–1,397 s; the default-KV cell was the first after the fleets were deployed, 1,492 s), so every cell ran on a healthy fleet.
+
 ## iv. Simulation-vs-real gap, with the apple-to-apple decomposition
 
 Method (same ladder as the disagg report and AGG24 §5.2): start from the published simulator, substitute one measured
