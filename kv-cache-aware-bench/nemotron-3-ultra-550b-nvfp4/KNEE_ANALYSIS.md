@@ -360,3 +360,10 @@ flight ([artifact 1789877236](https://console.cloud.google.com/storage/browser/a
 and throughput 12,204 → 5,900 → 3,678 — so even a small amount of sampling is enough to break cache affinity on a prefill-bound
 disagg fleet. Router temperature is rejected on disagg at every value tested; keep it at 0.
 
+**Attribution cell (2026-09-20): default KV at 576 clients = 13,857 tok/s/GPU, TTFT p50 / p95 1.45 / 10.87 s, hit rate 0.876**, stationary,
+guard PASS, warm-up 3,768 s vs 3,763 s for the tuned cell ([artifact 1789885330](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789885330_alisachen-n3u-mnnvl-88-agentx-kv-c576)). At the same 576 clients overlap credit 1.5 measured 14,024
+tok/s/GPU, 0.95 / 8.75 s, hit rate 0.903: the flag cuts TTFT p95 by 19.5 % and p50 by 34 % at equal load, which is exactly what moves the cell
+from just outside the 10 s SLO (10.87 s) to inside it (8.75 s). Default KV's SLO cell therefore stays at 480 clients (12,204) and tuned KV's is
+576 (14,024): **the +14.9 % same-SLO gain is attributable to the flag.** Final 8:8 same-SLO ladder: RR 72 → 1,763, default KV 480 → 12,204 (6.9× RR),
+tuned KV 576 → 14,024 (8.0× RR).
+
