@@ -349,3 +349,10 @@ SLO at 576 clients, 20 % more clients than the default-KV SLO cell (480 → 12,2
 SLO cell (72 clients, 1,763)**. Caveat: default KV was not measured at 576 (it sits between 7.1 s at 480 and 17.0 s at 672; a
 straight line gives ≈ 12 s), so the size of the gain attributable to the flag at this exact load needs a default-KV 576 cell.
 
+**Router temperature on disagg (2026-09-20, 480 clients).** `--router-temperature 0.5`: **3,678 total tok/s/GPU (−70 %), TTFT p50 / p95
+124.5 / 187.4 s, hit rate 0.359**, 349 requests in flight, knee check POST-KNEE (TTFT p50 83 s → 155 s through the window), guard PASS
+([artifact 1789869242](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789869242_alisachen-n3u-mnnvl-88-agentx-kvt05-c480)). Sampling the worker from a softmax over the router's scores destroys the cache affinity the score encodes: the
+hit rate falls from 0.891 to 0.36 and the fleet behaves like round-robin at the same load (RR 480: 3,219 tok/s/GPU, hit rate 0.29, TTFT
+p95 388 s). On agg the same flag cost 19 %; on disagg, where the prefill tier is the bottleneck and every lost prefix is re-prefilled
+there, it turns a cell that default KV serves inside the 10 s SLO (12,204, 7.1 s) into a saturated one.
+
