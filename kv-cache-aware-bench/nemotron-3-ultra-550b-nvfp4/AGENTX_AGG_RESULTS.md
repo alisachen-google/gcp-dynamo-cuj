@@ -274,6 +274,8 @@ comparison under-sold every policy. These cells sit just inside the budget. Two 
 |---|---|---|---|---|---|---|---|---|---|
 | default KV (baseline) | 8,755 | 2,256 (94.0) | 1.15 / 9.57 / 15.9 s | 20.8 / 43.4 → 23.1 | 60.5 (peak 118) | 0.75 | 1,492 s | yes (q1 1.43 → q4 0.93 s) | [1789895318](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895318_alisachen-n3u-agg-ns-agentx-kv-c160) |
 | load scale 3, credit 0.8: kv + `--router-prefill-load-scale 3.0 --router-kv-overlap-score-credit 0.8` | 9,894 (+13.0%) | 2,525 (105.2) | 0.71 / 4.85 (-49%) / 9.7 s | 16.0 / 30.5 → 32.8 | 49.8 (peak 95) | 0.83 | 1,396 s | yes (q1 0.72 → q4 0.67 s) | [1789901101](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789901101_alisachen-n3u-agg-ns-agentx-kvs3c08-c160) |
+| load scale 2, credit 0.8: kv + `--router-prefill-load-scale 2.0 --router-kv-overlap-score-credit 0.8` | 9,270 (+5.9%) | 2,389 (99.5) | 0.86 / 7.16 (-25%) / 13.6 s | 17.8 / 36.2 → 27.6 | 54.7 (peak 104) | 0.79 | 1,397 s | yes (q1 1.05 → q4 0.77 s) | [1789906804](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789906804_alisachen-n3u-agg-ns2-agentx-kvs2c08-c160) |
+| credit decay 0.5: kv + `--router-kv-overlap-score-credit-decay 0.5` | 8,697 (-0.7%) | 2,246 (93.6) | 1.15 / 9.24 (-3%) / 15.3 s | 21.0 / 46.6 → 21.5 | 61.0 (peak 111) | 0.74 | 1,389 s | yes (q1 1.32 → q4 0.89 s) | [1789906836](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789906836_alisachen-n3u-agg-ns-agentx-kvd05-c160) |
 
 ## iv. Simulation-vs-real gap, with the apple-to-apple decomposition
 
