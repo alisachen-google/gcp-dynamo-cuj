@@ -4,7 +4,7 @@ Second model of the KV-cache-aware routing study: agg + disagg KV-vs-RR on
 GB300 NVL72, sglang backend, replaying `semianalysisai/cc-traces-weka-062126-256k`
 (same dataset as the Kimi-K2.5 study for cross-model comparability).
 
-Latest measured comparison (2026-09-19): [agg and 8:8 disagg operating choices, tuned KV, knees and both latency SLOs](reports/agentx-serving-perf-report.md) · [standalone HTML](reports/agentx-serving-perf-report.html). Includes **34 hardware runs**, the new disagg credit-1.5 C576 point and agg credit-decay results. The report distinguishes completed results from queued controls and failed native simulations.
+Latest measured comparison (2026-09-20): [agg and 8:8 disagg operating choices, tuned KV, knees and both latency SLOs](reports/agentx-serving-perf-report.md) · [standalone HTML](reports/agentx-serving-perf-report.html). Includes **37 hardware runs**, fresh agg default/tuned controls, the combined credit-decay test, and disagg credit-1.5 C576. Both tuned agg C192 trials narrowly miss the E2E SLO; the new controls show no observed benefit from decay. Completed results, queued controls and failed native simulations are identified separately.
 
 Current AgentX simulation performance (2026-09-17) uses the **new AIPerf replay** for agg and disagg; v3/v5 results are historical. Start with the [current result index](reports/agentx-aiperf-results.md): [64-GPU KV/RR topology curves](reports/agentx-64gpu-topology.md), [replay audit and simulation-vs-hardware gaps](reports/agentx-faithful-replay.md), and [reproduction commands](reports/agentx-replay-howto.md).
 

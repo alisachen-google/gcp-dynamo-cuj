@@ -33,8 +33,18 @@ def main():
         "--scratch", type=Path, default=Path("/tmp/agentx-concrete-import")
     )
     parser.add_argument("--inventory", type=Path)
+    parser.add_argument(
+        "--previous-manifest",
+        type=Path,
+        help="Prior published inventory, used to identify additions in this update",
+    )
     args = parser.parse_args()
     folder = REPORTS / NAME
+    previous_path = args.previous_manifest or folder / "manifest.json"
+    previous = json.loads(previous_path.read_text()) if previous_path.exists() else None
+    previous_artifacts = (
+        {r["artifact"] for r in previous["runs"]} if previous else set()
+    )
     for part in ["source", "hardware", "request-metrics"]:
         (folder / part).mkdir(parents=True, exist_ok=True)
     args.scratch.mkdir(parents=True, exist_ok=True)
@@ -136,8 +146,7 @@ def main():
             "gcs_console": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/"
             + art,
         }
-        if architecture == "disagg":
-            assert art in by_art, art
+        if architecture == "disagg" and art in by_art:
             item["source_cell"] = by_art[art]
         work.append(item)
     # Extend these two old projections with timestamps to audit warmup drift.
@@ -230,6 +239,8 @@ def main():
             (projection["file"], projection["source"]),
         ]:
             files[name] = {"sha256": sha(folder / name), "source": source}
+    for item in entries.values():
+        item["new_since_previous_report"] = item["artifact"] not in previous_artifacts
     request_manifest = folder / "request-metrics/manifest.json"
     request_manifest.write_text(
         json.dumps({"schema_version": 1, "runs": request_entries}, indent=2) + "\n"
@@ -282,6 +293,14 @@ def main():
         "schema_version": 1,
         "collected_utc": stamp,
         "source_commit": commit,
+        "previous_snapshot": {
+            "collected_utc": previous["collected_utc"],
+            "source_commit": previous["source_commit"],
+            "manifest_sha256": sha(previous_path),
+            "hardware_runs": len(previous["runs"]),
+        }
+        if previous
+        else None,
         "files": files,
         "runs": list(entries.values()),
         "unavailable": unavailable,

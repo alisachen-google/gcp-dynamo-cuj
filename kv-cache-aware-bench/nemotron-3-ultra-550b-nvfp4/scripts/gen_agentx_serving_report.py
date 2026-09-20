@@ -39,6 +39,8 @@ LABELS = {
     "kvc20": "KV credit 2.0",
     "kvd05": "KV decay 0.5",
     "kvd10": "KV decay 1.0",
+    "kvs3c08d05": "KV scale 3 / credit 0.8 / decay 0.5",
+    "kvt02": "KV temperature 0.2",
 }
 COLORS = {
     "kv": "#2463b3",
@@ -50,6 +52,8 @@ COLORS = {
     "kvc20": "#7d75b7",
     "kvd05": "#b58a27",
     "kvd10": "#ab5374",
+    "kvs3c08d05": "#4b817d",
+    "kvt02": "#b5936f",
 }
 ORDER = list(LABELS)
 FIGURES = ["curves", "agg-flags", "disagg-flags", "operating-points"]
@@ -160,6 +164,7 @@ def load():
             **item,
             **agg.metrics(summary, gpus),
             "gpus": gpus,
+            "fleet": re.search(r"alisachen-(.+)-agentx-", item["artifact"])[1],
             "router_flags": router_flags[item["policy"]],
             "ttft_p50_s": summary["time_to_first_token"]["p50"] / 1000,
             "ttft_p99_s": summary["time_to_first_token"]["p99"] / 1000,
@@ -238,6 +243,32 @@ def chosen(points):
     ]
 
 
+def agg_contrasts(points):
+    campaign = "agg-np2-20260919"
+    rows = []
+    for treatment, control in [
+        ("kvs3c08", "kv"),
+        ("kvd05", "kv"),
+        ("kvd10", "kv"),
+        ("kvs3c08d05", "kvs3c08"),
+    ]:
+        a = one(points, "agg", treatment, 192, campaign)
+        b = one(points, "agg", control, 192, campaign)
+        rows.append(
+            {
+                "treatment_id": a["id"],
+                "control_id": b["id"],
+                "treatment": LABELS[treatment],
+                "control": LABELS[control],
+                "total_change_pct": delta(a, b, "total_tok_s_gpu"),
+                "ttft_change_pct": delta(a, b, "ttft_p95_s"),
+                "i90_change_pct": delta(a, b, I90),
+                "cache_change_pp": a["cache_pct"] - b["cache_pct"],
+            }
+        )
+    return rows
+
+
 def name(p, full=False):
     return (
         ("Agg " if p["architecture"] == "agg" else "D88 ")
@@ -312,6 +343,21 @@ def plots(points):
                     markersize=5,
                     label=LABELS[pol],
                 )
+                if arch == "agg":
+                    repeats = [
+                        p
+                        for p in cells(points, arch, pol)
+                        if p["campaign"] == "agg-np2-20260919"
+                    ]
+                    ax.scatter(
+                        [p["clients"] for p in repeats],
+                        [p[metric] for p in repeats],
+                        marker="x",
+                        color=COLORS[pol],
+                        s=65,
+                        linewidths=1.8,
+                        zorder=7,
+                    )
                 if column == 0:
                     peak = max(series, key=lambda p: p[metric])
                     ax.scatter(
@@ -400,7 +446,7 @@ def plots(points):
                 )
         if arch == "agg":
             axes[row, 2].annotate(
-                "Tuned C192: 19.7795 <20\nC96 remains the combined-SLO choice",
+                "Tuned C192: 19.7795 / 19.7385 <20\nBoth trials fail; C96 remains the choice",
                 xy=(192, 19.7795),
                 xytext=(0.06, 0.27),
                 textcoords="axes fraction",
@@ -426,7 +472,7 @@ def plots(points):
     fig.text(
         0.04,
         0.015,
-        "Rings: highest sampled throughput in each series. Stars: highest-throughput samples passing both SLOs. Connecting lines are guides.\nSingle-point flag variants are shown in the following charts. One trial per cell; shaded intervals do not locate an exact knee.",
+        "Rings: sampled throughput peaks. Stars: samples passing both SLOs with highest throughput. Crosses: fresh agg C192 references.\nLines show the original ladders; single-point variants follow. Most cells have one trial; shaded intervals do not locate an exact knee.",
         fontsize=10,
         color="#52657a",
     )
@@ -435,28 +481,37 @@ def plots(points):
     )
     save(fig, "curves")
 
-    for arch, concurrency, policies in [
-        ("agg", 192, ["kv", "kvs2c08", "kvs3c08", "kvt05", "kvd05", "kvd10", "rr"]),
-        ("disagg", 480, ["kv", "kvc15", "kvc20", "kvs3c08", "kvd05"]),
+    for arch, concurrency, specs in [
+        (
+            "agg",
+            192,
+            [(p, "agg-20260916") for p in ["kv", "kvs2c08", "kvs3c08", "kvt05"]]
+            + [
+                (p, "agg-np2-20260919")
+                for p in ["kv", "kvs3c08", "kvd05", "kvd10", "kvs3c08d05"]
+            ],
+        ),
+        (
+            "disagg",
+            480,
+            [(p, None) for p in ["kv", "kvc15", "kvc20", "kvs3c08", "kvd05"]],
+        ),
     ]:
         selected = [
-            one(
-                points,
-                arch,
-                pol,
-                concurrency,
-                "agg-20260916"
-                if arch == "agg" and pol in {"kv", "rr", "kvs3c08"}
-                else None,
-            )
-            for pol in policies
+            one(points, arch, pol, concurrency, campaign) for pol, campaign in specs
         ]
         labels = [
-            LABELS[p["policy"]].replace("KV ", "")
-            + (" *" if p["campaign"] == "agg-np2-20260919" else "")
+            (
+                "np-2: "
+                if p["campaign"] == "agg-np2-20260919"
+                else "Sep 16: "
+                if arch == "agg"
+                else ""
+            )
+            + LABELS[p["policy"]].replace("KV ", "")
             for p in selected
         ]
-        fig, axes = plt.subplots(1, 3, figsize=(15, 6.0))
+        fig, axes = plt.subplots(1, 3, figsize=(16, 8.2 if arch == "agg" else 6.0))
         for ax, key, title, threshold in [
             (axes[0], "total_tok_s_gpu", "Total input + output tok/s/GPU", None),
             (axes[1], "ttft_p95_s", "TTFT p95 (seconds)", 10),
@@ -470,9 +525,10 @@ def plots(points):
                 height=0.62,
             )
             for bar, point in zip(bars, selected):
-                if point["campaign"] == "agg-np2-20260919":
+                if arch == "agg" and point["campaign"] == "agg-20260916":
                     bar.set_hatch("///")
-                    bar.set_edgecolor("#755224")
+                    bar.set_edgecolor("#52657a")
+                    bar.set_alpha(0.55)
             ax.set_yticks(np.arange(len(selected)), labels if ax is axes[0] else [])
             ax.invert_yaxis()
             ax.bar_label(
@@ -503,12 +559,18 @@ def plots(points):
             fontsize=15,
         )
         footer = (
-            "* Hatched decay rows are the new np-2 campaign: warmup is slower and matched references are not yet available.\nBoth new decay runs fail both SLOs. All seven C192 rows show 3 exported request errors; differences across campaigns are not causal estimates."
+            "Hatched: Sep 16. Solid: current np-2 campaign, including both fresh references. Decay loses alone and on top of scale 3 / credit 0.8.\nNo measured agg C192 variant passes both SLOs. Both scale-3 / credit-0.8 trials pass TTFT and miss I90; each C192 run has 2–3 client errors."
             if arch == "agg"
             else "Credit 1.5 has the lowest measured C480 TTFT and highest E2E I90. Credit 2.0 gives essentially identical throughput.\nAll five KV rows have zero errors. RR480 is omitted from this scale: 387.54 s TTFT, 0.6525 I90, 39 client errors; see the full table."
         )
         fig.text(0.04, 0.015, footer, fontsize=9, color="#52657a")
-        fig.subplots_adjust(left=0.19, right=0.98, top=0.88, bottom=0.20, wspace=0.20)
+        fig.subplots_adjust(
+            left=0.27 if arch == "agg" else 0.19,
+            right=0.98,
+            top=0.88,
+            bottom=0.20,
+            wspace=0.20,
+        )
         save(fig, f"{arch}-flags")
 
     selected = chosen(points)
@@ -577,7 +639,11 @@ def markdown(points, native, manifest, status):
     dbase = one(points, "disagg", "kv", 480)
     d480 = one(points, "disagg", "kvc15", 480)
     d20 = one(points, "disagg", "kvc20", 480)
-    a192 = one(points, "agg", "kvs3c08", 192)
+    a192 = one(points, "agg", "kvs3c08", 192, "agg-20260916")
+    a192_repeat = one(points, "agg", "kvs3c08", 192, "agg-np2-20260919")
+    fresh_default = one(points, "agg", "kv", 192, "agg-np2-20260919")
+    combined_decay = one(points, "agg", "kvs3c08d05", 192)
+    additions = [p for p in points if p["new_since_previous_report"]]
     date = manifest["collected_utc"][:16].replace("T", " ") + " UTC"
     source_link = f"https://github.com/alisachen-google/gcp-dynamo-cuj/blob/{manifest['source_commit']}/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/AGENTX_D88_RESULTS.md"
     link = lambda p: f"[{name(p, True)}]({p['gcs_console']})"
@@ -586,7 +652,9 @@ def markdown(points, native, manifest, status):
 
 **Updated {date} · {len(points)} completed hardware runs · 24-GPU agg and 64-GPU 8:8 disagg · Weka 256K**
 
-**The new measured disagg choice is KV overlap credit 1.5 at C576:** **{d["total_tok_s_gpu"]:,.0f} total tokens/s/GPU**, **{d["ttft_p95_s"]:.2f} s TTFT p95**, and **{d[I90]:.4f} E2E-normalized output tokens/s**. It passes both chosen SLOs. **Agg remains scale 3 / credit 0.8 at C96** under the combined SLO: its C192 result passes TTFT but narrowly misses E2E interactivity. The two new agg decay settings at C192 miss both limits and do not establish an improvement.
+**The fresh agg controls are complete, and decay has no observed benefit in any tested combination.** At C192, scale 3 / credit 0.8 now repeats at **{a192_repeat["total_tok_s_gpu"]:,.0f} total tokens/s/GPU**, **{a192_repeat["ttft_p95_s"]:.2f} s TTFT p95**, and **{a192_repeat[I90]:.4f} E2E-normalized output tokens/s**. Both C192 trials miss the I90 limit of 20. Adding decay 0.5 reduces throughput by **{-delta(combined_decay, a192_repeat, "total_tok_s_gpu"):.1f}%** and I90 to **{combined_decay[I90]:.4f}**. **Agg's best sampled point meeting both SLOs remains scale 3 / credit 0.8 at C96.**
+
+**Disagg's measured choice remains KV overlap credit 1.5 at C576:** **{d["total_tok_s_gpu"]:,.0f} total tokens/s/GPU**, **{d["ttft_p95_s"]:.2f} s TTFT p95**, and **{d[I90]:.4f} I90**. The temperature follow-up has no completed summary at this snapshot. Default KV C576 remains queued, so the maximum concurrency gain caused by tuning is still unmeasured.
 
 Compared at each fleet's best sampled point meeting both SLOs, tuned D88 delivers **{d["total_tok_s_gpu"] / a["total_tok_s_gpu"]:.2f}× total throughput/GPU** and **{d["output_tok_s_gpu"] / a["output_tok_s_gpu"]:.2f}× output-only throughput/GPU** versus tuned agg. The fleet sizes differ, **64 versus 24 GPUs**; this is an observed operating-point comparison, not a controlled estimate of architecture scaling.
 
@@ -637,7 +705,7 @@ Select the highest measured total throughput/GPU that meets both limits and has 
 
 | Deployment | Router arguments beyond `--router-mode kv` | Measured concurrency to use | Limit of this choice |
 | --- | --- | --- | --- |
-| Agg, 6 × TP4/EP4, 24 GPUs | `--router-temperature 0 --router-queue-policy fcfs --router-prefill-load-scale 3 --router-kv-overlap-score-credit 0.8` | **96** under both SLOs | 192 has I90 **{a192[I90]:.4f}**, below 20; it is not an eligible combined-SLO operating point. |
+| Agg, 6 × TP4/EP4, 24 GPUs | `--router-temperature 0 --router-queue-policy fcfs --router-prefill-load-scale 3 --router-kv-overlap-score-credit 0.8` | **96** under both SLOs | C192 has I90 **{a192[I90]:.4f} / {a192_repeat[I90]:.4f}** in two trials; both fail. Keep decay at default 0. |
 | D88, 8 prefill + 8 decode TP4, 64 GPUs | `--router-temperature 0 --router-queue-policy fcfs --router-kv-overlap-score-credit 1.5` | **576** under both SLOs | Highest tested passing point for this setting; its next failing point has not been measured. Load scale and decay retain defaults 1 and 0. |
 
 Tuned D88 C576 has **{10 - d["ttft_p95_s"]:.2f} s TTFT headroom** and **{d[I90] - 20:.2f} tok/s I90 headroom**, based on one trial. RR72's TTFT is **9.9115 s**, only **0.0885 s** below the limit; its capacity ratio needs a repeat before being treated as stable. These are replay-based choices, not production arrival-rate guarantees.
@@ -674,7 +742,7 @@ D88 uses **2.67× as many GPUs**, serves **{d["total_tok_s_fleet"] / a["total_to
 
 ## 2. What the new measurements add
 
-The inventory now contains **{len(cells(points, "agg"))} agg and {len(cells(points, "disagg"))} D88 hardware runs**, up from 12 and 14 in the prior reports: **{sum(p["is_new"] for p in points)} additional completed cells**. D88's inventory comes from the [updated source report]({source_link}); the new agg decay jobs were discovered directly in GCS and validated from their summaries and request records.
+The inventory now contains **{len(cells(points, "agg"))} agg and {len(cells(points, "disagg"))} D88 hardware runs**: **{len(additions)} newly completed agg runs** since the September 19 22:34 UTC combined report ({manifest["previous_snapshot"]["hardware_runs"]} runs). The 20 D88 measurements, including credit 2.0 at C480 and credit 1.5 at C576, were already in that snapshot and remain included. This is **{sum(p["is_new"] for p in points)} more runs** than the original separate agg/D88 reports. Inputs come from the [agg source report]({source_link.replace("AGENTX_D88_RESULTS", "AGENTX_AGG_RESULTS")}), [D88 source report]({source_link}), and full GCS summaries and request records.
 """)
     out.append(
         table(
@@ -696,46 +764,35 @@ The inventory now contains **{len(cells(points, "agg"))} agg and {len(cells(poin
                     pf(p["combined_slo_pass"]),
                     p["request_errors"],
                     {
-                        ("disagg", "kv", 96): "Matched low-load KV/RR comparison",
-                        ("disagg", "kv", 144): "Matched low-load KV/RR comparison",
-                        (
-                            "disagg",
-                            "rr",
-                            384,
-                        ): "Tightens RR overload bracket to 192–384",
-                        (
-                            "disagg",
-                            "kvc20",
-                            480,
-                        ): "No observed advantage over credit 1.5 on TTFT/I90",
-                        (
-                            "disagg",
-                            "kvc15",
-                            192,
-                        ): "No material throughput gain at light load",
-                        ("disagg", "kvc15", 576): "New highest tested tuned pass",
                         (
                             "agg",
-                            "kvd05",
+                            "kv",
                             192,
-                        ): "Both fail; matched np-2 reference pending",
+                        ): "Fresh default control for the decay-alone rows",
                         (
                             "agg",
-                            "kvd10",
+                            "kvs3c08",
                             192,
-                        ): "Both fail; matched np-2 reference pending",
+                        ): "Tuned result reproduces; I90 misses 20 again",
+                        (
+                            "agg",
+                            "kvs3c08d05",
+                            192,
+                        ): "Adding decay to tuned KV reduces throughput and interactivity",
                     }.get(
                         (p["architecture"], p["policy"], p["clients"]),
                         "Additional hardware sample",
                     ),
                 ]
                 for p in points
-                if p["is_new"]
+                if p["new_since_previous_report"]
             ],
         )
     )
     out.append(f"""
-**What changed in the decision:** tuned D88 moves from the previously tested C480 to the now-tested **C576**. Relative to default KV's best sampled combined-SLO cell at C480, that is **{delta(d, dbase, "total_tok_s_gpu"):.1f}% more total throughput/GPU** and **20% more concurrent sessions**. **Default KV576 is unmeasured**, so this is not a controlled claim that the flag itself creates all of that capacity increase. The measured same-C480 flag effect remains **{delta(d480, dbase, "ttft_p95_s"):.1f}% TTFT p95**, **{delta(d480, dbase, I90):+.1f}% I90**, and only **{delta(d480, dbase, "total_tok_s_gpu"):+.2f}% throughput**.
+**What changed in the decision:** agg's previously pending controls are now measured. The no-decay scale-3/credit-0.8 setting remains the leading C192 candidate, and its small I90 failure has reproduced. The next useful load point is C144; adding more credit-decay variants is lower priority. The detailed contrasts are in section 4.1.
+
+**What stays the same for disagg:** tuned C576 has **{delta(d, dbase, "total_tok_s_gpu"):.1f}% more total throughput/GPU** and **20% more concurrent sessions** than default KV's best sampled combined-SLO cell at C480. **Default KV576 is unmeasured**, so this is not a controlled claim that the flag itself creates all of that capacity increase. The measured same-C480 flag effect remains **{delta(d480, dbase, "ttft_p95_s"):.1f}% TTFT p95**, **{delta(d480, dbase, I90):+.1f}% I90**, and only **{delta(d480, dbase, "total_tok_s_gpu"):+.2f}% throughput**.
 
 ## 3. Curves, knees and same-concurrency comparisons
 
@@ -747,16 +804,16 @@ The inventory now contains **{len(cells(points, "agg"))} agg and {len(cells(poin
 | --- | --- | --- | --- |
 | Agg default KV | Highest sampled throughput C192; C384 falls 14.5% | C96 passes both; C192 fails both | Sample 144 to narrow 96–192. |
 | Agg RR | Highest sampled throughput C192; C384 falls 25.4% | C48 passes both; C96 fails both | Repeat C48, then test 72 if RR capacity matters. |
-| Agg scale 3 / credit 0.8 | Two points, C96 and C192; throughput still rises | C192 passes TTFT but misses I90 by **1.10%** | Repeat C192 and test C144; no tuned throughput knee is known. |
+| Agg scale 3 / credit 0.8 | C96 and two C192 trials; throughput still rises | Both C192 trials pass TTFT but miss I90 by **{100 * (1 - a192[I90] / 20):.2f}% / {100 * (1 - a192_repeat[I90] / 20):.2f}%** | Test C144, then bisect 144–192 if it passes; no tuned throughput knee is known. |
 | D88 default KV | C672→768 adds only 2.4% throughput for 59% more TTFT; C1152 then falls 31.2% | Both SLO boundaries lie in 480–672 | Default C576 is the missing direct control for the tuned result. |
 | D88 RR | New C384 is 20.7% below C192; C480 falls further | TTFT crossing 72–96; I90 crossing 96–144 | Repeat C72, then C84; throughput overload bracket is now 192–384. |
 | D88 credit 1.5 | C192, C480 and C576 measured; throughput still rises | All three pass both; C576 is the highest tested pass | Repeat C576, then C624 or C672 to bracket this setting's boundary. |
 
-Each cell has one trial. The figures mark sampled points and unsampled intervals, not exact optimized knees. A one-point flag variant has no measurable concurrency knee. GPU utilization is not used to pick these knees because no aligned per-engine GPU series is supplied here.
+Most cells have one trial. Default agg KV192 and scale-3/credit-0.8 C192 each have two trials, across deployment campaigns; the fresh results appear as crosses on the original curves. These two repeats are useful reproducibility checks, not a calibrated tail-variance distribution. The figures mark sampled points and unsampled intervals, not exact optimized knees. A one-point flag variant has no measurable concurrency knee. GPU utilization is not used to pick these knees because no aligned per-engine GPU series is supplied here.
 
 ### Default KV versus RR at the same concurrency
 
-GPU count is fixed **within each architecture**. Ratios below compare matching session counts; overloaded RR rows describe overload behavior, not sustainable capacity.
+GPU count is fixed **within each architecture**. Ratios below compare matching session counts; agg uses the original September 16 ladder so its repeated KV192 is not mixed with the older RR control. Overloaded RR rows describe overload behavior, not sustainable capacity.
 """)
     rows = []
     for arch in ["agg", "disagg"]:
@@ -797,16 +854,16 @@ GPU count is fixed **within each architecture**. Ratios below compare matching s
         )
     )
     out.append("""
-The new D88 C96 and C144 pairs show the same direction as C192: throughput gains are modest at low load, while KV substantially reduces TTFT. At C384, KV/RR throughput reaches 2.85×, but RR is already overloaded. This pattern supports prefix reuse and queue pressure as contributors; it does not independently isolate prefill computation, admission wait and KV transfer time.
+The D88 C96 and C144 pairs show the same direction as C192: throughput gains are modest at low load, while KV substantially reduces TTFT. At C384, KV/RR throughput reaches 2.85×, but RR is already overloaded. This pattern supports prefix reuse and queue pressure as contributors; it does not independently isolate prefill computation, admission wait and KV transfer time.
 
 ## 4. Router tuning: measured effects and remaining controls
 
-### 4.1 Agg at C192: include the new decay data, preserve the campaign distinction
+### 4.1 Agg at C192: fresh controls confirm the tuning direction
 """)
     out.append(
         figure(
             "agg-flags",
-            "Agg C192 flag comparison including the new credit-decay runs, marked as a different hardware campaign",
+            "Agg C192 flag comparison with fresh default and tuned controls and the scale-3/credit-0.8 plus decay combination",
         )
     )
     flags = [p for p in cells(points, "agg") if p["clients"] == 192]
@@ -839,12 +896,64 @@ The new D88 C96 and C144 pairs show the same direction as C192: throughput gains
     )
     control = one(points, "agg", "kv", 192, "agg-20260916")
     decay = [one(points, "agg", pol, 192) for pol in ["kvd05", "kvd10"]]
+    out.append("""
+**Compare against controls from the same np-2 campaign.** These contrasts hold the replay configuration, concurrency and declared fleet recipe constant. The campaign uses two separate 24-GPU fleets; the treatment and reference were not all run on the same physical workers or in randomized order. Read the deltas as measured comparisons, not confidence intervals.
+""")
+    out.append(
+        table(
+            [
+                "Treatment",
+                "Reference",
+                "Δ total tok/s/GPU",
+                "Δ TTFT p95",
+                "Δ E2E I90",
+                "Δ cached input",
+            ],
+            [
+                [
+                    r["treatment"],
+                    r["control"],
+                    f"{r['total_change_pct']:+.2f}%",
+                    f"{r['ttft_change_pct']:+.1f}%",
+                    f"{r['i90_change_pct']:+.1f}%",
+                    f"{r['cache_change_pp']:+.2f} pp",
+                ]
+                for r in agg_contrasts(points)
+            ],
+        )
+    )
     out.append(f"""
-**Observed result:** decay 0.5 gives **{decay[0]["total_tok_s_gpu"]:,.0f} total tok/s/GPU, {decay[0]["ttft_p95_s"]:.2f} s TTFT and {decay[0][I90]:.4f} I90**; decay 1.0 gives **{decay[1]["total_tok_s_gpu"]:,.0f}, {decay[1]["ttft_p95_s"]:.2f} s and {decay[1][I90]:.4f} I90**. Neither passes either SLO. Both use default scale/credit and change only decay, but they run on separate np-2 fleets from the September 16 references.
+**Decision:** retain **scale 3 / credit 0.8, decay 0** for agg. Against the fresh default, it gives **{delta(a192_repeat, fresh_default, "total_tok_s_gpu"):+.1f}% total throughput**, **{delta(a192_repeat, fresh_default, "ttft_p95_s"):.1f}% TTFT p95**, and **{delta(a192_repeat, fresh_default, I90):+.1f}% I90** at C192. Decay 0.5 and 1.0 alone lose on all three metrics versus the fresh default. Adding decay 0.5 to the tuned setting also loses on all three, despite passing the TTFT limit. No tested decay setting is the preferred candidate for the next concurrency sweep.
 
-**Why the default-reference comparison is provisional:** the original default-KV192 warmup is **{control["warmup_wall_s"]:,.1f} s** and the original scale-3/credit-0.8 warmup is **{a192["warmup_wall_s"]:,.1f} s**. New decay warmups are **{decay[0]["warmup_wall_s"]:,.1f} / {decay[1]["warmup_wall_s"]:,.1f} s**. The source orchestration therefore remeasures both references on np-2. Until those summaries arrive, lower throughput versus the old runs cannot be attributed solely to decay. The new settings' failure to meet the fixed SLOs is still directly observed.
+**The repeat changes our confidence, not the combined-SLO operating point.** The original tuned C192 I90 is **{a192[I90]:.4f}** and the fresh repeat is **{a192_repeat[I90]:.4f}**; both are below 20. The combined-decay I90 is **{combined_decay[I90]:.4f}**. **No collected agg C192 variant passes both SLOs**, so the best sampled point remains tuned C96. Source tables sometimes call `1000 / ITL p90` interactivity; that decode-only metric can exceed 20 while the request-level E2E metric used here fails. This report always uses `1 / P90(E2E / output_tokens)`.
 
-**What to use now:** the previously validated scale-3/credit-0.8 C96 point remains the best sampled combined-SLO agg result. At C192 the same setting gives the best observed TTFT among the collected agg variants, but **I90 {a192[I90]:.4f} must not be rounded up to a pass**. An improvement in TTFT alone does not settle the joint latency criterion.
+**Reference reproducibility:**
+""")
+    out.append(
+        table(
+            [
+                "C192 reference",
+                "Total/GPU, Sep 16 → np-2",
+                "Δ total",
+                "TTFT p95, Sep 16 → np-2 (s)",
+                "I90, Sep 16 → np-2",
+                "Warmup, Sep 16 → np-2 (s)",
+            ],
+            [
+                [
+                    LABELS[b["policy"]],
+                    f"{b['total_tok_s_gpu']:,.0f} → {r['total_tok_s_gpu']:,.0f}",
+                    f"{delta(r, b, 'total_tok_s_gpu'):+.2f}%",
+                    f"{b['ttft_p95_s']:.2f} → {r['ttft_p95_s']:.2f}",
+                    f"{b[I90]:.4f} → {r[I90]:.4f}",
+                    f"{b['warmup_wall_s']:,.1f} → {r['warmup_wall_s']:,.1f}",
+                ]
+                for b, r in [(control, fresh_default), (a192, a192_repeat)]
+            ],
+        )
+    )
+    out.append(f"""
+The new controls reproduce the earlier throughput within **2%** and warm up in **{fresh_default["warmup_wall_s"]:,.1f} / {a192_repeat["warmup_wall_s"]:,.1f} s**. The decay-alone runs had **{decay[0]["warmup_wall_s"]:,.1f} / {decay[1]["warmup_wall_s"]:,.1f} s** warmups immediately after deployment. The later controls weaken the hypothesis that np-2 is uniformly slower; the longer first warmup is consistent with a startup transient. Cache state and run ordering remain possible contributors. Two reference pairs do not establish a full noise floor for the other flags, especially for the small throughput changes.
 
 ### 4.2 Disagg at C480: credit 1.5 is the strongest observed latency candidate
 
@@ -897,7 +1006,13 @@ Scale 3 / credit 0.8 misses the D88 TTFT limit at C480; decay 0.5 misses both li
                         "Agg24" if arch == "agg" else "D88",
                         LABELS[pol],
                         ", ".join(
-                            str(c) for c in sorted({p["clients"] for p in group})
+                            str(c)
+                            + (
+                                f" ({n} runs)"
+                                if (n := sum(p["clients"] == c for p in group)) > 1
+                                else ""
+                            )
+                            for c in sorted({p["clients"] for p in group})
                         ),
                         f"`{group[0]['router_flags']}`",
                     ]
@@ -919,7 +1034,7 @@ The fleet recipes declare SGLang 0.5.16 and Dynamo 1.4.2. These summaries do not
 
 ### Native simulations: retain the evidence boundary
 
-The existing [agg Native DynoSim V10 report](agentx-agg-kv-rr-report.md#31-native-dynosim-v10-current-completed-calibration-samples) contains **12 matching native results for the original 12 agg hardware cells**. Their stored inputs and E2E calculations are revalidated here; the new agg decay settings have no matching completed V10 result in this inventory. Calibration points and held-out samples must be read separately.
+The existing [agg Native DynoSim V10 report](agentx-agg-kv-rr-report.md#31-native-dynosim-v10-current-completed-calibration-samples) contains **12 matching native results for the original 12 agg hardware cells**. Their stored inputs and E2E calculations are revalidated here. No new native run was added in this update, and the agg decay settings have no matching completed V10 result in this inventory. The error table retains the original hardware pairings; the fresh hardware references are not additional simulation trials. Calibration points and held-out samples must be read separately.
 """)
     out.append(
         table(
@@ -957,24 +1072,26 @@ Resolve and verify the native admission/backpressure behavior before spending an
 
 | Priority | Exact measurement | Decision it resolves |
 | --- | --- | --- |
-| 1 | Finish the in-flight np-2 agg **default KV192** and **scale 3 / credit 0.8 C192** references | Separates the new decay results from the approximately 6% warmup drift between fleets/campaigns. |
-| 2 | Repeat **D88 credit 1.5 C576**, and collect the already queued **default KV C576** control | Verifies the selected operating point and isolates the tuning benefit at equal concurrency. |
-| 3 | Repeat **agg scale 3 / credit 0.8 C192**, then measure **C144** under the same campaign | Determines whether the 1.10% I90 miss is repeatable and finds a larger passing point than C96. |
-| 4 | Measure **D88 credit 1.5 C624**; move to **C672** if both limits pass | Brackets the tuned latency boundary without calling C576 an exact knee. |
-| 5 | Repeat **D88 RR72**, then **RR84** if needed | Stabilizes the RR denominator, currently only 0.089 s below the TTFT limit. |
-| 6 | After the native handoff fix, rerun one C480 baseline before the remaining grid | Establishes that a full warmup and profiling window can complete and that predictions can be compared to hardware. |
+| 1 | Measure **agg scale 3 / credit 0.8, decay 0 at C144**; if it passes, test **C168** and repeat the chosen point | Finds a higher passing concurrency than C96. C192's small I90 miss has now reproduced; its controls are complete. |
+| 2 | Collect the already queued **D88 default KV C576** and repeat **credit 1.5 C576** | Determines whether tuning increases capacity at equal concurrency and verifies the selected operating point. |
+| 3 | Measure **D88 credit 1.5 C624**; move to **C672** if both limits pass | Brackets the tuned latency boundary without calling C576 an exact knee. |
+| 4 | Complete the existing **D88 temperature 0.5 / 0.2 C480** follow-up | Measures randomness in routing on disagg; the agg temperature result does not establish its effect here. |
+| 5 | For further agg tuning, test **scale 4 / credit 0.8** against scale 3 / credit 0.8; separately test **scale 3 / credit 0** at C192 | Varies one flag at a time to distinguish the load-scale and overlap-credit effects. Decay alone and on the tuned setting already lost in the observed trials. |
+| 6 | Repeat **D88 RR72**, then **RR84** if needed | Stabilizes the RR denominator, currently only 0.089 s below the TTFT limit. |
+| 7 | After the native handoff fix, rerun one C480 baseline before the remaining grid | Establishes that a full warmup and profiling window can complete and that predictions can be compared to hardware. |
 
-The [queued D88 follow-up](agentx-serving-perf-data/source/run_agentx_88_followup.sh.txt) runs **temperature 0.5 and 0.2 at C480**, then **default KV at C576**, after the agg program releases np-2. These are planned cells, not measurements in the current inventory. There is no need to submit duplicates of those queued controls. Capture request-level E2E, actual output length, errors, trace identity and warmup timestamps on every point. To explain the architecture difference, add per-engine prefill/queue/running counts, KV occupancy, cache read counters and transfer wait/timing aligned to profiling.
+The [D88 follow-up](agentx-serving-perf-data/source/run_agentx_88_followup.sh.txt) runs **temperature 0.5 and 0.2 at C480**, then **default KV at C576**. The temperature-0.5 run has started, but its GCS folder has no completed AIPerf summary at collection time. Temperature 0.2 and default KV576 are still queued in that sequence. These cells contribute no measurements yet; do not submit duplicates. The agg default/tuned references and combined-decay test are complete. Capture request-level E2E, actual output length, errors, trace identity and warmup timestamps on every point. To explain the architecture difference, add per-engine prefill/queue/running counts, KV occupancy, cache read counters and transfer wait/timing aligned to profiling.
 
 ## 7. Complete hardware inventory and reproduction
 
-The table below contains every completed hardware sample used in the report. **Neither failed native runs nor an artifact directory without a completed AIPerf summary contributes a plotted point.** The pending np-2 reference and historical failed smoke directories are listed in the source manifest. New reference results can change the campaign comparison when they finish; this report is an explicit collection-time snapshot.
+The table below contains every completed hardware sample used in the report. **Neither failed native runs nor an artifact directory without a completed AIPerf summary contributes a plotted point.** The unfinished D88 temperature run and historical failed smoke directories are listed in the source manifest. The report is an explicit collection-time snapshot; later temperature and default-KV576 results can change the disagg choice.
 """)
     out.append(
         table(
             [
                 "Run / artifacts",
                 "Campaign",
+                "Fleet",
                 "Total tok/s/GPU",
                 "Output tok/s/GPU",
                 "TTFT p95 (s)",
@@ -986,6 +1103,7 @@ The table below contains every completed hardware sample used in the report. **N
                 [
                     link(p),
                     p["campaign"],
+                    p["fleet"],
                     f"{p['total_tok_s_gpu']:,.0f}",
                     f"{p['output_tok_s_gpu']:.2f}",
                     f"{p['ttft_p95_s']:.2f}",
@@ -1093,6 +1211,9 @@ def main():
         "passed": True,
         "hardware_runs": len(points),
         "new_hardware_runs": sum(p["is_new"] for p in points),
+        "new_since_previous_report": sum(
+            p["new_since_previous_report"] for p in points
+        ),
         "by_architecture": dict(Counter(p["architecture"] for p in points)),
         "native_v10_agg_runs_revalidated": len(native),
         "input_manifests": verified,
@@ -1117,10 +1238,12 @@ def main():
     result = {
         "collected_utc": manifest["collected_utc"],
         "source_commit": manifest["source_commit"],
+        "previous_snapshot": manifest["previous_snapshot"],
         "slo_ttft_p95_s": 10,
         "slo_e2e_normalized_interactivity_p90_tps": 20,
         "hardware": points,
         "selected_operating_points": chosen(points),
+        "agg_c192_current_campaign_contrasts": agg_contrasts(points),
         "native_v10_agg": native,
         "native_disagg_status": status,
         "unavailable": manifest["unavailable"],

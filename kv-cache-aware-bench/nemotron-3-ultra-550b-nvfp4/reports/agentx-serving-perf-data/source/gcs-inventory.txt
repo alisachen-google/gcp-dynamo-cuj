@@ -36,3 +36,5 @@ gs://alisachen-models/perf/1789831039_alisachen-n3u-agg-ns2-agentx-kvd10-c192/
 gs://alisachen-models/perf/1789831067_alisachen-n3u-agg-ns-agentx-kvd05-c192/
 gs://alisachen-models/perf/1789856222_alisachen-n3u-agg-ns-agentx-kv-c192/
 gs://alisachen-models/perf/1789856381_alisachen-n3u-agg-ns2-agentx-kvs3c08-c192/
+gs://alisachen-models/perf/1789862417_alisachen-n3u-agg-ns-agentx-kvs3c08d05-c192/
+gs://alisachen-models/perf/1789869242_alisachen-n3u-mnnvl-88-agentx-kvt05-c480/

@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-09-19T22:35:18.655466</dc:date>
+    <dc:date>2026-09-20T03:00:41.279177</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -422,6 +422,31 @@ L 72.390625 116.948253
      <text style="font-size: 8px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: start; fill: #162b45" x="78.790625" y="119.748253" transform="rotate(-0 78.790625 119.748253)">KV scale 3 / credit 0.8</text>
     </g>
    </g>
+   <g id="PathCollection_4">
+    <defs>
+     <path id="mf84eeffea2" d="M -4.031129 4.031129
+L 4.031129 -4.031129
+M -4.031129 -4.031129
+L 4.031129 4.031129
+" style="stroke: #2463b3; stroke-width: 1.8"/>
+    </defs>
+    <g clip-path="url(#p4ff17e1ccb)">
+     <use xlink:href="#mf84eeffea2" x="247.549067" y="156.01173" style="fill: #2463b3; stroke: #2463b3; stroke-width: 1.8"/>
+    </g>
+   </g>
+   <g id="PathCollection_5"/>
+   <g id="PathCollection_6">
+    <defs>
+     <path id="me3c1a3fe38" d="M -4.031129 4.031129
+L 4.031129 -4.031129
+M -4.031129 -4.031129
+L 4.031129 4.031129
+" style="stroke: #16836b; stroke-width: 1.8"/>
+    </defs>
+    <g clip-path="url(#p4ff17e1ccb)">
+     <use xlink:href="#me3c1a3fe38" x="247.549067" y="133.295669" style="fill: #16836b; stroke: #16836b; stroke-width: 1.8"/>
+    </g>
+   </g>
   </g>
   <g id="axes_2">
    <g id="patch_6">
@@ -780,7 +805,7 @@ L 734.219196 297.210532
    <g id="text_30">
     <text style="font-weight: 700; font-size: 11px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: start; fill: #162b45" x="429.762054" y="52.608" transform="rotate(-0 429.762054 52.608)">TTFT p95 (seconds; log scale)</text>
    </g>
-   <g id="PathCollection_4">
+   <g id="PathCollection_7">
     <defs>
      <path id="mac379231d4" d="M 0 -6.123724
 L -1.374862 -1.892335
@@ -799,7 +824,7 @@ z
      <use xlink:href="#mac379231d4" x="535.860755" y="232.094044" style="fill: #2463b3; stroke: #172c43"/>
     </g>
    </g>
-   <g id="PathCollection_5">
+   <g id="PathCollection_8">
     <defs>
      <path id="m08e67a8ab4" d="M 0 -6.123724
 L -1.374862 -1.892335
@@ -818,7 +843,7 @@ z
      <use xlink:href="#m08e67a8ab4" x="443.601015" y="217.224478" style="fill: #d65b29; stroke: #172c43"/>
     </g>
    </g>
-   <g id="PathCollection_6">
+   <g id="PathCollection_9">
     <defs>
      <path id="m3eac3a7834" d="M 0 -6.123724
 L -1.374862 -1.892335
@@ -835,6 +860,17 @@ z
     </defs>
     <g clip-path="url(#p8daf1dc745)">
      <use xlink:href="#m3eac3a7834" x="535.860755" y="250.69626" style="fill: #16836b; stroke: #172c43"/>
+    </g>
+   </g>
+   <g id="PathCollection_10">
+    <g clip-path="url(#p8daf1dc745)">
+     <use xlink:href="#mf84eeffea2" x="628.120495" y="206.911145" style="fill: #2463b3; stroke: #2463b3; stroke-width: 1.8"/>
+    </g>
+   </g>
+   <g id="PathCollection_11"/>
+   <g id="PathCollection_12">
+    <g clip-path="url(#p8daf1dc745)">
+     <use xlink:href="#me3c1a3fe38" x="628.120495" y="227.116601" style="fill: #16836b; stroke: #16836b; stroke-width: 1.8"/>
     </g>
    </g>
   </g>
@@ -1167,34 +1203,45 @@ L 1114.790625 297.210532
     <text style="font-size: 9px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: start; fill: #a62b3a" x="816.422625" y="70.218644" transform="rotate(-0 816.422625 70.218644)">SLO ≥20 tok/s</text>
    </g>
    <g id="patch_12">
-    <path d="M 920.953178 212.991701
-Q 964.068814 175.424057 1006.341509 138.590887
+    <path d="M 921.206694 212.986955
+Q 964.19508 175.423976 1006.341556 138.596653
 " style="fill: none; stroke: #000000; stroke-linecap: round"/>
-    <path d="M 1002.87778 139.486754
-L 1006.341509 138.590887
-L 1004.979965 141.899391
+    <path d="M 1002.879087 139.497378
+L 1006.341556 138.596653
+L 1004.984655 141.907063
 " style="fill: none; stroke: #000000; stroke-linecap: round"/>
    </g>
    <g id="text_40">
-    <text style="font-size: 8px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #162b45" transform="translate(828.600911 223.185661)">Tuned C192: 19.7795 &lt;20</text>
-    <text style="font-size: 8px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #162b45" transform="translate(828.600911 232.787848)">C96 remains the combined-SLO choice</text>
+    <text style="font-size: 8px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #162b45" transform="translate(828.600911 223.185661)">Tuned C192: 19.7795 / 19.7385 &lt;20</text>
+    <text style="font-size: 8px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #162b45" transform="translate(828.600911 232.787848)">Both trials fail; C96 remains the choice</text>
    </g>
    <g id="text_41">
     <text style="font-weight: 700; font-size: 11px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: start; fill: #162b45" x="810.333482" y="52.608" transform="rotate(-0 810.333482 52.608)">E2E I90 (output tok/s/user)</text>
    </g>
-   <g id="PathCollection_7">
+   <g id="PathCollection_13">
     <g clip-path="url(#pf3cc2bbc52)">
      <use xlink:href="#mac379231d4" x="916.432183" y="120.619567" style="fill: #2463b3; stroke: #172c43"/>
     </g>
    </g>
-   <g id="PathCollection_8">
+   <g id="PathCollection_14">
     <g clip-path="url(#pf3cc2bbc52)">
      <use xlink:href="#m08e67a8ab4" x="824.172443" y="107.968655" style="fill: #d65b29; stroke: #172c43"/>
     </g>
    </g>
-   <g id="PathCollection_9">
+   <g id="PathCollection_15">
     <g clip-path="url(#pf3cc2bbc52)">
      <use xlink:href="#m3eac3a7834" x="916.432183" y="109.005739" style="fill: #16836b; stroke: #172c43"/>
+    </g>
+   </g>
+   <g id="PathCollection_16">
+    <g clip-path="url(#pf3cc2bbc52)">
+     <use xlink:href="#mf84eeffea2" x="1008.691924" y="153.468643" style="fill: #2463b3; stroke: #2463b3; stroke-width: 1.8"/>
+    </g>
+   </g>
+   <g id="PathCollection_17"/>
+   <g id="PathCollection_18">
+    <g clip-path="url(#pf3cc2bbc52)">
+     <use xlink:href="#me3c1a3fe38" x="1008.691924" y="136.625534" style="fill: #16836b; stroke: #16836b; stroke-width: 1.8"/>
     </g>
    </g>
   </g>
@@ -1578,7 +1625,7 @@ L 293.680954 450.739254
    <g id="text_63">
     <text style="font-weight: 700; font-size: 11px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: start; fill: #162b45" x="49.190625" y="379.493468" transform="rotate(-0 49.190625 379.493468)">Total input + output tok/s/GPU</text>
    </g>
-   <g id="PathCollection_10">
+   <g id="PathCollection_19">
     <path d="M 299.332441 452.743769
 C 300.723177 452.743769 302.05714 452.191224 303.04054 451.207824
 C 304.023939 450.224425 304.576485 448.890462 304.576485 447.499725
@@ -1592,7 +1639,7 @@ L 299.332441 452.743769
 z
 " clip-path="url(#p2e2ef61a76)" style="fill: none; stroke: #2463b3; stroke-width: 1.5"/>
    </g>
-   <g id="PathCollection_11">
+   <g id="PathCollection_20">
     <path d="M 160.94283 579.126389
 C 162.333567 579.126389 163.66753 578.573843 164.650929 577.590444
 C 165.634329 576.607044 166.186874 575.273081 166.186874 573.882344
@@ -1606,7 +1653,7 @@ L 160.94283 579.126389
 z
 " clip-path="url(#p2e2ef61a76)" style="fill: none; stroke: #d65b29; stroke-width: 1.5"/>
    </g>
-   <g id="PathCollection_12">
+   <g id="PathCollection_21">
     <path d="M 270.614002 469.995951
 C 272.004738 469.995951 273.338701 469.443406 274.322101 468.460006
 C 275.3055 467.476607 275.858046 466.142644 275.858046 464.751907
@@ -2121,17 +2168,17 @@ L 645.300097 544.974893
    <g id="text_82">
     <text style="font-weight: 700; font-size: 11px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: start; fill: #162b45" x="429.762054" y="379.493468" transform="rotate(-0 429.762054 379.493468)">TTFT p95 (seconds; log scale)</text>
    </g>
-   <g id="PathCollection_13">
+   <g id="PathCollection_22">
     <g clip-path="url(#p8ad5af890d)">
      <use xlink:href="#mac379231d4" x="632.984816" y="549.240267" style="fill: #2463b3; stroke: #172c43"/>
     </g>
    </g>
-   <g id="PathCollection_14">
+   <g id="PathCollection_23">
     <g clip-path="url(#p8ad5af890d)">
      <use xlink:href="#m08e67a8ab4" x="443.601015" y="537.917711" style="fill: #d65b29; stroke: #172c43"/>
     </g>
    </g>
-   <g id="PathCollection_15">
+   <g id="PathCollection_24">
     <g clip-path="url(#p8ad5af890d)">
      <use xlink:href="#m3eac3a7834" x="651.18543" y="542.183253" style="fill: #16836b; stroke: #172c43"/>
     </g>
@@ -2557,17 +2604,17 @@ L 1114.790625 624.096
    <g id="text_97">
     <text style="font-weight: 700; font-size: 11px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: start; fill: #162b45" x="810.333482" y="379.493468" transform="rotate(-0 810.333482 379.493468)">E2E I90 (output tok/s/user)</text>
    </g>
-   <g id="PathCollection_16">
+   <g id="PathCollection_25">
     <g clip-path="url(#pa69bafea65)">
      <use xlink:href="#mac379231d4" x="1013.556244" y="442.418572" style="fill: #2463b3; stroke: #172c43"/>
     </g>
    </g>
-   <g id="PathCollection_17">
+   <g id="PathCollection_26">
     <g clip-path="url(#pa69bafea65)">
      <use xlink:href="#m08e67a8ab4" x="824.172443" y="438.059882" style="fill: #d65b29; stroke: #172c43"/>
     </g>
    </g>
-   <g id="PathCollection_18">
+   <g id="PathCollection_27">
     <g clip-path="url(#pa69bafea65)">
      <use xlink:href="#m3eac3a7834" x="1031.756859" y="446.51198" style="fill: #16836b; stroke: #172c43"/>
     </g>
@@ -2577,8 +2624,8 @@ L 1114.790625 624.096
    <text style="font-size: 16px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: start; fill: #162b45" x="20.390625" y="19.3575" transform="rotate(-0 20.390625 19.3575)">Measured AgentX curves · default KV, RR and each architecture's selected tuning</text>
   </g>
   <g id="text_99">
-   <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #52657a" transform="translate(20.390625 703.893266)">Rings: highest sampled throughput in each series. Stars: highest-throughput samples passing both SLOs. Connecting lines are guides.</text>
-   <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #52657a" transform="translate(20.390625 715.896)">Single-point flag variants are shown in the following charts. One trial per cell; shaded intervals do not locate an exact knee.</text>
+   <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #52657a" transform="translate(20.390625 703.893266)">Rings: sampled throughput peaks. Stars: samples passing both SLOs with highest throughput. Crosses: fresh agg C192 references.</text>
+   <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #52657a" transform="translate(20.390625 715.896)">Lines show the original ladders; single-point variants follow. Most cells have one trial; shaded intervals do not locate an exact knee.</text>
   </g>
  </g>
  <defs>
