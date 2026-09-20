@@ -5,11 +5,11 @@ runner logs for the knee verdicts; also appends new runs to RUN_INDEX.md.  Run a
 import csv, glob, json, os, re
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))); H = "/mnt/disks/scratch/agentx_recs"; G = 24; SLO = 10.0
 ART = "https://console.cloud.google.com/storage/browser/alisachen-models/perf/"; GH = "https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench"
-NAME = {"kv": "default KV", "rr": "round-robin", "kvs3c08": "load scale 3, credit 0.8", "kvs2c08": "load scale 2, credit 0.8", "kvt05": "router temperature 0.5",
+NAME = {"kv": "default KV", "rr": "round-robin", "kvs3c08": "load scale 3, credit 0.8", "kvs2c08": "load scale 2, credit 0.8", "kvs3c10": "load scale 3, default credit 1.0", "kvt05": "router temperature 0.5",
         "kvd05": "credit decay 0.5", "kvd10": "credit decay 1.0", "kvs3c08d05": "load scale 3, credit 0.8 + decay 0.5"}
 FLAGS = {"kv": "`--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs`", "rr": "`--router-mode round-robin`",
          "kvs3c08": "kv + `--router-prefill-load-scale 3.0 --router-kv-overlap-score-credit 0.8`", "kvs2c08": "kv + `--router-prefill-load-scale 2.0 --router-kv-overlap-score-credit 0.8`",
-         "kvt05": "kv with `--router-temperature 0.5`", "kvd05": "kv + `--router-kv-overlap-score-credit-decay 0.5`", "kvd10": "kv + `--router-kv-overlap-score-credit-decay 1.0`",
+         "kvt05": "kv with `--router-temperature 0.5`", "kvs3c10": "kv + `--router-prefill-load-scale 3.0` (overlap credit left at its default 1.0)", "kvd05": "kv + `--router-kv-overlap-score-credit-decay 0.5`", "kvd10": "kv + `--router-kv-overlap-score-credit-decay 1.0`",
          "kvs3c08d05": "kv + load scale 3.0, credit 0.8, decay 0.5"}
 knee = {}
 for f in glob.glob("/tmp/agentx_agg_n3u-agg-ns*.log"):

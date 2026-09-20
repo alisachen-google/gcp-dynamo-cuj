@@ -258,6 +258,7 @@ comparison under-sold every policy. These cells sit just inside the budget. Two 
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | round-robin | 64 | `--router-mode round-robin` | 3,910 | 1,029 (42.9) | 0.74 / 9.21 / 15.7 s | 8.6 / 13.7 → 73.1 | 13.2 (peak 29) | 0.71 | 861 s | yes (q1 0.80 → q4 0.64 s) | [1789895323](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895323_alisachen-n3u-agg-ns2-agentx-rr-c64) |
 | default KV | 160 | `--router-mode kv --router-temperature 0.0 --router-queue-policy fcfs` | 8,755 | 2,256 (94.0) | 1.15 / 9.57 / 15.9 s | 20.8 / 43.4 → 23.1 | 60.5 (peak 118) | 0.75 | 1,492 s | yes (q1 1.43 → q4 0.93 s) | [1789895318](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895318_alisachen-n3u-agg-ns-agentx-kv-c160) |
+| load scale 3, credit 0.8 | 256 | kv + `--router-prefill-load-scale 3.0 --router-kv-overlap-score-credit 0.8` | 12,328 | 2,753 (114.7) | 4.69 / 18.87 / 26.3 s | 26.5 / 48.5 → 20.6 | 105.9 (peak 156) | 0.80 | 2,016 s | yes (q1 7.12 → q4 1.35 s) | [1789900377](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789900377_alisachen-n3u-agg-ns2-agentx-kvs3c08-c256) |
 
 ### KV vs RR inside the same SLO (TTFT p95 ≤ 10 s, stationary)
 
@@ -272,7 +273,7 @@ comparison under-sold every policy. These cells sit just inside the budget. Two 
 | router flags | total tok/s/GPU | output tok/s (/GPU) | TTFT p50 / p95 / p99 | ITL p50 / p90 → P90 | in-flight | hit rate | warm-up wall | stationary | logs + artifacts |
 |---|---|---|---|---|---|---|---|---|---|
 | default KV (baseline) | 8,755 | 2,256 (94.0) | 1.15 / 9.57 / 15.9 s | 20.8 / 43.4 → 23.1 | 60.5 (peak 118) | 0.75 | 1,492 s | yes (q1 1.43 → q4 0.93 s) | [1789895318](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895318_alisachen-n3u-agg-ns-agentx-kv-c160) |
-| (flag cells running) | | | | | | | | | |
+| load scale 3, credit 0.8: kv + `--router-prefill-load-scale 3.0 --router-kv-overlap-score-credit 0.8` | 9,894 (+13.0%) | 2,525 (105.2) | 0.71 / 4.85 (-49%) / 9.7 s | 16.0 / 30.5 → 32.8 | 49.8 (peak 95) | 0.83 | 1,396 s | yes (q1 0.72 → q4 0.67 s) | [1789901101](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789901101_alisachen-n3u-agg-ns-agentx-kvs3c08-c160) |
 
 ## iv. Simulation-vs-real gap, with the apple-to-apple decomposition
 
