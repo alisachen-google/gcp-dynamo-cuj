@@ -1268,34 +1268,39 @@ def markdown(points, native, manifest, status, methodology, disagg):
         / best(points, arch, "rr")["total_tok_s_gpu"]
         for arch in ["agg", "disagg"]
     }
-    agg_rr_ttft, agg_kv_ttft, agg_tuned_ttft = records(
-        decisions["agg"]["ttft_only_selected_ids"]
-    )
-    agg_rr_joint, agg_kv_joint, agg_tuned_joint = records(
+    agg_rr_joint, agg_kv_joint, _ = records(
         decisions["agg"]["joint_slo_selected_ids"]
+    )
+    disagg_rr_joint, disagg_kv_joint, _ = records(
+        decisions["disagg"]["joint_slo_selected_ids"]
     )
     previous_date = (
         manifest["previous_snapshot"]["collected_utc"][:16].replace("T", " ") + " UTC"
     )
     out = [
-        f"""# KV-Aware vs. Round-Robin Routing: NVIDIA Dynamo on Google Cloud
+        f"""# KV-Aware Routing for AI Agents: NVIDIA Dynamo on Google Cloud
 
-*How routing affects throughput, time to first token, and end-to-end responsiveness for coding-agent workloads.*
+*A Google Cloud customer use journey comparing KV-aware and round-robin routing, from GKE deployment and agentic trace replay to throughput and end-to-end responsiveness.*
 
-A coding agent sends much of its conversation history again on each turn. The worker that receives that request determines whether the service can reuse a resident prefix or must recompute more of the prompt. Across a fleet, routing therefore affects both cache reuse and how work is distributed—and ultimately how long the user waits.
+[NVIDIA Dynamo](https://github.com/ai-dynamo/dynamo) is an open-source framework for coordinating inference across GPUs and nodes. It works with inference engines such as SGLang, vLLM and TensorRT-LLM to provide request routing, distributed serving and cache management. In this Google Cloud **customer use journey (CUJ)**, we focus on **KV-cache-aware routing** and its impact on serving many coding-agent sessions at once.
 
-This Google Cloud **customer use journey (CUJ)** compares NVIDIA Dynamo's **KV-aware routing** with **round-robin (RR) routing** using recorded AgentX coding sessions and Nemotron-3-Ultra on GB300 GPUs. We follow each turn from the client, through Dynamo's router, to the streamed response. The study covers **aggregated serving**, where a worker handles prefill and decode, and **disaggregated serving**, where separate worker pools handle those stages.
+Before a model generates a response, it processes the prompt in a stage called **prefill**. The **key-value (KV) cache** retains attention state from that computation. When a later request begins with a matching prefix, the engine can reuse available cached state and reduce repeated prefill work. Across a fleet, that opportunity depends on which worker receives the request.
 
-The comparison follows two customer decisions: how the routing policies perform at the **same session concurrency**, and how much traffic each can serve under the **same latency SLO**. We measure TTFT p95 <10 seconds and separately require E2E-normalized interactivity ≥20 output tokens/s at P90. Default KV/RR curves establish the routing impact; the tuning tables show how that impact changes with router settings. The measured results also show why an agg tuning choice must be checked again on disagg.
+Dynamo's **KV-aware router** considers both reusable prefixes and active worker load when choosing a destination. Its placement decision balances the prompt work a worker can reuse against the work already assigned there. **Round-robin (RR)** distributes requests in rotation without considering prefix overlap. Both policies in this study keep engine prefix caching enabled, so the comparison measures what routing contributes to an existing caching capability. [NVIDIA's routing overview](https://docs.nvidia.com/dynamo/dev/knowledge-base/concepts/system-architecture/kv-aware-routing) explains this interaction between cache reuse and load.
 
-With the new agg measurements, **TTFT p95 <10 s** admits default KV at **C{agg_kv_ttft["clients"]}** versus RR at **C{agg_rr_ttft["clients"]}**: **{agg_kv_ttft["total_tok_s_gpu"]:,.0f} versus {agg_rr_ttft["total_tok_s_gpu"]:,.0f} total served tokens/s/GPU**, a **{agg_kv_ttft["total_tok_s_gpu"] / agg_rr_ttft["total_tok_s_gpu"]:.2f}×** difference. Their TTFT p95 values are **{agg_kv_ttft["ttft_p95_s"]:.2f} s** and **{agg_rr_ttft["ttft_p95_s"]:.2f} s**. The best sampled tuned KV point under TTFT alone remains C{agg_tuned_ttft["clients"]}; its E2E result does not meet the additional criterion.
+Agentic workloads make this decision especially relevant. A coding agent repeatedly sends instructions, source context, conversation history and tool results. Later turns often share long prefixes, and subagents can inherit part of a parent's context. Meanwhile, pauses between turns give other sessions time to compete for cache space. Routing a follow-up to a worker with usable cached context can reduce the wait for its first token. As more sessions run together, the balance between reuse and worker load also affects queueing and the time to finish each response.
 
-At each policy's best sampled point meeting **both** latency criteria, default KV delivered **{routing_gains["agg"]:.2f}× total served tokens/s/GPU for agg** and **{routing_gains["disagg"]:.2f}× for disagg** relative to RR. These compare different selected session counts: C{agg_kv_joint["clients"]} versus C{agg_rr_joint["clients"]} for agg, and C480 versus C72 for disagg. Tuned agg with **load scale 3 and default overlap credit 1.0** now passes both criteria at **C{agg_tuned_joint["clients"]}**, delivering **{agg_tuned_joint["total_tok_s_gpu"] / agg_rr_joint["total_tok_s_gpu"]:.2f}× RR throughput/GPU**. The same-concurrency tables show the routing differences at a fixed population of users.
+Our CUJ follows the decisions a platform team makes when bringing that workload to **Google Kubernetes Engine (GKE)**: deploy a serving recipe, replay representative traffic, compare routing policies, and tune the service against user-facing latency targets. We deploy **Nemotron-3-Ultra with SGLang on NVIDIA GB300 GPUs** in two configurations: **aggregated serving**, where each worker performs prefill and decode, and **disaggregated serving**, where separate worker pools process prompts and generate responses. The measured fleets use **24 GPUs for agg** and **64 GPUs for disagg**; KV and RR are compared within each architecture.
 
+To exercise the behavior that makes caching valuable, **AIPerf replays AgentX coding sessions from the Weka 256K corpus**. It reconstructs requests from trace metadata and preserves conversation-prefix sharing, recorded think time and subagent dependencies. The cache-hit rate emerges from that replay, routing and cache residency. Each concurrency point represents a population of live session trees; the number of requests in flight changes as those sessions wait, branch and advance.
+
+We then follow each request from the client, through Dynamo's routing and serving stages, to its streamed response. The comparison answers two customer questions: how KV and RR perform at the **same session concurrency**, and how much traffic each can serve under the **same latency SLO**. We use **TTFT p95 <10 seconds** and separately add **E2E-normalized interactivity ≥20 output tokens/s at P90** to assess full-response responsiveness. Default KV/RR curves establish the baseline, followed by router tuning and the operating points each configuration supports.
+
+In the measured cohorts, default KV delivered **{routing_gains["agg"]:.2f}× total served tokens/s/GPU for agg** and **{routing_gains["disagg"]:.2f}× for disagg** relative to RR at each policy's best sampled point meeting **both** latency criteria. These compare separately selected session counts: C{agg_kv_joint["clients"]} versus C{agg_rr_joint["clients"]} for agg, and C{disagg_kv_joint["clients"]} versus C{disagg_rr_joint["clients"]} for disagg. Total served tokens include cached input as well as output; the tables also report output throughput and errors. The results that follow connect the routing choice to the amount of agentic work these GCP deployments can serve within the stated latency limits.
 
 **Evidence snapshot: {date} · {len(points)} completed hardware jobs ({len(cells(points, "agg"))} agg / {len(cells(points, "disagg"))} disagg)**
 
-Each architecture has its own measured curves, full data table, comparison at a sampled knee, and SLO table. The baseline curves show **default KV and RR only**; tuned settings remain in the data and tuning tables. Total served tokens include cached prompt tokens; output-token throughput is reported alongside them.
+Each architecture has its own measured curves, full data table, comparison at a sampled knee, and SLO table. The baseline curves show **default KV and RR only**; tuned settings remain in the data and tuning tables.
 
 This update adds **eight agg jobs** from [AGENTX_AGG_RESULTS.md, section vi](../AGENTX_AGG_RESULTS.md): RR64, default KV160, five KV variants at C160, and scale-3/credit-0.8 at C256. The D88 measurement cohort is retained from **{previous_date}**; later D88 follow-ups are outside this agg update.
 
@@ -2016,8 +2021,8 @@ def html(markdown_text):
     )
     document = (
         """<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>KV-Aware vs. Round-Robin Routing: NVIDIA Dynamo on Google Cloud</title>
-<meta name="description" content="A Google Cloud customer use journey comparing KV-aware and round-robin routing in NVIDIA Dynamo: throughput, TTFT and end-to-end responsiveness for AgentX coding workloads across aggregated and disaggregated serving."><style>
+<title>KV-Aware Routing for AI Agents: NVIDIA Dynamo on Google Cloud</title>
+<meta name="description" content="A Google Cloud customer use journey comparing NVIDIA Dynamo KV-aware and round-robin routing: GKE deployment, AgentX trace replay, throughput and end-to-end responsiveness across aggregated and disaggregated serving."><style>
 :root{color-scheme:light;--ink:#162b45;--muted:#52657a;--line:#dce4ed}*{box-sizing:border-box}
 body{margin:0;background:#f3f6fa;color:var(--ink);font:16px/1.65 system-ui,-apple-system,Segoe UI,sans-serif}
 main{max-width:1360px;margin:28px auto 64px;padding:38px 54px 64px;background:#fff;border:1px solid var(--line);border-radius:14px;min-width:0}
