@@ -60,6 +60,8 @@ COLORS = {
 }
 ORDER = list(LABELS)
 FIGURES = [
+    "kv-routing",
+    "agentic-replay",
     "agg-curves",
     "disagg-curves",
     "agg-flags",
@@ -1296,19 +1298,9 @@ def markdown(points, native, manifest, status, methodology, disagg):
 
 [NVIDIA Dynamo](https://github.com/ai-dynamo/dynamo) is an open-source distributed inference framework that coordinates request placement and execution across GPU workers. It integrates with inference engines including SGLang, vLLM and TensorRT-LLM. This Google Cloud **customer use journey (CUJ)** evaluates Dynamo's **KV-cache-aware routing** for agentic inference, using SGLang as the execution backend.
 
-During **prefill**, a model processes an input sequence and materializes **key-value (KV) tensors** for its attention layers. A subsequent request with a matching token prefix can reuse compatible cached state on the selected worker, reducing repeated prefill computation. The reusable prefix depends on cache residency and the model state required by the serving backend.
-
-Dynamo's **KV-aware router** scores eligible workers using prefix overlap and projected active load. Greater overlap reduces estimated prefill work, while assigned prefill and decode work increases the estimated load. **Round-robin (RR)** distributes requests without including prefix overlap in worker selection. Both configurations retain engine prefix caching; the experimental variable is the routing policy and, in the tuning runs, its explicit parameters. [NVIDIA's routing documentation](https://docs.nvidia.com/dynamo/dev/knowledge-base/concepts/system-architecture/kv-aware-routing) describes the placement model.
-
-Agentic coding generates temporally correlated requests. Successive turns repeat instructions, repository context, conversation history and tool outputs; subagent branches can share prefixes with their parent session. Inter-turn delays and competing sessions affect whether that state remains resident. Routing therefore influences both repeated prefill computation and load distribution. Its net effect must be measured through request latency and throughput, because increased cache reuse can coincide with higher queueing delay on a busy worker.
-
 The CUJ covers deployment, workload replay, routing-policy comparison and parameter tuning on **Google Kubernetes Engine (GKE)**. The serving workload is **Nemotron-3-Ultra on NVIDIA GB300 GPUs**, deployed as **24-GPU aggregated serving** and **64-GPU disaggregated serving**. Aggregated workers execute prefill and decode; the disaggregated deployment uses separate prefill and decode pools with a state-transfer stage. Each KV/RR comparison uses the same topology and GPU count within its architecture.
 
-**AIPerf replays AgentX sessions from the Weka 256K corpus** as a closed-loop workload. Requests are reconstructed from trace metadata with the model tokenizer, retaining shared-prefix structure, recorded inter-turn delays and subagent dependencies. Concurrency **C** denotes live session trees. The active request count varies with response completion, think time and subagent execution. Cache-hit rate is an observed result of replay, placement and cache residency.
-
-The evaluation compares routing policies at **fixed session concurrency** and selects operating points under **common latency constraints**. The TTFT criterion is **p95 <10 seconds**. The additional E2E criterion is **I90 ≥20 output tokens/s**, where `I90 = 1 / P90(E2E_seconds / output_tokens)` over successful profiling requests. This normalization includes the interval from request submission to response completion. Default KV/RR curves establish the baseline; separate tables report parameter sweeps and SLO-constrained selections.
-
-At the highest-throughput sampled points satisfying **both** latency criteria, the default-KV/RR ratio is **{routing_gains["agg"]:.2f}× total served tokens/s/GPU for agg** and **{routing_gains["disagg"]:.2f}× for disagg**. The selected concurrency pairs are C{agg_kv_joint["clients"]}/C{agg_rr_joint["clients"]} for agg and C{disagg_kv_joint["clients"]}/C{disagg_rr_joint["clients"]} for disagg (KV/RR). Total served throughput counts input tokens, including cache hits, plus output tokens. Output-only throughput and client errors are reported separately. These ratios characterize the sampled operating points under the specified replay and fleet configurations.
+The engineering question is whether routing requests to reusable state improves throughput within latency constraints, and how that tradeoff changes between the two serving architectures. The following sections connect the cache mechanism to the workload, then define the experiment and present the measured operating points.
 
 **Evidence snapshot: {date} · {len(points)} completed hardware jobs ({len(cells(points, "agg"))} agg / {len(cells(points, "disagg"))} disagg)**
 
@@ -1317,6 +1309,44 @@ Each architecture has its own measured curves, full data table, comparison at a 
 The snapshot includes **eight additional agg jobs** from [AGENTX_AGG_RESULTS.md, section vi](../AGENTX_AGG_RESULTS.md): RR64, default KV160, five KV variants at C160, and scale-3/credit-0.8 at C256. The D88 measurement cohort is retained from **{previous_date}**; later D88 follow-ups are outside this snapshot.
 
 [Standalone HTML]({STEM}.html) · [hardware CSV]({STEM}.csv) · [comparison JSON]({STEM}.json) · [configuration provenance]({STEM}-methodology.json) · [validation]({STEM}-validation.json)
+
+## How Dynamo KV-cache-aware routing works
+
+During **prefill**, the serving engine processes a prompt and stores **key-value (KV) tensors** for attention. When a later prompt begins with the same token sequence, the engine can reuse compatible, resident prefix state and compute the uncached suffix. This reduces repeated prefill work; output tokens still require decoding. **SGLang owns the cached model state, while Dynamo uses cache-location metadata to make placement decisions.** Reuse requires both a matching prefix and the state required by the backend. [NVIDIA's KV-aware routing overview](https://docs.nvidia.com/dynamo/dev/knowledge-base/concepts/system-architecture/kv-aware-routing) describes this relationship.
+
+The routing decision has three steps:
+
+1. **Locate reusable prefixes.** Worker events describe cache-block insertion and eviction. Dynamo's index maps prefix-block hashes to workers, allowing a request to be compared with each worker's advertised cached prefix.
+2. **Estimate the placement cost.** The router combines overlap credit with projected active prefill and decode load. Our default KV recipe sets temperature to zero, selecting a lowest-cost eligible worker. A worker with more reusable state can lose to a less busy worker if the load penalty outweighs the reuse benefit.
+3. **Execute on the selected worker.** The engine reuses the valid state it can actually access and prefills the remaining tokens. The index carries metadata; the cached tensors remain with the serving backend. Cache eviction and delayed metadata updates can reduce realized reuse.
+
+These are the conceptual inputs to [Dynamo's routing cost model](https://docs.nvidia.com/dynamo/dev/knowledge-base/modular-components/router/routing-concepts). The exact flags used in this experiment are listed with the results.
+
+{figure("kv-routing", "Dynamo KV-aware routing: request placement combines prefix-location metadata and active load; model state remains in the serving engines")}
+*Conceptual example with two eligible workers. Solid arrows show request/work flow; dashed arrows carry metadata. The router chooses one worker per placement. The lower box shows the generation path; worker-selection ordering is backend-specific. [Editable Mermaid source]({STEM}-kv-routing.mmd).*
+
+In **aggregated serving**, the selected worker performs both prefill and decode. In **disaggregated serving**, prefix locality matters at the prefill pool; the resulting state is transferred to a decode worker. Transfer and decode capacity therefore remain part of the end-to-end latency even when prefill reuse improves. [Dynamo's disaggregated-serving architecture](https://docs.nvidia.com/dynamo/dev/knowledge-base/concepts/system-architecture/disaggregated-serving) explains that execution path.
+
+**Round-robin rotates requests across workers without scoring prefix overlap.** It can still obtain cache hits when matching state is present on the chosen worker. Both arms enable engine prefix caching, so this benchmark measures the effect of placement on cache reuse, load distribution and request latency.
+
+## Why we use agentic workloads
+
+Agentic inference is a current infrastructure priority in the [Google Cloud–NVIDIA collaboration](https://cloud.google.com/blog/products/compute/google-cloud-ai-infrastructure-at-nvidia-gtc-2026). Coding agents are a useful workload for this CUJ because their request sequences expose the interaction between **prefix locality, cache lifetime and worker load**. A task can require repeated model calls around tool execution, user input and parallel subagents.
+
+Three properties make those sequences relevant to KV-aware routing:
+
+- **Long, repeated prefixes:** successive turns retain instructions, repository context and earlier conversation content. Routing to reusable state can avoid processing much of that input again and reduce prefill's contribution to TTFT.
+- **Branching execution:** subagents can inherit a parent prefix while adding different context. Shared state creates reuse opportunities, while simultaneous branches increase load and can make concentrating requests on one worker expensive.
+- **Pauses and competing sessions:** tool execution and user think time separate related requests. Other sessions consume cache capacity during those gaps, so a shared prefix only becomes a cache hit if compatible state is still available when the request arrives.
+
+These properties motivate **trace replay as part of the benchmark**. We use AIPerf to reconstruct requests from the Weka corpus's block identifiers and recorded lengths, retaining shared-prefix structure and parent/subagent dependencies. The [Weka loader documentation](https://github.com/ai-dynamo/aiperf/blob/main/docs/tutorials/weka-trace.md) describes how traces become a dependency graph.
+
+{figure("agentic-replay", "Illustrative agentic session: repeated prefix P, recorded delays and parallel subagents create opportunities for cache reuse and pressure on worker load")}
+*P denotes a shared token prefix. The branches illustrate a joined subagent pattern; actual traces vary in depth and dependency structure. Pauses and concurrent sessions affect whether P remains reusable. AIPerf replays the pattern against the serving endpoint. [Editable Mermaid source]({STEM}-agentic-replay.mmd).*
+
+Our **AgentX replay is closed-loop**: response completion and the recorded end-to-start delay control subsequent turns, subject to the scenario's whole-system idle-gap cap. Concurrency **C** counts live session trees, so active requests vary with think time and fan-out. Replay reconstructs the recorded workload; it does not execute the original coding tools or grade task completion. **Cache-hit rate is a measured outcome of replay, placement and residency.** The [AgentX scenario documentation](https://github.com/ai-dynamo/aiperf/blob/main/docs/tutorials/agentx-mvp.md) defines the replay framework; section 1 records our specific controls.
+
+The resulting hypothesis is that KV-aware placement reduces redundant prefill enough to improve throughput within the latency budget, while its load term limits concentration on busy workers. We test that hypothesis at **fixed session concurrency** and under **TTFT p95 <10 seconds**, with **E2E-normalized I90 ≥20 output tokens/s** as an additional criterion. The measured gains in the TL;DR apply to these fleets and replay settings; their magnitude depends on prefix reuse, cache capacity, scheduling and serving topology.
 
 ## 1. Setup, agentic workload and benchmarking methodology
 
@@ -2046,7 +2076,7 @@ pre{padding:18px;background:#edf2f7;border-radius:8px;overflow:auto}pre code{pad
 @media(max-width:800px){main{margin:0;padding:24px 18px;border-radius:0}h1{font-size:29px}h2{font-size:23px}table{font-size:12px}th,td{padding:8px}}
 @media print{body{background:#fff}main{border:0;max-width:none;margin:0;padding:0}nav{display:none}h2,h3{break-after:avoid}img,table{break-inside:avoid}a{color:inherit}.table-scroll{overflow:visible}table{font-size:9px}}
 </style></head><body><main><div class="eyebrow">Google Cloud CUJ · NVIDIA Dynamo · AgentX</div>
-<nav><a href="#tl-dr">TL;DR</a><a href="#overview">Overview</a><a href="#1-setup-agentic-workload-and-benchmarking-methodology">1. Setup and methodology</a><a href="#2-aggregated-serving-measured-kv-and-rr">2. Agg hardware</a><a href="#3-disaggregated-serving-measured-kv-and-rr">3. Disagg hardware</a><a href="#4-simulation-versus-real-hardware-jobs">4. Simulation vs hardware</a><a href="#5-how-we-simulate-performance-aic-dynosim-and-recipe-selection">5. AIC and DynoSim</a></nav>
+<nav><a href="#tl-dr">TL;DR</a><a href="#overview">Overview</a><a href="#how-dynamo-kv-cache-aware-routing-works">How KV routing works</a><a href="#why-we-use-agentic-workloads">Why agentic workloads</a><a href="#1-setup-agentic-workload-and-benchmarking-methodology">1. Setup and methodology</a><a href="#2-aggregated-serving-measured-kv-and-rr">2. Agg hardware</a><a href="#3-disaggregated-serving-measured-kv-and-rr">3. Disagg hardware</a><a href="#4-simulation-versus-real-hardware-jobs">4. Simulation vs hardware</a><a href="#5-how-we-simulate-performance-aic-dynosim-and-recipe-selection">5. AIC and DynoSim</a></nav>
 """
         + body
         + "</main></body></html>\n"

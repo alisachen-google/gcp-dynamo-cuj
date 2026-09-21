@@ -1,0 +1,24 @@
+%% Rendered with Mermaid 10.9.3. Illustrative dependency graph, not a measured timeline.
+flowchart TB
+    accTitle: Why agentic sessions exercise prefix reuse, cache residency and load balancing
+    accDescr: A parent conversation repeats prefix P across turns separated by response completion and recorded delays. Two subagents can share P and execute in parallel. A joined parent continues after the required branches finish. AIPerf replays these dependencies and delays against the serving endpoint; cache hits are measured outcomes.
+
+    TURN0["Parent turn n<br/>P + request n"] --> GAP["Response completes<br/>Recorded tool / user delay"]
+    GAP --> TURN1["Parent turn n+1<br/>P + added history + request n+1"]
+    TURN1 -->|"spawn"| CHILD1["Subagent A<br/>P + branch-specific context"]
+    TURN1 -->|"spawn"| CHILD2["Subagent B<br/>P + branch-specific context"]
+    CHILD1 --> JOIN["Join required child results<br/>Resume the parent conversation"]
+    CHILD2 --> JOIN
+    JOIN --> TURN2["Later parent turn<br/>P + accumulated history + next request"]
+    TURN2 -. "this dependency pattern is replayed" .-> REPLAY["AIPerf → Dynamo + SGLang on GKE<br/>Reconstruct shared prefixes; preserve delays and branches<br/>Measure cache reuse, throughput, TTFT and E2E latency"]
+
+    classDef parent fill:#e8f0fe,stroke:#2463b3,color:#163d72,stroke-width:1.5px;
+    classDef delay fill:#fff1e8,stroke:#d65b29,color:#89401f,stroke-width:1.5px;
+    classDef child fill:#e6f4ed,stroke:#16836b,color:#135e4c,stroke-width:1.5px;
+    classDef join fill:#f2effa,stroke:#7d75b7,color:#493e70,stroke-width:1.5px;
+    classDef replay fill:#173b63,stroke:#173b63,color:#ffffff,stroke-width:2px;
+    class TURN0,TURN1,TURN2 parent;
+    class GAP delay;
+    class CHILD1,CHILD2 child;
+    class JOIN join;
+    class REPLAY replay;
