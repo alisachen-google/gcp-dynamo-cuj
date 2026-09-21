@@ -1,11 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="430" viewBox="0 0 1040 430" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="612" viewBox="0 0 1040 612" role="img" aria-labelledby="title desc">
   <title id="title">AgentX Weka dataset replay</title>
-  <desc id="desc">The Weka 256K corpus has 393 recorded session roots with turns and subagent branches. AIPerf replays reconstructed requests with growing shared prefixes, recorded delays and dependencies. Dynamo and its serving engines process the requests and the benchmark measures performance. Blue token blocks show reused conversation history; gold blocks show new input. The illustrated session is schematic.</desc>
+  <desc id="desc">The Weka 256K corpus has 393 recorded coding-session roots with growing shared prefixes, subagent trees and recorded pauses. AIPerf reconstructs tokenized prompts from trace blocks, preserves spawn and join dependencies, and schedules the next turn after the preceding response and recorded delay. Concurrency C counts live root sessions with their subagents, rather than individual requests. Dynamo and SGLang serve the replay under KV or round-robin routing. Cache reuse, latency and throughput are measured outcomes. Blue token blocks show shared conversation history; gold blocks show new input. The illustration is schematic; the report specifies warmup, timing controls and cache busting.</desc>
   <defs>
     <style>
       text { font-family: 'DejaVu Sans', sans-serif; fill: #203952; }
       .label { font-size: 24px; font-weight: 600; }
       .small { font-size: 18px; }
+      .detail { font-size: 16px; fill: #526c83; }
+      .micro { font-size: 14px; fill: #526c83; }
+      .feature { font-size: 18px; }
+      .icon { fill: none; stroke: #4486d6; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
       .outline { fill: #fff; stroke: #294863; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
       .line { fill: none; stroke: #294863; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
       .prefix { fill: #e3efff; stroke: #4486d6; stroke-width: 2; }
@@ -14,11 +18,19 @@
     <marker id="arrow" markerWidth="11" markerHeight="11" refX="9" refY="5.5" orient="auto" markerUnits="userSpaceOnUse"><path d="M1 1 L9 5.5 L1 10" fill="none" stroke="#294863" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
     <marker id="turn" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M1 1 L6 4 L1 7" fill="none" stroke="#8299ae" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker>
   </defs>
-  <rect width="1040" height="430" fill="#fff"/>
-  <text class="label" x="157" y="53" text-anchor="middle">Weka</text>
-  <text class="label" x="531" y="53" text-anchor="middle">AIPerf replay</text>
-  <text class="label" x="906" y="53" text-anchor="middle">Dynamo</text>
+  <rect width="1040" height="612" fill="#fff"/>
+  <text class="label" x="157" y="47" text-anchor="middle">Weka 256K</text>
+  <text class="detail" x="157" y="77" text-anchor="middle">393 recorded coding sessions</text>
+  <text class="label" x="531" y="47" text-anchor="middle">AIPerf replay</text>
+  <text class="detail" x="531" y="77" text-anchor="middle">Rebuild prompts from trace blocks</text>
+  <text class="label" x="898" y="47" text-anchor="middle" style="font-size:22px">Dynamo + SGLang</text>
+  <rect x="828" y="64" width="51" height="26" rx="13" fill="#e3efff" stroke="#4486d6"/>
+  <text class="micro" x="853" y="82" text-anchor="middle" style="fill:#285d9b">KV</text>
+  <text class="micro" x="899" y="82" text-anchor="middle">vs</text>
+  <rect x="918" y="64" width="51" height="26" rx="13" fill="#f5f8fb" stroke="#adc0d1"/>
+  <text class="micro" x="944" y="82" text-anchor="middle">RR</text>
 
+  <g transform="translate(0 27)">
   <!-- A stack of recorded session trees. -->
   <rect x="83" y="88" width="200" height="218" rx="12" fill="#f4f8fc" stroke="#adc0d1" stroke-width="2"/>
   <rect x="69" y="101" width="200" height="218" rx="12" fill="#fff" stroke="#8299ae" stroke-width="2"/>
@@ -33,7 +45,6 @@
   <path d="M108 252 V273" fill="none" stroke="#8299ae" stroke-width="2.5" marker-end="url(#turn)"/>
   <rect class="outline" x="81" y="279" width="54" height="29" rx="9"/>
   <path d="M93 290 H122 M93 299 H113" fill="none" stroke="#4486d6" stroke-width="2.5" stroke-linecap="round"/>
-  <text class="small" x="157" y="370" text-anchor="middle">393 sessions</text>
 
   <path class="line" d="M302 216 H365" marker-end="url(#arrow)"/>
 
@@ -66,6 +77,9 @@
   <rect class="new" x="564" y="301" width="24" height="23" rx="4"/>
 
   <path class="line" d="M691 216 H796" marker-end="url(#arrow)"/>
+  <text class="micro" x="744" y="239" text-anchor="middle">Request</text>
+  <path d="M796 171 H691" fill="none" stroke="#8299ae" stroke-width="2.5" marker-end="url(#turn)"/>
+  <text class="micro" x="744" y="158" text-anchor="middle">Response</text>
 
   <!-- Serving and benchmark measurements. -->
   <rect class="outline" x="838" y="112" width="136" height="171" rx="13"/>
@@ -79,9 +93,57 @@
   <rect x="880" y="325" width="14" height="29" rx="3" fill="#e0f4ec" stroke="#078568" stroke-width="2"/>
   <rect x="904" y="313" width="14" height="41" rx="3" fill="#e0f4ec" stroke="#078568" stroke-width="2"/>
   <path d="M935 337 L945 326 L954 331 L972 310" fill="none" stroke="#4486d6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
 
-  <rect class="prefix" x="367" y="386" width="20" height="20" rx="4"/>
-  <text class="small" x="399" y="402">Shared prefix</text>
-  <rect class="new" x="580" y="386" width="20" height="20" rx="4"/>
-  <text class="small" x="612" y="402">New input</text>
+  <!-- Compact labels make the trace features and replay controls explicit. -->
+  <text class="small" x="157" y="416" text-anchor="middle">Recorded workload</text>
+  <rect class="prefix" x="391" y="399" width="17" height="18" rx="4"/>
+  <text class="detail" x="419" y="413">Shared prefix</text>
+  <rect class="new" x="550" y="399" width="17" height="18" rx="4"/>
+  <text class="detail" x="578" y="413">New input</text>
+  <text class="small" x="900" y="416" text-anchor="middle">Measured outcomes</text>
+
+  <rect x="30" y="439" width="283" height="148" rx="15" fill="#f8fbff" stroke="#dbe5ee" stroke-width="1.5"/>
+  <g transform="translate(48 458)" class="icon">
+    <path d="M0 0 H17 M0 7 H22 M0 14 H27"/>
+  </g>
+  <text class="feature" x="92" y="475" style="font-size:17px">Growing shared prefixes</text>
+  <g transform="translate(49 503)" class="icon">
+    <circle cx="12" cy="0" r="4"/><path d="M12 4 V10 M0 10 H24 M0 10 V16 M24 10 V16"/>
+    <rect x="-4" y="17" width="8" height="7" rx="2"/><rect x="20" y="17" width="8" height="7" rx="2"/>
+  </g>
+  <text class="feature" x="92" y="520">Subagent trees</text>
+  <g transform="translate(61 560)" class="icon">
+    <circle r="12"/><path d="M0 -7 V0 L6 3"/>
+  </g>
+  <text class="feature" x="92" y="565">Recorded pauses</text>
+
+  <rect x="373" y="439" width="340" height="148" rx="15" fill="#f8fbff" stroke="#dbe5ee" stroke-width="1.5"/>
+  <g transform="translate(392 460)" class="icon">
+    <path d="M0 0 L10 8 L0 16 M26 0 L16 8 L26 16 M10 8 H16"/>
+  </g>
+  <text class="feature" x="435" y="475">Preserve spawn / join</text>
+  <g transform="translate(405 512)" class="icon">
+    <path d="M-9 -6 A12 12 0 1 1 -11 5 M-9 -6 V-13 M-9 -6 H-16"/>
+  </g>
+  <text class="detail" x="435" y="520" style="fill:#203952">Response → delay → next turn</text>
+  <g transform="translate(393 552)" class="icon">
+    <circle cx="8" cy="1" r="4"/><path d="M0 17 V12 Q0 7 8 7 Q16 7 16 12 V17"/>
+    <circle cx="23" cy="5" r="3"/><path d="M21 11 Q29 11 29 16 V18"/>
+  </g>
+  <text class="feature" x="435" y="565">C = live sessions</text>
+
+  <rect x="788" y="439" width="227" height="148" rx="15" fill="#f5fbf8" stroke="#d9e9e2" stroke-width="1.5"/>
+  <g transform="translate(807 458)" fill="none" stroke="#078568" stroke-width="2" stroke-linejoin="round">
+    <rect width="10" height="16" rx="2"/><rect x="15" width="10" height="16" rx="2"/>
+  </g>
+  <text class="feature" x="847" y="475">Cache reuse</text>
+  <g transform="translate(820 513)" fill="none" stroke="#078568" stroke-width="2" stroke-linecap="round">
+    <circle r="11"/><path d="M0 -6 V0 L5 3 M-4 -16 H4 M0 -16 V-12"/>
+  </g>
+  <text class="feature" x="847" y="520">TTFT + E2E</text>
+  <g transform="translate(808 551)" fill="none" stroke="#078568" stroke-width="2" stroke-linejoin="round">
+    <rect y="10" width="5" height="9" rx="1"/><rect x="9" y="5" width="5" height="14" rx="1"/><rect x="18" width="5" height="19" rx="1"/>
+  </g>
+  <text class="feature" x="847" y="565">Throughput</text>
 </svg>
