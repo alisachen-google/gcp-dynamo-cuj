@@ -1243,7 +1243,7 @@ Two completed native checks **do** have matching real hardware jobs: the earlier
 
 ### 4.4 The remaining C480 tuning gap
 
-All **12 C480 native flag attempts failed during warmup** with `mocker handoff session limit reached`; no full profiling result exists at that load. The grid tested credits 0.6/0.8/1.0 and did not produce a forecast for the hardware credit-1.5 winner. Failed warmups are not plotted as zero throughput or as hardware limits.
+All **12 C480 native flag attempts failed during warmup** with `mocker handoff session limit reached`; no full profiling result exists at that load. The grid tested credits 0.6/0.8/1.0 and did not produce a forecast for the hardware-selected credit-1.5 configuration. Failed warmups are not plotted as zero throughput or as hardware limits.
 
 Fix native handoff admission/backpressure while preserving the intended batch limits, then collect matched D88 default-KV/RR points at C96/C192 and C480. Only after those complete should the tuning grid and C576 SLO choice be evaluated. Validate transfer contention and the prefill cache allocation alongside that work.
 
@@ -1278,31 +1278,31 @@ def markdown(points, native, manifest, status, methodology, disagg):
         manifest["previous_snapshot"]["collected_utc"][:16].replace("T", " ") + " UTC"
     )
     out = [
-        f"""# KV-Aware Routing for AI Agents: NVIDIA Dynamo on Google Cloud
+        f"""# NVIDIA Dynamo on Google Cloud: KV-Aware vs. Round-Robin Routing
 
-*A Google Cloud customer use journey comparing KV-aware and round-robin routing, from GKE deployment and agentic trace replay to throughput and end-to-end responsiveness.*
+*Technical evaluation of prefix-cache locality, throughput, TTFT and end-to-end latency under AgentX replay on GKE.*
 
-[NVIDIA Dynamo](https://github.com/ai-dynamo/dynamo) is an open-source framework for coordinating inference across GPUs and nodes. It works with inference engines such as SGLang, vLLM and TensorRT-LLM to provide request routing, distributed serving and cache management. In this Google Cloud **customer use journey (CUJ)**, we focus on **KV-cache-aware routing** and its impact on serving many coding-agent sessions at once.
+[NVIDIA Dynamo](https://github.com/ai-dynamo/dynamo) is an open-source distributed inference framework that coordinates request placement and execution across GPU workers. It integrates with inference engines including SGLang, vLLM and TensorRT-LLM. This Google Cloud **customer use journey (CUJ)** evaluates Dynamo's **KV-cache-aware routing** for agentic inference, using SGLang as the execution backend.
 
-Before a model generates a response, it processes the prompt in a stage called **prefill**. The **key-value (KV) cache** retains attention state from that computation. When a later request begins with a matching prefix, the engine can reuse available cached state and reduce repeated prefill work. Across a fleet, that opportunity depends on which worker receives the request.
+During **prefill**, a model processes an input sequence and materializes **key-value (KV) tensors** for its attention layers. A subsequent request with a matching token prefix can reuse compatible cached state on the selected worker, reducing repeated prefill computation. The reusable prefix depends on cache residency and the model state required by the serving backend.
 
-Dynamo's **KV-aware router** considers both reusable prefixes and active worker load when choosing a destination. Its placement decision balances the prompt work a worker can reuse against the work already assigned there. **Round-robin (RR)** distributes requests in rotation without considering prefix overlap. Both policies in this study keep engine prefix caching enabled, so the comparison measures what routing contributes to an existing caching capability. [NVIDIA's routing overview](https://docs.nvidia.com/dynamo/dev/knowledge-base/concepts/system-architecture/kv-aware-routing) explains this interaction between cache reuse and load.
+Dynamo's **KV-aware router** scores eligible workers using prefix overlap and projected active load. Greater overlap reduces estimated prefill work, while assigned prefill and decode work increases the estimated load. **Round-robin (RR)** distributes requests without including prefix overlap in worker selection. Both configurations retain engine prefix caching; the experimental variable is the routing policy and, in the tuning runs, its explicit parameters. [NVIDIA's routing documentation](https://docs.nvidia.com/dynamo/dev/knowledge-base/concepts/system-architecture/kv-aware-routing) describes the placement model.
 
-Agentic workloads make this decision especially relevant. A coding agent repeatedly sends instructions, source context, conversation history and tool results. Later turns often share long prefixes, and subagents can inherit part of a parent's context. Meanwhile, pauses between turns give other sessions time to compete for cache space. Routing a follow-up to a worker with usable cached context can reduce the wait for its first token. As more sessions run together, the balance between reuse and worker load also affects queueing and the time to finish each response.
+Agentic coding generates temporally correlated requests. Successive turns repeat instructions, repository context, conversation history and tool outputs; subagent branches can share prefixes with their parent session. Inter-turn delays and competing sessions affect whether that state remains resident. Routing therefore influences both repeated prefill computation and load distribution. Its net effect must be measured through request latency and throughput, because increased cache reuse can coincide with higher queueing delay on a busy worker.
 
-Our CUJ follows the decisions a platform team makes when bringing that workload to **Google Kubernetes Engine (GKE)**: deploy a serving recipe, replay representative traffic, compare routing policies, and tune the service against user-facing latency targets. We deploy **Nemotron-3-Ultra with SGLang on NVIDIA GB300 GPUs** in two configurations: **aggregated serving**, where each worker performs prefill and decode, and **disaggregated serving**, where separate worker pools process prompts and generate responses. The measured fleets use **24 GPUs for agg** and **64 GPUs for disagg**; KV and RR are compared within each architecture.
+The CUJ covers deployment, workload replay, routing-policy comparison and parameter tuning on **Google Kubernetes Engine (GKE)**. The serving workload is **Nemotron-3-Ultra on NVIDIA GB300 GPUs**, deployed as **24-GPU aggregated serving** and **64-GPU disaggregated serving**. Aggregated workers execute prefill and decode; the disaggregated deployment uses separate prefill and decode pools with a state-transfer stage. Each KV/RR comparison uses the same topology and GPU count within its architecture.
 
-To exercise the behavior that makes caching valuable, **AIPerf replays AgentX coding sessions from the Weka 256K corpus**. It reconstructs requests from trace metadata and preserves conversation-prefix sharing, recorded think time and subagent dependencies. The cache-hit rate emerges from that replay, routing and cache residency. Each concurrency point represents a population of live session trees; the number of requests in flight changes as those sessions wait, branch and advance.
+**AIPerf replays AgentX sessions from the Weka 256K corpus** as a closed-loop workload. Requests are reconstructed from trace metadata with the model tokenizer, retaining shared-prefix structure, recorded inter-turn delays and subagent dependencies. Concurrency **C** denotes live session trees. The active request count varies with response completion, think time and subagent execution. Cache-hit rate is an observed result of replay, placement and cache residency.
 
-We then follow each request from the client, through Dynamo's routing and serving stages, to its streamed response. The comparison answers two customer questions: how KV and RR perform at the **same session concurrency**, and how much traffic each can serve under the **same latency SLO**. We use **TTFT p95 <10 seconds** and separately add **E2E-normalized interactivity ≥20 output tokens/s at P90** to assess full-response responsiveness. Default KV/RR curves establish the baseline, followed by router tuning and the operating points each configuration supports.
+The evaluation compares routing policies at **fixed session concurrency** and selects operating points under **common latency constraints**. The TTFT criterion is **p95 <10 seconds**. The additional E2E criterion is **I90 ≥20 output tokens/s**, where `I90 = 1 / P90(E2E_seconds / output_tokens)` over successful profiling requests. This normalization includes the interval from request submission to response completion. Default KV/RR curves establish the baseline; separate tables report parameter sweeps and SLO-constrained selections.
 
-In the measured cohorts, default KV delivered **{routing_gains["agg"]:.2f}× total served tokens/s/GPU for agg** and **{routing_gains["disagg"]:.2f}× for disagg** relative to RR at each policy's best sampled point meeting **both** latency criteria. These compare separately selected session counts: C{agg_kv_joint["clients"]} versus C{agg_rr_joint["clients"]} for agg, and C{disagg_kv_joint["clients"]} versus C{disagg_rr_joint["clients"]} for disagg. Total served tokens include cached input as well as output; the tables also report output throughput and errors. The results that follow connect the routing choice to the amount of agentic work these GCP deployments can serve within the stated latency limits.
+At the highest-throughput sampled points satisfying **both** latency criteria, the default-KV/RR ratio is **{routing_gains["agg"]:.2f}× total served tokens/s/GPU for agg** and **{routing_gains["disagg"]:.2f}× for disagg**. The selected concurrency pairs are C{agg_kv_joint["clients"]}/C{agg_rr_joint["clients"]} for agg and C{disagg_kv_joint["clients"]}/C{disagg_rr_joint["clients"]} for disagg (KV/RR). Total served throughput counts input tokens, including cache hits, plus output tokens. Output-only throughput and client errors are reported separately. These ratios characterize the sampled operating points under the specified replay and fleet configurations.
 
 **Evidence snapshot: {date} · {len(points)} completed hardware jobs ({len(cells(points, "agg"))} agg / {len(cells(points, "disagg"))} disagg)**
 
 Each architecture has its own measured curves, full data table, comparison at a sampled knee, and SLO table. The baseline curves show **default KV and RR only**; tuned settings remain in the data and tuning tables.
 
-This update adds **eight agg jobs** from [AGENTX_AGG_RESULTS.md, section vi](../AGENTX_AGG_RESULTS.md): RR64, default KV160, five KV variants at C160, and scale-3/credit-0.8 at C256. The D88 measurement cohort is retained from **{previous_date}**; later D88 follow-ups are outside this agg update.
+The snapshot includes **eight additional agg jobs** from [AGENTX_AGG_RESULTS.md, section vi](../AGENTX_AGG_RESULTS.md): RR64, default KV160, five KV variants at C160, and scale-3/credit-0.8 at C256. The D88 measurement cohort is retained from **{previous_date}**; later D88 follow-ups are outside this snapshot.
 
 [Standalone HTML]({STEM}.html) · [hardware CSV]({STEM}.csv) · [comparison JSON]({STEM}.json) · [configuration provenance]({STEM}-methodology.json) · [validation]({STEM}-validation.json)
 
@@ -1324,43 +1324,43 @@ Both fleets serve **NVIDIA Nemotron-3-Ultra-550B-A55B-NVFP4** on **GB300**, with
 | Speculative decoding | Not enabled in the saved recipe | Not enabled in the saved recipe |
 | Sources | [agg manifest](agentx-serving-perf-data/source/n3u-agg-newstack-np2.yaml.txt) | [disagg manifest](agentx-serving-perf-data/source/n3u-mnnvl-88.yaml.txt) |
 
-The original agg ladder was collected on September 16; two fresh references and three decay variants form the later np-2 campaign. The September 20 SLO campaign adds RR64, default KV160, five C160 flag variants and tuned KV256. The agg recipes use two separate fleets (`n3u-agg-ns` / `n3u-agg-ns2`). The same-concurrency comparison at C192 uses the original matched campaign; new references and the C160 tuning campaign are shown separately. GPU-normalized comparisons across agg and disagg remain observations from different fleet sizes, not controlled architecture-scaling estimates.
+The original agg concurrency sweep was collected on September 16. The subsequent np-2 campaign contains two reference repeats and three decay variants. The September 20 SLO campaign adds RR64, default KV160, five C160 flag variants and tuned KV256. The agg recipes use two separate fleets (`n3u-agg-ns` / `n3u-agg-ns2`). The fixed-concurrency C192 comparison uses the original matched campaign; subsequent references and C160 tuning runs are reported separately. Comparisons between agg and disagg normalize by GPU count but retain differences in fleet size and request mix, which limit architectural scaling inferences.
 
 ### 1.2 Agentic workload and replay
 
-AIPerf **0.12.0** runs `inferencex-agentx-mvp` on **`semianalysisai/cc-traces-weka-062126-256k`**, containing 393 recorded coding-session roots. A session includes its subagents. Later turns reuse conversation prefixes, while recorded think time, subagent fan-out and joins determine when requests arrive. Prefix reuse is therefore measured from replay, not imposed as a fixed hit percentage.
+AIPerf **0.12.0** runs `inferencex-agentx-mvp` on **`semianalysisai/cc-traces-weka-062126-256k`**, a corpus of 393 recorded coding-session roots with their subagents. The loader reconstructs prompt content from block identifiers and trace lengths using the model tokenizer. Replay preserves prefix-sharing structure and subagent spawn/join dependencies. Within each stream, the next turn follows response completion and the recorded end-to-start delay. Each run samples from the corpus; completion of all 393 roots is not required by the duration limit. The [AgentX replay documentation](https://github.com/ai-dynamo/aiperf/blob/main/docs/tutorials/agentx-mvp.md) describes the scenario; the controls below specify this experiment.
 
 | Replay control | Value used in the measured jobs |
 | --- | --- |
-| Concurrency C | Live session trees; not simultaneous requests or decode batch size |
+| Concurrency C | Live root sessions including their descendants; active request count and decode batch size vary |
 | Seed / dataset | 42 / 393 roots from the named Weka 256K corpus |
-| Initial trajectory | Start ratio 0.25–0.75, with trajectory warmup before profiling |
+| Initial trajectory | Initial trace time sampled within 0.25–0.75 of recorded duration; trajectory warmup precedes profiling |
 | Timing | Recorded end-to-start delays; whole-system idle-gap cap 10 seconds |
 | Measurement | 3,600-second profiling window; 60-second grace; 1,200-second request timeout |
 | Prompt/output handling | Model tokenizer; server token counts; streaming; `ignore_eos` preserves recorded output lengths |
 | Recycled traces | A fresh first-turn-prefix cache-bust marker per play |
 | Validation | Included runs pass the scenario stamp; success and error counts are retained separately |
 
-The run template and exact router variants are preserved in the [benchmark template](agentx-serving-perf-data/source/sgl-d72-agentx.yaml.txt), [runner](agentx-serving-perf-data/source/agentx_runner_flags.sh.txt) and [agg SLO sweep](agentx-serving-perf-data/source/run_agentx_agg_slo10_np2_v2.sh.txt). Completed artifact exports establish what actually ran; the planned sweep queue is not completion evidence. A fixed seed controls sampling, but a faster arm can complete more turns in the same hour. Compare the ISL/OSL, depth and trace mix in the exported data; do not assume identical completed request cohorts. Busy-stream runs that remove think time are a different workload and are excluded.
+The [benchmark template](agentx-serving-perf-data/source/sgl-d72-agentx.yaml.txt), [runner](agentx-serving-perf-data/source/agentx_runner_flags.sh.txt) and [agg SLO sweep](agentx-serving-perf-data/source/run_agentx_agg_slo10_np2_v2.sh.txt) preserve the replay configuration and router arguments. Completed exports determine the reported run inventory. A fixed seed controls sampling, while closed-loop execution allows a lower-latency configuration to complete more turns within the same profiling window. Input sequence length (ISL), output sequence length (OSL), conversation depth and source-trace distributions therefore remain comparison variables. Runs with think time disabled are excluded from this workload.
 
 ### 1.3 Fair KV/RR comparison and metric definitions
 
-**Change the router while holding the serving recipe and replay fixed.** RR uses `--router-mode round-robin`; default KV uses `--router-mode kv --router-temperature 0 --router-queue-policy fcfs`. Prefix caching remains enabled in the agg/prefill engines for both policies. RR is not a no-cache control. Tuned KV adds the explicit flags listed in each architecture's table.
+**Routing is the configured treatment variable.** Within each architecture, the comparison fixes the serving recipe and replay controls. RR uses `--router-mode round-robin`; default KV uses `--router-mode kv --router-temperature 0 --router-queue-policy fcfs`. Both retain prefix caching in the agg/prefill engines. Tuned KV adds the arguments listed in each architecture's configuration table. Deployment and sampling limitations are reported below.
 
 | Metric or comparison | Definition |
 | --- | --- |
-| Total throughput/GPU | AIPerf input + output tokens/s divided by every GPU in the fleet, including both disagg stages. Cached input is included; this is served token volume. |
+| Total throughput/GPU | AIPerf input + output tokens/s divided by the total fleet GPU count, including both disagg stages. Cached input counts toward served token volume; this metric does not measure newly computed tokens alone. |
 | Output throughput/GPU | Output tokens/s divided by the same GPU count. Reported separately to expose workload-mix differences. |
-| TTFT | p95 over successful profiling requests, in seconds. The requested table uses **strict TTFT p95 <10 s**. No current point is exactly 10 s. |
-| E2E interactivity I90 | Per request, compute `r_i = E2E_seconds / output_tokens`; then `I90 = 1 / P90(r_i)` using linear interpolation. The additional SLO is **I90 ≥20 tok/s/user**. |
+| TTFT | p95 time to first token over successful profiling requests, in seconds. The selection criterion is **strict TTFT p95 <10 s**. No sampled point is exactly 10 s. |
+| E2E interactivity I90 | For each successful profiling request with valid latency and positive output length, compute `r_i = E2E_seconds / output_tokens`; then `I90 = 1 / P90(r_i)` using linear interpolation. The additional criterion is **I90 ≥20 tok/s/user**, equivalent to `P90(r_i) ≤0.05 s/token`. |
 | Same configuration | Same topology, GPU count, workload and session concurrency; only router settings differ. |
-| Same SLO | Each policy selects its highest-throughput sampled point passing TTFT <10 s, excluding points with post-knee queue evidence. Its concurrency may differ. Repeats stay separate; this is the highest observed sample, not a mean or confidence bound. |
+| Same SLO | For each policy, select the highest-throughput sampled point passing TTFT <10 s and the queue check. Selected concurrency may differ between policies. Repeats remain separate; the selected value is a sample maximum rather than a mean or confidence bound. |
 | Combined SLO | Apply TTFT <10 s **and** I90 ≥20. This is shown separately from the TTFT-only table. |
-| Errors | Failed profiling requests are excluded from latency percentiles and reported explicitly. No new availability threshold is imposed. |
+| Errors | Failed profiling requests are excluded from latency percentiles and reported separately. Operating-point selection does not apply an additional availability SLO. |
 
-**Knee evidence:** use the throughput slope/decline, TTFT tail, errors and within-run queue progression. A sampled throughput peak is not an exact continuous knee; an SLO crossing is a separate boundary. The existing queue check flags a high sustained TTFT median, a growing first-to-last-quarter TTFT median, or an error rate above 5%. GPU utilization alone does not determine the knee.
+**Knee identification:** the report examines throughput slope or decline, TTFT tails, errors and within-run latency progression. Throughput knees are reported at the resolution of the sampled concurrency sweep; an SLO crossing defines a separate boundary. The queue check uses sustained median TTFT, first-to-last-quarter growth in median TTFT, or an error rate above 5% as overload indicators. These are client-observed indicators rather than direct measurements of queue occupancy. GPU utilization alone does not identify either boundary.
 
-Most cells have one trial. The two agg C192 references have repeats across deployment campaigns, but that is not a complete noise distribution. Caches were not explicitly flushed between every hardware cell. Cache busting and successful warmup reduce some biases without establishing identical physical cache state. The client cached-input metric is `overall_usage_prompt_cache_read_pct`, not per-engine KV occupancy. A scenario-valid closed-loop replay result is not an open-loop production arrival-rate guarantee.
+Most configuration/concurrency combinations have one trial. The agg C192 reference repeats provide limited repeatability evidence; confidence intervals are not estimated. Caches were not explicitly flushed between every hardware run, so cache busting and successful warmup do not establish identical initial cache state. `overall_usage_prompt_cache_read_pct` measures the client-reported cached-input fraction; per-engine KV occupancy is a separate quantity. Scenario validity checks replay rules. The latency results characterize this closed-loop session population and do not establish latency at an independently controlled production arrival rate.
 
 **E2E accounting:** the source results log's “P90 interactivity” uses inverse P90 inter-token latency. It excludes TTFT and is not the E2E-normalized I90 above. This report recomputes I90 from each successful profiling request's full latency and output length; consequently, default KV160 and scale-2/credit-0.8 C160 pass TTFT but fail I90 ≥20.
 """
@@ -1466,7 +1466,7 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
                     "Total tok/s/GPU",
                     "Throughput / RR",
                     "TTFT p95 (s)",
-                    "RR / TTFT",
+                    "TTFT ratio (RR / policy)",
                     "E2E I90",
                     "Errors",
                 ],
@@ -1486,14 +1486,14 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
         )
         if arch == "agg":
             out.append(
-                "At C192, the original tuned setting delivers **1.62× RR throughput** and **9.49× shorter TTFT p95**. These are the September 16 comparison cells. The fresh tuned reference is included above and in the current-campaign flag contrasts below; no fresh RR192 run was collected alongside it."
+                "At C192, tuned KV has **1.62× RR total served throughput/GPU**. TTFT p95 is **6.33 s for tuned KV** and **60.08 s for RR**, giving a **9.49× RR/KV latency ratio**. These measurements come from the September 16 campaign. The subsequent tuned repeat is reported separately; that campaign did not include a matched RR192 repeat."
             )
         else:
             out.append(
-                "At C192, credit 1.5 delivers **1.16× RR throughput** and **13.68× shorter TTFT p95**; default KV has almost the same throughput as tuned KV at this load. At the heavier C480 tuning point, tuned KV/RR is **3.80× on throughput**, but RR is already overloaded. That C480 ratio is not a comparison of two sustainable knees."
+                "At C192, KV with overlap credit 1.5 has **1.16× RR total served throughput/GPU**. TTFT p95 is **2.30 s for tuned KV** and **31.45 s for RR**, giving a **13.68× RR/KV latency ratio**. Default and tuned KV have similar throughput at this concurrency. At C480, the tuned-KV/RR throughput ratio is **3.80×**; the RR run exhibits overload. The C480 ratio therefore compares different saturation states and does not establish a capacity ratio under a common SLO."
             )
         out.append(
-            f"### {number}.4 Tuned KV versus RR under the same SLO: TTFT p95 <10 seconds\n\nSelect the highest measured total throughput passing the **TTFT-only** limit and queue check. This table does **not** impose I90 ≥20; its last column shows whether the selected point also passes that additional criterion."
+            f"### {number}.4 Tuned KV versus RR under the same SLO: TTFT p95 <10 seconds\n\nFor each policy, select the highest measured total served throughput passing the **TTFT-only** criterion and queue check. I90 ≥20 is evaluated separately in the last column."
         )
         chosen_ttft = records(decisions[arch]["ttft_only_selected_ids"])
         rr = chosen_ttft[0]
@@ -1529,13 +1529,13 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
             default = chosen_ttft[1]
             tuned = chosen_ttft[2]
             out.append(
-                f"**TTFT-only:** default KV160 versus RR64 now gives **{default['total_tok_s_gpu'] / rr['total_tok_s_gpu']:.2f}× total throughput/GPU**. Tuned KV192 versus RR64 gives **{tuned['total_tok_s_gpu'] / rr['total_tok_s_gpu']:.2f}×** using the highest-throughput original sample. Its fresh np-2 C192 repeat gives **{fresh['total_tok_s_gpu']:,.0f} total tok/s/GPU, {fresh['ttft_p95_s']:.2f} s TTFT and {fresh['total_tok_s_gpu'] / rr['total_tok_s_gpu']:.2f}× RR64**, which is the comparison in the updated source log. Both C192 trials remain visible; the selection rule is unchanged. They have three and two client errors respectively. Default KV160 has three errors; RR64 has zero.\n\nThe new tuned C256 sample reaches **12,328 total tok/s/GPU** but **18.87 s TTFT**, so it is excluded from the SLO selection. For scale 3/credit 0.8, the TTFT boundary is now bracketed by **C192–256**. Both tuned C192 trials and default KV160 fail the additional E2E requirement."
+                f"**TTFT-only selection:** default KV160/RR64 has a **{default['total_tok_s_gpu'] / rr['total_tok_s_gpu']:.2f}× total served throughput/GPU ratio**. Tuned KV192/RR64 has a **{tuned['total_tok_s_gpu'] / rr['total_tok_s_gpu']:.2f}×** ratio using the highest-throughput original sample. The np-2 C192 repeat measures **{fresh['total_tok_s_gpu']:,.0f} total tok/s/GPU, {fresh['ttft_p95_s']:.2f} s TTFT p95 and {fresh['total_tok_s_gpu'] / rr['total_tok_s_gpu']:.2f}× RR64 throughput**, corresponding to the comparison in the source log. The original and repeated C192 trials have three and two client errors, respectively. Default KV160 has three errors; RR64 has zero.\n\nTuned C256 measures **12,328 total tok/s/GPU** with **18.87 s TTFT p95** and fails the TTFT criterion. For scale 3/credit 0.8, the sampled TTFT crossing is bounded by **C192–256**. Both tuned C192 trials and default KV160 fail the additional E2E criterion."
             )
         else:
             out.append(
-                "**TTFT-only:** credit-1.5 KV576 versus RR72 gives **7.95× total throughput/GPU**. Both also pass I90 ≥20 and have zero client errors. RR72 has almost no TTFT headroom and needs a repeat. Default KV576 is outside the retained D88 snapshot, so this table does not isolate the tuned-versus-default capacity gain at equal concurrency."
+                "**TTFT-only selection:** KV576 with credit 1.5/RR72 has a **7.95× total served throughput/GPU ratio**. Both runs also satisfy I90 ≥20 and have zero exported client errors. RR72's TTFT p95 is close to the 10-second threshold; repeated measurements are required to establish its margin. Default KV576 is outside the retained D88 snapshot, so the table does not quantify the tuning effect at fixed concurrency."
             )
-        out.append("**If E2E is also required**, apply both SLOs:")
+        out.append("**Combined TTFT and E2E selection:** apply both latency criteria:")
         joint = records(decisions[arch]["joint_slo_selected_ids"])
         rr = joint[0]
         out.append(
@@ -1563,13 +1563,13 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
         )
         if arch == "agg":
             out.append(
-                "The default-KV combined-SLO ratio is now **1.75×**, versus 2.11× in the previous snapshot, because the new RR64 point replaces RR48 as the selected RR reference. Default KV96's measured performance is unchanged."
+                "The default-KV/RR throughput ratio under the combined SLO is **1.75×**, compared with 2.11× in the previous snapshot. This change results from selecting RR64 in place of RR48; the default-KV96 measurement is unchanged."
             )
         out.append(f"### {number}.5 What the flag sweep establishes")
         if arch == "agg":
             baseline = one(points, "agg", "kv", 160)
             out.append(
-                "**New C160 sweep:** load scale 3 with default overlap credit 1.0 is the highest-throughput measured agg setting meeting both SLOs.\n\n"
+                "**C160 parameter sweep:** load scale 3 with default overlap credit 1.0 has the highest measured agg throughput among the sampled configurations satisfying both SLOs.\n\n"
                 + figure(
                     "agg-flags-c160",
                     "New agg C160 flag sweep: measured throughput, TTFT and E2E interactivity",
@@ -1615,7 +1615,7 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
             scale3 = one(points, "agg", "kvs3c10", 160)
             credit08 = one(points, "agg", "kvs3c08", 160)
             out.append(
-                f"**Use load scale 3 as the current agg candidate**, with temperature 0, default overlap credit 1.0 and default decay 0. The only added flag is `--router-prefill-load-scale 3.0`. At C160 it delivers **{delta(scale3, baseline, 'total_tok_s_gpu'):+.1f}% throughput**, **{delta(scale3, baseline, 'ttft_p95_s'):.1f}% TTFT p95**, **I90 {scale3[I90]:.4f}** and zero exported client errors. Cached input rises from **{baseline['cache_pct']:.1f}% to {scale3['cache_pct']:.1f}%**.\n\nScale 3 with credit 0.8 also passes both limits at C160, with one error. Keeping the default credit gives **{delta(scale3, credit08, 'total_tok_s_gpu'):+.1f}%** observed throughput versus credit 0.8; repeat both before treating that small difference as a reliable credit effect. The default-credit comparison changes only load scale versus default KV, isolating that flag within the saved recipe, though the trials used separate fleets.\n\nScale 2/credit 0.8 passes TTFT but misses I90 at **19.6589**. Decay 0.5 changes throughput by **−0.7%** at C160 and still fails I90; it does not establish an improvement. Temperature 0.5 lowers throughput **15.3%** and fails TTFT at **19.17 s**. C160 flag-cell warmups span about **1,389–1,397 s**, versus **1,492 s** for default KV; comparable durations do not replace repeated trials.\n\n**Retained C192 evidence:** the earlier flag sweep below tests a heavier concurrency. No measured C192 setting passes both SLOs."
+                f"**Selected agg candidate:** prefill load scale 3, temperature 0, default overlap credit 1.0 and default decay 0. The additional argument is `--router-prefill-load-scale 3.0`. Relative to default KV at C160, the measured differences are **{delta(scale3, baseline, 'total_tok_s_gpu'):+.1f}% total throughput** and **{delta(scale3, baseline, 'ttft_p95_s'):.1f}% TTFT p95**. The candidate has **I90 {scale3[I90]:.4f}** and zero exported client errors. The cached-input fraction is **{baseline['cache_pct']:.1f}% for default KV and {scale3['cache_pct']:.1f}% for this candidate**.\n\nScale 3 with credit 0.8 also satisfies both criteria at C160, with one client error. Default credit has **{delta(scale3, credit08, 'total_tok_s_gpu'):+.1f}%** observed throughput relative to credit 0.8. Repeats are required to distinguish this difference from run-to-run variation. The default-credit configuration changes only load scale relative to default KV; the use of separate fleets limits causal attribution from these individual runs.\n\nScale 2/credit 0.8 satisfies TTFT but fails I90 at **19.6589**. Decay 0.5 has **−0.7%** throughput relative to default KV at C160 and fails I90. Temperature 0.5 has **15.3% lower throughput** and fails TTFT at **19.17 s**. C160 tuning-run warmups span approximately **1,389–1,397 s**, compared with **1,492 s** for default KV. Warmup duration is a diagnostic; repeatability requires repeated profiling measurements.\n\n**C192 parameter sweep:** the retained sweep evaluates a higher session concurrency. No sampled C192 configuration satisfies both SLOs."
             )
             out.append(
                 figure(
@@ -1647,7 +1647,7 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
                 )
             )
             out.append(
-                "The fresh C192 references reproduce original throughput within 2%; the fresh tuned result gives I90 **19.7385**, versus **19.7795** originally, so the C192 E2E miss has repeated. At C192, decay 0.5/1.0 alone and decay 0.5 added to scale 3/credit 0.8 all lose in observed throughput and latency. Their small throughput deltas still need repeats. The first decay-only warmups took about 1,733 s, while later controls took about 1,632–1,634 s; this is consistent with a startup transient, not proof that every np-2 run is slower.\n\n**Next useful points:** repeat default KV160, RR64 and both scale-3 C160 variants; collect **scale 3/default credit 1.0 at C192**, which has not been measured. For the measured credit-0.8 recipe, refine **C160–192** for the combined SLO and **C192–256** for TTFT alone. Refine default KV160–192 and RR64–96 only if the aim is to localize their TTFT limits. No RR160 measurement exists, so the C160 flag table compares KV variants with default KV, not RR at the same concurrency."
+                "The C192 reference repeats differ from the original throughput measurements by less than 2%. The tuned repeat has I90 **19.7385**, compared with **19.7795** originally; both fail the E2E criterion. Decay 0.5/1.0 alone and decay 0.5 added to scale 3/credit 0.8 have lower measured throughput and higher TTFT than their corresponding references. Small throughput differences require additional repeats. Initial decay-only warmups lasted approximately 1,733 s, compared with 1,632–1,634 s for subsequent controls. A startup transient is a possible explanation; these observations do not establish a systematic np-2 performance difference.\n\n**Additional measurements:** repeat default KV160, RR64 and both scale-3 C160 variants; collect **scale 3/default credit 1.0 at C192**, which is absent from this snapshot. For the measured credit-0.8 recipe, refine **C160–192** for the combined SLO and **C192–256** for TTFT alone. Additional default-KV160–192 and RR64–96 points would refine their TTFT crossings. The C160 table uses default KV as its reference because no RR160 measurement is available."
             )
         else:
             out.append(
@@ -1684,7 +1684,7 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
                 )
             )
             out.append(
-                "**Credit 1.5 remains the strongest observed C480 latency candidate:** TTFT −15.4%, I90 +13.1%, throughput +0.29% versus default. Credit 2.0 has essentially identical throughput but worse measured TTFT and I90 than 1.5. Scale 3/credit 0.8 misses TTFT; decay 0.5 misses both limits. Do not transfer the agg winner to disagg without measuring it.\n\n**D88 follow-up scope:** temperature 0.5/0.2 at C480 and default KV576 are outside the retained D88 cohort. Import those follow-ups in a separate D88 update before revising this architecture's recommendation; this agg update leaves its measured decisions unchanged. RR384 and RR480 have 68 and 39 client errors respectively; the separate 353 server timeout events reported for RR480 are not a client-error count."
+                "**Overlap credit 1.5 has the lowest measured TTFT p95 among the sampled C480 configurations:** TTFT p95 −15.4%, I90 +13.1%, total throughput +0.29% relative to default KV. Credit 2.0 has similar throughput, higher TTFT and lower I90 than credit 1.5. Scale 3/credit 0.8 fails TTFT; decay 0.5 fails both criteria. The agg-selected configuration therefore requires independent validation on the disaggregated topology.\n\n**D88 measurement scope:** temperature 0.5/0.2 at C480 and default KV576 are outside the retained cohort and are excluded from these selections. RR384 and RR480 have 68 and 39 client errors, respectively. The 353 server timeout events reported separately for RR480 represent a different counting scope from exported client errors."
             )
 
     a, d = best_tuned(points, "agg"), best_tuned(points, "disagg")
@@ -1759,7 +1759,7 @@ These are **12 actual native simulations paired with the original 12 agg hardwar
     )
     out.append("""The four-point acceptance gate covered **±20% total throughput**, not TTFT or I90. All eight holdouts also fall within ±20% throughput. The original model reproduces the sampled default-policy throughput decline from C192 to C384 and the direction of the scale-3/credit-0.8 and temperature-0.5 effects, but it underestimates the RR384 TTFT tail by **38.4%**.
 
-**SLO errors matter:** simulated default KV192 passes TTFT (8.71 s) while hardware fails (11.66 s). Simulated tuned KV192 gives I90 **22.5354** while hardware gives **19.7795**; it incorrectly passes the combined SLO and selects C192 where hardware selects C96 **within the original paired cohort**. The expanded hardware inventory now selects tuned C160, which has no native counterpart. There is **one combined-SLO classification disagreement among 12 pairs**. Throughput calibration therefore supports candidate screening, not automatic SLO approval. [Original paired inputs and calibration/holdout provenance](agentx-agg-kv-rr-report.md#31-native-dynosim-v10-current-completed-calibration-samples).
+**SLO classification error:** simulated default KV192 passes TTFT (8.71 s) while hardware fails (11.66 s). Simulated tuned KV192 gives I90 **22.5354** while hardware gives **19.7795**; it incorrectly passes the combined SLO and selects C192 where hardware selects C96 **within the original paired cohort**. The expanded hardware inventory now selects tuned C160, which has no native counterpart. There is **one combined-SLO classification disagreement among 12 pairs**. Throughput calibration therefore supports candidate screening; SLO selection still requires hardware validation. [Original paired inputs and calibration/holdout provenance](agentx-agg-kv-rr-report.md#31-native-dynosim-v10-current-completed-calibration-samples).
 """)
     out.append(disagg_simulation_markdown(disagg, status))
 
@@ -1774,7 +1774,7 @@ These are **12 actual native simulations paired with the original 12 agg hardwar
 | Native Dynamo / DynoSim mocker | Requests, router flags, worker topology, scheduler rules and cache capacity | Placement, prefix reuse, admission, batch/chunk composition, cache state and time spent waiting around model work |
 | Hardware validation | AIPerf against the real serving fleet | Determines whether a candidate's throughput, latency tails, errors and SLO result actually reproduce |
 
-AIC supplies the duration of model work; the scheduler determines what work is in each pass and when it can execute. This division is described in [NVIDIA's DynoSim explanation](https://developer.nvidia.com/blog/dynosim-simulating-the-pareto-frontier/) and [AIC 0.11.0](https://github.com/ai-dynamo/aiconfigurator/tree/v0.11.0). The configuration tables below describe **our saved experiment**, not every capability of the current upstream projects.
+AIC estimates forward-pass execution time. The native scheduler determines batch composition and execution timing; the saved calibration coefficients adjust the AIC estimates for this experiment. This division is described in [NVIDIA's DynoSim explanation](https://developer.nvidia.com/blog/dynosim-simulating-the-pareto-frontier/) and [AIC 0.11.0](https://github.com/ai-dynamo/aiconfigurator/tree/v0.11.0). The configuration tables below describe **our saved experiment**, not every capability of the current upstream projects.
 
 Our native route is:
 
@@ -2021,8 +2021,8 @@ def html(markdown_text):
     )
     document = (
         """<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>KV-Aware Routing for AI Agents: NVIDIA Dynamo on Google Cloud</title>
-<meta name="description" content="A Google Cloud customer use journey comparing NVIDIA Dynamo KV-aware and round-robin routing: GKE deployment, AgentX trace replay, throughput and end-to-end responsiveness across aggregated and disaggregated serving."><style>
+<title>NVIDIA Dynamo on Google Cloud: KV-Aware vs. Round-Robin Routing</title>
+<meta name="description" content="Google Cloud CUJ technical evaluation of NVIDIA Dynamo KV-aware and round-robin routing on GKE: AgentX replay, prefix-cache reuse, total served throughput, TTFT and E2E-normalized interactivity."><style>
 :root{color-scheme:light;--ink:#162b45;--muted:#52657a;--line:#dce4ed}*{box-sizing:border-box}
 body{margin:0;background:#f3f6fa;color:var(--ink);font:16px/1.65 system-ui,-apple-system,Segoe UI,sans-serif}
 main{max-width:1360px;margin:28px auto 64px;padding:38px 54px 64px;background:#fff;border:1px solid var(--line);border-radius:14px;min-width:0}
