@@ -61,8 +61,8 @@ COLORS = {
 }
 ORDER = list(LABELS)
 FIGURES = [
-    "kv-routing",
-    "agentic-replay",
+    "kv-routing-simple",
+    "agentx-dataset-simple",
     "agg-curves",
     "disagg-curves",
     "agg-flags",
@@ -1717,8 +1717,8 @@ The routing decision has three steps:
 
 These are the conceptual inputs to [Dynamo's routing cost model](https://docs.nvidia.com/dynamo/dev/knowledge-base/modular-components/router/routing-concepts). The exact flags used in this experiment are listed with the results.
 
-{figure("kv-routing", "Dynamo KV-aware routing: request placement combines prefix-location metadata and active load; model state remains in the serving engines")}
-*Conceptual example with two eligible workers. Solid arrows show request/work flow; dashed arrows carry metadata. The router chooses one worker per placement. The lower box shows the generation path; worker-selection ordering is backend-specific. [Editable Mermaid source]({STEM}-kv-routing.mmd).*
+{figure("kv-routing-simple", "Simple KV-aware routing: Dynamo compares prefix reuse and load across three workers, selecting Worker A in this example")}
+*Worker A has a matching prefix and low load in this illustrative placement. Solid arrows show the selected request path; dashed arrows indicate other candidates. Cache contents and load labels are schematic. [Editable Mermaid source]({STEM}-kv-routing-simple.mmd).*
 
 In **aggregated serving**, the selected worker performs both prefill and decode. In **disaggregated serving**, prefix locality matters at the prefill pool; the resulting state is transferred to a decode worker. Transfer and decode capacity therefore remain part of the end-to-end latency even when prefill reuse improves. [Dynamo's disaggregated-serving architecture](https://docs.nvidia.com/dynamo/dev/knowledge-base/concepts/system-architecture/disaggregated-serving) explains that execution path.
 
@@ -1800,8 +1800,8 @@ Three properties make those sequences relevant to KV-aware routing:
 
 These properties motivate **trace replay as part of the benchmark**. We use AIPerf to reconstruct requests from the Weka corpus's block identifiers and recorded lengths, retaining shared-prefix structure and parent/subagent dependencies. The [Weka loader documentation](https://github.com/ai-dynamo/aiperf/blob/main/docs/tutorials/weka-trace.md) describes how traces become a dependency graph.
 
-{figure("agentic-replay", "Illustrative agentic session: repeated prefix P, recorded delays and parallel subagents create opportunities for cache reuse and pressure on worker load")}
-*P denotes a shared token prefix. The branches illustrate a joined subagent pattern; actual traces vary in depth and dependency structure. Pauses and concurrent sessions affect whether P remains reusable. AIPerf replays the pattern against the serving endpoint. [Editable Mermaid source]({STEM}-agentic-replay.mmd).*
+{figure("agentx-dataset-simple", "AgentX dataset and replay: Weka session traces become AIPerf requests served by Dynamo and SGLang")}
+*The corpus records coding-session structure. AIPerf reconstructs inference traffic and preserves replay dependencies and delays; cache reuse is measured during serving. The specific timing controls are recorded in section 1. [Editable Mermaid source]({STEM}-agentx-dataset-simple.mmd).*
 
 Our **AgentX replay is closed-loop**: response completion and the recorded end-to-start delay control subsequent turns, subject to the scenario's whole-system idle-gap cap. Concurrency **C** counts live session trees, so active requests vary with think time and fan-out. Replay reconstructs the recorded workload; it does not execute the original coding tools or grade task completion. **Cache-hit rate is a measured outcome of replay, placement and residency.** The [AgentX scenario documentation](https://github.com/ai-dynamo/aiperf/blob/main/docs/tutorials/agentx-mvp.md) defines the replay framework; section 1 records our specific controls.
 

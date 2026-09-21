@@ -1,0 +1,12 @@
+%% Rendered with Mermaid 10.9.3. Replay stages, not live tool execution.
+flowchart LR
+    accTitle: AgentX Weka dataset and replay in three steps
+    accDescr: The Weka 256K dataset contains 393 recorded coding-session roots with turns, subagents and delays. AIPerf reconstructs shared prefixes and preserves replay timing and dependencies. Dynamo and SGLang serve the requests while cache reuse, throughput and latency are measured.
+    DATA["AgentX / Weka 256K<br/>393 recorded session roots<br/>Turns · subagents · delays"] --> REPLAY["AIPerf replay<br/>Rebuild shared prefixes<br/>Keep delays + dependencies"]
+    REPLAY --> SERVE["Dynamo + SGLang<br/>Measure cache reuse,<br/>throughput and latency"]
+    classDef data fill:#e8f0fe,stroke:#2463b3,color:#163d72,stroke-width:1.8px;
+    classDef replay fill:#173b63,stroke:#173b63,color:#ffffff,stroke-width:2px;
+    classDef serving fill:#e6f4ed,stroke:#16836b,color:#135e4c,stroke-width:1.8px;
+    class DATA data;
+    class REPLAY replay;
+    class SERVE serving;

@@ -1,0 +1,17 @@
+%% Rendered with Mermaid 10.9.3. Cache/load states are illustrative.
+flowchart TB
+    accTitle: Simple KV-aware routing example
+    accDescr: A request reaches Dynamo. The router compares reusable prefixes and load across three workers. In this example Worker A has the matching prefix and low load, so it is selected; Worker B has no matching prefix and Worker C is busy.
+    REQUEST["Agent request<br/>Shared prefix + new input"] --> ROUTER["Dynamo router<br/>Compare prefix reuse + load"]
+    ROUTER -->|"Selected in this example"| A["Worker A<br/>Prefix cached · low load<br/>Reuse prefix; process new input"]
+    ROUTER -.-> B["Worker B<br/>No matching prefix<br/>Low load"]
+    ROUTER -.-> C["Worker C<br/>Prefix cached<br/>High load"]
+    classDef request fill:#e8f0fe,stroke:#2463b3,color:#163d72,stroke-width:1.8px;
+    classDef router fill:#173b63,stroke:#173b63,color:#ffffff,stroke-width:2px;
+    classDef selected fill:#e6f4ed,stroke:#16836b,color:#135e4c,stroke-width:2.5px;
+    classDef candidate fill:#f4f6f9,stroke:#8a9aab,color:#40546b,stroke-width:1.3px;
+    class REQUEST request;
+    class ROUTER router;
+    class A selected;
+    class B,C candidate;
+    linkStyle 1 stroke:#16836b,stroke-width:3px;
