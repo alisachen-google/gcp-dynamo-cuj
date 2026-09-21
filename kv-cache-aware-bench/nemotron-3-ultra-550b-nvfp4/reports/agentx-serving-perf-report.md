@@ -50,6 +50,70 @@ In **aggregated serving**, the selected worker performs both prefill and decode.
 
 **Round-robin rotates requests across workers without scoring prefix overlap.** It can still obtain cache hits when matching state is present on the chosen worker. Both arms enable engine prefix caching, so this benchmark measures the effect of placement on cache reuse, load distribution and request latency.
 
+## KV routing algorithm and tuned policies
+
+**Default KV and tuned KV use the same worker-selection algorithm.** Tuning changes the weights assigned to reusable prefixes and active work, or the randomness of worker selection. The explanation below follows the [Dynamo v1.4.2 source](https://github.com/ai-dynamo/dynamo/tree/2ecbdfdf192c69c02c6d21e931d20d3b4a0bb64a/lib/kv-router/src/scheduling), matching the version specified by the saved serving recipes. It describes the standard device-prefix path; optional host/disk/shared-cache credits and conditional disaggregation extend that path.
+
+### Worker scoring and selection
+
+The router filters eligible workers, calculates a score for each, selects a target and updates its active-work accounting. For an incoming prompt of `L` tokens and block size `B` (**64 tokens** in these recipes), define:
+
+| Symbol | Meaning at this routing decision |
+| --- | --- |
+| `P = L / B`; `N = ceil(L / B)` | Prompt length in block units; rounded-up request block count |
+| `A_i` | Active prefill tokens already assigned to worker `i`, divided by `B` |
+| `A_min` | Minimum `A_i` across eligible workers |
+| `H_i` | Matching device-resident prefix blocks advertised for worker `i` |
+| `D_i` | Request-specific projected active KV-block load from the tracker, called decode cost in the selector |
+| `s`, `c`, `d`, `T` | Prefill load scale, overlap credit, credit decay and router temperature |
+
+The [request representation](https://github.com/ai-dynamo/dynamo/blob/2ecbdfdf192c69c02c6d21e931d20d3b4a0bb64a/lib/kv-router/src/scheduling/types.rs) supplies the overlap and worker-load inputs. With prefill tracking enabled, device-only overlap credit and the default zero active-request surcharge, the score is:
+
+```text
+excess_i = max(0, A_i - A_min) / N
+credit_i = c / (1 + d * excess_i)
+prefill_i = max(0, A_i + P - credit_i * H_i)
+score_i = s * prefill_i + D_i
+```
+
+At **`T = 0`**, the router selects a minimum-score worker; equal minima can be broken randomly. For **`T > 0`**, it samples using `probability_i ∝ exp(-(score_i - score_min) / ((score_max - score_min) * T))`; equal scores give a uniform distribution. The normalization matters when interpreting a temperature value. Both rules and the load-dependent decay are implemented in the [v1.4.2 selector](https://github.com/ai-dynamo/dynamo/blob/2ecbdfdf192c69c02c6d21e931d20d3b4a0bb64a/lib/kv-router/src/scheduling/selector.rs).
+
+Scores are block-based placement heuristics. Cache residence, engine batching, transfer time and decode execution determine the resulting latency. The zero clamp also means that sufficiently large overlap credits can give multiple workers the same prefill contribution.
+
+### What each benchmark routing flag controls
+
+This table covers every routing flag used in the measured default and tuned recipes. Baseline values follow the saved commands and [v1.4.2 configuration defaults](https://github.com/ai-dynamo/dynamo/blob/2ecbdfdf192c69c02c6d21e931d20d3b4a0bb64a/lib/kv-router/src/scheduling/config.rs).
+
+| Flag | Baseline | Effect on routing and tuning tradeoff | Values in this report's hardware cohort |
+| --- | --- | --- | --- |
+| `--router-mode` | `kv` in KV arms | `kv` scores cache overlap and active load. `round-robin` rotates worker selection. Engine prefix caching is enabled in both arms. | `kv`, `round-robin` |
+| `--router-prefill-load-scale` | `1.0` | `s` multiplies the entire adjusted prefill term. Increasing it strengthens both the prefill-backlog penalty and the overlap discount relative to `D_i`; this can favor a worker with less remaining prefill work even if its active-block load is higher. | Agg: 1, 2, 3; D88: 1, 3 |
+| `--router-kv-overlap-score-credit` | `1.0` | `c` weights each matching device-prefix block. Lower values reduce locality preference; values above 1 give reuse extra weight and can concentrate work on cache-rich workers. Credit is a scoring multiplier; the cache-hit fraction is measured separately. | Agg: 0.8, 1.0; D88: 0.8, 1.0, 1.5, 2.0 |
+| `--router-kv-overlap-score-credit-decay` | `0.0` | `d` reduces overlap credit for workers with more active prefill work than the least-loaded eligible worker. Higher values favor prefill balance. At the load minimum, full credit remains. Decay is load-dependent; cache expiration is a separate mechanism. | Agg: 0, 0.5, 1.0; D88: 0, 0.5 |
+| `--router-temperature` | `0.0` | `T` controls sampling among worker scores. Raising it broadens selection and can distribute load at the cost of choosing less favorable cache/load combinations. It controls routing; model-generation temperature is independent. | Agg: 0, 0.5; retained D88 cohort: 0 |
+| `--router-queue-policy` | `fcfs` | Orders pending router requests. FCFS uses arrival order within the same priority treatment; it is separate from worker scoring and SGLang batch scheduling. | Fixed at `fcfs` in KV arms; no queue-policy sweep |
+
+For FCFS priority handling, see the [queue policy implementation](https://github.com/ai-dynamo/dynamo/blob/2ecbdfdf192c69c02c6d21e931d20d3b4a0bb64a/lib/kv-router/src/scheduling/policy.rs). The broader [configuration reference](https://docs.nvidia.com/dynamo/dev/knowledge-base/modular-components/router/configuration-and-tuning) also covers admission thresholds, tracking controls, session affinity and cache tiers; these are separate controls from the four numeric parameters swept here.
+
+For example, with `d = 0.5`, a worker whose excess prefill backlog equals one request's rounded block count receives `c / 1.5` effective credit. A larger backlog reduces its locality advantage further, while the least-loaded worker retains `c`.
+
+### How the tuned policies change the score
+
+The principal recipes retain **`T = 0`, `d = 0` and FCFS**. Their device-prefix scores reduce to:
+
+| Recipe | `s` | `c` | Score for an eligible agg/prefill worker | Role in the measured comparison |
+| --- | --- | --- | --- | --- |
+| Default KV | 1 | 1.0 | `max(0, A_i + P - H_i) + D_i` | Baseline KV curves for both architectures |
+| Agg: scale 3 / default credit | 3 | 1.0 | `3 * max(0, A_i + P - H_i) + D_i` | Selected agg point at C160 under both latency criteria |
+| Agg: scale 3 / credit 0.8 | 3 | 0.8 | `3 * max(0, A_i + P - 0.8 * H_i) + D_i` | Earlier agg TTFT-only selection at C192; its I90 is below 20 |
+| D88: credit 1.5 | 1 | 1.5 | `max(0, A_i + P - 1.5 * H_i) + D_i` | Selected D88 point at C576 under both latency criteria |
+
+**Agg emphasizes adjusted prefill work.** Scale 3 increases the contribution of both pending prefill and cache-adjusted incoming work relative to active-block load. In the C160 sweep, this recipe has **15.0% higher total throughput and 50.4% lower TTFT p95** than default KV, with I90 **26.3229**. These are measured differences; identifying which individual scheduling decisions caused them requires router and engine telemetry.
+
+**D88 increases prefill locality credit.** At C480, credit 1.5 has **15.4% lower TTFT p95** than default KV with a **0.29% throughput difference**; the selected C576 point also passes both criteria. Standard disaggregated routing applies a separate decode-hop override with overlap credit zero and prefill tracking disabled, so decode placement follows its active-load score. This behavior is explicit in [the v1.4.2 prefill router](https://github.com/ai-dynamo/dynamo/blob/2ecbdfdf192c69c02c6d21e931d20d3b4a0bb64a/lib/llm/src/kv_router/prefill_router/mod.rs). Increasing prefill overlap credit therefore targets reuse in the prefill pool.
+
+The retained sweeps favor different weights on the two topologies. Temperature 0.5 and the tested decay settings did not improve the selected agg operating point; D88 scale 3/credit 0.8 misses the TTFT criterion, and decay 0.5 misses both criteria at C480. Sections 2 and 3 retain every measured configuration, including errors and repeatability limits. These selections remain specific to the measured fleet and workload.
+
 ## Why we use agentic workloads
 
 Agentic inference is a current infrastructure priority in the [Google Cloud–NVIDIA collaboration](https://cloud.google.com/blog/products/compute/google-cloud-ai-infrastructure-at-nvidia-gtc-2026). Coding agents are a useful workload for this CUJ because their request sequences expose the interaction between **prefix locality, cache lifetime and worker load**. A task can require repeated model calls around tool execution, user input and parallel subagents.

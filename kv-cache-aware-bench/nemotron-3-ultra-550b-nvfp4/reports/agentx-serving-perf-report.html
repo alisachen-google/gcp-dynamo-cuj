@@ -12,7 +12,7 @@ pre{padding:18px;background:#edf2f7;border-radius:8px;overflow:auto}pre code{pad
 @media(max-width:800px){main{margin:0;padding:24px 18px;border-radius:0}h1{font-size:29px}h2{font-size:23px}table{font-size:12px}th,td{padding:8px}}
 @media print{body{background:#fff}main{border:0;max-width:none;margin:0;padding:0}nav{display:none}h2,h3{break-after:avoid}img,table{break-inside:avoid}a{color:inherit}.table-scroll{overflow:visible}table{font-size:9px}}
 </style></head><body><main><div class="eyebrow">Google Cloud CUJ · NVIDIA Dynamo · AgentX</div>
-<nav><a href="#tl-dr">TL;DR</a><a href="#overview">Overview</a><a href="#how-dynamo-kv-cache-aware-routing-works">How KV routing works</a><a href="#why-we-use-agentic-workloads">Why agentic workloads</a><a href="#1-setup-agentic-workload-and-benchmarking-methodology">1. Setup and methodology</a><a href="#2-aggregated-serving-measured-kv-and-rr">2. Agg hardware</a><a href="#3-disaggregated-serving-measured-kv-and-rr">3. Disagg hardware</a><a href="#4-simulation-versus-real-hardware-jobs">4. Simulation vs hardware</a><a href="#5-how-we-simulate-performance-aic-dynosim-and-recipe-selection">5. AIC and DynoSim</a></nav>
+<nav><a href="#tl-dr">TL;DR</a><a href="#overview">Overview</a><a href="#how-dynamo-kv-cache-aware-routing-works">How KV routing works</a><a href="#kv-routing-algorithm-and-tuned-policies">Routing algorithm and flags</a><a href="#why-we-use-agentic-workloads">Why agentic workloads</a><a href="#1-setup-agentic-workload-and-benchmarking-methodology">1. Setup and methodology</a><a href="#2-aggregated-serving-measured-kv-and-rr">2. Agg hardware</a><a href="#3-disaggregated-serving-measured-kv-and-rr">3. Disagg hardware</a><a href="#4-simulation-versus-real-hardware-jobs">4. Simulation vs hardware</a><a href="#5-how-we-simulate-performance-aic-dynosim-and-recipe-selection">5. AIC and DynoSim</a></nav>
 <h1>NVIDIA Dynamo on Google Cloud: KV-Aware vs. Round-Robin Routing</h1>
 <p><em>Technical evaluation of prefix-cache locality, throughput, TTFT and end-to-end latency under AgentX replay on GKE.</em></p>
 <h2 id="tl-dr">TL;DR</h2>
@@ -46,6 +46,150 @@ pre{padding:18px;background:#edf2f7;border-radius:8px;overflow:auto}pre code{pad
 <p><em>Conceptual example with two eligible workers. Solid arrows show request/work flow; dashed arrows carry metadata. The router chooses one worker per placement. The lower box shows the generation path; worker-selection ordering is backend-specific. <a href="https://github.com/alisachen-google/gcp-dynamo-cuj/blob/main/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/reports/agentx-serving-perf-report-kv-routing.mmd">Editable Mermaid source</a>.</em></p>
 <p>In <strong>aggregated serving</strong>, the selected worker performs both prefill and decode. In <strong>disaggregated serving</strong>, prefix locality matters at the prefill pool; the resulting state is transferred to a decode worker. Transfer and decode capacity therefore remain part of the end-to-end latency even when prefill reuse improves. <a href="https://docs.nvidia.com/dynamo/dev/knowledge-base/concepts/system-architecture/disaggregated-serving">Dynamo's disaggregated-serving architecture</a> explains that execution path.</p>
 <p><strong>Round-robin rotates requests across workers without scoring prefix overlap.</strong> It can still obtain cache hits when matching state is present on the chosen worker. Both arms enable engine prefix caching, so this benchmark measures the effect of placement on cache reuse, load distribution and request latency.</p>
+<h2 id="kv-routing-algorithm-and-tuned-policies">KV routing algorithm and tuned policies</h2>
+<p><strong>Default KV and tuned KV use the same worker-selection algorithm.</strong> Tuning changes the weights assigned to reusable prefixes and active work, or the randomness of worker selection. The explanation below follows the <a href="https://github.com/ai-dynamo/dynamo/tree/2ecbdfdf192c69c02c6d21e931d20d3b4a0bb64a/lib/kv-router/src/scheduling">Dynamo v1.4.2 source</a>, matching the version specified by the saved serving recipes. It describes the standard device-prefix path; optional host/disk/shared-cache credits and conditional disaggregation extend that path.</p>
+<h3 id="worker-scoring-and-selection">Worker scoring and selection</h3>
+<p>The router filters eligible workers, calculates a score for each, selects a target and updates its active-work accounting. For an incoming prompt of <code>L</code> tokens and block size <code>B</code> (<strong>64 tokens</strong> in these recipes), define:</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Meaning at this routing decision</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>P = L / B</code>; <code>N = ceil(L / B)</code></td>
+<td>Prompt length in block units; rounded-up request block count</td>
+</tr>
+<tr>
+<td><code>A_i</code></td>
+<td>Active prefill tokens already assigned to worker <code>i</code>, divided by <code>B</code></td>
+</tr>
+<tr>
+<td><code>A_min</code></td>
+<td>Minimum <code>A_i</code> across eligible workers</td>
+</tr>
+<tr>
+<td><code>H_i</code></td>
+<td>Matching device-resident prefix blocks advertised for worker <code>i</code></td>
+</tr>
+<tr>
+<td><code>D_i</code></td>
+<td>Request-specific projected active KV-block load from the tracker, called decode cost in the selector</td>
+</tr>
+<tr>
+<td><code>s</code>, <code>c</code>, <code>d</code>, <code>T</code></td>
+<td>Prefill load scale, overlap credit, credit decay and router temperature</td>
+</tr>
+</tbody>
+</table></div>
+<p>The <a href="https://github.com/ai-dynamo/dynamo/blob/2ecbdfdf192c69c02c6d21e931d20d3b4a0bb64a/lib/kv-router/src/scheduling/types.rs">request representation</a> supplies the overlap and worker-load inputs. With prefill tracking enabled, device-only overlap credit and the default zero active-request surcharge, the score is:</p>
+<pre><code class="language-text">excess_i = max(0, A_i - A_min) / N
+credit_i = c / (1 + d * excess_i)
+prefill_i = max(0, A_i + P - credit_i * H_i)
+score_i = s * prefill_i + D_i
+</code></pre>
+<p>At <strong><code>T = 0</code></strong>, the router selects a minimum-score worker; equal minima can be broken randomly. For <strong><code>T &gt; 0</code></strong>, it samples using <code>probability_i ∝ exp(-(score_i - score_min) / ((score_max - score_min) * T))</code>; equal scores give a uniform distribution. The normalization matters when interpreting a temperature value. Both rules and the load-dependent decay are implemented in the <a href="https://github.com/ai-dynamo/dynamo/blob/2ecbdfdf192c69c02c6d21e931d20d3b4a0bb64a/lib/kv-router/src/scheduling/selector.rs">v1.4.2 selector</a>.</p>
+<p>Scores are block-based placement heuristics. Cache residence, engine batching, transfer time and decode execution determine the resulting latency. The zero clamp also means that sufficiently large overlap credits can give multiple workers the same prefill contribution.</p>
+<h3 id="what-each-benchmark-routing-flag-controls">What each benchmark routing flag controls</h3>
+<p>This table covers every routing flag used in the measured default and tuned recipes. Baseline values follow the saved commands and <a href="https://github.com/ai-dynamo/dynamo/blob/2ecbdfdf192c69c02c6d21e931d20d3b4a0bb64a/lib/kv-router/src/scheduling/config.rs">v1.4.2 configuration defaults</a>.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Baseline</th>
+<th>Effect on routing and tuning tradeoff</th>
+<th>Values in this report's hardware cohort</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--router-mode</code></td>
+<td><code>kv</code> in KV arms</td>
+<td><code>kv</code> scores cache overlap and active load. <code>round-robin</code> rotates worker selection. Engine prefix caching is enabled in both arms.</td>
+<td><code>kv</code>, <code>round-robin</code></td>
+</tr>
+<tr>
+<td><code>--router-prefill-load-scale</code></td>
+<td><code>1.0</code></td>
+<td><code>s</code> multiplies the entire adjusted prefill term. Increasing it strengthens both the prefill-backlog penalty and the overlap discount relative to <code>D_i</code>; this can favor a worker with less remaining prefill work even if its active-block load is higher.</td>
+<td>Agg: 1, 2, 3; D88: 1, 3</td>
+</tr>
+<tr>
+<td><code>--router-kv-overlap-score-credit</code></td>
+<td><code>1.0</code></td>
+<td><code>c</code> weights each matching device-prefix block. Lower values reduce locality preference; values above 1 give reuse extra weight and can concentrate work on cache-rich workers. Credit is a scoring multiplier; the cache-hit fraction is measured separately.</td>
+<td>Agg: 0.8, 1.0; D88: 0.8, 1.0, 1.5, 2.0</td>
+</tr>
+<tr>
+<td><code>--router-kv-overlap-score-credit-decay</code></td>
+<td><code>0.0</code></td>
+<td><code>d</code> reduces overlap credit for workers with more active prefill work than the least-loaded eligible worker. Higher values favor prefill balance. At the load minimum, full credit remains. Decay is load-dependent; cache expiration is a separate mechanism.</td>
+<td>Agg: 0, 0.5, 1.0; D88: 0, 0.5</td>
+</tr>
+<tr>
+<td><code>--router-temperature</code></td>
+<td><code>0.0</code></td>
+<td><code>T</code> controls sampling among worker scores. Raising it broadens selection and can distribute load at the cost of choosing less favorable cache/load combinations. It controls routing; model-generation temperature is independent.</td>
+<td>Agg: 0, 0.5; retained D88 cohort: 0</td>
+</tr>
+<tr>
+<td><code>--router-queue-policy</code></td>
+<td><code>fcfs</code></td>
+<td>Orders pending router requests. FCFS uses arrival order within the same priority treatment; it is separate from worker scoring and SGLang batch scheduling.</td>
+<td>Fixed at <code>fcfs</code> in KV arms; no queue-policy sweep</td>
+</tr>
+</tbody>
+</table></div>
+<p>For FCFS priority handling, see the <a href="https://github.com/ai-dynamo/dynamo/blob/2ecbdfdf192c69c02c6d21e931d20d3b4a0bb64a/lib/kv-router/src/scheduling/policy.rs">queue policy implementation</a>. The broader <a href="https://docs.nvidia.com/dynamo/dev/knowledge-base/modular-components/router/configuration-and-tuning">configuration reference</a> also covers admission thresholds, tracking controls, session affinity and cache tiers; these are separate controls from the four numeric parameters swept here.</p>
+<p>For example, with <code>d = 0.5</code>, a worker whose excess prefill backlog equals one request's rounded block count receives <code>c / 1.5</code> effective credit. A larger backlog reduces its locality advantage further, while the least-loaded worker retains <code>c</code>.</p>
+<h3 id="how-the-tuned-policies-change-the-score">How the tuned policies change the score</h3>
+<p>The principal recipes retain <strong><code>T = 0</code>, <code>d = 0</code> and FCFS</strong>. Their device-prefix scores reduce to:</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Recipe</th>
+<th><code>s</code></th>
+<th><code>c</code></th>
+<th>Score for an eligible agg/prefill worker</th>
+<th>Role in the measured comparison</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Default KV</td>
+<td>1</td>
+<td>1.0</td>
+<td><code>max(0, A_i + P - H_i) + D_i</code></td>
+<td>Baseline KV curves for both architectures</td>
+</tr>
+<tr>
+<td>Agg: scale 3 / default credit</td>
+<td>3</td>
+<td>1.0</td>
+<td><code>3 * max(0, A_i + P - H_i) + D_i</code></td>
+<td>Selected agg point at C160 under both latency criteria</td>
+</tr>
+<tr>
+<td>Agg: scale 3 / credit 0.8</td>
+<td>3</td>
+<td>0.8</td>
+<td><code>3 * max(0, A_i + P - 0.8 * H_i) + D_i</code></td>
+<td>Earlier agg TTFT-only selection at C192; its I90 is below 20</td>
+</tr>
+<tr>
+<td>D88: credit 1.5</td>
+<td>1</td>
+<td>1.5</td>
+<td><code>max(0, A_i + P - 1.5 * H_i) + D_i</code></td>
+<td>Selected D88 point at C576 under both latency criteria</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Agg emphasizes adjusted prefill work.</strong> Scale 3 increases the contribution of both pending prefill and cache-adjusted incoming work relative to active-block load. In the C160 sweep, this recipe has <strong>15.0% higher total throughput and 50.4% lower TTFT p95</strong> than default KV, with I90 <strong>26.3229</strong>. These are measured differences; identifying which individual scheduling decisions caused them requires router and engine telemetry.</p>
+<p><strong>D88 increases prefill locality credit.</strong> At C480, credit 1.5 has <strong>15.4% lower TTFT p95</strong> than default KV with a <strong>0.29% throughput difference</strong>; the selected C576 point also passes both criteria. Standard disaggregated routing applies a separate decode-hop override with overlap credit zero and prefill tracking disabled, so decode placement follows its active-load score. This behavior is explicit in <a href="https://github.com/ai-dynamo/dynamo/blob/2ecbdfdf192c69c02c6d21e931d20d3b4a0bb64a/lib/llm/src/kv_router/prefill_router/mod.rs">the v1.4.2 prefill router</a>. Increasing prefill overlap credit therefore targets reuse in the prefill pool.</p>
+<p>The retained sweeps favor different weights on the two topologies. Temperature 0.5 and the tested decay settings did not improve the selected agg operating point; D88 scale 3/credit 0.8 misses the TTFT criterion, and decay 0.5 misses both criteria at C480. Sections 2 and 3 retain every measured configuration, including errors and repeatability limits. These selections remain specific to the measured fleet and workload.</p>
 <h2 id="why-we-use-agentic-workloads">Why we use agentic workloads</h2>
 <p>Agentic inference is a current infrastructure priority in the <a href="https://cloud.google.com/blog/products/compute/google-cloud-ai-infrastructure-at-nvidia-gtc-2026">Google Cloud–NVIDIA collaboration</a>. Coding agents are a useful workload for this CUJ because their request sequences expose the interaction between <strong>prefix locality, cache lifetime and worker load</strong>. A task can require repeated model calls around tool execution, user input and parallel subagents.</p>
 <p>Three properties make those sequences relevant to KV-aware routing:</p>
