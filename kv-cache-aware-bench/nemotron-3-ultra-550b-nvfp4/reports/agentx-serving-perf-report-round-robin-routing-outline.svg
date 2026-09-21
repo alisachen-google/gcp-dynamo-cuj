@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="490" viewBox="0 0 1040 490" role="img" aria-labelledby="title desc">
+  <title id="title">Dynamo round-robin routing across three workers</title>
+  <desc id="desc">A coding agent sends a request with a shared prefix and new input. Dynamo rotates through eligible workers in an illustrative A, B, C, A sequence. Worker B is next and is selected even though it lacks the matching prefix held by Workers A and C. Its engine must process that prefix in this example. Prefix caching remains enabled, so round-robin can obtain hits on other placements. All three workers are eligible; the load meters and cache contents are schematic. The solid green path is this request's route, and dashed paths show other workers, not simultaneous dispatch.</desc>
+  <defs>
+    <style>
+      text { font-family: 'DejaVu Sans', sans-serif; fill: #203952; }
+      .label { font-size: 23px; font-weight: 600; }
+      .small { font-size: 18px; }
+      .detail { font-size: 16px; fill: #526c83; }
+      .outline { fill: #fff; stroke: #294863; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+      .line { fill: none; stroke: #294863; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+      .prefix { fill: #e3efff; stroke: #4486d6; stroke-width: 2; }
+      .new { fill: #fff0cc; stroke: #c89228; stroke-width: 2; }
+      .empty { fill: #fff; stroke: #b6c6d3; stroke-width: 2; }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M1 1 L8 5 L1 9" fill="none" stroke="#294863" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    <marker id="selected" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto" markerUnits="userSpaceOnUse"><path d="M1 1 L9 6 L1 11" fill="none" stroke="#078568" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    <marker id="candidate" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M1 1 L8 5 L1 9" fill="none" stroke="#a4b4c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  </defs>
+  <rect width="1040" height="490" fill="#fff"/>
+
+  <!-- The highlighted position is the next worker in this example rotation. -->
+  <text class="label" x="48" y="43">Round-robin routing</text>
+  <text class="detail" x="48" y="100">Example cycle</text>
+  <rect x="184" y="76" width="54" height="35" rx="11" fill="#fff" stroke="#adc0d1" stroke-width="2"/>
+  <text class="small" x="211" y="100" text-anchor="middle">A</text>
+  <path class="line" d="M247 94 H264" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="275" y="76" width="54" height="35" rx="11" fill="#e0f4ec" stroke="#078568" stroke-width="2"/>
+  <text class="small" x="302" y="100" text-anchor="middle" style="fill:#078568;font-weight:600">B</text>
+  <text class="detail" x="302" y="67" text-anchor="middle" style="fill:#078568">Next</text>
+  <path class="line" d="M338 94 H355" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="366" y="76" width="54" height="35" rx="11" fill="#fff" stroke="#adc0d1" stroke-width="2"/>
+  <text class="small" x="393" y="100" text-anchor="middle">C</text>
+  <path class="line" d="M429 94 H446" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="457" y="76" width="54" height="35" rx="11" fill="#fff" stroke="#adc0d1" stroke-width="2"/>
+  <text class="small" x="484" y="100" text-anchor="middle">A</text>
+
+  <!-- Coding agent: laptop and conversation bubble. -->
+  <rect class="outline" x="52" y="181" width="143" height="94" rx="9"/>
+  <path class="outline" d="M41 275 H206 L216 286 Q216 292 204 292 H53 Q40 292 31 286 Z"/>
+  <path class="line" d="M78 212 L90 223 L78 234 M105 234 H123"/>
+  <path class="outline" d="M151 124 H225 Q233 124 233 132 V169 Q233 177 225 177 H187 L173 190 V177 H151 Q143 177 143 169 V132 Q143 124 151 124 Z"/>
+  <path class="line" d="M159 142 H218 M159 157 H201" stroke-width="2"/>
+  <text class="label" x="124" y="332" text-anchor="middle">Agent</text>
+
+  <!-- A single request, with its matching-prefix visual carried into the workers. -->
+  <path class="line" d="M229 241 H359" marker-end="url(#arrow)"/>
+  <rect class="prefix" x="243" y="201" width="20" height="21" rx="4"/>
+  <rect class="prefix" x="269" y="201" width="20" height="21" rx="4"/>
+  <rect class="prefix" x="295" y="201" width="20" height="21" rx="4"/>
+  <rect class="new" x="321" y="201" width="20" height="21" rx="4"/>
+
+  <!-- Rotation icon with the currently selected position. -->
+  <rect class="outline" x="372" y="187" width="110" height="108" rx="24"/>
+  <path class="line" d="M402 226 A29 29 0 0 1 453 226" marker-end="url(#arrow)"/>
+  <path class="line" d="M453 256 A29 29 0 0 1 402 256" marker-end="url(#arrow)"/>
+  <text class="label" x="427" y="249" text-anchor="middle" style="fill:#078568">B</text>
+  <text class="label" x="427" y="332" text-anchor="middle">Dynamo</text>
+  <text class="detail" x="427" y="358" text-anchor="middle">Next worker in cycle</text>
+
+  <!-- A single request goes to B, the next eligible worker in the rotation. -->
+  <path d="M553 241 C629 241 616 105 704 105" fill="none" stroke="#a4b4c2" stroke-width="2.5" stroke-dasharray="6 8" stroke-linecap="round" marker-end="url(#candidate)"/>
+  <path d="M553 241 C629 241 616 387 704 387" fill="none" stroke="#a4b4c2" stroke-width="2.5" stroke-dasharray="6 8" stroke-linecap="round" marker-end="url(#candidate)"/>
+  <path d="M495 241 H704" fill="none" stroke="#078568" stroke-width="4" stroke-linecap="round" marker-end="url(#selected)"/>
+
+  <!-- Worker A: matching cache, low load. -->
+  <rect x="719" y="40" width="290" height="121" rx="18" fill="#fff" stroke="#d2dce5" stroke-width="2"/>
+  <text class="label" x="740" y="72">Worker A</text>
+  <text class="small" x="982" y="71" text-anchor="end">Cached</text>
+  <g transform="translate(740 91)">
+    <rect class="outline" width="44" height="48" rx="5"/><path class="line" d="M0 16 H44 M0 32 H44" stroke-width="2"/>
+    <circle cx="9" cy="8" r="2" fill="#078568"/><circle cx="9" cy="24" r="2" fill="#078568"/><circle cx="9" cy="40" r="2" fill="#078568"/>
+  </g>
+  <rect class="prefix" x="809" y="103" width="25" height="26" rx="4"/>
+  <rect class="prefix" x="841" y="103" width="25" height="26" rx="4"/>
+  <rect class="prefix" x="873" y="103" width="25" height="26" rx="4"/>
+  <rect x="941" y="124" width="8" height="8" rx="2" fill="#078568"/>
+  <rect class="empty" x="954" y="115" width="8" height="17" rx="2"/>
+  <rect class="empty" x="967" y="106" width="8" height="26" rx="2"/>
+
+  <!-- Worker B: no matching prefix, low load. -->
+  <rect x="719" y="181" width="290" height="121" rx="18" fill="#f2fbf7" stroke="#078568" stroke-width="2.5"/>
+  <text class="label" x="740" y="213">Worker B</text>
+  <text class="small" x="957" y="212" text-anchor="end" style="fill:#a57519">Miss</text>
+  <circle cx="977" cy="206" r="11" fill="#078568"/>
+  <path d="M972 206 L976 210 L983 202" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <g transform="translate(740 232)">
+    <rect class="outline" width="44" height="48" rx="5"/><path class="line" d="M0 16 H44 M0 32 H44" stroke-width="2"/>
+    <circle cx="9" cy="8" r="2" fill="#8299ae"/><circle cx="9" cy="24" r="2" fill="#8299ae"/><circle cx="9" cy="40" r="2" fill="#8299ae"/>
+  </g>
+  <rect class="empty" x="809" y="244" width="25" height="26" rx="4" stroke-dasharray="4 4"/>
+  <rect class="empty" x="841" y="244" width="25" height="26" rx="4" stroke-dasharray="4 4"/>
+  <rect class="empty" x="873" y="244" width="25" height="26" rx="4" stroke-dasharray="4 4"/>
+  <rect x="941" y="265" width="8" height="8" rx="2" fill="#8299ae"/>
+  <rect class="empty" x="954" y="256" width="8" height="17" rx="2"/>
+  <rect class="empty" x="967" y="247" width="8" height="26" rx="2"/>
+
+  <!-- Worker C: matching cache, high load. -->
+  <rect x="719" y="326" width="290" height="121" rx="18" fill="#fff" stroke="#d2dce5" stroke-width="2"/>
+  <text class="label" x="740" y="358">Worker C</text>
+  <text class="small" x="982" y="357" text-anchor="end" style="fill:#a57519">Busy</text>
+  <g transform="translate(740 377)">
+    <rect class="outline" width="44" height="48" rx="5"/><path class="line" d="M0 16 H44 M0 32 H44" stroke-width="2"/>
+    <circle cx="9" cy="8" r="2" fill="#c89228"/><circle cx="9" cy="24" r="2" fill="#c89228"/><circle cx="9" cy="40" r="2" fill="#c89228"/>
+  </g>
+  <rect class="prefix" x="809" y="389" width="25" height="26" rx="4"/>
+  <rect class="prefix" x="841" y="389" width="25" height="26" rx="4"/>
+  <rect class="prefix" x="873" y="389" width="25" height="26" rx="4"/>
+  <rect x="941" y="410" width="8" height="8" rx="2" fill="#c89228"/>
+  <rect x="954" y="401" width="8" height="17" rx="2" fill="#c89228"/>
+  <rect x="967" y="392" width="8" height="26" rx="2" fill="#c89228"/>
+
+  <rect class="prefix" x="82" y="410" width="20" height="20" rx="4"/>
+  <text class="small" x="114" y="426">Shared prefix</text>
+  <rect class="new" x="294" y="410" width="20" height="20" rx="4"/>
+  <text class="small" x="326" y="426">New input</text>
+</svg>

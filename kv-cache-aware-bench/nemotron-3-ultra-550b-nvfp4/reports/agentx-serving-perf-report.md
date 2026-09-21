@@ -50,6 +50,12 @@ In **aggregated serving**, the selected worker performs both prefill and decode.
 
 **Round-robin rotates requests across workers without scoring prefix overlap.** It can still obtain cache hits when matching state is present on the chosen worker. Both arms enable engine prefix caching, so this benchmark measures the effect of placement on cache reuse, load distribution and request latency.
 
+![Dynamo round-robin routing selects Worker B because it is next in the rotation, despite the matching prefix available on other workers](agentx-serving-perf-report-round-robin-routing-outline.png)
+
+[SVG](agentx-serving-perf-report-round-robin-routing-outline.svg) · [PDF](agentx-serving-perf-report-round-robin-routing-outline.pdf)
+
+*All three workers are eligible in this illustrative A → B → C → A rotation. Worker B is next, so it receives the request and must process the missing prefix. The solid green path shows this request; dashed paths show other workers. Prefix caching remains enabled, and other placements can hit cached state. [Editable SVG](agentx-serving-perf-report-round-robin-routing-outline.svg).*
+
 ## KV routing algorithm and tuned policies
 
 **Default KV and tuned KV use the same worker-selection algorithm.** Tuning changes the weights assigned to reusable prefixes and active work, or the randomness of worker selection. The explanation below follows the [Dynamo v1.4.2 source](https://github.com/ai-dynamo/dynamo/tree/2ecbdfdf192c69c02c6d21e931d20d3b4a0bb64a/lib/kv-router/src/scheduling), matching the version specified by the saved serving recipes. It describes the standard device-prefix path; optional host/disk/shared-cache credits and conditional disaggregation extend that path.

@@ -62,6 +62,7 @@ COLORS = {
 ORDER = list(LABELS)
 FIGURES = [
     "kv-routing-outline",
+    "round-robin-routing-outline",
     "agentx-dataset-outline",
     "agg-curves",
     "disagg-curves",
@@ -1723,6 +1724,9 @@ These are the conceptual inputs to [Dynamo's routing cost model](https://docs.nv
 In **aggregated serving**, the selected worker performs both prefill and decode. In **disaggregated serving**, prefix locality matters at the prefill pool; the resulting state is transferred to a decode worker. Transfer and decode capacity therefore remain part of the end-to-end latency even when prefill reuse improves. [Dynamo's disaggregated-serving architecture](https://docs.nvidia.com/dynamo/dev/knowledge-base/concepts/system-architecture/disaggregated-serving) explains that execution path.
 
 **Round-robin rotates requests across workers without scoring prefix overlap.** It can still obtain cache hits when matching state is present on the chosen worker. Both arms enable engine prefix caching, so this benchmark measures the effect of placement on cache reuse, load distribution and request latency.
+
+{figure("round-robin-routing-outline", "Dynamo round-robin routing selects Worker B because it is next in the rotation, despite the matching prefix available on other workers")}
+*All three workers are eligible in this illustrative A → B → C → A rotation. Worker B is next, so it receives the request and must process the missing prefix. The solid green path shows this request; dashed paths show other workers. Prefix caching remains enabled, and other placements can hit cached state. [Editable SVG]({STEM}-round-robin-routing-outline.svg).*
 
 ## KV routing algorithm and tuned policies
 
