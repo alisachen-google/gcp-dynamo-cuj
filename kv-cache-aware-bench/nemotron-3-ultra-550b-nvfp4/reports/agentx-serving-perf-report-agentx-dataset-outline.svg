@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="430" viewBox="0 0 1040 430" role="img" aria-labelledby="title desc">
+  <title id="title">AgentX Weka dataset replay</title>
+  <desc id="desc">The Weka 256K corpus has 393 recorded session roots with turns and subagent branches. AIPerf replays reconstructed requests with growing shared prefixes, recorded delays and dependencies. Dynamo and its serving engines process the requests and the benchmark measures performance. Blue token blocks show reused conversation history; gold blocks show new input. The illustrated session is schematic.</desc>
+  <defs>
+    <style>
+      text { font-family: 'DejaVu Sans', sans-serif; fill: #203952; }
+      .label { font-size: 24px; font-weight: 600; }
+      .small { font-size: 18px; }
+      .outline { fill: #fff; stroke: #294863; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+      .line { fill: none; stroke: #294863; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+      .prefix { fill: #e3efff; stroke: #4486d6; stroke-width: 2; }
+      .new { fill: #fff0cc; stroke: #c89228; stroke-width: 2; }
+    </style>
+    <marker id="arrow" markerWidth="11" markerHeight="11" refX="9" refY="5.5" orient="auto" markerUnits="userSpaceOnUse"><path d="M1 1 L9 5.5 L1 10" fill="none" stroke="#294863" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    <marker id="turn" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M1 1 L6 4 L1 7" fill="none" stroke="#8299ae" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  </defs>
+  <rect width="1040" height="430" fill="#fff"/>
+  <text class="label" x="157" y="53" text-anchor="middle">Weka</text>
+  <text class="label" x="531" y="53" text-anchor="middle">AIPerf replay</text>
+  <text class="label" x="906" y="53" text-anchor="middle">Dynamo</text>
+
+  <!-- A stack of recorded session trees. -->
+  <rect x="83" y="88" width="200" height="218" rx="12" fill="#f4f8fc" stroke="#adc0d1" stroke-width="2"/>
+  <rect x="69" y="101" width="200" height="218" rx="12" fill="#fff" stroke="#8299ae" stroke-width="2"/>
+  <rect class="outline" x="55" y="114" width="200" height="218" rx="12"/>
+  <path class="outline" d="M132 140 H193 Q201 140 201 148 V170 Q201 178 193 178 H152 L140 187 V178 H132 Q124 178 124 170 V148 Q124 140 132 140 Z"/>
+  <path d="M139 153 H187 M139 164 H173" fill="none" stroke="#4486d6" stroke-width="3" stroke-linecap="round"/>
+  <path d="M162 186 V202 H108 V217 M162 202 H208 V217" fill="none" stroke="#8299ae" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect class="outline" x="81" y="219" width="54" height="32" rx="9"/>
+  <path d="M93 231 H122 M93 240 H113" fill="none" stroke="#4486d6" stroke-width="2.5" stroke-linecap="round"/>
+  <rect class="outline" x="182" y="219" width="54" height="32" rx="9"/>
+  <path d="M194 231 H224 M194 240 H215" fill="none" stroke="#4486d6" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M108 252 V273" fill="none" stroke="#8299ae" stroke-width="2.5" marker-end="url(#turn)"/>
+  <rect class="outline" x="81" y="279" width="54" height="29" rx="9"/>
+  <path d="M93 290 H122 M93 299 H113" fill="none" stroke="#4486d6" stroke-width="2.5" stroke-linecap="round"/>
+  <text class="small" x="157" y="370" text-anchor="middle">393 sessions</text>
+
+  <path class="line" d="M302 216 H365" marker-end="url(#arrow)"/>
+
+  <!-- Requests grow as the conversation progresses. -->
+  <path class="outline" d="M407 99 H650 Q662 99 662 111 V145 Q662 157 650 157 H423 L406 166 V157 Q394 157 394 145 V111 Q394 99 407 99 Z"/>
+  <rect class="prefix" x="414" y="117" width="24" height="23" rx="4"/>
+  <rect class="prefix" x="444" y="117" width="24" height="23" rx="4"/>
+  <rect class="prefix" x="474" y="117" width="24" height="23" rx="4"/>
+  <rect class="new" x="504" y="117" width="24" height="23" rx="4"/>
+  <path d="M528 160 V185" fill="none" stroke="#8299ae" stroke-width="2.5" marker-end="url(#turn)"/>
+  <circle cx="552" cy="174" r="10" fill="#fff" stroke="#8299ae" stroke-width="2"/>
+  <path d="M552 168 V174 L556 177" fill="none" stroke="#8299ae" stroke-width="2" stroke-linecap="round"/>
+
+  <path class="outline" d="M407 191 H650 Q662 191 662 203 V237 Q662 249 650 249 H423 L406 258 V249 Q394 249 394 237 V203 Q394 191 407 191 Z"/>
+  <rect class="prefix" x="414" y="209" width="24" height="23" rx="4"/>
+  <rect class="prefix" x="444" y="209" width="24" height="23" rx="4"/>
+  <rect class="prefix" x="474" y="209" width="24" height="23" rx="4"/>
+  <rect class="prefix" x="504" y="209" width="24" height="23" rx="4"/>
+  <rect class="new" x="534" y="209" width="24" height="23" rx="4"/>
+  <path d="M528 252 V277" fill="none" stroke="#8299ae" stroke-width="2.5" marker-end="url(#turn)"/>
+  <circle cx="552" cy="266" r="10" fill="#fff" stroke="#8299ae" stroke-width="2"/>
+  <path d="M552 260 V266 L556 269" fill="none" stroke="#8299ae" stroke-width="2" stroke-linecap="round"/>
+
+  <path class="outline" d="M407 283 H650 Q662 283 662 295 V329 Q662 341 650 341 H423 L406 350 V341 Q394 341 394 329 V295 Q394 283 407 283 Z"/>
+  <rect class="prefix" x="414" y="301" width="24" height="23" rx="4"/>
+  <rect class="prefix" x="444" y="301" width="24" height="23" rx="4"/>
+  <rect class="prefix" x="474" y="301" width="24" height="23" rx="4"/>
+  <rect class="prefix" x="504" y="301" width="24" height="23" rx="4"/>
+  <rect class="prefix" x="534" y="301" width="24" height="23" rx="4"/>
+  <rect class="new" x="564" y="301" width="24" height="23" rx="4"/>
+
+  <path class="line" d="M691 216 H796" marker-end="url(#arrow)"/>
+
+  <!-- Serving and benchmark measurements. -->
+  <rect class="outline" x="838" y="112" width="136" height="171" rx="13"/>
+  <path class="line" d="M838 169 H974 M838 226 H974"/>
+  <circle cx="858" cy="140" r="5" fill="#078568"/>
+  <circle cx="858" cy="198" r="5" fill="#078568"/>
+  <circle cx="858" cy="255" r="5" fill="#078568"/>
+  <path class="line" d="M881 132 H953 M881 148 H933 M881 190 H953 M881 206 H933 M881 247 H953 M881 263 H933" stroke-width="2"/>
+  <path d="M843 310 V354 H973" fill="none" stroke="#8299ae" stroke-width="2" stroke-linecap="round"/>
+  <rect x="856" y="336" width="14" height="18" rx="3" fill="#e0f4ec" stroke="#078568" stroke-width="2"/>
+  <rect x="880" y="325" width="14" height="29" rx="3" fill="#e0f4ec" stroke="#078568" stroke-width="2"/>
+  <rect x="904" y="313" width="14" height="41" rx="3" fill="#e0f4ec" stroke="#078568" stroke-width="2"/>
+  <path d="M935 337 L945 326 L954 331 L972 310" fill="none" stroke="#4486d6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <rect class="prefix" x="367" y="386" width="20" height="20" rx="4"/>
+  <text class="small" x="399" y="402">Shared prefix</text>
+  <rect class="new" x="580" y="386" width="20" height="20" rx="4"/>
+  <text class="small" x="612" y="402">New input</text>
+</svg>

@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="490" viewBox="0 0 1040 490" role="img" aria-labelledby="title desc">
+  <title id="title">Dynamo KV-aware routing across three workers</title>
+  <desc id="desc">A coding agent sends a request with a shared prefix and new input. Dynamo selects Worker A, which has the matching prefix and low load. Worker B has no matching prefix. Worker C has the prefix but is busy. Blue blocks represent shared prefix tokens, gold represents new input, and small meters illustrate worker load. This is a conceptual example.</desc>
+  <defs>
+    <style>
+      text { font-family: 'DejaVu Sans', sans-serif; fill: #203952; }
+      .label { font-size: 23px; font-weight: 600; }
+      .small { font-size: 18px; }
+      .outline { fill: #fff; stroke: #294863; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+      .line { fill: none; stroke: #294863; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+      .prefix { fill: #e3efff; stroke: #4486d6; stroke-width: 2; }
+      .new { fill: #fff0cc; stroke: #c89228; stroke-width: 2; }
+      .empty { fill: #fff; stroke: #b6c6d3; stroke-width: 2; }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M1 1 L8 5 L1 9" fill="none" stroke="#294863" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    <marker id="selected" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto" markerUnits="userSpaceOnUse"><path d="M1 1 L9 6 L1 11" fill="none" stroke="#078568" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    <marker id="candidate" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M1 1 L8 5 L1 9" fill="none" stroke="#a4b4c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  </defs>
+  <rect width="1040" height="490" fill="#fff"/>
+
+  <!-- Coding agent: laptop and conversation bubble. -->
+  <rect class="outline" x="52" y="181" width="143" height="94" rx="9"/>
+  <path class="outline" d="M41 275 H206 L216 286 Q216 292 204 292 H53 Q40 292 31 286 Z"/>
+  <path class="line" d="M78 212 L90 223 L78 234 M105 234 H123"/>
+  <path class="outline" d="M151 124 H225 Q233 124 233 132 V169 Q233 177 225 177 H187 L173 190 V177 H151 Q143 177 143 169 V132 Q143 124 151 124 Z"/>
+  <path class="line" d="M159 142 H218 M159 157 H201" stroke-width="2"/>
+  <text class="label" x="124" y="332" text-anchor="middle">Agent</text>
+
+  <!-- A single request, with its matching-prefix visual carried into the workers. -->
+  <path class="line" d="M229 241 H359" marker-end="url(#arrow)"/>
+  <rect class="prefix" x="243" y="201" width="20" height="21" rx="4"/>
+  <rect class="prefix" x="269" y="201" width="20" height="21" rx="4"/>
+  <rect class="prefix" x="295" y="201" width="20" height="21" rx="4"/>
+  <rect class="new" x="321" y="201" width="20" height="21" rx="4"/>
+
+  <!-- Router icon. -->
+  <rect class="outline" x="372" y="187" width="110" height="108" rx="24"/>
+  <path class="line" d="M405 241 H430 M430 241 V213 H447 M430 241 H447 M430 241 V269 H447"/>
+  <circle cx="403" cy="241" r="7" class="outline"/>
+  <circle cx="451" cy="213" r="6" class="outline"/>
+  <circle cx="451" cy="241" r="6" class="outline"/>
+  <circle cx="451" cy="269" r="6" class="outline"/>
+  <text class="label" x="427" y="332" text-anchor="middle">Dynamo</text>
+
+  <!-- Solid green is the selected route; dashed gray paths are candidates. -->
+  <path d="M495 241 H553 C629 241 616 105 704 105" fill="none" stroke="#078568" stroke-width="4" stroke-linecap="round" marker-end="url(#selected)"/>
+  <path d="M553 241 H704" fill="none" stroke="#a4b4c2" stroke-width="2.5" stroke-dasharray="6 8" stroke-linecap="round" marker-end="url(#candidate)"/>
+  <path d="M553 241 C629 241 616 387 704 387" fill="none" stroke="#a4b4c2" stroke-width="2.5" stroke-dasharray="6 8" stroke-linecap="round" marker-end="url(#candidate)"/>
+
+  <!-- Worker A: matching cache, low load. -->
+  <rect x="719" y="40" width="290" height="121" rx="18" fill="#f2fbf7" stroke="#078568" stroke-width="2.5"/>
+  <text class="label" x="740" y="72">Worker A</text>
+  <text class="small" x="957" y="71" text-anchor="end" style="fill:#078568">Reuse</text>
+  <circle cx="977" cy="65" r="11" fill="#078568"/>
+  <path d="M972 65 L976 69 L983 61" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <g transform="translate(740 91)">
+    <rect class="outline" width="44" height="48" rx="5"/><path class="line" d="M0 16 H44 M0 32 H44" stroke-width="2"/>
+    <circle cx="9" cy="8" r="2" fill="#078568"/><circle cx="9" cy="24" r="2" fill="#078568"/><circle cx="9" cy="40" r="2" fill="#078568"/>
+  </g>
+  <rect class="prefix" x="809" y="103" width="25" height="26" rx="4"/>
+  <rect class="prefix" x="841" y="103" width="25" height="26" rx="4"/>
+  <rect class="prefix" x="873" y="103" width="25" height="26" rx="4"/>
+  <rect x="941" y="124" width="8" height="8" rx="2" fill="#078568"/>
+  <rect class="empty" x="954" y="115" width="8" height="17" rx="2"/>
+  <rect class="empty" x="967" y="106" width="8" height="26" rx="2"/>
+
+  <!-- Worker B: no matching prefix, low load. -->
+  <rect x="719" y="181" width="290" height="121" rx="18" fill="#fff" stroke="#d2dce5" stroke-width="2"/>
+  <text class="label" x="740" y="213">Worker B</text>
+  <text class="small" x="982" y="212" text-anchor="end">Miss</text>
+  <g transform="translate(740 232)">
+    <rect class="outline" width="44" height="48" rx="5"/><path class="line" d="M0 16 H44 M0 32 H44" stroke-width="2"/>
+    <circle cx="9" cy="8" r="2" fill="#8299ae"/><circle cx="9" cy="24" r="2" fill="#8299ae"/><circle cx="9" cy="40" r="2" fill="#8299ae"/>
+  </g>
+  <rect class="empty" x="809" y="244" width="25" height="26" rx="4" stroke-dasharray="4 4"/>
+  <rect class="empty" x="841" y="244" width="25" height="26" rx="4" stroke-dasharray="4 4"/>
+  <rect class="empty" x="873" y="244" width="25" height="26" rx="4" stroke-dasharray="4 4"/>
+  <rect x="941" y="265" width="8" height="8" rx="2" fill="#8299ae"/>
+  <rect class="empty" x="954" y="256" width="8" height="17" rx="2"/>
+  <rect class="empty" x="967" y="247" width="8" height="26" rx="2"/>
+
+  <!-- Worker C: matching cache, high load. -->
+  <rect x="719" y="326" width="290" height="121" rx="18" fill="#fff" stroke="#d2dce5" stroke-width="2"/>
+  <text class="label" x="740" y="358">Worker C</text>
+  <text class="small" x="982" y="357" text-anchor="end" style="fill:#a57519">Busy</text>
+  <g transform="translate(740 377)">
+    <rect class="outline" width="44" height="48" rx="5"/><path class="line" d="M0 16 H44 M0 32 H44" stroke-width="2"/>
+    <circle cx="9" cy="8" r="2" fill="#c89228"/><circle cx="9" cy="24" r="2" fill="#c89228"/><circle cx="9" cy="40" r="2" fill="#c89228"/>
+  </g>
+  <rect class="prefix" x="809" y="389" width="25" height="26" rx="4"/>
+  <rect class="prefix" x="841" y="389" width="25" height="26" rx="4"/>
+  <rect class="prefix" x="873" y="389" width="25" height="26" rx="4"/>
+  <rect x="941" y="410" width="8" height="8" rx="2" fill="#c89228"/>
+  <rect x="954" y="401" width="8" height="17" rx="2" fill="#c89228"/>
+  <rect x="967" y="392" width="8" height="26" rx="2" fill="#c89228"/>
+
+  <rect class="prefix" x="82" y="410" width="20" height="20" rx="4"/>
+  <text class="small" x="114" y="426">Shared prefix</text>
+  <rect class="new" x="294" y="410" width="20" height="20" rx="4"/>
+  <text class="small" x="326" y="426">New input</text>
+</svg>

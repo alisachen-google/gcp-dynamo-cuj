@@ -40,11 +40,11 @@ The routing decision has three steps:
 
 These are the conceptual inputs to [Dynamo's routing cost model](https://docs.nvidia.com/dynamo/dev/knowledge-base/modular-components/router/routing-concepts). The exact flags used in this experiment are listed with the results.
 
-![Simple KV-aware routing: Dynamo compares prefix reuse and load across three workers, selecting Worker A in this example](agentx-serving-perf-report-kv-routing-simple.png)
+![An agent request passes through Dynamo to one of three workers; matching prefix blocks and load meters explain the highlighted selection](agentx-serving-perf-report-kv-routing-outline.png)
 
-[SVG](agentx-serving-perf-report-kv-routing-simple.svg) · [PDF](agentx-serving-perf-report-kv-routing-simple.pdf)
+[SVG](agentx-serving-perf-report-kv-routing-outline.svg) · [PDF](agentx-serving-perf-report-kv-routing-outline.pdf)
 
-*Worker A has a matching prefix and low load in this illustrative placement. Solid arrows show the selected request path; dashed arrows indicate other candidates. Cache contents and load labels are schematic. [Editable Mermaid source](agentx-serving-perf-report-kv-routing-simple.mmd).*
+*Blue blocks show shared prefixes; gold shows new input. Dynamo selects the cached, lightly loaded worker in this example. Dashed paths are alternatives; meters indicate illustrative load. [Editable SVG](agentx-serving-perf-report-kv-routing-outline.svg).*
 
 In **aggregated serving**, the selected worker performs both prefill and decode. In **disaggregated serving**, prefix locality matters at the prefill pool; the resulting state is transferred to a decode worker. Transfer and decode capacity therefore remain part of the end-to-end latency even when prefill reuse improves. [Dynamo's disaggregated-serving architecture](https://docs.nvidia.com/dynamo/dev/knowledge-base/concepts/system-architecture/disaggregated-serving) explains that execution path.
 
@@ -126,11 +126,11 @@ Three properties make those sequences relevant to KV-aware routing:
 
 These properties motivate **trace replay as part of the benchmark**. We use AIPerf to reconstruct requests from the Weka corpus's block identifiers and recorded lengths, retaining shared-prefix structure and parent/subagent dependencies. The [Weka loader documentation](https://github.com/ai-dynamo/aiperf/blob/main/docs/tutorials/weka-trace.md) describes how traces become a dependency graph.
 
-![AgentX dataset and replay: Weka session traces become AIPerf requests served by Dynamo and SGLang](agentx-serving-perf-report-agentx-dataset-simple.png)
+![Recorded Weka session trees become AIPerf requests with growing shared prefixes and replay delays, then flow to Dynamo for benchmarking](agentx-serving-perf-report-agentx-dataset-outline.png)
 
-[SVG](agentx-serving-perf-report-agentx-dataset-simple.svg) · [PDF](agentx-serving-perf-report-agentx-dataset-simple.pdf)
+[SVG](agentx-serving-perf-report-agentx-dataset-outline.svg) · [PDF](agentx-serving-perf-report-agentx-dataset-outline.pdf)
 
-*The corpus records coding-session structure. AIPerf reconstructs inference traffic and preserves replay dependencies and delays; cache reuse is measured during serving. The specific timing controls are recorded in section 1. [Editable Mermaid source](agentx-serving-perf-report-agentx-dataset-simple.mmd).*
+*Session trees capture turns and subagents. Repeated blue blocks show growing shared prefixes; clocks show replay delays. Section 1 records the timing controls. [Editable SVG](agentx-serving-perf-report-agentx-dataset-outline.svg).*
 
 Our **AgentX replay is closed-loop**: response completion and the recorded end-to-start delay control subsequent turns, subject to the scenario's whole-system idle-gap cap. Concurrency **C** counts live session trees, so active requests vary with think time and fan-out. Replay reconstructs the recorded workload; it does not execute the original coding tools or grade task completion. **Cache-hit rate is a measured outcome of replay, placement and residency.** The [AgentX scenario documentation](https://github.com/ai-dynamo/aiperf/blob/main/docs/tutorials/agentx-mvp.md) defines the replay framework; section 1 records our specific controls.
 
