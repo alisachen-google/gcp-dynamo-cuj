@@ -1,0 +1,85 @@
+{
+  "runs": {
+    "d88-kv-c192": {
+      "file": "request-metrics/d88-kv-c192.csv.gz",
+      "source": "/tmp/agentx-d88-matched-runs-20260920/d88-kv-c192/artifacts/profile_export.jsonl",
+      "source_sha256": "f4399f9912e40d3ba24fa40e1a4b08b6eaee482290dbc16b01d038864479d561",
+      "source_bytes": 150579079,
+      "rows_by_phase_and_status": {
+        "warmup/success": 185,
+        "profiling/success": 12644
+      }
+    },
+    "d88-kv-c480": {
+      "file": "request-metrics/d88-kv-c480.csv.gz",
+      "source": "/tmp/agentx-d88-matched-runs-20260920/d88-kv-c480/artifacts/profile_export.jsonl",
+      "source_sha256": "7adaeb7da8fc3d81521e5817884056ec0a3cd5b78ba116d7029df4b052f61a95",
+      "source_bytes": 396243928,
+      "rows_by_phase_and_status": {
+        "warmup/success": 445,
+        "profiling/success": 30140
+      }
+    },
+    "d88-kv-c768": {
+      "file": "request-metrics/d88-kv-c768.csv.gz",
+      "source": "/tmp/agentx-d88-matched-runs-20260920/d88-kv-c768/artifacts/profile_export.jsonl",
+      "source_sha256": "3c392aa913bb811f3fb58e8d16c78ea1ca4d2a1e06caec270eedeeca3b42b337",
+      "source_bytes": 455052948,
+      "rows_by_phase_and_status": {
+        "warmup/success": 702,
+        "profiling/success": 35113
+      }
+    },
+    "d88-kv-c1152": {
+      "file": "request-metrics/d88-kv-c1152.csv.gz",
+      "source": "/tmp/agentx-d88-matched-runs-20260920/d88-kv-c1152/artifacts/profile_export.jsonl",
+      "source_sha256": "9c3a65134c9af276d0d06d4c92b0efbea3657e05fd9127382392dc69c09074b2",
+      "source_bytes": 331509088,
+      "rows_by_phase_and_status": {
+        "warmup/success": 1059,
+        "profiling/success": 25985
+      }
+    },
+    "d88-rr-c72": {
+      "file": "request-metrics/d88-rr-c72.csv.gz",
+      "source": "/tmp/agentx-d88-matched-runs-20260920/d88-rr-c72/artifacts/profile_export.jsonl",
+      "source_sha256": "3576e0a59f5a586b157dddef0bc9fdf9ea8681090ca8faa29048d5ec771d5644",
+      "source_bytes": 60922871,
+      "rows_by_phase_and_status": {
+        "warmup/success": 68,
+        "profiling/success": 4853
+      }
+    },
+    "d88-rr-c96": {
+      "file": "request-metrics/d88-rr-c96.csv.gz",
+      "source": "/tmp/agentx-d88-matched-runs-20260920/d88-rr-c96/artifacts/profile_export.jsonl",
+      "source_sha256": "db301a8ec3cef4a9eae4d2cd38061876f01c7451089244766de070c1c9877333",
+      "source_bytes": 88010686,
+      "rows_by_phase_and_status": {
+        "warmup/success": 91,
+        "profiling/success": 7213
+      }
+    },
+    "d88-rr-c192": {
+      "file": "request-metrics/d88-rr-c192.csv.gz",
+      "source": "/tmp/agentx-d88-matched-runs-20260920/d88-rr-c192/artifacts/profile_export.jsonl",
+      "source_sha256": "c51ddcf8477ac60de2ee29541e9c0d4b97441c85bcd9084a43a605723ad10a98",
+      "source_bytes": 133386491,
+      "rows_by_phase_and_status": {
+        "warmup/success": 185,
+        "profiling/success": 11075
+      }
+    },
+    "d88-rr-c384": {
+      "file": "request-metrics/d88-rr-c384.csv.gz",
+      "source": "/tmp/agentx-d88-matched-runs-20260920/d88-rr-c384/artifacts/profile_export.jsonl",
+      "source_sha256": "5694a6ff4f162ff5fa5fbe00d459ef9af29d7f6591f97afb0686fdb13f8a7996",
+      "source_bytes": 110016627,
+      "rows_by_phase_and_status": {
+        "warmup/success": 349,
+        "profiling/success": 9021,
+        "profiling/error": 128
+      }
+    }
+  }
+}

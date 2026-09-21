@@ -1,0 +1,757 @@
+{
+  "passed": true,
+  "baseline": {
+    "label": "legacy",
+    "native_core_sha256": "39e41354104490981f35f76850bd17973369fc8222dab9f7813e25f50146e36e",
+    "queue_capacity": null,
+    "running_limit": 2,
+    "requests": [
+      {
+        "request": 0,
+        "success": true,
+        "requested_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12309,
+          "completion_tokens": 1,
+          "total_tokens": 12310
+        },
+        "elapsed_s": 2.2524502892047167,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 1,
+        "success": false,
+        "requested_tokens": 32,
+        "usage": null,
+        "elapsed_s": 0.05761388875544071,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 2,
+        "success": false,
+        "requested_tokens": 1,
+        "usage": null,
+        "elapsed_s": 0.06769630312919617,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 3,
+        "success": false,
+        "requested_tokens": 32,
+        "usage": null,
+        "elapsed_s": 0.05119349714368582,
+        "status": 500,
+        "error": "{\"message\":\"Failed to generate completions\",\"type\":\"Internal Server Error\",\"code\":500}"
+      },
+      {
+        "request": 4,
+        "success": false,
+        "requested_tokens": 1,
+        "usage": null,
+        "elapsed_s": 0.06668257992714643,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 5,
+        "success": false,
+        "requested_tokens": 32,
+        "usage": null,
+        "elapsed_s": 0.05209723301231861,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 6,
+        "success": false,
+        "requested_tokens": 1,
+        "usage": null,
+        "elapsed_s": 0.0642187362536788,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 7,
+        "success": false,
+        "requested_tokens": 32,
+        "usage": null,
+        "elapsed_s": 0.05616723094135523,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 8,
+        "success": false,
+        "requested_tokens": 1,
+        "usage": null,
+        "elapsed_s": 0.06520751491189003,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 9,
+        "success": false,
+        "requested_tokens": 32,
+        "usage": null,
+        "elapsed_s": 0.06127024628221989,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 10,
+        "success": false,
+        "requested_tokens": 1,
+        "usage": null,
+        "elapsed_s": 0.0509286243468523,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 11,
+        "success": false,
+        "requested_tokens": 32,
+        "usage": null,
+        "elapsed_s": 0.06418636348098516,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 12,
+        "success": false,
+        "requested_tokens": 1,
+        "usage": null,
+        "elapsed_s": 0.0655796267092228,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 13,
+        "success": false,
+        "requested_tokens": 32,
+        "usage": null,
+        "elapsed_s": 0.05264828260987997,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 14,
+        "success": false,
+        "requested_tokens": 1,
+        "usage": null,
+        "elapsed_s": 0.04821817949414253,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 15,
+        "success": false,
+        "requested_tokens": 32,
+        "usage": null,
+        "elapsed_s": 0.06498513463884592,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 16,
+        "success": true,
+        "requested_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12310,
+          "completion_tokens": 1,
+          "total_tokens": 12311
+        },
+        "elapsed_s": 2.570222361944616,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 17,
+        "success": false,
+        "requested_tokens": 32,
+        "usage": null,
+        "elapsed_s": 0.04833071120083332,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 18,
+        "success": false,
+        "requested_tokens": 1,
+        "usage": null,
+        "elapsed_s": 0.04675753600895405,
+        "status": 500,
+        "error": "{\"message\":\"Failed to generate completions\",\"type\":\"Internal Server Error\",\"code\":500}"
+      },
+      {
+        "request": 19,
+        "success": false,
+        "requested_tokens": 32,
+        "usage": null,
+        "elapsed_s": 0.061468821950256824,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 20,
+        "success": false,
+        "requested_tokens": 1,
+        "usage": null,
+        "elapsed_s": 0.05267209652811289,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 21,
+        "success": false,
+        "requested_tokens": 32,
+        "usage": null,
+        "elapsed_s": 0.06312723085284233,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 22,
+        "success": false,
+        "requested_tokens": 1,
+        "usage": null,
+        "elapsed_s": 0.06219871062785387,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 23,
+        "success": false,
+        "requested_tokens": 32,
+        "usage": null,
+        "elapsed_s": 0.06101992726325989,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 24,
+        "success": false,
+        "requested_tokens": 1,
+        "usage": null,
+        "elapsed_s": 0.062306806445121765,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 25,
+        "success": false,
+        "requested_tokens": 32,
+        "usage": null,
+        "elapsed_s": 0.0617862856015563,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 26,
+        "success": false,
+        "requested_tokens": 1,
+        "usage": null,
+        "elapsed_s": 0.06147916801273823,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 27,
+        "success": false,
+        "requested_tokens": 32,
+        "usage": null,
+        "elapsed_s": 0.060767440125346184,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 28,
+        "success": false,
+        "requested_tokens": 1,
+        "usage": null,
+        "elapsed_s": 0.05997816938906908,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 29,
+        "success": false,
+        "requested_tokens": 32,
+        "usage": null,
+        "elapsed_s": 0.060583753511309624,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 30,
+        "success": false,
+        "requested_tokens": 1,
+        "usage": null,
+        "elapsed_s": 0.05796869471669197,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      },
+      {
+        "request": 31,
+        "success": false,
+        "requested_tokens": 32,
+        "usage": null,
+        "elapsed_s": 0.059776817448437214,
+        "status": 503,
+        "error": "{\"message\":\"Service temporarily unavailable\",\"type\":\"Service Unavailable\",\"code\":503}"
+      }
+    ],
+    "successes": 2,
+    "forward_passes": {
+      "prefill": {
+        "computed_prefill_tokens": 24619,
+        "scheduled_decode_tokens": 0,
+        "max_decode_batch": 0
+      },
+      "decode": {
+        "computed_prefill_tokens": 0,
+        "scheduled_decode_tokens": 0,
+        "max_decode_batch": 0
+      }
+    }
+  },
+  "queued": {
+    "label": "queued",
+    "native_core_sha256": "cf4b4e65c22c993934ad45642dc21e89d110c88148ec2ee7c78d0f67f499d1c6",
+    "queue_capacity": 128,
+    "running_limit": 2,
+    "requests": [
+      {
+        "request": 0,
+        "success": true,
+        "requested_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12309,
+          "completion_tokens": 1,
+          "total_tokens": 12310
+        },
+        "elapsed_s": 11.674009347334504,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 1,
+        "success": true,
+        "requested_tokens": 32,
+        "usage": {
+          "prompt_tokens": 12309,
+          "completion_tokens": 32,
+          "total_tokens": 12341
+        },
+        "elapsed_s": 16.03446859680116,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 2,
+        "success": true,
+        "requested_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12309,
+          "completion_tokens": 1,
+          "total_tokens": 12310
+        },
+        "elapsed_s": 7.853349460288882,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 3,
+        "success": true,
+        "requested_tokens": 32,
+        "usage": {
+          "prompt_tokens": 12309,
+          "completion_tokens": 32,
+          "total_tokens": 12341
+        },
+        "elapsed_s": 9.686033342964947,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 4,
+        "success": true,
+        "requested_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12309,
+          "completion_tokens": 1,
+          "total_tokens": 12310
+        },
+        "elapsed_s": 12.260794151574373,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 5,
+        "success": true,
+        "requested_tokens": 32,
+        "usage": {
+          "prompt_tokens": 12309,
+          "completion_tokens": 32,
+          "total_tokens": 12341
+        },
+        "elapsed_s": 8.533550320193172,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 6,
+        "success": true,
+        "requested_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12309,
+          "completion_tokens": 1,
+          "total_tokens": 12310
+        },
+        "elapsed_s": 8.888042814098299,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 7,
+        "success": true,
+        "requested_tokens": 32,
+        "usage": {
+          "prompt_tokens": 12309,
+          "completion_tokens": 32,
+          "total_tokens": 12341
+        },
+        "elapsed_s": 10.736932802945375,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 8,
+        "success": true,
+        "requested_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12309,
+          "completion_tokens": 1,
+          "total_tokens": 12310
+        },
+        "elapsed_s": 12.72376203443855,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 9,
+        "success": true,
+        "requested_tokens": 32,
+        "usage": {
+          "prompt_tokens": 12309,
+          "completion_tokens": 32,
+          "total_tokens": 12341
+        },
+        "elapsed_s": 5.208867887035012,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 10,
+        "success": true,
+        "requested_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12310,
+          "completion_tokens": 1,
+          "total_tokens": 12311
+        },
+        "elapsed_s": 2.280485801398754,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 11,
+        "success": true,
+        "requested_tokens": 32,
+        "usage": {
+          "prompt_tokens": 12310,
+          "completion_tokens": 32,
+          "total_tokens": 12342
+        },
+        "elapsed_s": 14.08791859447956,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 12,
+        "success": true,
+        "requested_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12310,
+          "completion_tokens": 1,
+          "total_tokens": 12311
+        },
+        "elapsed_s": 8.315019713714719,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 13,
+        "success": true,
+        "requested_tokens": 32,
+        "usage": {
+          "prompt_tokens": 12310,
+          "completion_tokens": 32,
+          "total_tokens": 12342
+        },
+        "elapsed_s": 5.459343762136996,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 14,
+        "success": true,
+        "requested_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12310,
+          "completion_tokens": 1,
+          "total_tokens": 12311
+        },
+        "elapsed_s": 5.207861912436783,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 15,
+        "success": true,
+        "requested_tokens": 32,
+        "usage": {
+          "prompt_tokens": 12310,
+          "completion_tokens": 32,
+          "total_tokens": 12342
+        },
+        "elapsed_s": 12.939109737984836,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 16,
+        "success": true,
+        "requested_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12310,
+          "completion_tokens": 1,
+          "total_tokens": 12311
+        },
+        "elapsed_s": 14.46180451568216,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 17,
+        "success": true,
+        "requested_tokens": 32,
+        "usage": {
+          "prompt_tokens": 12310,
+          "completion_tokens": 32,
+          "total_tokens": 12342
+        },
+        "elapsed_s": 5.450537180528045,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 18,
+        "success": true,
+        "requested_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12310,
+          "completion_tokens": 1,
+          "total_tokens": 12311
+        },
+        "elapsed_s": 10.053231098689139,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 19,
+        "success": true,
+        "requested_tokens": 32,
+        "usage": {
+          "prompt_tokens": 12310,
+          "completion_tokens": 32,
+          "total_tokens": 12342
+        },
+        "elapsed_s": 11.305914413183928,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 20,
+        "success": true,
+        "requested_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12310,
+          "completion_tokens": 1,
+          "total_tokens": 12311
+        },
+        "elapsed_s": 10.516719558276236,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 21,
+        "success": true,
+        "requested_tokens": 32,
+        "usage": {
+          "prompt_tokens": 12310,
+          "completion_tokens": 32,
+          "total_tokens": 12342
+        },
+        "elapsed_s": 15.14141743723303,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 22,
+        "success": true,
+        "requested_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12310,
+          "completion_tokens": 1,
+          "total_tokens": 12311
+        },
+        "elapsed_s": 15.492038146592677,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 23,
+        "success": true,
+        "requested_tokens": 32,
+        "usage": {
+          "prompt_tokens": 12310,
+          "completion_tokens": 32,
+          "total_tokens": 12342
+        },
+        "elapsed_s": 6.3288668086752295,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 24,
+        "success": true,
+        "requested_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12310,
+          "completion_tokens": 1,
+          "total_tokens": 12311
+        },
+        "elapsed_s": 7.2586201298981905,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 25,
+        "success": true,
+        "requested_tokens": 32,
+        "usage": {
+          "prompt_tokens": 12310,
+          "completion_tokens": 32,
+          "total_tokens": 12342
+        },
+        "elapsed_s": 5.211458380334079,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 26,
+        "success": true,
+        "requested_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12310,
+          "completion_tokens": 1,
+          "total_tokens": 12311
+        },
+        "elapsed_s": 6.109938198700547,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 27,
+        "success": true,
+        "requested_tokens": 32,
+        "usage": {
+          "prompt_tokens": 12310,
+          "completion_tokens": 32,
+          "total_tokens": 12342
+        },
+        "elapsed_s": 5.666266277432442,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 28,
+        "success": true,
+        "requested_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12310,
+          "completion_tokens": 1,
+          "total_tokens": 12311
+        },
+        "elapsed_s": 14.921467613428831,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 29,
+        "success": true,
+        "requested_tokens": 32,
+        "usage": {
+          "prompt_tokens": 12310,
+          "completion_tokens": 32,
+          "total_tokens": 12342
+        },
+        "elapsed_s": 13.501975155435503,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 30,
+        "success": true,
+        "requested_tokens": 1,
+        "usage": {
+          "prompt_tokens": 12310,
+          "completion_tokens": 1,
+          "total_tokens": 12311
+        },
+        "elapsed_s": 6.676820761524141,
+        "status": 200,
+        "error": null
+      },
+      {
+        "request": 31,
+        "success": true,
+        "requested_tokens": 32,
+        "usage": {
+          "prompt_tokens": 12310,
+          "completion_tokens": 32,
+          "total_tokens": 12342
+        },
+        "elapsed_s": 5.868056050501764,
+        "status": 200,
+        "error": null
+      }
+    ],
+    "successes": 32,
+    "forward_passes": {
+      "prefill": {
+        "computed_prefill_tokens": 393910,
+        "scheduled_decode_tokens": 0,
+        "max_decode_batch": 0
+      },
+      "decode": {
+        "computed_prefill_tokens": 0,
+        "scheduled_decode_tokens": 496,
+        "max_decode_batch": 2
+      }
+    }
+  }
+}

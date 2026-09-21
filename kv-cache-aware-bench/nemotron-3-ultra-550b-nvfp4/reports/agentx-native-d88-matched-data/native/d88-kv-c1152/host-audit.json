@@ -1,0 +1,11 @@
+{
+  "source_sha256": "873ea34e9360d4076d468a1f42fc09a9a867fd0f4ed1bb95e662ce7199b41fc6",
+  "samples": 1060,
+  "profiling_samples": 364,
+  "profiling_start_unix": 1789953397.6584108,
+  "profiling_end_unix": 1789957057.5288928,
+  "minimum_available_memory_gib": 24.58425521850586,
+  "maximum_one_minute_loadavg": 23.52734375,
+  "host_cpu_busy_pct": 18.718652331980945,
+  "scope": "Shared host counters across the profiling window, including other processes; not modeled GPU utilization."
+}

@@ -83,6 +83,9 @@ def main():
     p.add_argument("--nats", default="nats://127.0.0.1:18222")
     p.add_argument("--etcd", default="http://127.0.0.1:18279")
     p.add_argument("--prepare-only", action="store_true")
+    p.add_argument("--no-raw-payloads", action="store_true",
+                   help="Retain numeric per-request exports without the large duplicate request/response payload file")
+    p.add_argument("--purpose", default="disagg_kv_flag_sweep")
     a = p.parse_args()
     if a.concurrency < 1:
         raise ValueError("Concurrency must be positive")
@@ -139,6 +142,8 @@ def main():
     cfg["phases"][0]["concurrency"] = a.concurrency
     cfg["endpoint"]["urls"] = [url]
     cfg["artifacts"]["dir"] = str(a.run_dir / "artifacts")
+    if a.no_raw_payloads:
+        cfg["artifacts"]["raw"] = False
     cfg["gpu_telemetry"]["enabled"] = False
     cfg["runtime"]["ui"] = "simple"
     model = cfg["models"]["items"][0]["name"]
@@ -226,7 +231,8 @@ def main():
         (a.run_dir / path.name).write_bytes(path.read_bytes())
     write_json(a.run_dir / "provenance.json", dict(
         method="path1_live_aiperf_dynamo_mocker_aic", clock="wall", speedup=1,
-        purpose="disagg_kv_flag_sweep", topology=topology["name"], gpu_count=gpu_count,
+        purpose=a.purpose, topology=topology["name"], gpu_count=gpu_count,
+        raw_payload_export=cfg["artifacts"].get("raw", False),
         router_tuning=tuning,
         concurrency=a.concurrency, router=a.router, benchmark_id=a.benchmark_id,
         workload_source=str(a.workload_summary), workload_source_sha256=sha256(a.workload_summary),
@@ -298,7 +304,7 @@ def main():
                             for value in obj:
                                 values.extend(values_for(value, key))
                         return values
-                    for key, expected in tuning.items():
+                    for key, expected in (tuning.items() if a.router == "kv" else []):
                         values = values_for(resolved, key)
                         if not values or any(value != expected for value in values):
                             raise RuntimeError(f"Resolved router flag mismatch: {key}={values}, expected {expected}")

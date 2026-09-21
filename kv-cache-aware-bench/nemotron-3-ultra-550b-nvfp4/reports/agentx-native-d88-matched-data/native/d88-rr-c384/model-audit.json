@@ -1,0 +1,26 @@
+{
+  "prefill": {
+    "events": 66705,
+    "workers": 8,
+    "peaks": {
+      "num_prefill_requests": 8,
+      "sum_prefill_tokens": 16384,
+      "num_decode_requests": 0
+    },
+    "source": "/tmp/agentx-d88-matched-runs-20260920/d88-rr-c384/prefill/forward-passes.jsonl.gz",
+    "source_sha256": "b1d3816bee49e57ec3c916da47aaaa89b8ef9ed2f02f427c77a970b4eeaf4666",
+    "source_bytes": 2365833
+  },
+  "decode": {
+    "events": 3149294,
+    "workers": 8,
+    "peaks": {
+      "num_prefill_requests": 0,
+      "sum_prefill_tokens": 0,
+      "num_decode_requests": 13
+    },
+    "source": "/tmp/agentx-d88-matched-runs-20260920/d88-rr-c384/decode/forward-passes.jsonl.gz",
+    "source_sha256": "0404b8691a365cd78d4a06448df025267507db9da0cd9cf04df4f7a3d05eaa9a",
+    "source_bytes": 98511079
+  }
+}

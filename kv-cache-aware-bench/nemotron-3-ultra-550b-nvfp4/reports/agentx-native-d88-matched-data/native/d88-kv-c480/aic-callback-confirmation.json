@@ -1,0 +1,18 @@
+{
+  "prefill-0": "\u001b[2m2026-09-20T23:29:27.608763Z\u001b[0m \u001b[32m INFO\u001b[0m \u001b[2m_core::llm::aic_callback\u001b[0m\u001b[2m:\u001b[0m AIC: using pure-Rust RustAicCallback (no GIL on the predict hot path)",
+  "prefill-1": "\u001b[2m2026-09-20T23:29:27.908832Z\u001b[0m \u001b[32m INFO\u001b[0m \u001b[2m_core::llm::aic_callback\u001b[0m\u001b[2m:\u001b[0m AIC: using pure-Rust RustAicCallback (no GIL on the predict hot path)",
+  "prefill-2": "\u001b[2m2026-09-20T23:29:28.314291Z\u001b[0m \u001b[32m INFO\u001b[0m \u001b[2m_core::llm::aic_callback\u001b[0m\u001b[2m:\u001b[0m AIC: using pure-Rust RustAicCallback (no GIL on the predict hot path)",
+  "prefill-3": "\u001b[2m2026-09-20T23:29:28.708976Z\u001b[0m \u001b[32m INFO\u001b[0m \u001b[2m_core::llm::aic_callback\u001b[0m\u001b[2m:\u001b[0m AIC: using pure-Rust RustAicCallback (no GIL on the predict hot path)",
+  "prefill-4": "\u001b[2m2026-09-20T23:29:29.138095Z\u001b[0m \u001b[32m INFO\u001b[0m \u001b[2m_core::llm::aic_callback\u001b[0m\u001b[2m:\u001b[0m AIC: using pure-Rust RustAicCallback (no GIL on the predict hot path)",
+  "prefill-5": "\u001b[2m2026-09-20T23:29:29.672109Z\u001b[0m \u001b[32m INFO\u001b[0m \u001b[2m_core::llm::aic_callback\u001b[0m\u001b[2m:\u001b[0m AIC: using pure-Rust RustAicCallback (no GIL on the predict hot path)",
+  "prefill-6": "\u001b[2m2026-09-20T23:29:30.176136Z\u001b[0m \u001b[32m INFO\u001b[0m \u001b[2m_core::llm::aic_callback\u001b[0m\u001b[2m:\u001b[0m AIC: using pure-Rust RustAicCallback (no GIL on the predict hot path)",
+  "prefill-7": "\u001b[2m2026-09-20T23:29:30.650129Z\u001b[0m \u001b[32m INFO\u001b[0m \u001b[2m_core::llm::aic_callback\u001b[0m\u001b[2m:\u001b[0m AIC: using pure-Rust RustAicCallback (no GIL on the predict hot path)",
+  "decode-0": "\u001b[2m2026-09-20T23:29:31.163958Z\u001b[0m \u001b[32m INFO\u001b[0m \u001b[2m_core::llm::aic_callback\u001b[0m\u001b[2m:\u001b[0m AIC: using pure-Rust RustAicCallback (no GIL on the predict hot path)",
+  "decode-1": "\u001b[2m2026-09-20T23:29:31.632303Z\u001b[0m \u001b[32m INFO\u001b[0m \u001b[2m_core::llm::aic_callback\u001b[0m\u001b[2m:\u001b[0m AIC: using pure-Rust RustAicCallback (no GIL on the predict hot path)",
+  "decode-2": "\u001b[2m2026-09-20T23:29:32.131726Z\u001b[0m \u001b[32m INFO\u001b[0m \u001b[2m_core::llm::aic_callback\u001b[0m\u001b[2m:\u001b[0m AIC: using pure-Rust RustAicCallback (no GIL on the predict hot path)",
+  "decode-3": "\u001b[2m2026-09-20T23:29:32.635436Z\u001b[0m \u001b[32m INFO\u001b[0m \u001b[2m_core::llm::aic_callback\u001b[0m\u001b[2m:\u001b[0m AIC: using pure-Rust RustAicCallback (no GIL on the predict hot path)",
+  "decode-4": "\u001b[2m2026-09-20T23:29:33.137881Z\u001b[0m \u001b[32m INFO\u001b[0m \u001b[2m_core::llm::aic_callback\u001b[0m\u001b[2m:\u001b[0m AIC: using pure-Rust RustAicCallback (no GIL on the predict hot path)",
+  "decode-5": "\u001b[2m2026-09-20T23:29:33.609938Z\u001b[0m \u001b[32m INFO\u001b[0m \u001b[2m_core::llm::aic_callback\u001b[0m\u001b[2m:\u001b[0m AIC: using pure-Rust RustAicCallback (no GIL on the predict hot path)",
+  "decode-6": "\u001b[2m2026-09-20T23:29:34.086783Z\u001b[0m \u001b[32m INFO\u001b[0m \u001b[2m_core::llm::aic_callback\u001b[0m\u001b[2m:\u001b[0m AIC: using pure-Rust RustAicCallback (no GIL on the predict hot path)",
+  "decode-7": "\u001b[2m2026-09-20T23:29:34.545717Z\u001b[0m \u001b[32m INFO\u001b[0m \u001b[2m_core::llm::aic_callback\u001b[0m\u001b[2m:\u001b[0m AIC: using pure-Rust RustAicCallback (no GIL on the predict hot path)"
+}

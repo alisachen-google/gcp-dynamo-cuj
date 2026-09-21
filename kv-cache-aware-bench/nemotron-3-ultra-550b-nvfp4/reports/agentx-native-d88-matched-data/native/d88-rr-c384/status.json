@@ -1,0 +1,50 @@
+{
+  "state": "completed",
+  "updated_unix": 1789953647.2221727,
+  "topology": "p8d8",
+  "router": "round-robin",
+  "concurrency": 384,
+  "router_tuning": {
+    "prefill_load_scale": 1.0,
+    "overlap_score_credit": 1.0,
+    "overlap_score_credit_decay": 0.0,
+    "router_temperature": 0.0,
+    "router_queue_policy": "fcfs"
+  },
+  "gpu_count": 64,
+  "benchmark_id": "1f54e049bc11",
+  "total_tok_s_per_gpu": 3500.730818250967,
+  "output_tok_s_per_gpu": 36.27662124886566,
+  "p95_ttft_ms": 288798.409294,
+  "p95_itl_ms": 11.13205784386279,
+  "request_throughput": 2.458036358256456,
+  "requests": 9021.0,
+  "errors": 128.0,
+  "error_summary": [
+    {
+      "error_details": {
+        "type": "InvalidInferenceResultError",
+        "message": "InvalidInferenceResultError('Invalid inference result: No responses with actual content were received from the server (only usage/metadata, null/empty data, or [DONE] markers)')",
+        "cause_chain": [
+          "InvalidInferenceResultError"
+        ]
+      },
+      "count": 128
+    }
+  ],
+  "effective_concurrency": {
+    "unit": "requests",
+    "avg": 238.6798593946177,
+    "p50": 258.0,
+    "p90": 285.0,
+    "p95": 288.0,
+    "p99": 293.0,
+    "min": 0.0,
+    "max": 299.0,
+    "std": 52.19174034783323
+  },
+  "valid_agentx_submission": true,
+  "warmup_input_sha256": "af1d28f63a7144ec240861fc7324d43ad28538d91a8f1936aae621956be79a5a",
+  "summary": "/tmp/agentx-d88-matched-runs-20260920/d88-rr-c384/artifacts/profile_export_aiperf.json",
+  "measured_hardware": false
+}

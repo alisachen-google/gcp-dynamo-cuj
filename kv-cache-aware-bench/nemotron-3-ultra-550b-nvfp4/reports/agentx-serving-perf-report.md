@@ -416,14 +416,76 @@ The four-point acceptance gate covered **±20% total throughput**, not TTFT or I
 
 ### 4.2 D88: native forecasts alongside the measured KV/RR curves
 
-Six completed native runs cover **8 prefill + 8 decode TP4 workers / 64 GPUs**, with default KV and RR at **C16, C64 and C256**. They use the **V11 disaggregation extension with frozen V10 timing**, the same Weka corpus and replay settings, and the engine configurations in section 5.3. These are existing September 17–18 runs, separate from the failed C480 flag sweep.
+**Eight new simulations now match eight existing D88 hardware jobs:** default KV at **C192, C480, C768 and C1152**, and RR at **C72, C96, C192 and C384**. Each uses **8 prefill + 8 decode workers, TP4/EP4, 64 GPUs**. KV covers the low-load reference, sampled TTFT-SLO choice, throughput peak and overload. RR covers the last sampled TTFT pass, first sampled failure, throughput peak and overload. These choices span different parts of each policy's curve; C192 also supplies an equal-concurrency routing comparison. No tuned points enter these curves.
 
-**No sampled concurrency values coincide between hardware and native runs.** The graph shows their collected trends; it does not compute accuracy by interpolating an unmeasured hardware or simulation point. No tuned KV points enter these curves.
+**Same methodology as agg:** live AIPerf AgentX replay → actual Dynamo router → native SGLang mocker → AIC forward-pass timings with the **frozen agg V10 coefficients**. Each point has a full **3,600 s profile**, trajectory warmup, seed 42, the same 393-trace Weka 256k corpus and its matched hardware benchmark ID. All eight are **holdouts; no D88 timing fit or per-point multiplier was applied**. Source/turn/input-token identities match across every pair's warmup. Closed-loop profiling can still complete different numbers and mixes of turns.
+
+**Native build change:** disagg uses the V11 extension of V10 plus an explicit bounded handoff queue. The old transport limit reused `max_num_seqs`, rejecting handoffs before the scheduler could queue them. The new `handoff_max_sessions=4096` separates protocol bookkeeping from scheduled batches: **P remains 8 running requests, D remains 64**, and cache/state capacities and timing coefficients are unchanged. A 32-request burst completed **2/32 on the old build and 32/32 on the new build**, while the test's two-request decode batch limit held. This is a correctness check, not a performance calibration. Three configuration tests, 81 scheduler tests, 14 handoff tests and the Rust lint check passed. [Patch, exact build identities and run plan](../sim-results/agentx_d88_matched_20260920/README.md).
 
 
-![D88 default KV and RR: hardware and native results at different concurrency grids, with errored native results marked](agentx-serving-perf-report-simulation-disagg-d88.png)
+![Eight matched D88 default KV and RR hardware/native comparisons: throughput, TTFT p95 and E2E interactivity](agentx-serving-perf-report-simulation-disagg-d88.png)
 
 [SVG](agentx-serving-perf-report-simulation-disagg-d88.svg) · [PDF](agentx-serving-perf-report-simulation-disagg-d88.pdf)
+
+
+Every paired cell below is **real hardware / native simulation**. Signed error is `(native / hardware − 1) × 100`. TTFT uses **p95 <10 s**; both SLOs additionally require **E2E I90 ≥20 output tok/s/user**. Latencies describe successful requests; request errors stay visible.
+
+| Setting / native summary | Total/GPU real / native | Throughput error | TTFT p95 real / native (s) | TTFT error | I90 real / native | TTFT SLO real / native | Both SLOs real / native | Errors real / native |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| [Default KV C192](agentx-native-d88-matched-data/native/d88-kv-c192/summary.json) | 5,142 / 5,093 | -0.9% | 2.40 / 2.30 | -3.9% | 67.3601 / 66.6086 | Pass / Pass | Pass / Pass | 0 / 0 |
+| [Default KV C480](agentx-native-d88-matched-data/native/d88-kv-c480/summary.json) | 12,204 / 12,168 | -0.3% | 7.12 / 7.60 | +6.7% | 33.5225 / 28.8924 | Pass / Pass | Pass / Pass | 0 / 0 |
+| [Default KV C768](agentx-native-d88-matched-data/native/d88-kv-c768/summary.json) | 15,543 / 14,188 | -8.7% | 27.14 / 37.71 | +39.0% | 7.4108 / 4.6380 | Fail / Fail | Fail / Fail | 0 / 0 |
+| [Default KV C1152](agentx-native-d88-matched-data/native/d88-kv-c1152/summary.json) | 10,697 / 10,236 | -4.3% | 164.32 / 137.60 | -16.3% | 1.1161 / 1.0699 | Fail / Fail | Fail / Fail | 0 / 0 |
+| [RR C72](agentx-native-d88-matched-data/native/d88-rr-c72/summary.json) | 1,763 / 1,726 | -2.1% | 9.91 / 10.31 | +4.1% | 37.3998 / 37.5824 | Pass / Fail | Pass / Fail | 0 / 0 |
+| [RR C96](agentx-native-d88-matched-data/native/d88-rr-c96/summary.json) | 2,671 / 2,639 | -1.2% | 13.03 / 12.87 | -1.2% | 28.0935 / 28.7024 | Fail / Fail | Fail / Fail | 0 / 0 |
+| [RR C192](agentx-native-d88-matched-data/native/d88-rr-c192/summary.json) | 4,419 / 4,359 | -1.4% | 31.45 / 31.70 | +0.8% | 8.3783 / 8.6256 | Fail / Fail | Fail / Fail | 0 / 0 |
+| [RR C384](agentx-native-d88-matched-data/native/d88-rr-c384/summary.json) | 3,504 / 3,501 | -0.1% | 289.39 / 288.80 | -0.2% | 1.0990 / 1.0244 | Fail / Fail | Fail / Fail | 68 / 128 |
+
+| Holdout subset | Pairs | Mean absolute throughput error | Mean absolute TTFT error | Mean absolute I90 error | TTFT SLO disagreements | Both-SLO disagreements |
+| --- | --- | --- | --- | --- | --- | --- |
+| Default KV | 4 | 3.6% | 16.5% | 14.1% | 0 | 0 |
+| RR | 4 | 1.2% | 1.6% | 3.1% | 1 | 1 |
+
+**Validation outcome:** 8/8 throughput predictions fall within the agg study's ±20% throughput criterion. There are **1/8 TTFT-SLO disagreements** and **1/8 combined-SLO disagreements**. These are single runs at selected points, not an uncertainty interval or a validation of unmeasured concurrency. Hardware remains the source for SLO operating decisions; throughput agreement alone does not certify a latency tail.
+
+**SLO disagreement — RR C72:** hardware/native TTFT p95 is **9.91/10.31 s** (Pass/Fail), and I90 is **37.40/37.58 output tok/s/user**. A small numerical error near a threshold can change the operating-point decision.
+
+| Policy | Sampled throughput peak real / native | Hardware TTFT pass–fail bracket | Native TTFT pass–fail bracket |
+| --- | --- | --- | --- |
+| Default KV | C768 / C768 | C480–672 | C480–768 |
+| RR | C192 / C192 | C72–96 | No sampled pass (lowest C72) |
+
+**Curve interpretation:** KV throughput changes by **-27.9% in native versus -31.2% on hardware** from C768 to C1152. At C768, native TTFT error is **+39.0%** and I90 error is **-37.4%**. Matching the sampled throughput decline therefore does not imply equally accurate latency near saturation. These are sampled peaks and coarse TTFT brackets, with no interpolation or claim of an optimal concurrency. The RR C72 hardware result is only **0.09 s below the TTFT limit**; repeats are needed to establish a stable boundary.
+
+**Routing at the same C192:** native predicts **1.17× KV/RR throughput**, versus **1.16× on hardware**. KV TTFT is **92.7% lower in native**, versus **92.4% lower on hardware**. This checks the policy comparison at a fixed session population separately from the SLO-boundary comparison.
+
+**Overload errors remain part of the comparison.** An accurate successful-request p95 does not establish matching failure behavior. Native points with request errors use × markers instead of extending the zero-error prediction lines.
+
+**RR C384:** native has 128 exported request errors (1.40%), versus 68 (0.76%) on hardware. Native failed requests lasted 300.01–300.41 s. Hardware failures lasted 300.02–668.74 s. The native failures cluster around the configured 300-second handoff timeout; that suggests a timeout-related modeling gap, but the error export alone does not prove which server timer fired.
+
+<details>
+<summary>Replay, warmup and request-error audit for all eight pairs</summary>
+
+| Setting | Matched warmup inputs | Warmup s real / native | Profile successes real / native | ISL p50 real / native | Mean client in-flight real / native | Cached input real / native | Error rate real / native | Native drain cancellations |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Default KV C192 | 185 | 1,699 / 1,653 | 12,744 / 12,644 | 80,114 / 79,803 | 31.1 / 33.0 | 92.7% / not reported | 0.000% / 0.000% | 3 |
+| Default KV C480 | 445 | 3,334 / 3,375 | 30,205 / 30,140 | 82,104 / 82,056 | 119.3 / 119.9 | 89.1% / not reported | 0.000% / 0.000% | 8 |
+| Default KV C768 | 702 | 4,718 / 4,767 | 38,194 / 35,113 | 83,354 / 82,227 | 276.8 / 318.2 | 85.2% / not reported | 0.000% / 0.000% | 18 |
+| Default KV C1152 | 1059 | 6,389 / 6,452 | 27,146 / 25,985 | 77,572 / 77,506 | 699.6 / 734.1 | 77.2% / not reported | 0.000% / 0.000% | 503 |
+| RR C72 | 68 | 815 / 840 | 4,982 / 4,853 | 63,460 / 63,697 | 12.6 / 13.3 | 65.5% / not reported | 0.000% / 0.000% | 0 |
+| RR C96 | 91 | 972 / 998 | 7,267 / 7,213 | 70,482 / 70,063 | 20.9 / 22.0 | 67.1% / not reported | 0.000% / 0.000% | 2 |
+| RR C192 | 185 | 1,706 / 1,671 | 11,184 / 11,075 | 76,944 / 76,931 | 55.7 / 56.9 | 61.1% / not reported | 0.000% / 0.000% | 1 |
+| RR C384 | 349 | 2,707 / 2,761 | 8,861 / 9,021 | 78,251 / 76,810 | 231.4 / 239.4 | 37.2% / not reported | 0.762% / 1.399% | 153 |
+
+Warmup identity is checked independently against the original hardware request-export hash. Runtime endpoint, artifact directory and telemetry differ; duplicate raw payload export is disabled, while numeric request records and replay settings are retained. Host resource observations, request errors, drain cancellations and native log hashes are preserved. Drain cancellations are outstanding credits at the drain deadline, separate from exported request errors; successful-request percentiles do not include them. AIPerf phase credit counters can include requests that fail later content validation; error counts here come from the final request export, not the phase progress log. A missing native cache-hit metric means it was not reported, not zero cache reuse. Different completed-turn distributions remain a modeling diagnostic.
+
+</details>
+
+[Download all eight paired summaries as CSV](agentx-serving-perf-report-d88-simulation.csv) · [New matched input manifest](agentx-native-d88-matched-data/manifest.json) · [numeric request provenance](agentx-native-d88-matched-data/request-metrics/manifest.json) · [reproduction and model limits](../sim-results/agentx_d88_matched_20260920/README.md)
+
+#### Earlier D88 native results, retained as historical diagnostics
+
+The six September 17–18 native runs below used the original V11 handoff limits and default KV/RR at **C16, C64 and C256**. Their concurrency values differ from the hardware grid and their binary differs from the eight new paired runs above. They are retained for provenance and are not joined into the new prediction curves.
 
 
 | Native run / summary | C | Total tok/s/GPU | TTFT p95 (s) | E2E I90 | Successes / errors | Error rate | Use |
@@ -435,13 +497,13 @@ Six completed native runs cover **8 prefill + 8 decode TP4 workers / 64 GPUs**, 
 | [RR](agentx-native-disagg-data/native/topo64-v11-p8d8-rr-c64/summary.json) | 64 | 1,561 | 9.17 | 39.6434 | 4,065 / 0 | 0.000% | Completed forecast |
 | [RR](agentx-native-disagg-data/native/topo64-v11-p8d8-rr-c256/summary.json) | 256 | 4,740 | 32.53 | 6.9169 | 11,161 / 3,710 | 24.948% | Diagnostic only |
 
-**RR256 is an admission-failure diagnostic, not a usable capacity prediction:** 3,710 of 14,871 profiling requests fail (24.95%). Its TTFT and I90 describe successful requests only, so dropping those errors would make the curve misleading. KV256 also has 11 errors (0.064%). Both are crosses outside the zero-error prediction lines. Worker logs contain handoff-session-limit failures; counts and log hashes are preserved with each run. The scenario-valid stamp alone does not validate the serving model.
+**RR256 is an admission-failure diagnostic, not a usable capacity prediction:** 3,710 of 14,871 profiling requests fail (24.95%). Its TTFT and I90 describe successful requests only, so dropping those errors would make the curve misleading. KV256 also has 11 errors (0.064%). They are excluded from the new matched prediction curves. Worker logs contain handoff-session-limit failures; counts and log hashes are preserved with each run. The scenario-valid stamp alone does not validate the serving model.
 
-The lower-concurrency native points show the direction of KV's latency advantage. They do not validate the measured D88 knee, credit-1.5 tuning, or C480/C576 SLO choices. Those require successful native runs at the same hardware concurrency and settings.
+These earlier points motivated the handoff fix. Use the eight new pairs above for the current D88 accuracy assessment; neither set supplies a native credit-1.5 tuning result.
 
 ### 4.3 Matched disagg comparison: 12P+6D, 72 GPUs, KV only
 
-Two completed native checks **do** have matching real hardware jobs: the earlier **12P+6D TP4 / 72-GPU KV** recipe at **C192 and C384**. These two historical hardware references are additional to the 37 agg/D88 jobs in sections 2–3; they are not substituted for 64-GPU D88 or for RR. Structured pool counts and launch commands establish 72 GPUs; the original topology JSON retains a stale 64-GPU sentence, documented in the source manifest.
+Two completed native checks **do** have matching real hardware jobs: the earlier **12P+6D TP4 / 72-GPU KV** recipe at **C192 and C384**. These two historical hardware references are additional to the 45 agg/D88 jobs in sections 2–3; they are not substituted for 64-GPU D88 or for RR. Structured pool counts and launch commands establish 72 GPUs; the original topology JSON retains a stale 64-GPU sentence, documented in the source manifest.
 
 
 ![Matched 72-GPU 12P+6D KV hardware and native throughput, TTFT and E2E interactivity at C192 and C384](agentx-serving-perf-report-simulation-disagg-p12d6.png)
@@ -458,9 +520,9 @@ The throughput errors are **−1.10% at C192** and **+0.65% at C384**; TTFT p95 
 
 ### 4.4 The remaining C480 tuning gap
 
-All **12 C480 native flag attempts failed during warmup** with `mocker handoff session limit reached`; no full profiling result exists at that load. The grid tested credits 0.6/0.8/1.0 and did not produce a forecast for the hardware-selected credit-1.5 configuration. Failed warmups are not plotted as zero throughput or as hardware limits.
+All **12 earlier C480 native flag attempts failed during warmup** with `mocker handoff session limit reached`. Those attempts used the old build; the new default-KV C480 result above uses the corrected queue handling. The grid tested credits 0.6/0.8/1.0 and did not produce a forecast for the hardware-selected credit-1.5 configuration. Failed warmups are not plotted as zero throughput or as hardware limits.
 
-Fix native handoff admission/backpressure while preserving the intended batch limits, then collect matched D88 default-KV/RR points at C96/C192 and C480. Only after those complete should the tuning grid and C576 SLO choice be evaluated. Validate transfer contention and the prefill cache allocation alongside that work.
+The new eight-point sweep fixes the protocol queue limit and supplies matched default-policy validation. It does not rerun the flag grid or predict the credit-1.5 C576 SLO choice. Before using native results to rank those settings, address the measured errors above and validate transfer contention and prefill cache allocation.
 
 [Native disagg input manifest](agentx-native-disagg-data/manifest.json) · [numeric request provenance](agentx-native-disagg-data/request-metrics/manifest.json) · [C480 failure evidence](agentx-serving-perf-data/source/native-c480-status.json) · [C480 sweep manifest](../sim-results/agentx_disagg_c480_native_20260919/plan.json)
 
@@ -528,14 +590,15 @@ The timing identity below is common: **AIC 0.11.0, GB300, SGLang 0.5.14 tables, 
 | Prefix caching | True | True | False |
 | Mamba state slots | 769 | 769 | 64 |
 | State cache chunk / tracking interval | 64 / 256 tokens | 64 / 256 tokens | 64 / 256 tokens |
+| Protocol handoff queue capacity / worker | Not applicable | 4096 | 4096 |
 | Transfer bandwidth per rank | No handoff | 64 GB/s assumed | 64 GB/s assumed |
 | Transfer payload per rank | No handoff | 3,072 bytes/input token + 101,990,400 state bytes | Same payload |
 | Decode tokens reserved at handoff | Not applicable | 0 | 512 |
-| Config source | [agg engine JSON](../reports/agentx-agg-kv-rr-data/native-v10/agg-kv-c192-calibrated-v10/engine.json) | [prefill engine JSON](../sim-results/agentx_disagg_c480_native_20260919/configs/prefill-engine.json) | [decode engine JSON](../sim-results/agentx_disagg_c480_native_20260919/configs/decode-engine.json) |
+| Config source | [agg engine JSON](../reports/agentx-agg-kv-rr-data/native-v10/agg-kv-c192-calibrated-v10/engine.json) | [prefill engine JSON](../sim-results/agentx_d88_matched_20260920/configs/prefill-engine.json) | [decode engine JSON](../sim-results/agentx_d88_matched_20260920/configs/decode-engine.json) |
 
 **Cache size provenance:** the agg attention allocation (443,697 pages ×64 =28,396,608 tokens/worker) comes from observed serving metadata. The 769 Mamba slots and checkpoint settings remain assumptions because the live state pool was not captured. Disagg prefill inherits that allocation as an assumption; decode uses 809,406 observed attention pages and 64 state/request slots in the saved model. AIC did not measure these fleet cache allocations. Cache-hit rate emerges from the replay, placement and finite cache state.
 
-**Transfer provenance:** the 64 GB/s value is a per-rank modeling assumption, not measured Mooncake bandwidth. The native handoff moves the full prompt's modeled KV plus recurrent state; independent delays omit shared-link contention. These assumptions need direct transfer/cache measurements and a matched D88 hardware check. The saved input files are linked above; the failed sweep is not evidence that these values are accurate.
+**Transfer provenance:** the 64 GB/s value is a per-rank modeling assumption, not measured Mooncake bandwidth. The native handoff moves the full prompt's modeled KV plus recurrent state; independent delays omit shared-link contention. Section 4.2 now checks eight matched D88 pairs without fitting these assumptions. Direct transfer/cache measurements are still needed to identify the causes of any mismatch; agreement at one point would not establish the assumed values independently.
 
 ### 5.4 Shared timing calibration and what DynoSim tells us
 
@@ -553,11 +616,11 @@ The prefill fit uses **93 isolated one-token RR192 hardware warmup requests**. D
 | --- | --- | --- |
 | Agg 6×TP4, default KV versus RR | Reproduces the sampled C192 throughput peak and C384 decline, and the direction of the KV advantage. Eight holdouts average 1.7% absolute throughput error. | TTFT tails remain biased; the simulator falsely passes default KV192 under TTFT-only. |
 | Agg router tuning | Frozen V10 reproduces the original scale-3/credit-0.8 throughput benefit and temperature-0.5 loss. | Tuned KV192 falsely passes combined SLO in simulation. Decay variants and the new C160/C256 samples lack native counterparts. Hardware now selects scale 3/default credit 1.0 at C160 under both limits; repeat it and measure C192 with those flags. |
-| Disagg 8P+8D TP4 | Six completed native runs at C16/C64/C256 show the sampled routing trends, with separate admission/cache budgets and transfer timing. | No native point matches the hardware concurrency grid; RR256 has 24.95% errors. All C480 tuning attempts fail warmup, so no native tuning ranking or high-load SLO capacity is established. |
+| Disagg 8P+8D TP4 | Eight new native runs match four KV and four RR hardware points, spanning low load, SLO choices, throughput peaks and overload. Section 4.2 reports errors and SLO classification agreement with frozen V10 timing. | The handoff queue fix preserves P8/D64 running limits. Historical RR256 errors are separate diagnostics; no native credit-1.5 tuning sweep or repeatability interval is established. Transfer/cache assumptions remain. |
 | Earlier disagg 12P+6D TP4 | Two matched 72-GPU KV checks have throughput errors of −1.10%/+0.65% and TTFT errors of +0.54%/+5.74%. | These are two historical KV points, not validation of D88, RR, or the full latency boundary. Transfer/cache assumptions still need measurement. |
 | Choosing TP or the P:D ratio | AIC supplies candidate shapes; a working replay model can compare them under the workload. | The current evidence does not establish that 6×TP4 or 8P+8D is globally optimal. Compare candidates at fixed total GPUs and validate on hardware. |
 
-Fix native disagg admission/backpressure while preserving the intended batch limits, complete one full matched baseline, and only then repeat the flag grid. Validate transfer timing/contended bandwidth, prefill cache capacity and SGLang-version effects. For agg, use the frozen model to prioritize measurements; the real-job SLO remains the decision source.
+Use the eight matched D88 results to identify which modeling errors remain after the handoff queue fix before repeating the native flag grid. Validate transfer timing/contended bandwidth, prefill cache capacity and SGLang-version effects. For agg, use the frozen model to prioritize measurements; the real-job SLO remains the decision source.
 
 ### 5.5 Artifacts, validation and regeneration
 
@@ -569,4 +632,4 @@ From the repository root, with NumPy, Matplotlib, PyYAML and markdown-it-py inst
 python kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/gen_agentx_serving_report.py
 ```
 
-The earlier [agg report](agentx-agg-kv-rr-report.md) and [disagg report](agentx-disagg-kv-rr-report.md) remain dated snapshots. This report preserves 45 hardware jobs in the scoped inventory (25 agg and the retained 20 D88 jobs) and all 12 original native agg comparisons. Section 4 additionally preserves eight existing native disagg runs and two historical 72-GPU hardware references; errored profiling runs remain visible as diagnostics, and failed warmups contribute no performance point.
+The earlier [agg report](agentx-agg-kv-rr-report.md) and [disagg report](agentx-disagg-kv-rr-report.md) remain dated snapshots. This report preserves 45 hardware jobs in the scoped inventory (25 agg and the retained 20 D88 jobs) and all 12 original native agg comparisons. Section 4 additionally preserves eight new matched 64-GPU native runs, eight earlier native disagg runs and two historical 72-GPU hardware references; errored profiling runs remain visible as diagnostics, and failed warmups contribute no performance point.

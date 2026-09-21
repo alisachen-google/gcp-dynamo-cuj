@@ -1,0 +1,893 @@
+{
+  "collected_utc": "2026-09-21T02:59:28.918444+00:00",
+  "source_commit": "086f4925b26d280c6784d99b1eeb119d237a6313",
+  "native_core_sha256": "cf4b4e65c22c993934ad45642dc21e89d110c88148ec2ee7c78d0f67f499d1c6",
+  "native_base_sha256": "39e41354104490981f35f76850bd17973369fc8222dab9f7813e25f50146e36e",
+  "plan": "../../sim-results/agentx_d88_matched_20260920/plan.json",
+  "plan_sha256": "de97f8a942e9bf192e5a437dd744ec5f6cb5386c426e4697749161acb411faf8",
+  "request_metrics_manifest": "request-metrics/manifest.json",
+  "native_runs": [
+    {
+      "id": "d88-kv-c192",
+      "kind": "simulation",
+      "policy": "kv",
+      "clients": 192,
+      "gpus": 64,
+      "topology": "p8d8",
+      "role": "holdout",
+      "hardware_id": "n3u-mnnvl-88-agentx-kv-c192",
+      "build": "Native V11 disaggregation extension with frozen V10 AIC timing; bounded handoff queue separated from running batch",
+      "source_directory": "/tmp/agentx-d88-matched-runs-20260920/d88-kv-c192",
+      "summary": "native/d88-kv-c192/summary.json",
+      "handoff_limit_mentions": 0,
+      "warmup_inputs_match": true
+    },
+    {
+      "id": "d88-kv-c480",
+      "kind": "simulation",
+      "policy": "kv",
+      "clients": 480,
+      "gpus": 64,
+      "topology": "p8d8",
+      "role": "holdout",
+      "hardware_id": "n3u-mnnvl-88-agentx-kv-c480",
+      "build": "Native V11 disaggregation extension with frozen V10 AIC timing; bounded handoff queue separated from running batch",
+      "source_directory": "/tmp/agentx-d88-matched-runs-20260920/d88-kv-c480",
+      "summary": "native/d88-kv-c480/summary.json",
+      "handoff_limit_mentions": 0,
+      "warmup_inputs_match": true
+    },
+    {
+      "id": "d88-kv-c768",
+      "kind": "simulation",
+      "policy": "kv",
+      "clients": 768,
+      "gpus": 64,
+      "topology": "p8d8",
+      "role": "holdout",
+      "hardware_id": "n3u-mnnvl-88-agentx-kv-c768",
+      "build": "Native V11 disaggregation extension with frozen V10 AIC timing; bounded handoff queue separated from running batch",
+      "source_directory": "/tmp/agentx-d88-matched-runs-20260920/d88-kv-c768",
+      "summary": "native/d88-kv-c768/summary.json",
+      "handoff_limit_mentions": 0,
+      "warmup_inputs_match": true
+    },
+    {
+      "id": "d88-kv-c1152",
+      "kind": "simulation",
+      "policy": "kv",
+      "clients": 1152,
+      "gpus": 64,
+      "topology": "p8d8",
+      "role": "holdout",
+      "hardware_id": "n3u-mnnvl-88-agentx-kv-c1152",
+      "build": "Native V11 disaggregation extension with frozen V10 AIC timing; bounded handoff queue separated from running batch",
+      "source_directory": "/tmp/agentx-d88-matched-runs-20260920/d88-kv-c1152",
+      "summary": "native/d88-kv-c1152/summary.json",
+      "handoff_limit_mentions": 0,
+      "warmup_inputs_match": true
+    },
+    {
+      "id": "d88-rr-c72",
+      "kind": "simulation",
+      "policy": "rr",
+      "clients": 72,
+      "gpus": 64,
+      "topology": "p8d8",
+      "role": "holdout",
+      "hardware_id": "n3u-mnnvl-88-agentx-rr-c72",
+      "build": "Native V11 disaggregation extension with frozen V10 AIC timing; bounded handoff queue separated from running batch",
+      "source_directory": "/tmp/agentx-d88-matched-runs-20260920/d88-rr-c72",
+      "summary": "native/d88-rr-c72/summary.json",
+      "handoff_limit_mentions": 0,
+      "warmup_inputs_match": true
+    },
+    {
+      "id": "d88-rr-c96",
+      "kind": "simulation",
+      "policy": "rr",
+      "clients": 96,
+      "gpus": 64,
+      "topology": "p8d8",
+      "role": "holdout",
+      "hardware_id": "n3u-mnnvl-88-agentx-rr-c96",
+      "build": "Native V11 disaggregation extension with frozen V10 AIC timing; bounded handoff queue separated from running batch",
+      "source_directory": "/tmp/agentx-d88-matched-runs-20260920/d88-rr-c96",
+      "summary": "native/d88-rr-c96/summary.json",
+      "handoff_limit_mentions": 0,
+      "warmup_inputs_match": true
+    },
+    {
+      "id": "d88-rr-c192",
+      "kind": "simulation",
+      "policy": "rr",
+      "clients": 192,
+      "gpus": 64,
+      "topology": "p8d8",
+      "role": "holdout",
+      "hardware_id": "n3u-mnnvl-88-agentx-rr-c192",
+      "build": "Native V11 disaggregation extension with frozen V10 AIC timing; bounded handoff queue separated from running batch",
+      "source_directory": "/tmp/agentx-d88-matched-runs-20260920/d88-rr-c192",
+      "summary": "native/d88-rr-c192/summary.json",
+      "handoff_limit_mentions": 0,
+      "warmup_inputs_match": true
+    },
+    {
+      "id": "d88-rr-c384",
+      "kind": "simulation",
+      "policy": "rr",
+      "clients": 384,
+      "gpus": 64,
+      "topology": "p8d8",
+      "role": "holdout",
+      "hardware_id": "1789795836_alisachen-n3u-mnnvl-88-agentx-rr-c384",
+      "build": "Native V11 disaggregation extension with frozen V10 AIC timing; bounded handoff queue separated from running batch",
+      "source_directory": "/tmp/agentx-d88-matched-runs-20260920/d88-rr-c384",
+      "summary": "native/d88-rr-c384/summary.json",
+      "handoff_limit_mentions": 0,
+      "warmup_inputs_match": true
+    }
+  ],
+  "files": {
+    "controller-jobs.json": {
+      "sha256": "60cfd4731d570b7a94e158da56bee7c19abce0c91a9139a0d464fe25e34b8fab",
+      "bytes": 18084
+    },
+    "controller-resource-adjustment.json": {
+      "sha256": "8e649b76741cb1027c115f1447b2b08e128c46cacc890930a06b4f156a0b13e2",
+      "bytes": 914
+    },
+    "controller-state.json": {
+      "sha256": "08be2a5db12984cffb8a61fb5b521781904fe2cb616f8a76ae9fb35cfa1f021c",
+      "bytes": 26569
+    },
+    "hardware-warmup/1789795836_alisachen-n3u-mnnvl-88-agentx-rr-c384.json": {
+      "sha256": "f1f9f7346113f397f3738016f9d7ffdc34ea277bbae25588f079973e903244aa",
+      "bytes": 69692
+    },
+    "hardware-warmup/n3u-mnnvl-88-agentx-kv-c1152.json": {
+      "sha256": "5158f05f292c8a6fa314113facdc9a3d2a47325ef580423058a1157ef474d3ce",
+      "bytes": 185133
+    },
+    "hardware-warmup/n3u-mnnvl-88-agentx-kv-c192.json": {
+      "sha256": "2b3d1d5943fe1b9f4b102d653260ae84b7db36da62f75211a6e0c63991f036c0",
+      "bytes": 37311
+    },
+    "hardware-warmup/n3u-mnnvl-88-agentx-kv-c480.json": {
+      "sha256": "2fcfc02a2ef772c256e6f8116411ef728a39047d2594e389b0ec0c5db83865f7",
+      "bytes": 84705
+    },
+    "hardware-warmup/n3u-mnnvl-88-agentx-kv-c768.json": {
+      "sha256": "e6caca4d10a7cfdd516a652cf5acc9454394bea1cac6668dcfa257137d9269cb",
+      "bytes": 133657
+    },
+    "hardware-warmup/n3u-mnnvl-88-agentx-rr-c192.json": {
+      "sha256": "842add9f24280cd00a270ee65a90201bd92513d23876abaf88359c7568bb0709",
+      "bytes": 37311
+    },
+    "hardware-warmup/n3u-mnnvl-88-agentx-rr-c72.json": {
+      "sha256": "c929ce811bcf3dd2e5e40bc8b64bdfca66edc66a92b7d8f5141b4319860b80ae",
+      "bytes": 13989
+    },
+    "hardware-warmup/n3u-mnnvl-88-agentx-rr-c96.json": {
+      "sha256": "e0e8d0e89341bca42462b368787eb97335e5500e3528bb2b54619765e7c5b1af",
+      "bytes": 18449
+    },
+    "native/d88-kv-c1152/aic-callback-confirmation.json": {
+      "sha256": "ab270777710214e6f2cddbe3faf3fafa12ce994d20afc52379fe5ef41a992d23",
+      "bytes": 3531
+    },
+    "native/d88-kv-c1152/calibration-at-launch.json": {
+      "sha256": "e89b6f942793b9bf3b5a86c20a79b811beeaa7c05077a7115df5e1f7d28518e8",
+      "bytes": 4646
+    },
+    "native/d88-kv-c1152/client-config.json": {
+      "sha256": "50cdeb55fb620688c771fb8c8fd43d20d6d66c5e475803a627cf9a6f2113d029",
+      "bytes": 2012
+    },
+    "native/d88-kv-c1152/client-phase-audit.json": {
+      "sha256": "56d368b688258fc0fcc6703c90845d877dae1119df7d6e1f9b64819f9266bed7",
+      "bytes": 374
+    },
+    "native/d88-kv-c1152/decode/engine.json": {
+      "sha256": "c349a096c6d216913b80efdb97a4f635ddc915db65b4256644610e125d33e21a",
+      "bytes": 1467
+    },
+    "native/d88-kv-c1152/frontend-resolved.json": {
+      "sha256": "108b0e5a1c32e1a0b972011eb276ad463444f19e4d784f4cb59c96b35a0ecacb",
+      "bytes": 5118
+    },
+    "native/d88-kv-c1152/host-audit.json": {
+      "sha256": "062a78ff9152a0736afd38c66853618a4df29fccf67aa719a09543e63634b6cd",
+      "bytes": 488
+    },
+    "native/d88-kv-c1152/host-observations.jsonl.gz": {
+      "sha256": "120c7e7b03bd5cc7cc0d86767cb2dc078d728f7fb4e2193d3c094ba187a1df18",
+      "bytes": 1040170
+    },
+    "native/d88-kv-c1152/log-evidence.json": {
+      "sha256": "657f75795565b87d1658f9e7468a03f4ea901953eec01aeda3194c9eb7b9071f",
+      "bytes": 6436
+    },
+    "native/d88-kv-c1152/model-audit.json": {
+      "sha256": "8a9939fa376e39bbb87c017be85c19e9b3e244417b2b9f053c000f3c430ea1f6",
+      "bytes": 796
+    },
+    "native/d88-kv-c1152/prefill/engine.json": {
+      "sha256": "307df47ad837c1735e903952abcf9ba49805ecad68e6ed8f49f7a51d5dd60c44",
+      "bytes": 1466
+    },
+    "native/d88-kv-c1152/provenance.json": {
+      "sha256": "62d08605b85fdf39f73a2648cdcf92fad7d9a93870b5ca683ef7ae9dd4c14dd5",
+      "bytes": 17573
+    },
+    "native/d88-kv-c1152/result.json": {
+      "sha256": "344a875ddf0994afea288296aea91aa18b9f67c47cb83e827960ca634b7a3f9a",
+      "bytes": 1069
+    },
+    "native/d88-kv-c1152/router-flags-confirmed.json": {
+      "sha256": "df4f2343925aa4f0df559a84bfb176f2aac7dc9291451d64ad8eb0b9890ac0b0",
+      "bytes": 162
+    },
+    "native/d88-kv-c1152/server-environment.json": {
+      "sha256": "2df4437ada6d33e983bfb629e5abec5bb8d92b56cc76b7688e46b8109c1a4817",
+      "bytes": 205
+    },
+    "native/d88-kv-c1152/startup-health.json": {
+      "sha256": "5c66d8fe75de818f7e53210aaffd57a728f40773f03c9450323ea4a96ea479ae",
+      "bytes": 10582
+    },
+    "native/d88-kv-c1152/status.json": {
+      "sha256": "e87b3031f9eeceb76bb3fe9604456edeeb29f65f2b4612cd5c3916d8ccdf049a",
+      "bytes": 1131
+    },
+    "native/d88-kv-c1152/summary.json": {
+      "sha256": "78b0003cc4a4fb3215f695535b43c8f621793dd31eda3785cbc034a534c63fd9",
+      "bytes": 39663
+    },
+    "native/d88-kv-c1152/topology.json": {
+      "sha256": "f9ab63b3a6f06cb3816ca5c867860fa99401c12201dbcd77417c059926b48084",
+      "bytes": 1557
+    },
+    "native/d88-kv-c1152/warmup-inputs.json": {
+      "sha256": "2d6416143a32ecdfeee567ad85561d6f4582682310c09246d509393d90013627",
+      "bytes": 184706
+    },
+    "native/d88-kv-c1152/workload-source.json": {
+      "sha256": "244a8c158a22065d9198034c0f62d2546803565359387d049c03e9bcd28908f9",
+      "bytes": 42179
+    },
+    "native/d88-kv-c192/aic-callback-confirmation.json": {
+      "sha256": "108778b116bb60c66b4dcf051c2976189cb5b18d8be1b8dcbaacd98ad23f9d52",
+      "bytes": 3531
+    },
+    "native/d88-kv-c192/calibration-at-launch.json": {
+      "sha256": "e89b6f942793b9bf3b5a86c20a79b811beeaa7c05077a7115df5e1f7d28518e8",
+      "bytes": 4646
+    },
+    "native/d88-kv-c192/client-config.json": {
+      "sha256": "79aca418d693fc6e8d739592245818da529aaf2e9b420f85edb8e4f157f2428e",
+      "bytes": 2010
+    },
+    "native/d88-kv-c192/client-phase-audit.json": {
+      "sha256": "b6a67a8e159d3f6cd23a4339eedf88c0b0fe43f2b84a90c9192005c3b769372c",
+      "bytes": 372
+    },
+    "native/d88-kv-c192/decode/engine.json": {
+      "sha256": "c349a096c6d216913b80efdb97a4f635ddc915db65b4256644610e125d33e21a",
+      "bytes": 1467
+    },
+    "native/d88-kv-c192/frontend-resolved.json": {
+      "sha256": "9ca7a28b54698de94ab35eb856cbfcb17c14edb87f78b1defd25ca642f95500e",
+      "bytes": 5113
+    },
+    "native/d88-kv-c192/host-audit.json": {
+      "sha256": "73a15f070d80ce5da905b2f9a32eca7317af98ceb150a39276b800ad5377736c",
+      "bytes": 489
+    },
+    "native/d88-kv-c192/host-observations.jsonl.gz": {
+      "sha256": "197e41e7fdf8ba09261feb9ea6bd6714f5d4dfe1f95b562d07497f01838a2547",
+      "bytes": 525084
+    },
+    "native/d88-kv-c192/log-evidence.json": {
+      "sha256": "98c0f33f1a5d40e98654fa4c0c85253236468a11b4db302886116abf2d50f40a",
+      "bytes": 6435
+    },
+    "native/d88-kv-c192/model-audit.json": {
+      "sha256": "2104ee7a4aa599d37ac7a4f1f857ce5c472e03f9ef10bdd495fc1fa605ed6e82",
+      "bytes": 794
+    },
+    "native/d88-kv-c192/prefill/engine.json": {
+      "sha256": "307df47ad837c1735e903952abcf9ba49805ecad68e6ed8f49f7a51d5dd60c44",
+      "bytes": 1466
+    },
+    "native/d88-kv-c192/provenance.json": {
+      "sha256": "beaa72bbbde70ad4f51bba4f6057e44826a2729aeb5d2fac37708ae3299ba63f",
+      "bytes": 17532
+    },
+    "native/d88-kv-c192/result.json": {
+      "sha256": "e5b6980103c750197d94d21b498bd707fc63797a9be9d88a79b1d34fc7b6dc4f",
+      "bytes": 1060
+    },
+    "native/d88-kv-c192/router-flags-confirmed.json": {
+      "sha256": "df4f2343925aa4f0df559a84bfb176f2aac7dc9291451d64ad8eb0b9890ac0b0",
+      "bytes": 162
+    },
+    "native/d88-kv-c192/server-environment.json": {
+      "sha256": "2df4437ada6d33e983bfb629e5abec5bb8d92b56cc76b7688e46b8109c1a4817",
+      "bytes": 205
+    },
+    "native/d88-kv-c192/startup-health.json": {
+      "sha256": "7c8daaab8dba9f8009bc04a8035d5dc41162c3fb1fd4c97f475ecf3652950344",
+      "bytes": 51597
+    },
+    "native/d88-kv-c192/status.json": {
+      "sha256": "389bb35414aa59d65dd63880899b9805b3be549e090102e148d8eed7211a78da",
+      "bytes": 1122
+    },
+    "native/d88-kv-c192/summary.json": {
+      "sha256": "905fb1e01d96627071959d0ef7b00a2021cdf8034b4aab705d74039e5f9fe5b4",
+      "bytes": 39608
+    },
+    "native/d88-kv-c192/topology.json": {
+      "sha256": "f9ab63b3a6f06cb3816ca5c867860fa99401c12201dbcd77417c059926b48084",
+      "bytes": 1557
+    },
+    "native/d88-kv-c192/warmup-inputs.json": {
+      "sha256": "3157d5ac8c2fb7733236ecd54962a6abac5f40f42be280b18425e7d39f019f2c",
+      "bytes": 36887
+    },
+    "native/d88-kv-c192/workload-source.json": {
+      "sha256": "0b81d6ee697a16d57b1b498ba74c43dad8bfbe23f75b6bb8cc47ec6182a9ad30",
+      "bytes": 42344
+    },
+    "native/d88-kv-c480/aic-callback-confirmation.json": {
+      "sha256": "b7b9282af01b9c2e001f7f719a56e6d574f823485642368ad96018451d9ac0e3",
+      "bytes": 3531
+    },
+    "native/d88-kv-c480/calibration-at-launch.json": {
+      "sha256": "e89b6f942793b9bf3b5a86c20a79b811beeaa7c05077a7115df5e1f7d28518e8",
+      "bytes": 4646
+    },
+    "native/d88-kv-c480/client-config.json": {
+      "sha256": "9a65a15069e8afb7c69c9b9c642c59058088ead0338665a305bd1e5ad6c9a01a",
+      "bytes": 2010
+    },
+    "native/d88-kv-c480/client-phase-audit.json": {
+      "sha256": "8a7a4be4b37167e59ad90509a2a3d4fa650e20a4f59d458f427dc8a5f9a2b774",
+      "bytes": 372
+    },
+    "native/d88-kv-c480/decode/engine.json": {
+      "sha256": "c349a096c6d216913b80efdb97a4f635ddc915db65b4256644610e125d33e21a",
+      "bytes": 1467
+    },
+    "native/d88-kv-c480/frontend-resolved.json": {
+      "sha256": "01a1f1b01dcb1b659b19941aedf643ec1fed0a8c33b0df9f44f54c65820098c4",
+      "bytes": 5113
+    },
+    "native/d88-kv-c480/host-audit.json": {
+      "sha256": "346958886c5d9e5baa19ed30a91f012857e90bfb2011db0dd52e2dcfe023d4a3",
+      "bytes": 489
+    },
+    "native/d88-kv-c480/host-observations.jsonl.gz": {
+      "sha256": "0278b041774d1be4832f90e0b311e81f241c555032dbc04032719297aae5e20f",
+      "bytes": 727364
+    },
+    "native/d88-kv-c480/log-evidence.json": {
+      "sha256": "89da66b6d77db1427ee63de5531ed8fe7e4d6c6dfaf673446f0b3c89ab658842",
+      "bytes": 6436
+    },
+    "native/d88-kv-c480/model-audit.json": {
+      "sha256": "bb39cd551ed0f83b67e96e625ea212950d3aba93acb8cb1d86cde67009c428ea",
+      "bytes": 793
+    },
+    "native/d88-kv-c480/prefill/engine.json": {
+      "sha256": "307df47ad837c1735e903952abcf9ba49805ecad68e6ed8f49f7a51d5dd60c44",
+      "bytes": 1466
+    },
+    "native/d88-kv-c480/provenance.json": {
+      "sha256": "51ca3b4a05b92375ac5affdfb5332dbe6f72d7570e3a29cfb5bb7b0b02f7798b",
+      "bytes": 17532
+    },
+    "native/d88-kv-c480/result.json": {
+      "sha256": "928a9a7ea33c2a0eae7b5c549a56f33f5aece9ff97ca567e4ba65e19b78a0b01",
+      "bytes": 1066
+    },
+    "native/d88-kv-c480/router-flags-confirmed.json": {
+      "sha256": "df4f2343925aa4f0df559a84bfb176f2aac7dc9291451d64ad8eb0b9890ac0b0",
+      "bytes": 162
+    },
+    "native/d88-kv-c480/server-environment.json": {
+      "sha256": "2df4437ada6d33e983bfb629e5abec5bb8d92b56cc76b7688e46b8109c1a4817",
+      "bytes": 205
+    },
+    "native/d88-kv-c480/startup-health.json": {
+      "sha256": "9c3a223a8290bdc6f28f09b31839a7415b9a29a4f85fd4d0aa91e51c87a72ae7",
+      "bytes": 31497
+    },
+    "native/d88-kv-c480/status.json": {
+      "sha256": "6d5033417bccf93fc495b6c825d3004c8e155b25804aa46c9ef664cbba693a4b",
+      "bytes": 1128
+    },
+    "native/d88-kv-c480/summary.json": {
+      "sha256": "6e8aab2c17bfdfa96885ea24677c019c68df0bd211de1fe84023e72db18bef4c",
+      "bytes": 39671
+    },
+    "native/d88-kv-c480/topology.json": {
+      "sha256": "f9ab63b3a6f06cb3816ca5c867860fa99401c12201dbcd77417c059926b48084",
+      "bytes": 1557
+    },
+    "native/d88-kv-c480/warmup-inputs.json": {
+      "sha256": "bde99246b39fc6dc6b2fc1e0e8dcec3c3c722d8105e0da5c76903f2c7e019634",
+      "bytes": 84281
+    },
+    "native/d88-kv-c480/workload-source.json": {
+      "sha256": "aafdd85e832d7731663a4cc4b852222815a00e8795f4c739048ebbdbc8005d0d",
+      "bytes": 42328
+    },
+    "native/d88-kv-c768/aic-callback-confirmation.json": {
+      "sha256": "0e2f1b79af5e57c53c5b39214ed1078308efdc9888d0e944f04eb5d9ca0cf6bd",
+      "bytes": 3531
+    },
+    "native/d88-kv-c768/calibration-at-launch.json": {
+      "sha256": "e89b6f942793b9bf3b5a86c20a79b811beeaa7c05077a7115df5e1f7d28518e8",
+      "bytes": 4646
+    },
+    "native/d88-kv-c768/client-config.json": {
+      "sha256": "c7735d4d75c156ee061c48a1220dbfaa0e01d32f444808decc7c8b068e14cb13",
+      "bytes": 2010
+    },
+    "native/d88-kv-c768/client-phase-audit.json": {
+      "sha256": "15d7b6e93a9f8a25aa7ab7a029c0ac19ca2219d555f1a4934afe0f990f750211",
+      "bytes": 373
+    },
+    "native/d88-kv-c768/decode/engine.json": {
+      "sha256": "c349a096c6d216913b80efdb97a4f635ddc915db65b4256644610e125d33e21a",
+      "bytes": 1467
+    },
+    "native/d88-kv-c768/frontend-resolved.json": {
+      "sha256": "ddbf337f74b101d414218699199dd1460cf62fb21e644c8a2fe12735cd78804f",
+      "bytes": 5113
+    },
+    "native/d88-kv-c768/host-audit.json": {
+      "sha256": "e7e3b754fb6ae1e7b54f1d7d9cb35b4d05adbf3b0e6661e306e84f69df2f9a6b",
+      "bytes": 487
+    },
+    "native/d88-kv-c768/host-observations.jsonl.gz": {
+      "sha256": "11bd90d36859073048a012f8884ce75525ae4364abed8aa4ab61e1161f2514f6",
+      "bytes": 879330
+    },
+    "native/d88-kv-c768/log-evidence.json": {
+      "sha256": "467ef4936f5d3c2dc505a826251969fb728e70839b1296f894cfa63c6417380d",
+      "bytes": 6436
+    },
+    "native/d88-kv-c768/model-audit.json": {
+      "sha256": "782b4750428e41f125707f30f33d167b1e3ebb9c0d40cd8a5052e2296b452b8b",
+      "bytes": 793
+    },
+    "native/d88-kv-c768/prefill/engine.json": {
+      "sha256": "307df47ad837c1735e903952abcf9ba49805ecad68e6ed8f49f7a51d5dd60c44",
+      "bytes": 1466
+    },
+    "native/d88-kv-c768/provenance.json": {
+      "sha256": "470d3924a351e4d739404b25ba5df1282dad5061652cd6394202e51bf0da589b",
+      "bytes": 17532
+    },
+    "native/d88-kv-c768/result.json": {
+      "sha256": "2cca6179dbac66981ddaf62bf6e2d5a0837e2d439b61de193d6546abc0de4e2b",
+      "bytes": 1066
+    },
+    "native/d88-kv-c768/router-flags-confirmed.json": {
+      "sha256": "df4f2343925aa4f0df559a84bfb176f2aac7dc9291451d64ad8eb0b9890ac0b0",
+      "bytes": 162
+    },
+    "native/d88-kv-c768/server-environment.json": {
+      "sha256": "2df4437ada6d33e983bfb629e5abec5bb8d92b56cc76b7688e46b8109c1a4817",
+      "bytes": 205
+    },
+    "native/d88-kv-c768/startup-health.json": {
+      "sha256": "d50ceb64f17c8a3fafbf74857e89f5e55dc330d943c5a5a9c32c026ec4d717f9",
+      "bytes": 21041
+    },
+    "native/d88-kv-c768/status.json": {
+      "sha256": "7a44b5f6dd34d2ac2b8121c9b188bc39e087503809ef3ee7e2168f73e6d68304",
+      "bytes": 1128
+    },
+    "native/d88-kv-c768/summary.json": {
+      "sha256": "7d7a2ba12580e2c597bd34fbfeff5461c6d9e66e7f5da4db6de4e9cdb0ad2e8c",
+      "bytes": 39490
+    },
+    "native/d88-kv-c768/topology.json": {
+      "sha256": "f9ab63b3a6f06cb3816ca5c867860fa99401c12201dbcd77417c059926b48084",
+      "bytes": 1557
+    },
+    "native/d88-kv-c768/warmup-inputs.json": {
+      "sha256": "f1686f0d649e762639fe8b6298fa96e0ada17e17c71587d35f2069125e7b90a7",
+      "bytes": 133233
+    },
+    "native/d88-kv-c768/workload-source.json": {
+      "sha256": "4890dfa67d08ea559fa93183adb547dd557fef6a299ced6799e9b1101d480151",
+      "bytes": 42220
+    },
+    "native/d88-rr-c192/aic-callback-confirmation.json": {
+      "sha256": "07cf0889954935b37f34e6ffdf15c04bb118dc51db3a3ed131cba6389aeb4ce9",
+      "bytes": 3531
+    },
+    "native/d88-rr-c192/calibration-at-launch.json": {
+      "sha256": "e89b6f942793b9bf3b5a86c20a79b811beeaa7c05077a7115df5e1f7d28518e8",
+      "bytes": 4646
+    },
+    "native/d88-rr-c192/client-config.json": {
+      "sha256": "89d7c95c0188add7f83f72696a6c3e3c32829e70294b1791fdf3d25b1e6032c1",
+      "bytes": 2010
+    },
+    "native/d88-rr-c192/client-phase-audit.json": {
+      "sha256": "cb97d27ef6e97a04375efe7ad07376cf5d3cff2d56420eae55205a3b6321bd3c",
+      "bytes": 372
+    },
+    "native/d88-rr-c192/decode/engine.json": {
+      "sha256": "c349a096c6d216913b80efdb97a4f635ddc915db65b4256644610e125d33e21a",
+      "bytes": 1467
+    },
+    "native/d88-rr-c192/frontend-resolved.json": {
+      "sha256": "34499a0dc43a438f21febe39d4bf7cab84b5c0b40c8f255ee58c4ab59aa5507c",
+      "bytes": 4947
+    },
+    "native/d88-rr-c192/host-audit.json": {
+      "sha256": "65558c1b15c46de2f820c4241b69e2e4c3a86e4f54e0bd72adde34c492a9046f",
+      "bytes": 487
+    },
+    "native/d88-rr-c192/host-observations.jsonl.gz": {
+      "sha256": "3dbb4cecd8afc04eed0e36d35cb5b3187283545e83d3805b1506110a81665599",
+      "bytes": 554830
+    },
+    "native/d88-rr-c192/log-evidence.json": {
+      "sha256": "5490d806fd67b8a50454dc8b4b209deb8b2db90c318772ba49fba99fc5cc1711",
+      "bytes": 6435
+    },
+    "native/d88-rr-c192/model-audit.json": {
+      "sha256": "2e675d2f52f18b00e4da103312e5e59156e2e9449da86b34b324628c86e63b6a",
+      "bytes": 793
+    },
+    "native/d88-rr-c192/prefill/engine.json": {
+      "sha256": "307df47ad837c1735e903952abcf9ba49805ecad68e6ed8f49f7a51d5dd60c44",
+      "bytes": 1466
+    },
+    "native/d88-rr-c192/provenance.json": {
+      "sha256": "54ce2f493a19d72933d1b19604b1a17a556ca25cc80035930755afb010ee74e4",
+      "bytes": 17296
+    },
+    "native/d88-rr-c192/result.json": {
+      "sha256": "ffd51fa6657567776386c31e88177ebaad5e89a86706a71794cfdf50d33d266c",
+      "bytes": 1070
+    },
+    "native/d88-rr-c192/router-flags-confirmed.json": {
+      "sha256": "df4f2343925aa4f0df559a84bfb176f2aac7dc9291451d64ad8eb0b9890ac0b0",
+      "bytes": 162
+    },
+    "native/d88-rr-c192/server-environment.json": {
+      "sha256": "2df4437ada6d33e983bfb629e5abec5bb8d92b56cc76b7688e46b8109c1a4817",
+      "bytes": 205
+    },
+    "native/d88-rr-c192/startup-health.json": {
+      "sha256": "0b1133f0126f29d4d9ee726e7891bab8ff45e86037ab5152946e96f59555f556",
+      "bytes": 41144
+    },
+    "native/d88-rr-c192/status.json": {
+      "sha256": "64513fd608ca14e53f62655ab10a4268af3423b2e59c2591488221a6245df14f",
+      "bytes": 1132
+    },
+    "native/d88-rr-c192/summary.json": {
+      "sha256": "7b94b189d59054aa6a9d87b0d4bea4fa6f29da6e28217aec8f4d617a427d5193",
+      "bytes": 39373
+    },
+    "native/d88-rr-c192/topology.json": {
+      "sha256": "f9ab63b3a6f06cb3816ca5c867860fa99401c12201dbcd77417c059926b48084",
+      "bytes": 1557
+    },
+    "native/d88-rr-c192/warmup-inputs.json": {
+      "sha256": "5eaf3f8967ca54384012d2ba214e0b9d1f209b222f43c71c6ebb5b47b5fd216b",
+      "bytes": 36887
+    },
+    "native/d88-rr-c192/workload-source.json": {
+      "sha256": "76e146013fb17b1433969b4f395fb3a5f5edbc3fec8af265ae295f204bddb0c8",
+      "bytes": 42297
+    },
+    "native/d88-rr-c384/aic-callback-confirmation.json": {
+      "sha256": "954c2db139e49d504811216442c28c7de1d590b16ed5270c8dc6c90277e447e2",
+      "bytes": 3531
+    },
+    "native/d88-rr-c384/calibration-at-launch.json": {
+      "sha256": "e89b6f942793b9bf3b5a86c20a79b811beeaa7c05077a7115df5e1f7d28518e8",
+      "bytes": 4646
+    },
+    "native/d88-rr-c384/client-config.json": {
+      "sha256": "ea97d6bf6789a06b4b16516f991ad2c48e0dd739233528acfed0aaa0a5313df8",
+      "bytes": 2010
+    },
+    "native/d88-rr-c384/client-phase-audit.json": {
+      "sha256": "e3711104db15f08635a015eb3e049506971bbcc3c01994aa6084a70101b9f446",
+      "bytes": 373
+    },
+    "native/d88-rr-c384/decode/engine.json": {
+      "sha256": "c349a096c6d216913b80efdb97a4f635ddc915db65b4256644610e125d33e21a",
+      "bytes": 1467
+    },
+    "native/d88-rr-c384/frontend-resolved.json": {
+      "sha256": "6f2de0f9d6c2bfa6ffcf4b204dcbff0f87350893dbac509fab06d83a9de57277",
+      "bytes": 4947
+    },
+    "native/d88-rr-c384/host-audit.json": {
+      "sha256": "43a6ac392ea40340a72a1dbd200e148c8adebb03f1e14d073acaf19282339dc9",
+      "bytes": 487
+    },
+    "native/d88-rr-c384/host-observations.jsonl.gz": {
+      "sha256": "e7063b97614289374463e7fe3399d5a2bfa90c8efcccf420440d08be85500311",
+      "bytes": 633749
+    },
+    "native/d88-rr-c384/log-evidence.json": {
+      "sha256": "de0e2ad660c65c7797f3a425c273068dd8f12d612fdf6c7ce991d7397f75b93c",
+      "bytes": 6435
+    },
+    "native/d88-rr-c384/model-audit.json": {
+      "sha256": "6740d921bd06f9b5a84da44a61f6a2acf0971ab5c64456d97658723732ad2d11",
+      "bytes": 793
+    },
+    "native/d88-rr-c384/prefill/engine.json": {
+      "sha256": "307df47ad837c1735e903952abcf9ba49805ecad68e6ed8f49f7a51d5dd60c44",
+      "bytes": 1466
+    },
+    "native/d88-rr-c384/provenance.json": {
+      "sha256": "0aa57b7457ee8f766c6393e9c0aebf116c18863b779f78bb03d643069811a5d2",
+      "bytes": 17295
+    },
+    "native/d88-rr-c384/result.json": {
+      "sha256": "fa5febbd61a3261fc9f622de3ea0c67afb3daa892a8b121de43dea0ba84b75c7",
+      "bytes": 1458
+    },
+    "native/d88-rr-c384/router-flags-confirmed.json": {
+      "sha256": "df4f2343925aa4f0df559a84bfb176f2aac7dc9291451d64ad8eb0b9890ac0b0",
+      "bytes": 162
+    },
+    "native/d88-rr-c384/server-environment.json": {
+      "sha256": "2df4437ada6d33e983bfb629e5abec5bb8d92b56cc76b7688e46b8109c1a4817",
+      "bytes": 205
+    },
+    "native/d88-rr-c384/startup-health.json": {
+      "sha256": "7a88da7b00ff11386041c83df12c88104bd3ae9d9bdb8d9ccd742b614aceff89",
+      "bytes": 41141
+    },
+    "native/d88-rr-c384/status.json": {
+      "sha256": "1c96cb3acb245b96c28fa934dcf4e7d474686d9ae5f9941cce70c0d5cde31ac1",
+      "bytes": 1520
+    },
+    "native/d88-rr-c384/summary.json": {
+      "sha256": "6eed0da14ddd332512c7b1ab94d009cb26c367b34ef7596cdf2135aa3ef28be0",
+      "bytes": 41412
+    },
+    "native/d88-rr-c384/topology.json": {
+      "sha256": "f9ab63b3a6f06cb3816ca5c867860fa99401c12201dbcd77417c059926b48084",
+      "bytes": 1557
+    },
+    "native/d88-rr-c384/warmup-inputs.json": {
+      "sha256": "ec334f13c984b249299db72d032f1311162d5a458880a2c72db93fe1b0044c83",
+      "bytes": 69247
+    },
+    "native/d88-rr-c384/workload-source.json": {
+      "sha256": "5940ad4da53404a4b2428cfae5c52d51186d899403f7cd047bbca944ee5214b9",
+      "bytes": 44736
+    },
+    "native/d88-rr-c72/aic-callback-confirmation.json": {
+      "sha256": "3f198e80e5e7940774220b1b08f58d96d5a18ccbb5e3a775aedde625ca39a30c",
+      "bytes": 3531
+    },
+    "native/d88-rr-c72/calibration-at-launch.json": {
+      "sha256": "e89b6f942793b9bf3b5a86c20a79b811beeaa7c05077a7115df5e1f7d28518e8",
+      "bytes": 4646
+    },
+    "native/d88-rr-c72/client-config.json": {
+      "sha256": "fb0e4071d00e4bd05e69aef584b8fa2340d8877c27e2d5a8b26d29d86a9f1342",
+      "bytes": 2008
+    },
+    "native/d88-rr-c72/client-phase-audit.json": {
+      "sha256": "c4bb9398b378014e28989d41c015a26dd9195c0ddb482b76ef0575e42fdc7220",
+      "bytes": 371
+    },
+    "native/d88-rr-c72/decode/engine.json": {
+      "sha256": "c349a096c6d216913b80efdb97a4f635ddc915db65b4256644610e125d33e21a",
+      "bytes": 1467
+    },
+    "native/d88-rr-c72/frontend-resolved.json": {
+      "sha256": "b73c99c5f19cc272a575c9fb84e5096742480202c74e74b2f41ddc270e09a77d",
+      "bytes": 4942
+    },
+    "native/d88-rr-c72/host-audit.json": {
+      "sha256": "9c7cca53bdb7a7f996b6129769db20f26091ad62b7180a888a0a712e9439db0e",
+      "bytes": 489
+    },
+    "native/d88-rr-c72/host-observations.jsonl.gz": {
+      "sha256": "9dfa159d3c391951eafb08f855c31c78a2010a29cb975bc14d7a72ac3c0bd67a",
+      "bytes": 456289
+    },
+    "native/d88-rr-c72/log-evidence.json": {
+      "sha256": "1b56f3fe4bb92829839a78e9c43d58e8a506af9e165978034432313fef94ea1a",
+      "bytes": 6418
+    },
+    "native/d88-rr-c72/model-audit.json": {
+      "sha256": "f2540519d8e0cab503830f5dc531e491dd2732585579c44b3f4fb62cb38f89fa",
+      "bytes": 790
+    },
+    "native/d88-rr-c72/prefill/engine.json": {
+      "sha256": "307df47ad837c1735e903952abcf9ba49805ecad68e6ed8f49f7a51d5dd60c44",
+      "bytes": 1466
+    },
+    "native/d88-rr-c72/provenance.json": {
+      "sha256": "a00ce242df8fc962faeb21e6d28ceb03ea330a804ad52ef4a3be4c27f8b70751",
+      "bytes": 17255
+    },
+    "native/d88-rr-c72/result.json": {
+      "sha256": "5b0c7fa9852796ef5a0bff9fd20942399e5ed42225a8c188227bd1cc63cc8466",
+      "bytes": 1068
+    },
+    "native/d88-rr-c72/router-flags-confirmed.json": {
+      "sha256": "df4f2343925aa4f0df559a84bfb176f2aac7dc9291451d64ad8eb0b9890ac0b0",
+      "bytes": 162
+    },
+    "native/d88-rr-c72/server-environment.json": {
+      "sha256": "2df4437ada6d33e983bfb629e5abec5bb8d92b56cc76b7688e46b8109c1a4817",
+      "bytes": 205
+    },
+    "native/d88-rr-c72/startup-health.json": {
+      "sha256": "200d9aa9c9d2fbb230306a720ceedeae85e3632cbbea7864a2627eb50a722503",
+      "bytes": 49866
+    },
+    "native/d88-rr-c72/status.json": {
+      "sha256": "cecd6cc40dca8afa5a7f4e52ebf2dd8fb0119da26fa8c0fb965587e0158f819e",
+      "bytes": 1130
+    },
+    "native/d88-rr-c72/summary.json": {
+      "sha256": "a0be3bb3646eabc24e9a324ea0f6eb1061a93a29a98eddd979333a7da4046092",
+      "bytes": 39506
+    },
+    "native/d88-rr-c72/topology.json": {
+      "sha256": "f9ab63b3a6f06cb3816ca5c867860fa99401c12201dbcd77417c059926b48084",
+      "bytes": 1557
+    },
+    "native/d88-rr-c72/warmup-inputs.json": {
+      "sha256": "2dbc301dcb695b6555bbeb60ad2acfa378f652e02aa0e46068fa7f2a24a55c46",
+      "bytes": 13569
+    },
+    "native/d88-rr-c72/workload-source.json": {
+      "sha256": "90aa85e975083c21d4c538effae980a0f0065aa5eb695615933dca1e56941a04",
+      "bytes": 42140
+    },
+    "native/d88-rr-c96/aic-callback-confirmation.json": {
+      "sha256": "c6faf50d4f38a34c1dded48dad50da99545f914b2fe392bc16522efe4ded6aaf",
+      "bytes": 3531
+    },
+    "native/d88-rr-c96/calibration-at-launch.json": {
+      "sha256": "e89b6f942793b9bf3b5a86c20a79b811beeaa7c05077a7115df5e1f7d28518e8",
+      "bytes": 4646
+    },
+    "native/d88-rr-c96/client-config.json": {
+      "sha256": "050ad7a8206d375d1f17db7721c2156c7d588cf93f302370464ef3e0eddfc081",
+      "bytes": 2008
+    },
+    "native/d88-rr-c96/client-phase-audit.json": {
+      "sha256": "d814ed1ae4b613fa49200e5bb14d1e00e4709019fcb9fac0ab7721d481a362fc",
+      "bytes": 371
+    },
+    "native/d88-rr-c96/decode/engine.json": {
+      "sha256": "c349a096c6d216913b80efdb97a4f635ddc915db65b4256644610e125d33e21a",
+      "bytes": 1467
+    },
+    "native/d88-rr-c96/frontend-resolved.json": {
+      "sha256": "3c1106ad6c5e9885f6bd4dbe170731273e4cc34a74104e4d24b023067f409bdb",
+      "bytes": 4942
+    },
+    "native/d88-rr-c96/host-audit.json": {
+      "sha256": "74d9888cb3efd9dbc7c062a14d62050a1de3582afdf97bdcc1ef7399bacd7500",
+      "bytes": 489
+    },
+    "native/d88-rr-c96/host-observations.jsonl.gz": {
+      "sha256": "86d9bf36c89526806bd9eb4346cf52ee55ffedbd7853507b40e5cc7f283d5afa",
+      "bytes": 474930
+    },
+    "native/d88-rr-c96/log-evidence.json": {
+      "sha256": "2ed454cb53cabcfebfa4b4f07a391b7b625c07560715220f17d2a8cbdeac353b",
+      "bytes": 6418
+    },
+    "native/d88-rr-c96/model-audit.json": {
+      "sha256": "bb9b407ecef90d1c6962080f75d51914e57610bdc58613ace826f64f4a562314",
+      "bytes": 790
+    },
+    "native/d88-rr-c96/prefill/engine.json": {
+      "sha256": "307df47ad837c1735e903952abcf9ba49805ecad68e6ed8f49f7a51d5dd60c44",
+      "bytes": 1466
+    },
+    "native/d88-rr-c96/provenance.json": {
+      "sha256": "c7e108180a49afc260bffe808e7d20fbb81ee5384a852c8b21e21ca13299bcdd",
+      "bytes": 17255
+    },
+    "native/d88-rr-c96/result.json": {
+      "sha256": "6a5750b229d26576c25aabd0d4a161a9cdec9e96382227a48a596eace65ea2a4",
+      "bytes": 1068
+    },
+    "native/d88-rr-c96/router-flags-confirmed.json": {
+      "sha256": "df4f2343925aa4f0df559a84bfb176f2aac7dc9291451d64ad8eb0b9890ac0b0",
+      "bytes": 162
+    },
+    "native/d88-rr-c96/server-environment.json": {
+      "sha256": "2df4437ada6d33e983bfb629e5abec5bb8d92b56cc76b7688e46b8109c1a4817",
+      "bytes": 205
+    },
+    "native/d88-rr-c96/startup-health.json": {
+      "sha256": "2bee66955206b02a2b6a9b6af67bd51f7b586f92301acf48552f5a037112c31f",
+      "bytes": 50733
+    },
+    "native/d88-rr-c96/status.json": {
+      "sha256": "4fde24b935c45ecc121f9823b3b3e7ba28340002da6af00428f74db3f4665aee",
+      "bytes": 1130
+    },
+    "native/d88-rr-c96/summary.json": {
+      "sha256": "914ed66351fb9edab0e45ec3ad550226b003ea36079fc12492d8c21685ad8a0d",
+      "bytes": 39359
+    },
+    "native/d88-rr-c96/topology.json": {
+      "sha256": "f9ab63b3a6f06cb3816ca5c867860fa99401c12201dbcd77417c059926b48084",
+      "bytes": 1557
+    },
+    "native/d88-rr-c96/warmup-inputs.json": {
+      "sha256": "48b05bf413ed890d6e28ab10efe95dcb6e2f2670da7e82914854c32103c42a92",
+      "bytes": 18029
+    },
+    "native/d88-rr-c96/workload-source.json": {
+      "sha256": "9ca91c19288648a2c767d66035303d4e43abb2e3d9011c858b8a7d6a4f35721e",
+      "bytes": 41370
+    },
+    "request-metrics/d88-kv-c1152.csv.gz": {
+      "sha256": "420b34a489e83be0bc1203231028428d30ac1ba885e9a9b71a63d714dcdbb1e2",
+      "bytes": 2084498
+    },
+    "request-metrics/d88-kv-c192.csv.gz": {
+      "sha256": "329b1a73863a59e94d3b32a04c41fb0b1b3e42c274a904f1e08df8c9cc9939b6",
+      "bytes": 633279
+    },
+    "request-metrics/d88-kv-c480.csv.gz": {
+      "sha256": "c5249c4e3be4597720d31152093f426159b071623e65d2ade28bfbb0cc9b61a9",
+      "bytes": 1749347
+    },
+    "request-metrics/d88-kv-c768.csv.gz": {
+      "sha256": "d4bf6d6249ed6fa7cff9f1ae9cbf4a137aedd4e31602f3e1c7f49cadf7ec6d52",
+      "bytes": 2712927
+    },
+    "request-metrics/d88-rr-c192.csv.gz": {
+      "sha256": "ab473cee0014af79d5fc7ba9f3ec9822c6d43f807aa6314ef616bb7a5edef32d",
+      "bytes": 580397
+    },
+    "request-metrics/d88-rr-c384.csv.gz": {
+      "sha256": "9bf075db0f1165c5f4fba4c45c67f5a4867427af3ae6fe5af16765185195d4b0",
+      "bytes": 644875
+    },
+    "request-metrics/d88-rr-c72.csv.gz": {
+      "sha256": "b8f51810d0376dae2d4b59ca644d7d635b550e1704c9d199134f897b6967587a",
+      "bytes": 229395
+    },
+    "request-metrics/d88-rr-c96.csv.gz": {
+      "sha256": "e38af9f4a1655c3d608ffe7b349e30b7c152553265116edc73317dc6a8004f15",
+      "bytes": 345618
+    },
+    "request-metrics/manifest.json": {
+      "sha256": "31e28eb261f4b461e03f65861f95d7d43c5d723c2919ca9f8faedd55827b4f48",
+      "bytes": 3354
+    }
+  },
+  "scope": "Eight new 64-GPU D88 simulations at existing hardware points; frozen agg V10 timing, no D88 fitting.",
+  "limitations": [
+    "Native V11 disaggregation extension plus explicit bounded handoff queues, not the unchanged agg V10 binary.",
+    "Per-worker protocol queue capacity is 4096; scheduled batches remain P8/D64 and state capacity is unchanged.",
+    "Transfer bandwidth, shared-link contention and prefill cache sizing remain modeling assumptions.",
+    "One run per point; closed-loop completion mixes can differ between simulation and hardware.",
+    "Raw payload duplication is disabled; numeric per-request records and all replay controls are retained."
+  ]
+}

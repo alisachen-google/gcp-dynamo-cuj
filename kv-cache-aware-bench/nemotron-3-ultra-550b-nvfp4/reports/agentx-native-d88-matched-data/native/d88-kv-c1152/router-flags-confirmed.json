@@ -1,0 +1,7 @@
+{
+  "prefill_load_scale": 1.0,
+  "overlap_score_credit": 1.0,
+  "overlap_score_credit_decay": 0.0,
+  "router_temperature": 0.0,
+  "router_queue_policy": "fcfs"
+}

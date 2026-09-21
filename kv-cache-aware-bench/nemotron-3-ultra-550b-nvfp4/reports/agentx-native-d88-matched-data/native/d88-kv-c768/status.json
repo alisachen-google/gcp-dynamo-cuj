@@ -1,0 +1,39 @@
+{
+  "state": "completed",
+  "updated_unix": 1789956005.8937666,
+  "topology": "p8d8",
+  "router": "kv",
+  "concurrency": 768,
+  "router_tuning": {
+    "prefill_load_scale": 1.0,
+    "overlap_score_credit": 1.0,
+    "overlap_score_credit_decay": 0.0,
+    "router_temperature": 0.0,
+    "router_queue_policy": "fcfs"
+  },
+  "gpu_count": 64,
+  "benchmark_id": "9e625ba888e2",
+  "total_tok_s_per_gpu": 14187.611668094556,
+  "output_tok_s_per_gpu": 140.0336554779765,
+  "p95_ttft_ms": 37712.973614200004,
+  "p95_itl_ms": 16.750784907801417,
+  "request_throughput": 9.567573767946959,
+  "requests": 35113.0,
+  "errors": null,
+  "error_summary": [],
+  "effective_concurrency": {
+    "unit": "requests",
+    "avg": 317.3242600556462,
+    "p50": 322.0,
+    "p90": 376.0,
+    "p95": 385.0,
+    "p99": 408.0,
+    "min": 0.0,
+    "max": 426.0,
+    "std": 61.22467368281309
+  },
+  "valid_agentx_submission": true,
+  "warmup_input_sha256": "e2f7657a2527bc7bdfec6f2c91245956a91979e46ddda4fe0b41520f27fd4d92",
+  "summary": "/tmp/agentx-d88-matched-runs-20260920/d88-kv-c768/artifacts/profile_export_aiperf.json",
+  "measured_hardware": false
+}

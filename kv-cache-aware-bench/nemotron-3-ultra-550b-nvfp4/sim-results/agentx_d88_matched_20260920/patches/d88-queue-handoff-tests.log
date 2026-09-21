@@ -1,0 +1,21 @@
+    Finished `test` profile [unoptimized] target(s) in 0.24s
+     Running unittests src/lib.rs (/tmp/n3u-path1-build/target/debug/deps/dynamo_mocker-8788bd369b4e5cab)
+
+running 14 tests
+test common::handoff::coordinator_tests::destination_first_unacknowledged_prefill_is_cleaned_as_ambiguous_ownership ... ok
+test common::handoff::coordinator_tests::invalid_same_handoff_ordering_is_rejected ... ok
+test common::handoff::coordinator_tests::backend_orders_reach_the_same_safe_completion_sequence ... ok
+test common::handoff::coordinator_tests::cancellation_cleans_actions_that_may_have_been_applied ... ok
+test common::handoff::coordinator_tests::duplicates_are_idempotent_but_conflicts_are_rejected ... ok
+test common::handoff::coordinator_tests::full_destination_hit_keeps_zero_delay_transfer_transition ... ok
+test common::handoff::coordinator_tests::invalid_transfer_timing_is_rejected_before_scheduling ... ok
+test common::handoff::coordinator_tests::lost_activation_ack_is_cleaned_on_failure_or_timeout ... ok
+test common::handoff::coordinator_tests::recurrent_state_transfer_is_paid_once_even_for_a_full_kv_hit ... ok
+test common::handoff::coordinator_tests::lost_source_release_ack_still_runs_ambiguous_cleanup ... ok
+test common::handoff::coordinator_tests::old_handoff_wire_payload_has_zero_recurrent_state_bytes ... ok
+test common::handoff::coordinator_tests::timeout_after_transfer_is_scheduled_cleans_both_owners ... ok
+test common::handoff::coordinator_tests::timeout_before_initial_ack_cleans_only_the_issued_owner ... ok
+test common::handoff::coordinator_tests::timing_mode_selects_full_or_destination_missing_footprint ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 710 filtered out; finished in 0.00s
+

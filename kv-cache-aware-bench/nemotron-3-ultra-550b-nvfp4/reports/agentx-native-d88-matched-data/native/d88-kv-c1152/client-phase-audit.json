@@ -1,0 +1,9 @@
+{
+  "completed_credits": 25985,
+  "cancelled_credits": 503,
+  "error_credits": 0,
+  "elapsed_s_including_drain": 3670.0,
+  "grace_period_timeout": true,
+  "source_log_sha256": "63ddd804130fb1049c8ead3d54423367c2ed9567f8157382b705de7211b33148",
+  "scope": "Profiling phase credits from the AIPerf client log; drain cancellations are separate from exported request errors."
+}

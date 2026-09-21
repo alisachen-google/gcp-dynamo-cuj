@@ -1,0 +1,21 @@
+{
+  "time": 1789954666.5890415,
+  "previous_controller_pid": 2870650,
+  "controller_pid": 2926528,
+  "previous_minimum_free_memory_gib": 70,
+  "minimum_free_memory_gib": 65,
+  "available_memory_gib_at_resume": 67.02410507202148,
+  "reason": "Only RR C72 remains pending. Observed RR C96 footprint leaves sufficient memory for the smaller C72 client; all benchmark processes remain running unchanged.",
+  "command": [
+    "/tmp/n3u-faithful-venv/bin/python",
+    "/tmp/agentx-disagg-simulation-report-20260920/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/run_d88_matched.py",
+    "--study",
+    "/tmp/agentx-disagg-simulation-report-20260920/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_d88_matched_20260920",
+    "--server-python",
+    "/tmp/n3u-path1-d88-queue-venv/bin/python",
+    "--max-parallel",
+    "8",
+    "--minimum-free-memory-gib",
+    "65"
+  ]
+}

@@ -2051,9 +2051,10 @@
         },
         "kv_transfer_bandwidth": 64.0,
         "kv_bytes_per_token": 3072,
-        "kv_transfer_timing_mode": "full_prompt"
+        "kv_transfer_timing_mode": "full_prompt",
+        "handoff_max_sessions": 4096
       },
-      "source": "../sim-results/agentx_disagg_c480_native_20260919/configs/prefill-engine.json"
+      "source": "../sim-results/agentx_d88_matched_20260920/configs/prefill-engine.json"
     },
     "decode": {
       "config": {
@@ -2102,9 +2103,10 @@
         },
         "kv_transfer_bandwidth": 64.0,
         "kv_bytes_per_token": 3072,
-        "kv_transfer_timing_mode": "full_prompt"
+        "kv_transfer_timing_mode": "full_prompt",
+        "handoff_max_sessions": 4096
       },
-      "source": "../sim-results/agentx_disagg_c480_native_20260919/configs/decode-engine.json"
+      "source": "../sim-results/agentx_d88_matched_20260920/configs/decode-engine.json"
     }
   },
   "sources": {
@@ -2208,13 +2210,13 @@
       "sha256": "8a9fe3be2d6b3d3f344ab8a7ab68cd5057e880fb4626fac40e00c3d5db154858",
       "bytes": 1201
     },
-    "kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_disagg_c480_native_20260919/configs/prefill-engine.json": {
-      "sha256": "5785671d648298c3edea091b9181941c964db207f14e008cd8bac6b09031445e",
-      "bytes": 1434
+    "kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_d88_matched_20260920/configs/prefill-engine.json": {
+      "sha256": "307df47ad837c1735e903952abcf9ba49805ecad68e6ed8f49f7a51d5dd60c44",
+      "bytes": 1466
     },
-    "kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_disagg_c480_native_20260919/configs/decode-engine.json": {
-      "sha256": "9c57c7be984e6a2c5241cc89d825e60b4034636a6bdb520b99b9b1b93782133d",
-      "bytes": 1435
+    "kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_d88_matched_20260920/configs/decode-engine.json": {
+      "sha256": "c349a096c6d216913b80efdb97a4f635ddc915db65b4256644610e125d33e21a",
+      "bytes": 1467
     }
   },
   "source_commit": "e8ece5a3e7c13ec1b7c284da3b59cf22965729f8"

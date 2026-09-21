@@ -1,0 +1,10 @@
+    Checking tokio v1.48.0
+   Compiling cc v1.2.63
+   Compiling blake3 v1.8.5
+    Checking tokio-util v0.7.18
+    Checking tokio-timerfd v0.2.0
+    Checking tokio-stream v0.1.18
+    Checking dynamo-kv-router v1.4.2 (/tmp/n3u-path1-d88-queue-source/lib/kv-router)
+    Checking kvbm-logical v1.4.2 (/tmp/n3u-path1-d88-queue-source/lib/kvbm-logical)
+    Checking dynamo-mocker v1.4.2 (/tmp/n3u-path1-d88-queue-source/lib/mocker)
+    Finished `dev` profile [unoptimized] target(s) in 12.82s

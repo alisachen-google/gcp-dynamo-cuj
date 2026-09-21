@@ -1,0 +1,89 @@
+--- a/lib/mocker/src/common/protocols.rs
++++ b/lib/mocker/src/common/protocols.rs
+@@ -647,6 +647,7 @@
+     free_gpu_memory_fraction: OptionalConfigValue<f64>,
+     enable_local_indexer: OptionalConfigValue<bool>,
+     bootstrap_port: OptionalConfigValue<u16>,
++    handoff_max_sessions: OptionalConfigValue<usize>,
+     handoff_session_timeout_ms: OptionalConfigValue<u64>,
+     kv_bytes_per_token: OptionalConfigValue<usize>,
+     kv_transfer_bandwidth: OptionalConfigValue<f64>,
+@@ -898,6 +899,13 @@
+     #[builder(default = "None")]
+     pub bootstrap_port: Option<u16>,
+ 
++    /// Protocol bookkeeping limit, including requests waiting for scheduler admission.
++    /// This does not change running-batch, KV, or recurrent-state capacity.
++    /// None preserves the legacy bound derived from max_num_seqs.
++    #[builder(default = "None")]
++    #[validate(range(min = 1))]
++    pub handoff_max_sessions: Option<usize>,
++
+     /// Absolute live handoff session timeout, excluding modeled transfer delay.
+     #[builder(default = "300_000")]
+     #[validate(range(min = 1))]
+@@ -1304,6 +1312,9 @@
+         if let Some(bootstrap_port) = compat.bootstrap_port.into_nullable() {
+             builder = builder.bootstrap_port(bootstrap_port);
+         }
++        if let Some(capacity) = compat.handoff_max_sessions.into_nullable() {
++            builder = builder.handoff_max_sessions(capacity);
++        }
+         if let Some(timeout_ms) = compat
+             .handoff_session_timeout_ms
+             .into_non_null("handoff_session_timeout_ms")?
+@@ -1428,7 +1439,10 @@
+     /// An unset runnable-sequence limit is semantically unbounded, so use the
+     /// physical KV block count as the conservative process-local bound.
+     pub fn effective_handoff_capacity(&self) -> usize {
+-        self.max_num_seqs.unwrap_or(self.num_gpu_blocks).max(1)
++        self.handoff_max_sessions
++            .or(self.max_num_seqs)
++            .unwrap_or(self.num_gpu_blocks)
++            .max(1)
+     }
+ 
+     pub fn normalized(mut self) -> anyhow::Result<Self> {
+@@ -1567,6 +1581,42 @@
+ 
+     use super::*;
+     use serde_json::json;
++
++    #[test]
++    fn handoff_queue_capacity_preserves_running_batch_limit() {
++        let args: MockEngineArgs = serde_json::from_value(json!({
++            "engine_type": "sglang", "num_gpu_blocks": 4096,
++            "max_num_seqs": 8, "handoff_max_sessions": 128,
++            "sglang": {"mamba_state_capacity": 64}
++        }))
++        .unwrap();
++        assert_eq!(args.effective_handoff_capacity(), 128);
++        assert_eq!(args.max_num_seqs, Some(8));
++        assert_eq!(args.sglang.as_ref().unwrap().mamba_state_capacity, Some(64));
++        let restored: MockEngineArgs =
++            serde_json::from_value(serde_json::to_value(&args).unwrap()).unwrap();
++        assert_eq!(restored.effective_handoff_capacity(), 128);
++        assert_eq!(restored.max_num_seqs, Some(8));
++    }
++
++    #[test]
++    fn handoff_queue_capacity_default_is_backward_compatible() {
++        let args: MockEngineArgs = serde_json::from_value(json!({
++            "max_num_seqs": 8
++        }))
++        .unwrap();
++        assert_eq!(args.effective_handoff_capacity(), 8);
++    }
++
++    #[test]
++    fn handoff_queue_capacity_rejects_zero() {
++        assert!(
++            serde_json::from_value::<MockEngineArgs>(json!({
++                "handoff_max_sessions": 0
++            }))
++            .is_err()
++        );
++    }
+ 
+     #[derive(Default)]
+     struct FailingRawSink {

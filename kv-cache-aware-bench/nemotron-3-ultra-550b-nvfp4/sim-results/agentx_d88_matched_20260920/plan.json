@@ -1,0 +1,119 @@
+{
+  "source_commit": "086f4925b26d280c6784d99b1eeb119d237a6313",
+  "method": "Native V11 disaggregation extension with frozen V10 AIC timing; bounded handoff queue separated from running batch",
+  "points": [
+    {
+      "name": "d88-kv-c192",
+      "policy": "kv",
+      "concurrency": 192,
+      "hardware_id": "n3u-mnnvl-88-agentx-kv-c192",
+      "hardware_summary": "configs/hardware-kv-c192.json",
+      "benchmark_id": "692753341853",
+      "hardware_gcs": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789672351_alisachen-n3u-mnnvl-88-agentx-kv-c192"
+    },
+    {
+      "name": "d88-kv-c480",
+      "policy": "kv",
+      "concurrency": 480,
+      "hardware_id": "n3u-mnnvl-88-agentx-kv-c480",
+      "hardware_summary": "configs/hardware-kv-c480.json",
+      "benchmark_id": "970125d0055d",
+      "hardware_gcs": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789740024_alisachen-n3u-mnnvl-88-agentx-kv-c480"
+    },
+    {
+      "name": "d88-kv-c768",
+      "policy": "kv",
+      "concurrency": 768,
+      "hardware_id": "n3u-mnnvl-88-agentx-kv-c768",
+      "hardware_summary": "configs/hardware-kv-c768.json",
+      "benchmark_id": "9e625ba888e2",
+      "hardware_gcs": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789695978_alisachen-n3u-mnnvl-88-agentx-kv-c768"
+    },
+    {
+      "name": "d88-kv-c1152",
+      "policy": "kv",
+      "concurrency": 1152,
+      "hardware_id": "n3u-mnnvl-88-agentx-kv-c1152",
+      "hardware_summary": "configs/hardware-kv-c1152.json",
+      "benchmark_id": "4e48ee6216c2",
+      "hardware_gcs": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789706033_alisachen-n3u-mnnvl-88-agentx-kv-c1152"
+    },
+    {
+      "name": "d88-rr-c72",
+      "policy": "rr",
+      "concurrency": 72,
+      "hardware_id": "n3u-mnnvl-88-agentx-rr-c72",
+      "hardware_summary": "configs/hardware-rr-c72.json",
+      "benchmark_id": "b05e9323c16a",
+      "hardware_gcs": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789773750_alisachen-n3u-mnnvl-88-agentx-rr-c72"
+    },
+    {
+      "name": "d88-rr-c96",
+      "policy": "rr",
+      "concurrency": 96,
+      "hardware_id": "n3u-mnnvl-88-agentx-rr-c96",
+      "hardware_summary": "configs/hardware-rr-c96.json",
+      "benchmark_id": "7fbdcf75a1c2",
+      "hardware_gcs": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789734386_alisachen-n3u-mnnvl-88-agentx-rr-c96"
+    },
+    {
+      "name": "d88-rr-c192",
+      "policy": "rr",
+      "concurrency": 192,
+      "hardware_id": "n3u-mnnvl-88-agentx-rr-c192",
+      "hardware_summary": "configs/hardware-rr-c192.json",
+      "benchmark_id": "ac7778da98be",
+      "hardware_gcs": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789721971_alisachen-n3u-mnnvl-88-agentx-rr-c192"
+    },
+    {
+      "name": "d88-rr-c384",
+      "policy": "rr",
+      "concurrency": 384,
+      "hardware_id": "1789795836_alisachen-n3u-mnnvl-88-agentx-rr-c384",
+      "hardware_summary": "configs/hardware-rr-c384.json",
+      "benchmark_id": "1f54e049bc11",
+      "hardware_gcs": "https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789795836_alisachen-n3u-mnnvl-88-agentx-rr-c384"
+    }
+  ],
+  "gpu_count": 64,
+  "topology": "8 prefill + 8 decode, TP4/EP4",
+  "profiling_seconds": 3600,
+  "speedup": 1,
+  "seed": 42,
+  "tuning": "default KV versus round-robin",
+  "raw_payload_export": false,
+  "numeric_request_records": true,
+  "handoff_max_sessions_per_worker": 4096,
+  "prefill_running_limit": 8,
+  "decode_running_limit": 64,
+  "native_base_sha256": "39e41354104490981f35f76850bd17973369fc8222dab9f7813e25f50146e36e",
+  "calibration": "Frozen agg V10; all eight D88 points are validation/holdouts, no D88 refit",
+  "selection_reason": {
+    "kv": "low-load reference, TTFT-SLO operating point, sampled throughput peak, post-peak overload",
+    "rr": "TTFT-SLO pass, first sampled failure, sampled throughput peak, post-peak overload"
+  },
+  "run_root": "/tmp/agentx-d88-matched-runs-20260920",
+  "config_sha256": {
+    "configs/decode-engine.json": "c349a096c6d216913b80efdb97a4f635ddc915db65b4256644610e125d33e21a",
+    "configs/hardware-kv-c1152.json": "8bdec6e90a57412cd4c9da5091a823e62a373106c8c2be7277479f2068e60091",
+    "configs/hardware-kv-c192.json": "c123c80fbaf5b30afe4681927b15b48397dc7e957813372d07502f6a66f7ab3f",
+    "configs/hardware-kv-c480.json": "4b20dbf774ce4b5ea0d3ebb0811bc293acfd2448017ece85d892e266668243ad",
+    "configs/hardware-kv-c768.json": "365f15fd3a9f2ca2d5ca9d2eaf4c050d29dc2059946e0f9c5893e8d2233e7d89",
+    "configs/hardware-rr-c192.json": "1d37cdabfd501ac5e1bb61c5ba739cdabd8551252e6976fd621b57765e718569",
+    "configs/hardware-rr-c384.json": "2fabf2d28938f25e3c8cc8f208ae97b2aac5d06b8fd6a55230f2f44d38a42e84",
+    "configs/hardware-rr-c72.json": "acfd13cfe219d8e3b4522f219ee5b7817c6f442ff3f19c2d293b7eab7111d2c6",
+    "configs/hardware-rr-c96.json": "37e23fc81a29f65ceb3476cf33f510f5d8cf52993c2983706b3fabe612e49827",
+    "configs/matrix_v10_throughput.json": "e89b6f942793b9bf3b5a86c20a79b811beeaa7c05077a7115df5e1f7d28518e8",
+    "configs/p8d8.json": "f9ab63b3a6f06cb3816ca5c867860fa99401c12201dbcd77417c059926b48084",
+    "configs/prefill-engine.json": "307df47ad837c1735e903952abcf9ba49805ecad68e6ed8f49f7a51d5dd60c44",
+    "patches/d88-handoff-queue.patch": "96b19606d397c8071bca72a994bfbba529ad0f6dd93b2a81a2af8689f02f5e63",
+    "preflight.json": "69b46b4731392a39bcfa5b1aa206c3918939e9c697c2b3b8fc6d09e657b66483",
+    "patches/d88-queue-build.log": "aa8cc7a0e6244d515040e69751c7cd009ad71ff0f2825f1c17b4c6a16061437f",
+    "patches/d88-queue-clippy.log": "085582dd0005186c8dd407564c4139b9fc620cd53e911f293403299b53259985",
+    "patches/d88-queue-handoff-tests.log": "ba67e88bf69693cc77555a2c51b4c326b170c5d73caebd7ed021f49eaf9e0807",
+    "patches/d88-queue-scheduler-tests.log": "fb7fd2fdd927dc5e31a61563239b1a735891312d3972ec499dc76bbf80dad0ad"
+  },
+  "native_core_sha256": "cf4b4e65c22c993934ad45642dc21e89d110c88148ec2ee7c78d0f67f499d1c6",
+  "native_source": "/tmp/n3u-path1-d88-queue-source",
+  "max_parallel": 8
+}

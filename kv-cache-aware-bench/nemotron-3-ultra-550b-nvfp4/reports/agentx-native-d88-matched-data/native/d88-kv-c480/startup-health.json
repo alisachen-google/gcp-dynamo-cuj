@@ -1,0 +1,895 @@
+{
+  "status": "healthy",
+  "endpoints": [
+    "dyn://matched-20260920-d88-kv-c1152.backend.generate",
+    "dyn://matched-20260920-d88-kv-c1152.backend.router-discovery",
+    "dyn://matched-20260920-d88-kv-c1152.prefill.generate",
+    "dyn://matched-20260920-d88-kv-c1152.prefill.router-discovery",
+    "dyn://matched-20260920-d88-kv-c1152.prefill.worker_kv_query_source_171bb227f7f01b",
+    "dyn://matched-20260920-d88-kv-c1152.prefill.worker_kv_query_source_1cda8ac7368fd3",
+    "dyn://matched-20260920-d88-kv-c1152.prefill.worker_kv_query_source_472bfe47cc322",
+    "dyn://matched-20260920-d88-kv-c1152.prefill.worker_kv_query_source_473fdb881f1cf",
+    "dyn://matched-20260920-d88-kv-c1152.prefill.worker_kv_query_source_afb91175fe110",
+    "dyn://matched-20260920-d88-kv-c1152.prefill.worker_kv_query_source_bb4579a9cadcf",
+    "dyn://matched-20260920-d88-kv-c1152.prefill.worker_kv_query_source_bda6f7caee1f9",
+    "dyn://matched-20260920-d88-kv-c1152.prefill.worker_kv_query_source_ede6cdb8b84a9",
+    "dyn://matched-20260920-d88-kv-c480.backend.generate",
+    "dyn://matched-20260920-d88-kv-c480.backend.router-discovery",
+    "dyn://matched-20260920-d88-kv-c480.prefill.generate",
+    "dyn://matched-20260920-d88-kv-c480.prefill.router-discovery",
+    "dyn://matched-20260920-d88-kv-c480.prefill.worker_kv_query_source_125230aefcaffd",
+    "dyn://matched-20260920-d88-kv-c480.prefill.worker_kv_query_source_1389ad1100deeb",
+    "dyn://matched-20260920-d88-kv-c480.prefill.worker_kv_query_source_17834d0abee261",
+    "dyn://matched-20260920-d88-kv-c480.prefill.worker_kv_query_source_1adfd16c8b7d6d",
+    "dyn://matched-20260920-d88-kv-c480.prefill.worker_kv_query_source_1d238bda03dde0",
+    "dyn://matched-20260920-d88-kv-c480.prefill.worker_kv_query_source_64350909b3082",
+    "dyn://matched-20260920-d88-kv-c480.prefill.worker_kv_query_source_71e02c9429b42",
+    "dyn://matched-20260920-d88-kv-c480.prefill.worker_kv_query_source_8e1a572f2bec",
+    "dyn://matched-20260920-d88-kv-c768.backend.generate",
+    "dyn://matched-20260920-d88-kv-c768.backend.router-discovery",
+    "dyn://matched-20260920-d88-kv-c768.prefill.generate",
+    "dyn://matched-20260920-d88-kv-c768.prefill.router-discovery",
+    "dyn://matched-20260920-d88-kv-c768.prefill.worker_kv_query_source_1181a9d6b32be2",
+    "dyn://matched-20260920-d88-kv-c768.prefill.worker_kv_query_source_14bfde4c470da3",
+    "dyn://matched-20260920-d88-kv-c768.prefill.worker_kv_query_source_181d8c906223d",
+    "dyn://matched-20260920-d88-kv-c768.prefill.worker_kv_query_source_184d5eddc107d5",
+    "dyn://matched-20260920-d88-kv-c768.prefill.worker_kv_query_source_1d6b8a6f937d63",
+    "dyn://matched-20260920-d88-kv-c768.prefill.worker_kv_query_source_1daf661842da8f",
+    "dyn://matched-20260920-d88-kv-c768.prefill.worker_kv_query_source_20ee0a100c902",
+    "dyn://matched-20260920-d88-kv-c768.prefill.worker_kv_query_source_81c91e5a38562"
+  ],
+  "instances": [
+    {
+      "component": "backend",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373381,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_backend.generate-5bffa0ae6ecd7b85"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373396,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_backend.generate-5bffa0ae6ecd7b94"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373408,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_backend.generate-5bffa0ae6ecd7ba0"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373427,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_backend.generate-5bffa0ae6ecd7bb3"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373442,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_backend.generate-5bffa0ae6ecd7bc2"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373453,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_backend.generate-5bffa0ae6ecd7bcd"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373465,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_backend.generate-5bffa0ae6ecd7bd9"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373475,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_backend.generate-5bffa0ae6ecd7be3"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "router-discovery",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373270,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_backend.router-discovery-5bffa0ae6ecd7b16"
+      },
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373275,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_prefill.generate-5bffa0ae6ecd7b1b"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373278,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_prefill.generate-5bffa0ae6ecd7b1e"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373285,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_prefill.generate-5bffa0ae6ecd7b25"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373311,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_prefill.generate-5bffa0ae6ecd7b3f"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373325,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_prefill.generate-5bffa0ae6ecd7b4d"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373339,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_prefill.generate-5bffa0ae6ecd7b5b"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373353,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_prefill.generate-5bffa0ae6ecd7b69"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373367,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_prefill.generate-5bffa0ae6ecd7b77"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "router-discovery",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373270,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_prefill.router-discovery-5bffa0ae6ecd7b16"
+      },
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "worker_kv_query_source_171bb227f7f01b",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373285,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_prefill.worker_kv_query_source_171bb227f7f01b-5bffa0ae6ecd7b25"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "worker_kv_query_source_1cda8ac7368fd3",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373275,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_prefill.worker_kv_query_source_1cda8ac7368fd3-5bffa0ae6ecd7b1b"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "worker_kv_query_source_472bfe47cc322",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373367,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_prefill.worker_kv_query_source_472bfe47cc322-5bffa0ae6ecd7b77"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "worker_kv_query_source_473fdb881f1cf",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373325,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_prefill.worker_kv_query_source_473fdb881f1cf-5bffa0ae6ecd7b4d"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "worker_kv_query_source_afb91175fe110",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373278,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_prefill.worker_kv_query_source_afb91175fe110-5bffa0ae6ecd7b1e"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "worker_kv_query_source_bb4579a9cadcf",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373353,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_prefill.worker_kv_query_source_bb4579a9cadcf-5bffa0ae6ecd7b69"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "worker_kv_query_source_bda6f7caee1f9",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373311,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_prefill.worker_kv_query_source_bda6f7caee1f9-5bffa0ae6ecd7b3f"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "worker_kv_query_source_ede6cdb8b84a9",
+      "namespace": "matched-20260920-d88-kv-c1152",
+      "instance_id": 6629193847556373339,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c1152_prefill.worker_kv_query_source_ede6cdb8b84a9-5bffa0ae6ecd7b5b"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556374104,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_backend.generate-5bffa0ae6ecd7e58"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556374121,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_backend.generate-5bffa0ae6ecd7e69"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556374138,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_backend.generate-5bffa0ae6ecd7e7a"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556374161,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_backend.generate-5bffa0ae6ecd7e91"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556374180,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_backend.generate-5bffa0ae6ecd7ea4"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556374195,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_backend.generate-5bffa0ae6ecd7eb3"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556374211,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_backend.generate-5bffa0ae6ecd7ec3"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556374226,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_backend.generate-5bffa0ae6ecd7ed2"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "router-discovery",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556373953,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_backend.router-discovery-5bffa0ae6ecd7dc1"
+      },
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556373968,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_prefill.generate-5bffa0ae6ecd7dd0"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556373973,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_prefill.generate-5bffa0ae6ecd7dd5"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556373981,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_prefill.generate-5bffa0ae6ecd7ddd"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556373994,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_prefill.generate-5bffa0ae6ecd7dea"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556374034,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_prefill.generate-5bffa0ae6ecd7e12"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556374052,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_prefill.generate-5bffa0ae6ecd7e24"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556374068,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_prefill.generate-5bffa0ae6ecd7e34"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556374084,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_prefill.generate-5bffa0ae6ecd7e44"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "router-discovery",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556373953,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_prefill.router-discovery-5bffa0ae6ecd7dc1"
+      },
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "worker_kv_query_source_125230aefcaffd",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556373968,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_prefill.worker_kv_query_source_125230aefcaffd-5bffa0ae6ecd7dd0"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "worker_kv_query_source_1389ad1100deeb",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556373973,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_prefill.worker_kv_query_source_1389ad1100deeb-5bffa0ae6ecd7dd5"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "worker_kv_query_source_17834d0abee261",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556374052,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_prefill.worker_kv_query_source_17834d0abee261-5bffa0ae6ecd7e24"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "worker_kv_query_source_1adfd16c8b7d6d",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556373981,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_prefill.worker_kv_query_source_1adfd16c8b7d6d-5bffa0ae6ecd7ddd"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "worker_kv_query_source_1d238bda03dde0",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556374068,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_prefill.worker_kv_query_source_1d238bda03dde0-5bffa0ae6ecd7e34"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "worker_kv_query_source_64350909b3082",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556374034,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_prefill.worker_kv_query_source_64350909b3082-5bffa0ae6ecd7e12"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "worker_kv_query_source_71e02c9429b42",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556374084,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_prefill.worker_kv_query_source_71e02c9429b42-5bffa0ae6ecd7e44"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "worker_kv_query_source_8e1a572f2bec",
+      "namespace": "matched-20260920-d88-kv-c480",
+      "instance_id": 6629193847556373994,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c480_prefill.worker_kv_query_source_8e1a572f2bec-5bffa0ae6ecd7dea"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373703,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_backend.generate-5bffa0ae6ecd7cc7"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373719,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_backend.generate-5bffa0ae6ecd7cd7"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373732,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_backend.generate-5bffa0ae6ecd7ce4"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373754,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_backend.generate-5bffa0ae6ecd7cfa"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373771,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_backend.generate-5bffa0ae6ecd7d0b"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373783,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_backend.generate-5bffa0ae6ecd7d17"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373797,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_backend.generate-5bffa0ae6ecd7d25"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373810,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_backend.generate-5bffa0ae6ecd7d32"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "backend",
+      "endpoint": "router-discovery",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373573,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_backend.router-discovery-5bffa0ae6ecd7c45"
+      },
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373581,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_prefill.generate-5bffa0ae6ecd7c4d"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373586,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_prefill.generate-5bffa0ae6ecd7c52"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373595,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_prefill.generate-5bffa0ae6ecd7c5b"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373623,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_prefill.generate-5bffa0ae6ecd7c77"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373639,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_prefill.generate-5bffa0ae6ecd7c87"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373655,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_prefill.generate-5bffa0ae6ecd7c97"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373670,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_prefill.generate-5bffa0ae6ecd7ca6"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "generate",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373685,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_prefill.generate-5bffa0ae6ecd7cb5"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "router-discovery",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373573,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_prefill.router-discovery-5bffa0ae6ecd7c45"
+      },
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "worker_kv_query_source_1181a9d6b32be2",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373670,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_prefill.worker_kv_query_source_1181a9d6b32be2-5bffa0ae6ecd7ca6"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "worker_kv_query_source_14bfde4c470da3",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373586,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_prefill.worker_kv_query_source_14bfde4c470da3-5bffa0ae6ecd7c52"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "worker_kv_query_source_181d8c906223d",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373581,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_prefill.worker_kv_query_source_181d8c906223d-5bffa0ae6ecd7c4d"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "worker_kv_query_source_184d5eddc107d5",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373685,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_prefill.worker_kv_query_source_184d5eddc107d5-5bffa0ae6ecd7cb5"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "worker_kv_query_source_1d6b8a6f937d63",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373639,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_prefill.worker_kv_query_source_1d6b8a6f937d63-5bffa0ae6ecd7c87"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "worker_kv_query_source_1daf661842da8f",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373595,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_prefill.worker_kv_query_source_1daf661842da8f-5bffa0ae6ecd7c5b"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "worker_kv_query_source_20ee0a100c902",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373655,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_prefill.worker_kv_query_source_20ee0a100c902-5bffa0ae6ecd7c97"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    },
+    {
+      "component": "prefill",
+      "endpoint": "worker_kv_query_source_81c91e5a38562",
+      "namespace": "matched-20260920-d88-kv-c768",
+      "instance_id": 6629193847556373623,
+      "transport": {
+        "nats_tcp": "matched-20260920-d88-kv-c768_prefill.worker_kv_query_source_81c91e5a38562-5bffa0ae6ecd7c77"
+      },
+      "device_type": "cuda",
+      "request_plane_codec": "msgpack"
+    }
+  ]
+}

@@ -60,7 +60,7 @@ def copy(source, target):
     shutil.copyfile(source, target)
 
 
-def project(source, target):
+def project(source, target, destination=DEST):
     target.parent.mkdir(parents=True, exist_ok=True)
     counts = Counter()
     digest = hashlib.sha256()
@@ -101,7 +101,7 @@ def project(source, target):
             counts[f"{row['phase']}/{row['status']}"] += 1
             writer.writerow(row)
     return {
-        "file": target.relative_to(DEST).as_posix(),
+        "file": target.relative_to(destination).as_posix(),
         "source": str(source),
         "source_sha256": digest.hexdigest(),
         "source_bytes": source.stat().st_size,

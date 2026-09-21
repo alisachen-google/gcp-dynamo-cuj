@@ -11,6 +11,10 @@
   "native_disagg_runs_revalidated": 8,
   "additional_legacy_disagg_hardware_runs": 2,
   "native_disagg_source_files_hashed": 129,
+  "new_matched_d88_runs_revalidated": 8,
+  "new_matched_d88_source_files_hashed": 188,
+  "new_matched_d88_warmup_matches": 8,
+  "new_matched_d88_warmup_requests": 3084,
   "methodology_sources_hashed": 27,
   "aic_saved_recipes": 8,
   "input_manifests": {
@@ -39,6 +43,8 @@
     "D88 rounded source metrics, warmup, inflight, queue verdicts",
     "existing native V10 inputs and hardware matches",
     "native disagg core, engine, replay, request counts and error rates",
-    "two 72-GPU KV hardware pairs and exact warmup input matches"
+    "two 72-GPU KV hardware pairs and exact warmup input matches",
+    "eight new 64-GPU D88 hardware pairs, frozen calibration and exact warmup inputs",
+    "new handoff queue configuration, native core identity and correctness preflight"
   ]
 }
