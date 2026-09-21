@@ -2,6 +2,18 @@
 
 *Technical evaluation of prefix-cache locality, throughput, TTFT and end-to-end latency under AgentX replay on GKE.*
 
+## TL;DR
+
+**Google Cloud and NVIDIA are partnering to enable distributed inference with NVIDIA Dynamo on Google Kubernetes Engine (GKE).** Building on the [Google Cloud–NVIDIA collaboration](https://cloud.google.com/blog/products/compute/google-cloud-ai-infrastructure-at-nvidia-gtc-2026), this CUJ contributes deployment configurations, AgentX replay benchmarks and measured KV-aware versus round-robin routing comparisons for agentic workloads.
+
+- **Scope:** Nemotron-3-Ultra with Dynamo/SGLang on GKE and GB300; AgentX/Weka replay on **24 GPUs for agg** and **64 GPUs for disagg**. Both routing policies retain engine prefix caching.
+- **Latency criteria:** **TTFT p95 <10 s** and **I90 ≥20 output tokens/s**, where `I90 = 1 / P90(E2E_seconds / output_tokens)`.
+- **Default KV versus RR under both criteria:** **1.75× total served throughput/GPU for agg** at C96/C64, and **6.92× for disagg** at C480/C72 (KV/RR session concurrency).
+- **Highest-throughput sampled tuned points under both criteria:** agg **KV scale 3 / default credit 1.0** at C160 achieves **2.58× RR throughput/GPU**; disagg **KV credit 1.5** at C576 achieves **7.95×**. The RR references are C64 and C72, respectively.
+- **Interpretation:** throughput includes cached input plus output tokens. These are policy-specific operating points from closed-loop replay; most configurations have one trial. Ratios apply to the measured workloads and fleets, with output throughput and errors reported separately.
+
+## Overview
+
 [NVIDIA Dynamo](https://github.com/ai-dynamo/dynamo) is an open-source distributed inference framework that coordinates request placement and execution across GPU workers. It integrates with inference engines including SGLang, vLLM and TensorRT-LLM. This Google Cloud **customer use journey (CUJ)** evaluates Dynamo's **KV-cache-aware routing** for agentic inference, using SGLang as the execution backend.
 
 During **prefill**, a model processes an input sequence and materializes **key-value (KV) tensors** for its attention layers. A subsequent request with a matching token prefix can reuse compatible cached state on the selected worker, reducing repeated prefill computation. The reusable prefix depends on cache residency and the model state required by the serving backend.

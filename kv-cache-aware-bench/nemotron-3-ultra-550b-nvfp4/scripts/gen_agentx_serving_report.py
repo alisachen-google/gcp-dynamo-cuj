@@ -1268,10 +1268,10 @@ def markdown(points, native, manifest, status, methodology, disagg):
         / best(points, arch, "rr")["total_tok_s_gpu"]
         for arch in ["agg", "disagg"]
     }
-    agg_rr_joint, agg_kv_joint, _ = records(
+    agg_rr_joint, agg_kv_joint, agg_tuned_joint = records(
         decisions["agg"]["joint_slo_selected_ids"]
     )
-    disagg_rr_joint, disagg_kv_joint, _ = records(
+    disagg_rr_joint, disagg_kv_joint, disagg_tuned_joint = records(
         decisions["disagg"]["joint_slo_selected_ids"]
     )
     previous_date = (
@@ -1281,6 +1281,18 @@ def markdown(points, native, manifest, status, methodology, disagg):
         f"""# NVIDIA Dynamo on Google Cloud: KV-Aware vs. Round-Robin Routing
 
 *Technical evaluation of prefix-cache locality, throughput, TTFT and end-to-end latency under AgentX replay on GKE.*
+
+## TL;DR
+
+**Google Cloud and NVIDIA are partnering to enable distributed inference with NVIDIA Dynamo on Google Kubernetes Engine (GKE).** Building on the [Google Cloud–NVIDIA collaboration](https://cloud.google.com/blog/products/compute/google-cloud-ai-infrastructure-at-nvidia-gtc-2026), this CUJ contributes deployment configurations, AgentX replay benchmarks and measured KV-aware versus round-robin routing comparisons for agentic workloads.
+
+- **Scope:** Nemotron-3-Ultra with Dynamo/SGLang on GKE and GB300; AgentX/Weka replay on **24 GPUs for agg** and **64 GPUs for disagg**. Both routing policies retain engine prefix caching.
+- **Latency criteria:** **TTFT p95 <10 s** and **I90 ≥20 output tokens/s**, where `I90 = 1 / P90(E2E_seconds / output_tokens)`.
+- **Default KV versus RR under both criteria:** **{routing_gains["agg"]:.2f}× total served throughput/GPU for agg** at C{agg_kv_joint["clients"]}/C{agg_rr_joint["clients"]}, and **{routing_gains["disagg"]:.2f}× for disagg** at C{disagg_kv_joint["clients"]}/C{disagg_rr_joint["clients"]} (KV/RR session concurrency).
+- **Highest-throughput sampled tuned points under both criteria:** agg **{LABELS[agg_tuned_joint["policy"]]}** at C{agg_tuned_joint["clients"]} achieves **{agg_tuned_joint["total_tok_s_gpu"] / agg_rr_joint["total_tok_s_gpu"]:.2f}× RR throughput/GPU**; disagg **{LABELS[disagg_tuned_joint["policy"]]}** at C{disagg_tuned_joint["clients"]} achieves **{disagg_tuned_joint["total_tok_s_gpu"] / disagg_rr_joint["total_tok_s_gpu"]:.2f}×**. The RR references are C{agg_rr_joint["clients"]} and C{disagg_rr_joint["clients"]}, respectively.
+- **Interpretation:** throughput includes cached input plus output tokens. These are policy-specific operating points from closed-loop replay; most configurations have one trial. Ratios apply to the measured workloads and fleets, with output throughput and errors reported separately.
+
+## Overview
 
 [NVIDIA Dynamo](https://github.com/ai-dynamo/dynamo) is an open-source distributed inference framework that coordinates request placement and execution across GPU workers. It integrates with inference engines including SGLang, vLLM and TensorRT-LLM. This Google Cloud **customer use journey (CUJ)** evaluates Dynamo's **KV-cache-aware routing** for agentic inference, using SGLang as the execution backend.
 
@@ -2034,7 +2046,7 @@ pre{padding:18px;background:#edf2f7;border-radius:8px;overflow:auto}pre code{pad
 @media(max-width:800px){main{margin:0;padding:24px 18px;border-radius:0}h1{font-size:29px}h2{font-size:23px}table{font-size:12px}th,td{padding:8px}}
 @media print{body{background:#fff}main{border:0;max-width:none;margin:0;padding:0}nav{display:none}h2,h3{break-after:avoid}img,table{break-inside:avoid}a{color:inherit}.table-scroll{overflow:visible}table{font-size:9px}}
 </style></head><body><main><div class="eyebrow">Google Cloud CUJ · NVIDIA Dynamo · AgentX</div>
-<nav><a href="#1-setup-agentic-workload-and-benchmarking-methodology">1. Setup and methodology</a><a href="#2-aggregated-serving-measured-kv-and-rr">2. Agg hardware</a><a href="#3-disaggregated-serving-measured-kv-and-rr">3. Disagg hardware</a><a href="#4-simulation-versus-real-hardware-jobs">4. Simulation vs hardware</a><a href="#5-how-we-simulate-performance-aic-dynosim-and-recipe-selection">5. AIC and DynoSim</a></nav>
+<nav><a href="#tl-dr">TL;DR</a><a href="#overview">Overview</a><a href="#1-setup-agentic-workload-and-benchmarking-methodology">1. Setup and methodology</a><a href="#2-aggregated-serving-measured-kv-and-rr">2. Agg hardware</a><a href="#3-disaggregated-serving-measured-kv-and-rr">3. Disagg hardware</a><a href="#4-simulation-versus-real-hardware-jobs">4. Simulation vs hardware</a><a href="#5-how-we-simulate-performance-aic-dynosim-and-recipe-selection">5. AIC and DynoSim</a></nav>
 """
         + body
         + "</main></body></html>\n"
