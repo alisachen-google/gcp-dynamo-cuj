@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1040" height="612" viewBox="0 0 1040 612" role="img" aria-labelledby="title desc">
   <title id="title">AgentX Weka dataset replay</title>
-  <desc id="desc">The Weka 256K corpus has 393 recorded coding-session roots with growing shared prefixes, subagent trees and recorded pauses. AIPerf reconstructs tokenized prompts from trace blocks, preserves spawn and join dependencies, and schedules the next turn after the preceding response and recorded delay. Concurrency C counts live root sessions with their subagents, rather than individual requests. Dynamo and SGLang serve the replay under KV or round-robin routing. Cache reuse, latency and throughput are measured outcomes. Blue token blocks show shared conversation history; gold blocks show new input. The illustration is schematic; the report specifies warmup, timing controls and cache busting.</desc>
+  <desc id="desc">The Weka 256K corpus has 393 recorded coding-session roots with growing shared prefixes, subagent trees and recorded pauses. AIPerf reconstructs tokenized prompts from trace blocks, preserves spawn and join dependencies, and schedules the next turn after the preceding response and recorded delay. Concurrency C counts live root sessions with their subagents, rather than individual requests. Dynamo and SGLang serve the replay under KV-aware routing or round-robin routing. Cache reuse, latency and throughput are measured outcomes. Blue token blocks show shared conversation history; gold blocks show new input. The illustration is schematic; the report specifies warmup, timing controls and cache busting.</desc>
   <defs>
     <style>
       text { font-family: 'DejaVu Sans', sans-serif; fill: #203952; }
@@ -24,11 +24,11 @@
   <text class="label" x="531" y="47" text-anchor="middle">AIPerf replay</text>
   <text class="detail" x="531" y="77" text-anchor="middle">Rebuild prompts from trace blocks</text>
   <text class="label" x="898" y="47" text-anchor="middle" style="font-size:22px">Dynamo + SGLang</text>
-  <rect x="828" y="64" width="51" height="26" rx="13" fill="#e3efff" stroke="#4486d6"/>
-  <text class="micro" x="853" y="82" text-anchor="middle" style="fill:#285d9b">KV</text>
-  <text class="micro" x="899" y="82" text-anchor="middle">vs</text>
-  <rect x="918" y="64" width="51" height="26" rx="13" fill="#f5f8fb" stroke="#adc0d1"/>
-  <text class="micro" x="944" y="82" text-anchor="middle">RR</text>
+  <rect x="788" y="60" width="220" height="26" rx="13" fill="#e3efff" stroke="#4486d6"/>
+  <text class="detail" x="898" y="78" text-anchor="middle" style="fill:#285d9b">KV-aware routing</text>
+  <text class="micro" x="898" y="99" text-anchor="middle" style="font-size:12px">vs</text>
+  <rect x="788" y="104" width="220" height="26" rx="13" fill="#f5f8fb" stroke="#adc0d1"/>
+  <text class="detail" x="898" y="122" text-anchor="middle">Round-robin routing</text>
 
   <g transform="translate(0 27)">
   <!-- A stack of recorded session trees. -->
