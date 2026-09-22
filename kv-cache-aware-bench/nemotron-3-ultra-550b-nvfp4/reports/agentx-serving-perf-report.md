@@ -297,6 +297,11 @@ Tuned C256 measures **12,328 total tok/s/GPU** with **18.87 s TTFT p95** and fai
 | Default KV | 96 | 6,844 | 5.36 | 29.5030 | 1.75× |
 | KV scale 3 / default credit 1.0 | 160 | 10,073 | 4.75 | 26.3229 | 2.58× |
 
+![Aggregated serving: measured KV and RR: selected RR, default KV and tuned KV throughput under both SLOs, with concurrency and KV flags](agentx-serving-perf-report-agg-selected-throughput.png)
+
+[SVG](agentx-serving-perf-report-agg-selected-throughput.svg) · [PDF](agentx-serving-perf-report-agg-selected-throughput.pdf)
+
+
 The default-KV/RR throughput ratio under the combined SLO is **1.75×**, compared with 2.11× in the previous snapshot. This change results from selecting RR64 in place of RR48; the default-KV96 measurement is unchanged.
 
 ### 2.5 What the flag sweep establishes
@@ -426,6 +431,11 @@ For each policy, select the highest measured total served throughput passing the
 | RR | 72 | 1,763 | 9.91 | 37.3998 | 1.00× |
 | Default KV | 480 | 12,204 | 7.12 | 33.5225 | 6.92× |
 | KV credit 1.5 | 576 | 14,024 | 8.75 | 30.2479 | 7.95× |
+
+![Disaggregated serving: measured KV and RR: selected RR, default KV and tuned KV throughput under both SLOs, with concurrency and KV flags](agentx-serving-perf-report-disagg-selected-throughput.png)
+
+[SVG](agentx-serving-perf-report-disagg-selected-throughput.svg) · [PDF](agentx-serving-perf-report-disagg-selected-throughput.pdf)
+
 
 **Selected tuned KV at C576:** the retained cohort contains one measured configuration here, overlap credit 1.5. It passes both SLOs with zero client errors. The multi-configuration flag comparison is at C480 in section 3.5.
 

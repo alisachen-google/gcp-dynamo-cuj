@@ -70,6 +70,8 @@ FIGURES = [
     "agg-flags-c160",
     "disagg-flags",
     "disagg-flags-c576",
+    "agg-selected-throughput",
+    "disagg-selected-throughput",
     "operating-points",
     "simulation-agg",
     "simulation-disagg-d88",
@@ -989,6 +991,83 @@ def plots(points):
     )
     fig.subplots_adjust(left=0.21, right=0.98, top=0.86, bottom=0.19, wspace=0.20)
     save(fig, "operating-points")
+    selected_throughput_plots(points)
+
+
+def selected_throughput_plots(points):
+    selected = chosen(points)
+    for arch in ["agg", "disagg"]:
+        rows = [point for point in selected if point["architecture"] == arch]
+        reference = next(point for point in rows if point["policy"] == "rr")
+        labels = []
+        for point in rows:
+            if point["policy"] == "rr":
+                labels.append(f"RR · C{point['clients']}\nround-robin")
+                continue
+            flags = dict(re.findall(r"(--[\w-]+)\s+(\S+)", point["router_flags"]))
+            scale = float(flags.get("--router-prefill-load-scale", 1.0))
+            credit = float(flags.get("--router-kv-overlap-score-credit", 1.0))
+            policy = "Default KV" if point["policy"] == "kv" else "Tuned KV"
+            labels.append(
+                f"{policy} · C{point['clients']}\n"
+                f"load scale {scale:.1f} · overlap credit {credit:.1f}"
+            )
+        fig, ax = plt.subplots(figsize=(14, 6.5))
+        values = [point["total_tok_s_gpu"] for point in rows]
+        bars = ax.barh(
+            np.arange(len(rows)),
+            values,
+            height=0.52,
+            color=[COLORS[point["policy"]] for point in rows],
+        )
+        ax.set_yticks(np.arange(len(rows)), labels, fontsize=11)
+        ax.invert_yaxis()
+        ax.set_ylim(len(rows) - 0.45, -0.65)
+        for bar, point in zip(bars, rows):
+            value = point["total_tok_s_gpu"]
+            ratio = value / reference["total_tok_s_gpu"]
+            ax.annotate(
+                f"{value:,.0f}\n{ratio:.2f}× RR",
+                xy=(value, bar.get_y() + bar.get_height() / 2),
+                xytext=(9, 0),
+                textcoords="offset points",
+                va="center",
+                fontsize=12,
+                weight="bold",
+            )
+        ax.set_xlim(0, max(values) * 1.25)
+        ax.xaxis.set_major_locator(MaxNLocator(nbins=5))
+        ax.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:,.0f}"))
+        ax.set_xlabel("Total input + output tokens/s/GPU", fontsize=11, labelpad=10)
+        ax.spines[["top", "right", "left"]].set_visible(False)
+        ax.tick_params(axis="y", length=0, pad=12)
+        ax.grid(axis="x", alpha=0.15)
+        ax.set_axisbelow(True)
+        fig.suptitle(
+            f"{'Agg · 24 GPUs' if arch == 'agg' else 'Disagg · 64 GPUs'} · selected KV and RR throughput",
+            x=0.04,
+            y=0.97,
+            ha="left",
+            fontsize=17,
+        )
+        fig.text(
+            0.04,
+            0.89,
+            "Highest measured throughput per policy passing TTFT p95 <10 s and E2E I90 ≥20 output tok/s/user",
+            fontsize=11,
+            color="#52657a",
+        )
+        fig.text(
+            0.04,
+            0.035,
+            "C = live sessions. Load scale = prefill load scale; credit = KV overlap credit. KV uses temperature 0, decay 0 and FCFS.\n"
+            "Throughput includes cached input and output tokens. Ratios use the selected RR run; concurrency differs by policy.\n"
+            "All selected runs pass the queue check and have zero client errors.",
+            fontsize=9,
+            color="#52657a",
+        )
+        fig.subplots_adjust(left=0.34, right=0.97, top=0.80, bottom=0.26)
+        save(fig, f"{arch}-selected-throughput")
 
 
 def table(headers, rows):
@@ -2127,6 +2206,12 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
                     ]
                     for p in joint
                 ],
+            )
+        )
+        out.append(
+            figure(
+                f"{arch}-selected-throughput",
+                f"{title}: selected RR, default KV and tuned KV throughput under both SLOs, with concurrency and KV flags",
             )
         )
         if arch == "agg":
