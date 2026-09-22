@@ -584,11 +584,15 @@ def plots(points):
         ]:
             ax = axes[column]
             for pol in ["kv", "rr"]:
-                series = [
-                    p
-                    for p in cells(points, arch, pol)
-                    if arch != "agg" or p["campaign"] == "agg-20260916"
-                ]
+                series = sorted(
+                    (
+                        p
+                        for p in cells(points, arch, pol)
+                        if arch != "agg"
+                        or p["campaign"] in {"agg-20260916", "agg-slo10-20260920"}
+                    ),
+                    key=lambda p: p["clients"],
+                )
                 ax.plot(
                     [p["clients"] for p in series],
                     [p[metric] for p in series],
@@ -652,7 +656,7 @@ def plots(points):
                             color=COLORS[pol],
                             edgecolor="#172c43",
                             s=150,
-                            zorder=6,
+                            zorder=8,
                         )
             ax.set_xscale("log", base=2)
             ax.set_xticks(ticks, [str(n) for n in ticks], rotation=45)
@@ -703,7 +707,7 @@ def plots(points):
                     ax.text(
                         0.43,
                         0.93,
-                        "Sampled KV/RR peak: C192\nC384: KV −14.5%; RR −25.4%\nTTFT rises to 119 / 495 s",
+                        "Sampled KV/RR peak: C192",
                         transform=ax.transAxes,
                         fontsize=8,
                         va="top",
@@ -735,13 +739,12 @@ def plots(points):
                 fontsize=8,
                 arrowprops={"arrowstyle": "->"},
             )
-            axes[2].annotate(
-                "Both SLOs: KV C96, RR C64\nKV C160 misses I90; refine C96–160",
-                xy=(160, boundary[I90]),
-                xytext=(0.06, 0.27),
-                textcoords="axes fraction",
+            axes[2].text(
+                0.06,
+                0.27,
+                "Both SLOs: KV C96, RR C64",
+                transform=axes[2].transAxes,
                 fontsize=8,
-                arrowprops={"arrowstyle": "->"},
             )
         else:
             boundary = one(points, "disagg", "kv", 480)
@@ -763,13 +766,13 @@ def plots(points):
         fig.text(
             0.04,
             0.025,
-            "Rings: sampled throughput peaks. Stars: TTFT-only choice in the TTFT panel; both-SLO choice in the I90 panel. Shading brackets transitions.\n"
-            + (
-                "Diamonds: Sep 20 C64/C160 additions; cross: fresh KV192. Lines: Sep 16 ladder. "
+            (
+                "○ Sampled throughput peak per policy. ★ Highest throughput passing the queue check and TTFT criterion (middle); both SLO criteria (right).\n"
+                "◆ Measurements added after the initial sweep. × Repeat measurements. Lines connect measured points; shading brackets sampled transitions."
                 if arch == "agg"
-                else "Lines are guides. "
-            )
-            + "Knees need intermediate points and repeats.",
+                else "Rings: sampled throughput peaks. Stars: TTFT-only choice in the TTFT panel; both-SLO choice in the I90 panel. Shading brackets transitions.\n"
+                "Lines are guides. Knees need intermediate points and repeats."
+            ),
             fontsize=9,
             color="#52657a",
         )
@@ -1891,7 +1894,9 @@ Most configuration/concurrency combinations have one trial. The agg C192 referen
 | Default KV | Peak at **C192**; C384 loses **14.5%** throughput and TTFT p95 rises **11.66→119.44 s**. Saturation transition lies in 192–384. | **C160 passes at 9.57 s**; both C192 references fail. Refine **160–192**. | C96 passes; **C160 fails at I90 16.1267**. Refine **96–160**. |
 | RR | C96→192 adds only **10.8%** throughput; C384 loses **25.4%** versus C192. C192 is the sampled peak; diminishing returns begin over 96–192. | **C64 passes at 9.21 s**; C96 fails. Refine **64–96**. | **C64 passes at I90 35.3472**; C96 fails. Refine **64–96**. |
 
-The throughput-knee comparison below uses **C192 for both arms**. It does not claim that C192 meets the latency SLO. Diamonds mark the new RR64/default-KV160 samples and a cross marks the fresh default-KV192 reference; the original ladder remains the line so campaigns are not silently combined. Stars in the TTFT panel select the best TTFT-only points; stars in the I90 panel select the best points meeting both limits. These SLO brackets combine dated campaigns and need matched repeats before claiming an exact crossing.""")
+The throughput-knee comparison below uses **C192 for both arms**. It does not claim that C192 meets the latency SLO.
+
+○ marks each policy's sampled throughput peak. ★ marks the point with the highest throughput that passes the queue check and TTFT criterion in the middle panel, or both SLO criteria in the E2E panel. ◆ marks measurements added after the initial sweep; × marks repeat measurements, which remain separate from the connected curves. Lines connect measurements from the original and follow-up campaigns in concurrency order; shaded bands bracket sampled transitions. These SLO brackets need matched repeats before claiming an exact crossing.""")
         else:
             out.append("""| Policy | Sampled throughput / knee evidence | TTFT <10 s boundary | Additional E2E boundary |
 | --- | --- | --- | --- |

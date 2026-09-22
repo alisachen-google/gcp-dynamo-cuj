@@ -215,7 +215,9 @@ Most configuration/concurrency combinations have one trial. The agg C192 referen
 | Default KV | Peak at **C192**; C384 loses **14.5%** throughput and TTFT p95 rises **11.66→119.44 s**. Saturation transition lies in 192–384. | **C160 passes at 9.57 s**; both C192 references fail. Refine **160–192**. | C96 passes; **C160 fails at I90 16.1267**. Refine **96–160**. |
 | RR | C96→192 adds only **10.8%** throughput; C384 loses **25.4%** versus C192. C192 is the sampled peak; diminishing returns begin over 96–192. | **C64 passes at 9.21 s**; C96 fails. Refine **64–96**. | **C64 passes at I90 35.3472**; C96 fails. Refine **64–96**. |
 
-The throughput-knee comparison below uses **C192 for both arms**. It does not claim that C192 meets the latency SLO. Diamonds mark the new RR64/default-KV160 samples and a cross marks the fresh default-KV192 reference; the original ladder remains the line so campaigns are not silently combined. Stars in the TTFT panel select the best TTFT-only points; stars in the I90 panel select the best points meeting both limits. These SLO brackets combine dated campaigns and need matched repeats before claiming an exact crossing.
+The throughput-knee comparison below uses **C192 for both arms**. It does not claim that C192 meets the latency SLO.
+
+○ marks each policy's sampled throughput peak. ★ marks the point with the highest throughput that passes the queue check and TTFT criterion in the middle panel, or both SLO criteria in the E2E panel. ◆ marks measurements added after the initial sweep; × marks repeat measurements, which remain separate from the connected curves. Lines connect measurements from the original and follow-up campaigns in concurrency order; shaded bands bracket sampled transitions. These SLO brackets need matched repeats before claiming an exact crossing.
 
 ### 2.2 All collected data points, including tuned KV
 
