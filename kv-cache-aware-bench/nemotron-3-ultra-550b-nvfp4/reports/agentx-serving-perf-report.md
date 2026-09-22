@@ -217,7 +217,7 @@ Most configuration/concurrency combinations have one trial. The agg C192 referen
 
 The throughput-knee comparison below uses **C192 for both arms**. It does not claim that C192 meets the latency SLO.
 
-○ marks each policy's sampled throughput peak. ★ marks the point with the highest throughput that passes the queue check and TTFT criterion in the middle panel, or both SLO criteria in the E2E panel. ◆ marks measurements added after the initial sweep; × marks repeat measurements, which remain separate from the connected curves. Lines connect measurements from the original and follow-up campaigns in concurrency order; shaded bands bracket sampled transitions. These SLO brackets need matched repeats before claiming an exact crossing.
+○ marks each policy's sampled throughput peak. ★ marks the point with the highest throughput that passes the queue check and TTFT criterion in the middle panel, or both SLO criteria in the E2E panel. ◆ marks measurements added after the initial sweep. Lines connect measurements from the original and follow-up campaigns in concurrency order; shaded bands bracket sampled transitions. Repeat measurements remain in the data table. These SLO brackets need matched repeats before claiming an exact crossing.
 
 ### 2.2 All collected data points, including tuned KV
 

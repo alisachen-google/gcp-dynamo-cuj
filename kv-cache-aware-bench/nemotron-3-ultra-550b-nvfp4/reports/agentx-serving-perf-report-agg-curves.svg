@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-09-22T01:33:32.109553</dc:date>
+    <dc:date>2026-09-22T06:04:47.024038</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -426,18 +426,6 @@ z
    </g>
    <g id="PathCollection_4">
     <defs>
-     <path id="mf84eeffea2" d="M -4.031129 4.031129
-L 4.031129 -4.031129
-M -4.031129 -4.031129
-L 4.031129 4.031129
-" style="stroke: #2463b3; stroke-width: 1.8"/>
-    </defs>
-    <g clip-path="url(#p77cc26e7de)">
-     <use xlink:href="#mf84eeffea2" x="247.549067" y="168.083973" style="fill: #2463b3; stroke: #2463b3; stroke-width: 1.8"/>
-    </g>
-   </g>
-   <g id="PathCollection_5">
-    <defs>
      <path id="m6421dd1ef5" d="M -0 5
 L 5 0
 L 0 -5
@@ -449,7 +437,6 @@ z
      <use xlink:href="#m6421dd1ef5" x="101.320838" y="253.520508" style="fill: #d65b29; stroke: #d65b29"/>
     </g>
    </g>
-   <g id="PathCollection_6"/>
   </g>
   <g id="axes_2">
    <g id="patch_6">
@@ -862,23 +849,17 @@ L 599.502833 230.868288
    <g id="text_34">
     <text style="font-weight: 700; font-size: 11px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: start; fill: #162b45" x="429.762054" y="61.68" transform="rotate(-0 429.762054 61.68)">TTFT p95 (seconds; log scale)</text>
    </g>
-   <g id="PathCollection_7">
+   <g id="PathCollection_5">
     <g clip-path="url(#p704baea578)">
      <use xlink:href="#mcb8309e6e3" x="603.853009" y="226.018512" style="fill: #2463b3; stroke: #2463b3"/>
     </g>
    </g>
-   <g id="PathCollection_8">
-    <g clip-path="url(#p704baea578)">
-     <use xlink:href="#mf84eeffea2" x="628.120495" y="220.551199" style="fill: #2463b3; stroke: #2463b3; stroke-width: 1.8"/>
-    </g>
-   </g>
-   <g id="PathCollection_9">
+   <g id="PathCollection_6">
     <g clip-path="url(#p704baea578)">
      <use xlink:href="#m6421dd1ef5" x="481.892266" y="227.383991" style="fill: #d65b29; stroke: #d65b29"/>
     </g>
    </g>
-   <g id="PathCollection_10"/>
-   <g id="PathCollection_11">
+   <g id="PathCollection_7">
     <defs>
      <path id="mac379231d4" d="M 0 -6.123724
 L -1.374862 -1.892335
@@ -897,7 +878,7 @@ z
      <use xlink:href="#mac379231d4" x="603.853009" y="226.018512" style="fill: #2463b3; stroke: #172c43"/>
     </g>
    </g>
-   <g id="PathCollection_12">
+   <g id="PathCollection_8">
     <defs>
      <path id="m08e67a8ab4" d="M 0 -6.123724
 L -1.374862 -1.892335
@@ -1276,28 +1257,22 @@ L 1114.790625 313.632
    <g id="text_47">
     <text style="font-weight: 700; font-size: 11px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: start; fill: #162b45" x="810.333482" y="61.68" transform="rotate(-0 810.333482 61.68)">E2E I90 (output tok/s/user)</text>
    </g>
-   <g id="PathCollection_13">
+   <g id="PathCollection_9">
     <g clip-path="url(#p480897f529)">
      <use xlink:href="#mcb8309e6e3" x="984.424438" y="156.396684" style="fill: #2463b3; stroke: #2463b3"/>
     </g>
    </g>
-   <g id="PathCollection_14">
-    <g clip-path="url(#p480897f529)">
-     <use xlink:href="#mf84eeffea2" x="1008.691924" y="165.462554" style="fill: #2463b3; stroke: #2463b3; stroke-width: 1.8"/>
-    </g>
-   </g>
-   <g id="PathCollection_15">
+   <g id="PathCollection_10">
     <g clip-path="url(#p480897f529)">
      <use xlink:href="#m6421dd1ef5" x="862.463695" y="124.182676" style="fill: #d65b29; stroke: #d65b29"/>
     </g>
    </g>
-   <g id="PathCollection_16"/>
-   <g id="PathCollection_17">
+   <g id="PathCollection_11">
     <g clip-path="url(#p480897f529)">
      <use xlink:href="#mac379231d4" x="916.432183" y="131.601656" style="fill: #2463b3; stroke: #172c43"/>
     </g>
    </g>
-   <g id="PathCollection_18">
+   <g id="PathCollection_12">
     <g clip-path="url(#p480897f529)">
      <use xlink:href="#m08e67a8ab4" x="862.463695" y="124.182676" style="fill: #d65b29; stroke: #172c43"/>
     </g>
@@ -1308,7 +1283,7 @@ L 1114.790625 313.632
   </g>
   <g id="text_49">
    <text style="font-size: 9px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #52657a" transform="translate(20.390625 381.453539)">○ Sampled throughput peak per policy. ★ Highest throughput passing the queue check and TTFT criterion (middle); both SLO criteria (right).</text>
-   <text style="font-size: 9px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #52657a" transform="translate(20.390625 392.256)">◆ Measurements added after the initial sweep. × Repeat measurements. Lines connect measured points; shading brackets sampled transitions.</text>
+   <text style="font-size: 9px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #52657a" transform="translate(20.390625 392.256)">◆ Measurements added after the initial sweep. Lines connect measured points; shading brackets sampled transitions.</text>
   </g>
  </g>
  <defs>

@@ -616,20 +616,6 @@ def plots(points):
                         s=50,
                         zorder=7,
                     )
-                    repeats = [
-                        p
-                        for p in cells(points, arch, pol)
-                        if p["campaign"] == "agg-np2-20260919"
-                    ]
-                    ax.scatter(
-                        [p["clients"] for p in repeats],
-                        [p[metric] for p in repeats],
-                        marker="x",
-                        color=COLORS[pol],
-                        s=65,
-                        linewidths=1.8,
-                        zorder=7,
-                    )
                 if column == 0:
                     peak = max(series, key=lambda p: p[metric])
                     ax.scatter(
@@ -768,7 +754,7 @@ def plots(points):
             0.025,
             (
                 "○ Sampled throughput peak per policy. ★ Highest throughput passing the queue check and TTFT criterion (middle); both SLO criteria (right).\n"
-                "◆ Measurements added after the initial sweep. × Repeat measurements. Lines connect measured points; shading brackets sampled transitions."
+                "◆ Measurements added after the initial sweep. Lines connect measured points; shading brackets sampled transitions."
                 if arch == "agg"
                 else "Rings: sampled throughput peaks. Stars: TTFT-only choice in the TTFT panel; both-SLO choice in the I90 panel. Shading brackets transitions.\n"
                 "Lines are guides. Knees need intermediate points and repeats."
@@ -1896,7 +1882,7 @@ Most configuration/concurrency combinations have one trial. The agg C192 referen
 
 The throughput-knee comparison below uses **C192 for both arms**. It does not claim that C192 meets the latency SLO.
 
-○ marks each policy's sampled throughput peak. ★ marks the point with the highest throughput that passes the queue check and TTFT criterion in the middle panel, or both SLO criteria in the E2E panel. ◆ marks measurements added after the initial sweep; × marks repeat measurements, which remain separate from the connected curves. Lines connect measurements from the original and follow-up campaigns in concurrency order; shaded bands bracket sampled transitions. These SLO brackets need matched repeats before claiming an exact crossing.""")
+○ marks each policy's sampled throughput peak. ★ marks the point with the highest throughput that passes the queue check and TTFT criterion in the middle panel, or both SLO criteria in the E2E panel. ◆ marks measurements added after the initial sweep. Lines connect measurements from the original and follow-up campaigns in concurrency order; shaded bands bracket sampled transitions. Repeat measurements remain in the data table. These SLO brackets need matched repeats before claiming an exact crossing.""")
         else:
             out.append("""| Policy | Sampled throughput / knee evidence | TTFT <10 s boundary | Additional E2E boundary |
 | --- | --- | --- | --- |
