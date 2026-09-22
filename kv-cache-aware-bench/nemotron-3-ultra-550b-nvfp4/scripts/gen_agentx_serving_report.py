@@ -541,8 +541,8 @@ def figure(name_, description):
     return f"![{description}]({STEM}-{name_}.png)\n\n[SVG]({STEM}-{name_}.svg) · [PDF]({STEM}-{name_}.pdf)\n"
 
 
-def save(fig, tag):
-    for ext in ["png", "svg", "pdf"]:
+def save(fig, tag, extensions=("png", "svg", "pdf")):
+    for ext in extensions:
         path = REPORTS / f"{STEM}-{tag}.{ext}"
         fig.savefig(
             path,
@@ -570,8 +570,21 @@ def plots(points):
             "svg.hashsalt": STEM,
         }
     )
-    for arch in ["agg", "disagg"]:
-        fig, axes = plt.subplots(1, 3, figsize=(16, 5.6))
+    for arch, columns in [
+        ("agg", (0, 1, 2)),
+        ("disagg", (0, 1, 2)),
+        ("agg", (0,)),
+        ("agg", (1,)),
+        ("agg", (2,)),
+    ]:
+        standalone = len(columns) == 1
+        fig, panel_axes = plt.subplots(
+            1,
+            len(columns),
+            figsize=(8, 6.4) if standalone else (16, 5.6),
+            squeeze=False,
+        )
+        axes = dict(zip(columns, panel_axes[0]))
         ticks = (
             [48, 64, 96, 160, 192, 384]
             if arch == "agg"
@@ -582,6 +595,8 @@ def plots(points):
             (1, "ttft_p95_s", "TTFT p95 (seconds; log scale)"),
             (2, I90, "E2E I90 (output tok/s/user)"),
         ]:
+            if column not in axes:
+                continue
             ax = axes[column]
             for pol in ["kv", "rr"]:
                 series = sorted(
@@ -713,25 +728,34 @@ def plots(points):
                     fontsize=9,
                     color="#a62b3a",
                 )
+                if standalone:
+                    ax.legend(
+                        loc="upper left" if column == 1 else "upper right",
+                        bbox_to_anchor=(0, 0.90) if column == 1 else (1, 1),
+                        fontsize=9,
+                        frameon=False,
+                    )
         if arch == "agg":
             boundary = one(points, "agg", "kv", 160)
-            axes[1].axvspan(160, 192, alpha=0.08, color=COLORS["kv"])
-            axes[1].axvspan(64, 96, alpha=0.06, color=COLORS["rr"])
-            axes[1].annotate(
-                "TTFT boundary: KV C160–192\nRR C64–96",
-                xy=(160, boundary["ttft_p95_s"]),
-                xytext=(0.08, 0.08),
-                textcoords="axes fraction",
-                fontsize=8,
-                arrowprops={"arrowstyle": "->"},
-            )
-            axes[2].text(
-                0.06,
-                0.27,
-                "Both SLOs: KV C96, RR C64",
-                transform=axes[2].transAxes,
-                fontsize=8,
-            )
+            if 1 in axes:
+                axes[1].axvspan(160, 192, alpha=0.08, color=COLORS["kv"])
+                axes[1].axvspan(64, 96, alpha=0.06, color=COLORS["rr"])
+                axes[1].annotate(
+                    "TTFT boundary: KV C160–192\nRR C64–96",
+                    xy=(160, boundary["ttft_p95_s"]),
+                    xytext=(0.08, 0.08),
+                    textcoords="axes fraction",
+                    fontsize=8,
+                    arrowprops={"arrowstyle": "->"},
+                )
+            if 2 in axes:
+                axes[2].text(
+                    0.06,
+                    0.27,
+                    "Both SLOs: KV C96, RR C64",
+                    transform=axes[2].transAxes,
+                    fontsize=8,
+                )
         else:
             boundary = one(points, "disagg", "kv", 480)
             axes[1].axvspan(480, 672, alpha=0.07, color=COLORS["kv"])
@@ -743,6 +767,29 @@ def plots(points):
                 fontsize=8,
                 arrowprops={"arrowstyle": "->"},
             )
+        if standalone:
+            column = columns[0]
+            tag, marker_note = [
+                ("agg-throughput", "○ Sampled throughput peak per policy."),
+                (
+                    "agg-ttft-p95",
+                    "★ Highest throughput passing the queue check and TTFT criterion.",
+                ),
+                (
+                    "agg-e2e-interactivity",
+                    "★ Highest throughput passing the queue check and the TTFT + E2E criteria.",
+                ),
+            ][column]
+            fig.suptitle("Aggregated serving · 24 GPUs", x=0.12, ha="left", fontsize=16)
+            footer = (
+                marker_note
+                + "\n◆ Measurements added after the initial sweep. Lines connect measured points."
+                + ("\nShading brackets sampled transitions." if column < 2 else "")
+            )
+            fig.text(0.12, 0.035, footer, fontsize=9, color="#52657a")
+            fig.subplots_adjust(left=0.12, right=0.97, top=0.86, bottom=0.25)
+            save(fig, tag, extensions=("png",))
+            continue
         fig.suptitle(
             f"{'Agg · 24 GPUs' if arch == 'agg' else 'Disagg · 64 GPUs'} · default KV versus round-robin",
             x=0.04,
@@ -1875,6 +1922,11 @@ Most configuration/concurrency combinations have one trial. The agg C192 referen
             )
         )
         if arch == "agg":
+            out.append(
+                f"Separate PNGs: [Throughput]({STEM}-agg-throughput.png) · "
+                f"[TTFT p95]({STEM}-agg-ttft-p95.png) · "
+                f"[E2E interactivity]({STEM}-agg-e2e-interactivity.png)"
+            )
             out.append("""| Policy | Sampled throughput / knee evidence | TTFT <10 s boundary | Additional E2E boundary |
 | --- | --- | --- | --- |
 | Default KV | Peak at **C192**; C384 loses **14.5%** throughput and TTFT p95 rises **11.66→119.44 s**. Saturation transition lies in 192–384. | **C160 passes at 9.57 s**; both C192 references fail. Refine **160–192**. | C96 passes; **C160 fails at I90 16.1267**. Refine **96–160**. |
@@ -2493,12 +2545,14 @@ def html(markdown_text):
         if filename.startswith(STEM) and path.suffix in {
             ".csv",
             ".json",
+            ".png",
             ".svg",
             ".pdf",
         }:
             mime = {
                 ".csv": "text/csv",
                 ".json": "application/json",
+                ".png": "image/png",
                 ".svg": "image/svg+xml",
                 ".pdf": "application/pdf",
             }[path.suffix]

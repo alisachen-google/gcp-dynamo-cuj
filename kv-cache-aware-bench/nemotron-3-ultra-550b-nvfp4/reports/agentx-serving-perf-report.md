@@ -210,6 +210,8 @@ Most configuration/concurrency combinations have one trial. The agg C192 referen
 [SVG](agentx-serving-perf-report-agg-curves.svg) · [PDF](agentx-serving-perf-report-agg-curves.pdf)
 
 
+Separate PNGs: [Throughput](agentx-serving-perf-report-agg-throughput.png) · [TTFT p95](agentx-serving-perf-report-agg-ttft-p95.png) · [E2E interactivity](agentx-serving-perf-report-agg-e2e-interactivity.png)
+
 | Policy | Sampled throughput / knee evidence | TTFT <10 s boundary | Additional E2E boundary |
 | --- | --- | --- | --- |
 | Default KV | Peak at **C192**; C384 loses **14.5%** throughput and TTFT p95 rises **11.66→119.44 s**. Saturation transition lies in 192–384. | **C160 passes at 9.57 s**; both C192 references fail. Refine **160–192**. | C96 passes; **C160 fails at I90 16.1267**. Refine **96–160**. |
