@@ -842,13 +842,7 @@ def plots(points):
         selected = [
             one(points, arch, pol, concurrency, campaign) for pol, campaign in specs
         ]
-        labels, seen_policies = [], set()
-        for point in selected:
-            label = LABELS[point["policy"]].replace("KV ", "")
-            if point["policy"] in seen_policies:
-                label += " (repeat)"
-            labels.append(label)
-            seen_policies.add(point["policy"])
+        labels = [LABELS[point["policy"]].replace("KV ", "") for point in selected]
         fig, axes = plt.subplots(1, 3, figsize=(16, 8.2 if arch == "agg" else 6.0))
         for ax, key, title, threshold in [
             (axes[0], "total_tok_s_gpu", "Total input + output tok/s/GPU", None),
