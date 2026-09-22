@@ -876,15 +876,12 @@ def plots(points):
             for clients in concurrencies
             for pol, campaign in specs
         ]
-        labels = [
-            (f"C{point['clients']} · " if multiple_concurrencies else "")
-            + LABELS[point["policy"]].replace("KV ", "")
-            for point in selected
-        ]
+        if multiple_concurrencies:
+            tuned_concurrency_plot(selected, tag)
+            continue
+        labels = [LABELS[point["policy"]].replace("KV ", "") for point in selected]
         single_setting = len(selected) == 1
-        fig, axes = plt.subplots(
-            1, 3, figsize=(16, 4.8 if single_setting or multiple_concurrencies else 8.2)
-        )
+        fig, axes = plt.subplots(1, 3, figsize=(16, 4.8 if single_setting else 8.2))
         for ax, key, title, threshold in [
             (axes[0], "total_tok_s_gpu", "Total input + output tok/s/GPU", None),
             (axes[1], "ttft_p95_s", "TTFT p95 (seconds)", 10),
@@ -926,9 +923,7 @@ def plots(points):
             ax.grid(axis="x", alpha=0.15)
             ax.set_axisbelow(True)
         plot_subject = (
-            "measured tuned KV"
-            if single_setting or multiple_concurrencies
-            else "measured router flags"
+            "measured tuned KV" if single_setting else "measured router flags"
         )
         concurrency_label = " / ".join(f"C{clients}" for clients in concurrencies)
         fig.suptitle(
@@ -948,11 +943,6 @@ def plots(points):
             footer = (
                 "Selected: overlap credit 1.5 meets both SLOs with zero client errors.\n"
                 "Single measured configuration at this concurrency."
-            )
-        if multiple_concurrencies:
-            footer = (
-                "Selected: overlap credit 1.5 meets both SLOs at both concurrencies.\n"
-                "Both selected runs have zero client errors."
             )
         fig.text(0.04, 0.015, footer, fontsize=9, color="#52657a")
         fig.subplots_adjust(
@@ -1018,6 +1008,75 @@ def plots(points):
     selected_throughput_plots(points)
 
 
+def tuned_concurrency_plot(selected, tag):
+    fig, axes = plt.subplots(1, 3, figsize=(16, 5.6))
+    clients = [point["clients"] for point in selected]
+    color = COLORS[selected[0]["policy"]]
+    for ax, key, title, threshold in [
+        (axes[0], "total_tok_s_gpu", "Total input + output tok/s/GPU", None),
+        (axes[1], "ttft_p95_s", "TTFT p95 (seconds)", 10),
+        (axes[2], I90, "E2E I90 (output tok/s/user)", 20),
+    ]:
+        values = [point[key] for point in selected]
+        ax.plot(clients, values, color=color, marker="o", markersize=7, linewidth=2)
+        for index, (concurrency, value) in enumerate(zip(clients, values)):
+            ax.annotate(
+                f"{value:,.0f}" if key == "total_tok_s_gpu" else f"{value:.2f}",
+                xy=(concurrency, value),
+                xytext=(10 if index == 0 else -10, 12),
+                textcoords="offset points",
+                ha="left" if index == 0 else "right",
+                fontsize=10,
+                weight="bold",
+            )
+        ax.set_xlim(min(clients) - 24, max(clients) + 24)
+        ax.set_xticks(clients)
+        ax.set_ylim(0, max(max(values), threshold or 0) * 1.22)
+        ax.set_xlabel("Concurrency · live sessions")
+        ax.set_title(title, loc="left", fontsize=11)
+        ax.yaxis.set_major_locator(MaxNLocator(nbins=5))
+        if key == "total_tok_s_gpu":
+            ax.yaxis.set_major_formatter(
+                FuncFormatter(lambda value, _: f"{value:,.0f}")
+            )
+        if threshold:
+            ax.axhline(threshold, color="#a62b3a", linestyle="--", linewidth=1.3)
+            ax.text(
+                0.03,
+                0.97,
+                "SLO <10 s" if threshold == 10 else "SLO ≥20 tok/s",
+                transform=ax.transAxes,
+                va="top",
+                fontsize=9,
+                color="#a62b3a",
+            )
+        ax.spines[["top", "right"]].set_visible(False)
+        ax.grid(alpha=0.15)
+        ax.set_axisbelow(True)
+    fig.suptitle(
+        "Disagg · 64 GPUs · tuned KV across concurrency",
+        x=0.04,
+        ha="left",
+        fontsize=16,
+    )
+    fig.text(
+        0.04,
+        0.88,
+        "KV flags: load scale 1.0 · overlap credit 1.5 · temperature 0 · decay 0 · FCFS",
+        fontsize=10,
+        color="#52657a",
+    )
+    fig.text(
+        0.04,
+        0.025,
+        "Lines connect the measured points with the same KV flags. Both runs meet both SLOs with zero client errors.",
+        fontsize=9,
+        color="#52657a",
+    )
+    fig.subplots_adjust(left=0.065, right=0.98, top=0.76, bottom=0.20, wspace=0.27)
+    save(fig, tag)
+
+
 def selected_throughput_plots(points):
     selected = chosen(points)
     for arch in ["agg", "disagg"]:
@@ -1038,37 +1097,106 @@ def selected_throughput_plots(points):
                 f"{policy} · C{point['clients']}\n"
                 f"load scale {scale:.1f} · overlap credit {credit:.1f}"
             )
-        fig, ax = plt.subplots(figsize=(14, 6.5 + max(0, len(rows) - 3)))
+        fig, ax = plt.subplots(figsize=(14, 7.6))
         values = [point["total_tok_s_gpu"] for point in rows]
-        bars = ax.barh(
-            np.arange(len(rows)),
-            values,
-            height=0.52,
-            color=[COLORS[point["policy"]] for point in rows],
+        positions = (
+            [(0.06, 0.50), (0.26, 0.75), (0.62, 0.97)]
+            if arch == "agg"
+            else [(0.07, 0.31), (0.26, 0.69), (0.35, 0.95), (0.98, 0.59)]
         )
-        ax.set_yticks(np.arange(len(rows)), labels, fontsize=11)
-        ax.invert_yaxis()
-        ax.set_ylim(len(rows) - 0.45, -0.65)
-        for bar, point in zip(bars, rows):
+        seen_policies = set()
+        for index, (point, label, position) in enumerate(zip(rows, labels, positions)):
             value = point["total_tok_s_gpu"]
             ratio = value / reference["total_tok_s_gpu"]
-            ax.annotate(
-                f"{value:,.0f}\n{ratio:.2f}× RR",
-                xy=(value, bar.get_y() + bar.get_height() / 2),
-                xytext=(9, 0),
-                textcoords="offset points",
-                va="center",
-                fontsize=12,
-                weight="bold",
+            policy = point["policy"]
+            color = COLORS[policy]
+            legend_label = (
+                "RR"
+                if policy == "rr"
+                else "Default KV"
+                if policy == "kv"
+                else "Tuned KV"
             )
-        ax.set_xlim(0, max(values) * 1.25)
-        ax.xaxis.set_major_locator(MaxNLocator(nbins=5))
-        ax.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:,.0f}"))
-        ax.set_xlabel("Total input + output tokens/s/GPU", fontsize=11, labelpad=10)
-        ax.spines[["top", "right", "left"]].set_visible(False)
-        ax.tick_params(axis="y", length=0, pad=12)
-        ax.grid(axis="x", alpha=0.15)
+            ax.scatter(
+                point["clients"],
+                value,
+                marker="s" if policy == "rr" else "o" if policy == "kv" else "D",
+                s=180 if policy == "kv" else 70,
+                facecolors="white" if policy == "kv" else color,
+                edgecolors=color,
+                linewidths=2 if policy == "kv" else 1,
+                label=legend_label
+                if legend_label not in seen_policies
+                else "_nolegend_",
+                zorder=5 if policy == "kv" else 6,
+            )
+            seen_policies.add(legend_label)
+            policy_label, flags = label.split("\n")
+            ax.annotate(
+                f"{policy_label}\n{value:,.0f} tok/s/GPU · {ratio:.2f}× RR\n{flags}\nCache hit {point['cache_pct']:.2f}%",
+                xy=(point["clients"], value),
+                xytext=position,
+                textcoords="axes fraction",
+                ha="right" if arch == "disagg" and index == 3 else "left",
+                va="top",
+                fontsize=10,
+                bbox={
+                    "boxstyle": "round,pad=0.45",
+                    "facecolor": "white",
+                    "edgecolor": color,
+                    "linewidth": 0.8,
+                },
+                arrowprops={"arrowstyle": "-", "color": color, "linewidth": 1},
+                zorder=8,
+            )
+        ax.set_xlim(0, max(point["clients"] for point in rows) * 1.25)
+        ax.set_xticks(sorted({0, *(point["clients"] for point in rows)}))
+        ax.set_ylim(0, max(values) * 1.30)
+        ax.yaxis.set_major_locator(MaxNLocator(nbins=5))
+        ax.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:,.0f}"))
+        ax.set_xlabel("Concurrency · live sessions", fontsize=11, labelpad=10)
+        ax.set_ylabel("Total input + output tokens/s/GPU", fontsize=11, labelpad=10)
+        ax.spines[["top", "right"]].set_visible(False)
+        ax.legend(loc="upper left", fontsize=9, frameon=False)
+        ax.grid(alpha=0.15)
         ax.set_axisbelow(True)
+        if arch == "disagg":
+            detail = ax.inset_axes([0.63, 0.08, 0.33, 0.29])
+            nearby = [point for point in rows if point["clients"] == 480]
+            detail_values = [point["total_tok_s_gpu"] for point in nearby]
+            margin = (max(detail_values) - min(detail_values)) * 0.5
+            for point in nearby:
+                default = point["policy"] == "kv"
+                color = COLORS[point["policy"]]
+                detail.scatter(
+                    point["clients"],
+                    point["total_tok_s_gpu"],
+                    marker="o" if default else "D",
+                    s=45,
+                    facecolors="white" if default else color,
+                    edgecolors=color,
+                    linewidths=1.5,
+                    zorder=5,
+                )
+                detail.annotate(
+                    f"{'Default' if default else 'Tuned'} KV · {point['total_tok_s_gpu']:,.0f}",
+                    xy=(point["clients"], point["total_tok_s_gpu"]),
+                    xytext=(10, 0),
+                    textcoords="offset points",
+                    va="center",
+                    fontsize=8,
+                )
+            detail.set_title("C480 detail", loc="left", fontsize=9)
+            detail.set_xlim(475, 495)
+            detail.set_xticks([480])
+            detail.set_ylim(min(detail_values) - margin, max(detail_values) + margin)
+            detail.yaxis.set_major_locator(MaxNLocator(nbins=3))
+            detail.yaxis.set_major_formatter(
+                FuncFormatter(lambda value, _: f"{value:,.0f}")
+            )
+            detail.tick_params(labelsize=8)
+            detail.grid(alpha=0.15)
+            detail.set_axisbelow(True)
         fig.suptitle(
             f"{'Agg · 24 GPUs' if arch == 'agg' else 'Disagg · 64 GPUs'} · selected KV and RR throughput",
             x=0.04,
@@ -1090,11 +1218,16 @@ def selected_throughput_plots(points):
             0.035,
             "C = live sessions. Load scale = prefill load scale; credit = KV overlap credit. KV uses temperature 0, decay 0 and FCFS.\n"
             "Throughput includes cached input and output tokens. Ratios use the selected RR run; concurrency differs by policy.\n"
-            "All selected runs pass the queue check and have zero client errors.",
+            "Cache hit = client-reported cached-input percentage. All selected runs pass the queue check and have zero client errors."
+            + (
+                "\nThe detail panel uses a narrower y-scale."
+                if arch == "disagg"
+                else ""
+            ),
             fontsize=9,
             color="#52657a",
         )
-        fig.subplots_adjust(left=0.34, right=0.97, top=0.80, bottom=0.26)
+        fig.subplots_adjust(left=0.085, right=0.975, top=0.83, bottom=0.23)
         save(fig, f"{arch}-selected-throughput")
 
 
@@ -1209,6 +1342,50 @@ def comparison_data(points):
             "joint_slo_selected_ids": [p["id"] for p in joint],
         }
     return result
+
+
+def default_operating_point_table(points, arch):
+    by_id = {point["id"]: point for point in points}
+    decisions = comparison_data(points)[arch]
+    rows = []
+    for label, selection in [
+        (
+            "Sampled knee reference¹ under the same configuration",
+            "same_concurrency_ids",
+        ),
+        ("Best TTFT-SLO points", "ttft_only_selected_ids"),
+        ("Best combined-SLO points", "joint_slo_selected_ids"),
+    ]:
+        rr, kv = [by_id[id_] for id_ in decisions[selection][:2]]
+        rows.append(
+            [
+                label,
+                f"{kv['clients']} / {rr['clients']}",
+                f"{kv['total_tok_s_gpu']:,.0f} / {rr['total_tok_s_gpu']:,.0f}",
+                f"{kv['total_tok_s_gpu'] / rr['total_tok_s_gpu']:.2f}×",
+                f"{kv['ttft_p95_s']:.2f} / {rr['ttft_p95_s']:.2f}",
+                f"{rr['ttft_p95_s'] / kv['ttft_p95_s']:.2f}×",
+                f"{kv[I90]:.2f} / {rr[I90]:.2f}",
+                f"{kv[I90] / rr[I90]:.2f}×",
+                f"{kv['cache_pct']:.2f} / {rr['cache_pct']:.2f}",
+                f"{kv['cache_pct'] - rr['cache_pct']:+.2f}",
+            ]
+        )
+    return table(
+        [
+            "Operating point",
+            "Sessions KV / RR",
+            "Total tok/s/GPU KV / RR",
+            "Throughput ratio KV/RR",
+            "TTFT p95 (s) KV / RR",
+            "TTFT ratio RR/KV",
+            "I90 (tok/s/user) KV / RR",
+            "I90 ratio KV/RR",
+            "Cache hit (%) KV / RR",
+            "Δ cache KV − RR (pp)",
+        ],
+        rows,
+    )
 
 
 def simulation_plot(points, native):
@@ -2017,6 +2194,7 @@ The [benchmark template](agentx-serving-perf-data/source/sgl-d72-agentx.yaml.txt
 | --- | --- |
 | Total throughput/GPU | AIPerf input + output tokens/s divided by the total fleet GPU count, including both disagg stages. Cached input counts toward served token volume; this metric does not measure newly computed tokens alone. |
 | Output throughput/GPU | Output tokens/s divided by the same GPU count. Reported separately to expose workload-mix differences. |
+| Cache hit (%) | Client-reported cached-input percentage from the preserved AIPerf field `overall_usage_prompt_cache_read_pct.avg`. Δ cache is the policy's percentage minus the stated reference's percentage, in percentage points (pp), computed before rounding. |
 | TTFT | p95 time to first token over successful profiling requests, in seconds. The selection criterion is **strict TTFT p95 <10 s**. No sampled point is exactly 10 s. |
 | E2E interactivity I90 | For each successful profiling request with valid latency and positive output length, compute `r_i = E2E_seconds / output_tokens`; then `I90 = 1 / P90(r_i)` using linear interpolation. The additional criterion is **I90 ≥20 tok/s/user**, equivalent to `P90(r_i) ≤0.05 s/token`. |
 | Same configuration | Same topology, GPU count, workload and session concurrency; only router settings differ. |
@@ -2070,6 +2248,11 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
 
 ○ marks each policy's sampled throughput peak. ★ marks the point with the highest throughput that passes the queue check and TTFT criterion in the middle panel, or both SLO criteria in the E2E panel. Lines connect measured points in concurrency order; shaded bands bracket sampled transitions. These SLO brackets need matched repeats before claiming an exact crossing.""")
         out.append(
+            "**Default KV versus RR operating points:**\n\n"
+            + default_operating_point_table(points, arch)
+            + "\n\n¹C192 provides the same-concurrency knee reference; SLO selections are reported separately. Cache hit is the client-reported cached-input percentage; differences use unrounded values."
+        )
+        out.append(
             f"### {number}.2 All collected data points, including tuned KV\n\nEvery completed {arch} run in the scoped inventory is shown, including repeated references. The flags identify the recipe; each linked name opens its hardware artifacts."
         )
         out.append(
@@ -2082,6 +2265,7 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
                     "Output tok/s/GPU",
                     "TTFT p95 (s)",
                     "E2E I90",
+                    "Cache hit (%)",
                     "TTFT <10",
                     "Both SLOs",
                     "Errors",
@@ -2101,6 +2285,7 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
                         f"{p['output_tok_s_gpu']:.2f}",
                         f"{p['ttft_p95_s']:.2f}",
                         f"{p[I90]:.4f}",
+                        f"{p['cache_pct']:.2f}",
                         pf(p["ttft_slo_pass"]),
                         pf(p["combined_slo_pass"]),
                         p["request_errors"],
@@ -2143,6 +2328,8 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
                     "TTFT p95 (s)",
                     "TTFT ratio (RR / policy)",
                     "E2E I90",
+                    "Cache hit (%)",
+                    "Δ cache vs RR (pp)",
                     "Errors",
                 ],
                 [
@@ -2153,6 +2340,8 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
                         f"{p['ttft_p95_s']:.2f}",
                         f"{rr['ttft_p95_s'] / p['ttft_p95_s']:.2f}×",
                         f"{p[I90]:.4f}",
+                        f"{p['cache_pct']:.2f}",
+                        f"{p['cache_pct'] - rr['cache_pct']:+.2f}",
                         p["request_errors"],
                     ]
                     for p in same
@@ -2168,7 +2357,7 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
                 "At C192, KV with overlap credit 1.5 has **1.16× RR total served throughput/GPU**. TTFT p95 is **2.30 s for tuned KV** and **31.45 s for RR**, giving a **13.68× RR/KV latency ratio**. Default and tuned KV have similar throughput at this concurrency. At C480, the tuned-KV/RR throughput ratio is **3.80×**; the RR run exhibits overload. The C480 ratio therefore compares different saturation states and does not establish a capacity ratio under a common SLO."
             )
         out.append(
-            f"### {number}.4 Tuned KV versus RR under the same SLO: TTFT p95 <10 seconds\n\nFor each policy, select the highest measured total served throughput passing the **TTFT-only** criterion and queue check. I90 ≥20 is evaluated separately in the last column."
+            f"### {number}.4 Tuned KV versus RR under the same SLO: TTFT p95 <10 seconds\n\nFor each policy, select the highest measured total served throughput passing the **TTFT-only** criterion and queue check. I90 ≥20 is evaluated separately."
         )
         chosen_ttft = records(decisions[arch]["ttft_only_selected_ids"])
         rr = chosen_ttft[0]
@@ -2183,6 +2372,8 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
                     "E2E I90",
                     "Throughput / RR",
                     "I90 ≥20",
+                    "Cache hit (%)",
+                    "Δ cache vs RR (pp)",
                 ],
                 [
                     [
@@ -2194,6 +2385,8 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
                         f"{p[I90]:.4f}",
                         f"{p['total_tok_s_gpu'] / rr['total_tok_s_gpu']:.2f}×",
                         pf(p["interactivity_slo_pass"]),
+                        f"{p['cache_pct']:.2f}",
+                        f"{p['cache_pct'] - rr['cache_pct']:+.2f}",
                     ]
                     for p in chosen_ttft
                 ],
@@ -2222,6 +2415,8 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
                     "TTFT p95 (s)",
                     "E2E I90",
                     "Throughput / RR",
+                    "Cache hit (%)",
+                    "Δ cache vs RR (pp)",
                 ],
                 [
                     [
@@ -2231,6 +2426,8 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
                         f"{p['ttft_p95_s']:.2f}",
                         f"{p[I90]:.4f}",
                         f"{p['total_tok_s_gpu'] / rr['total_tok_s_gpu']:.2f}×",
+                        f"{p['cache_pct']:.2f}",
+                        f"{p['cache_pct'] - rr['cache_pct']:+.2f}",
                     ]
                     for p in joint
                 ],
@@ -2239,7 +2436,7 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
         out.append(
             figure(
                 f"{arch}-selected-throughput",
-                f"{title}: selected RR, default KV and tuned KV throughput under both SLOs, with concurrency and KV flags",
+                f"{title}: selected RR, default KV and tuned KV throughput versus concurrency under both SLOs, with KV flag labels",
             )
         )
         if arch == "agg":
@@ -2251,7 +2448,7 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
                 "**Tuned KV at C480 and C576:** both measured runs use overlap credit 1.5 and pass both SLOs with zero client errors. The throughput summary includes both tuned points alongside default KV and RR. The retained cohort contains only this configuration at C576; the multi-configuration flag comparison is at C480 in section 3.5.\n\n"
                 + figure(
                     "disagg-flags-c480-c576",
-                    "Disagg C480 and C576 measured KV overlap credit 1.5: throughput, TTFT p95 and E2E interactivity",
+                    "Disagg C480 and C576 measured KV overlap credit 1.5: throughput, TTFT p95 and E2E interactivity versus concurrency",
                 )
             )
         out.append(f"### {number}.5 What the flag sweep establishes")

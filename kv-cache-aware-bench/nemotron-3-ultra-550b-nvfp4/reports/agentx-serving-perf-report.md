@@ -187,6 +187,7 @@ The [benchmark template](agentx-serving-perf-data/source/sgl-d72-agentx.yaml.txt
 | --- | --- |
 | Total throughput/GPU | AIPerf input + output tokens/s divided by the total fleet GPU count, including both disagg stages. Cached input counts toward served token volume; this metric does not measure newly computed tokens alone. |
 | Output throughput/GPU | Output tokens/s divided by the same GPU count. Reported separately to expose workload-mix differences. |
+| Cache hit (%) | Client-reported cached-input percentage from the preserved AIPerf field `overall_usage_prompt_cache_read_pct.avg`. Δ cache is the policy's percentage minus the stated reference's percentage, in percentage points (pp), computed before rounding. |
 | TTFT | p95 time to first token over successful profiling requests, in seconds. The selection criterion is **strict TTFT p95 <10 s**. No sampled point is exactly 10 s. |
 | E2E interactivity I90 | For each successful profiling request with valid latency and positive output length, compute `r_i = E2E_seconds / output_tokens`; then `I90 = 1 / P90(r_i)` using linear interpolation. The additional criterion is **I90 ≥20 tok/s/user**, equivalent to `P90(r_i) ≤0.05 s/token`. |
 | Same configuration | Same topology, GPU count, workload and session concurrency; only router settings differ. |
@@ -221,37 +222,47 @@ The throughput-knee comparison below uses **C192 for both arms**. It does not cl
 
 ○ marks each policy's sampled throughput peak. ★ marks the point with the highest throughput that passes the queue check and TTFT criterion in the middle panel, or both SLO criteria in the E2E panel. ◆ marks measurements added after the initial sweep. Lines connect measurements from the original and follow-up campaigns in concurrency order; shaded bands bracket sampled transitions. Repeat measurements remain in the data table. These SLO brackets need matched repeats before claiming an exact crossing.
 
+**Default KV versus RR operating points:**
+
+| Operating point | Sessions KV / RR | Total tok/s/GPU KV / RR | Throughput ratio KV/RR | TTFT p95 (s) KV / RR | TTFT ratio RR/KV | I90 (tok/s/user) KV / RR | I90 ratio KV/RR | Cache hit (%) KV / RR | Δ cache KV − RR (pp) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Sampled knee reference¹ under the same configuration | 192 / 192 | 9,655 / 6,802 | 1.42× | 11.66 / 60.08 | 5.15× | 13.54 / 3.90 | 3.47× | 74.38 / 56.17 | +18.21 |
+| Best TTFT-SLO points | 160 / 64 | 8,755 / 3,910 | 2.24× | 9.57 / 9.21 | 0.96× | 16.13 / 35.35 | 0.46× | 74.82 / 71.16 | +3.66 |
+| Best combined-SLO points | 96 / 64 | 6,844 / 3,910 | 1.75× | 5.36 / 9.21 | 1.72× | 29.50 / 35.35 | 0.83× | 79.19 / 71.16 | +8.03 |
+
+¹C192 provides the same-concurrency knee reference; SLO selections are reported separately. Cache hit is the client-reported cached-input percentage; differences use unrounded values.
+
 ### 2.2 All collected data points, including tuned KV
 
 Every completed agg run in the scoped inventory is shown, including repeated references. The flags identify the recipe; each linked name opens its hardware artifacts.
 
-| Setting / artifacts | C | Campaign | Total tok/s/GPU | Output tok/s/GPU | TTFT p95 (s) | E2E I90 | TTFT <10 | Both SLOs | Errors |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789545801_alisachen-n3u-agg-ns-agentx-kv-c48) | 48 | Sep 16 | 3,334 | 32.27 | 3.83 | 51.8257 | Pass | Pass | 0 |
-| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789550601_alisachen-n3u-agg-ns-agentx-kv-c96) | 96 | Sep 16 | 6,844 | 75.11 | 5.36 | 29.5030 | Pass | Pass | 0 |
-| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895318_alisachen-n3u-agg-ns-agentx-kv-c160) | 160 | Sep 20 SLO | 8,755 | 94.00 | 9.57 | 16.1267 | Pass | Fail | 3 |
-| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789555981_alisachen-n3u-agg-ns-agentx-kv-c192) | 192 | Sep 16 | 9,655 | 96.81 | 11.66 | 13.5367 | Fail | Fail | 3 |
-| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789856222_alisachen-n3u-agg-ns-agentx-kv-c192) | 192 | np-2 | 9,468 | 95.42 | 11.18 | 12.9310 | Fail | Fail | 3 |
-| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789562076_alisachen-n3u-agg-ns-agentx-kv-c384) | 384 | Sep 16 | 8,257 | 77.74 | 119.44 | 1.1372 | Fail | Fail | 7 |
-| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789550745_alisachen-n3u-agg-ns2-agentx-rr-c48) | 48 | Sep 16 | 3,250 | 31.32 | 8.27 | 40.5349 | Pass | Pass | 0 |
-| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895323_alisachen-n3u-agg-ns2-agentx-rr-c64) | 64 | Sep 20 SLO | 3,910 | 42.88 | 9.21 | 35.3472 | Pass | Pass | 0 |
-| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789555623_alisachen-n3u-agg-ns2-agentx-rr-c96) | 96 | Sep 16 | 6,137 | 67.11 | 12.56 | 17.7260 | Fail | Fail | 0 |
-| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789560983_alisachen-n3u-agg-ns2-agentx-rr-c192) | 192 | Sep 16 | 6,802 | 71.38 | 60.08 | 3.8961 | Fail | Fail | 3 |
-| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789567077_alisachen-n3u-agg-ns2-agentx-rr-c384) | 384 | Sep 16 | 5,076 | 49.65 | 494.98 | 0.6059 | Fail | Fail | 14 |
-| [KV scale 3 / default credit 1.0](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789912551_alisachen-n3u-agg-ns2-agentx-kvs3c10-c160) | 160 | Sep 20 SLO | 10,073 | 108.52 | 4.75 | 26.3229 | Pass | Pass | 0 |
-| [KV scale 3 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789582550_alisachen-n3u-agg-ns2-agentx-kvs3c08-c96) | 96 | Sep 16 | 7,045 | 78.35 | 3.11 | 39.4930 | Pass | Pass | 0 |
-| [KV scale 3 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789901101_alisachen-n3u-agg-ns-agentx-kvs3c08-c160) | 160 | Sep 20 SLO | 9,894 | 105.19 | 4.85 | 24.6528 | Pass | Pass | 1 |
-| [KV scale 3 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789569414_alisachen-n3u-agg-ns-agentx-kvs3c08-c192) | 192 | Sep 16 | 11,012 | 108.87 | 6.33 | 19.7795 | Pass | Fail | 3 |
-| [KV scale 3 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789856381_alisachen-n3u-agg-ns2-agentx-kvs3c08-c192) | 192 | np-2 | 10,992 | 110.04 | 6.20 | 19.7385 | Pass | Fail | 2 |
-| [KV scale 3 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789900377_alisachen-n3u-agg-ns2-agentx-kvs3c08-c256) | 256 | Sep 20 SLO | 12,328 | 114.70 | 18.87 | 9.1777 | Fail | Fail | 3 |
-| [KV scale 2 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789906804_alisachen-n3u-agg-ns2-agentx-kvs2c08-c160) | 160 | Sep 20 SLO | 9,270 | 99.54 | 7.16 | 19.6589 | Pass | Fail | 2 |
-| [KV scale 2 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789575514_alisachen-n3u-agg-ns-agentx-kvs2c08-c192) | 192 | Sep 16 | 10,241 | 102.43 | 8.11 | 16.1477 | Pass | Fail | 3 |
-| [KV temperature 0.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789912551_alisachen-n3u-agg-ns-agentx-kvt05-c160) | 160 | Sep 20 SLO | 7,419 | 80.04 | 19.17 | 7.8906 | Fail | Fail | 3 |
-| [KV temperature 0.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789574468_alisachen-n3u-agg-ns2-agentx-kvt05-c192) | 192 | Sep 16 | 7,816 | 79.49 | 22.15 | 7.0315 | Fail | Fail | 3 |
-| [KV decay 0.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789906836_alisachen-n3u-agg-ns-agentx-kvd05-c160) | 160 | Sep 20 SLO | 8,697 | 93.57 | 9.24 | 15.4845 | Pass | Fail | 3 |
-| [KV decay 0.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789831067_alisachen-n3u-agg-ns-agentx-kvd05-c192) | 192 | np-2 | 9,362 | 94.58 | 12.70 | 12.0259 | Fail | Fail | 3 |
-| [KV decay 1.0](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789831039_alisachen-n3u-agg-ns2-agentx-kvd10-c192) | 192 | np-2 | 9,233 | 93.40 | 13.85 | 11.4805 | Fail | Fail | 3 |
-| [KV scale 3 / credit 0.8 / decay 0.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789862417_alisachen-n3u-agg-ns-agentx-kvs3c08d05-c192) | 192 | np-2 | 10,713 | 106.29 | 6.97 | 18.2395 | Pass | Fail | 3 |
+| Setting / artifacts | C | Campaign | Total tok/s/GPU | Output tok/s/GPU | TTFT p95 (s) | E2E I90 | Cache hit (%) | TTFT <10 | Both SLOs | Errors |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789545801_alisachen-n3u-agg-ns-agentx-kv-c48) | 48 | Sep 16 | 3,334 | 32.27 | 3.83 | 51.8257 | 86.21 | Pass | Pass | 0 |
+| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789550601_alisachen-n3u-agg-ns-agentx-kv-c96) | 96 | Sep 16 | 6,844 | 75.11 | 5.36 | 29.5030 | 79.19 | Pass | Pass | 0 |
+| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895318_alisachen-n3u-agg-ns-agentx-kv-c160) | 160 | Sep 20 SLO | 8,755 | 94.00 | 9.57 | 16.1267 | 74.82 | Pass | Fail | 3 |
+| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789555981_alisachen-n3u-agg-ns-agentx-kv-c192) | 192 | Sep 16 | 9,655 | 96.81 | 11.66 | 13.5367 | 74.38 | Fail | Fail | 3 |
+| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789856222_alisachen-n3u-agg-ns-agentx-kv-c192) | 192 | np-2 | 9,468 | 95.42 | 11.18 | 12.9310 | 72.86 | Fail | Fail | 3 |
+| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789562076_alisachen-n3u-agg-ns-agentx-kv-c384) | 384 | Sep 16 | 8,257 | 77.74 | 119.44 | 1.1372 | 60.81 | Fail | Fail | 7 |
+| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789550745_alisachen-n3u-agg-ns2-agentx-rr-c48) | 48 | Sep 16 | 3,250 | 31.32 | 8.27 | 40.5349 | 74.11 | Pass | Pass | 0 |
+| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895323_alisachen-n3u-agg-ns2-agentx-rr-c64) | 64 | Sep 20 SLO | 3,910 | 42.88 | 9.21 | 35.3472 | 71.16 | Pass | Pass | 0 |
+| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789555623_alisachen-n3u-agg-ns2-agentx-rr-c96) | 96 | Sep 16 | 6,137 | 67.11 | 12.56 | 17.7260 | 69.73 | Fail | Fail | 0 |
+| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789560983_alisachen-n3u-agg-ns2-agentx-rr-c192) | 192 | Sep 16 | 6,802 | 71.38 | 60.08 | 3.8961 | 56.17 | Fail | Fail | 3 |
+| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789567077_alisachen-n3u-agg-ns2-agentx-rr-c384) | 384 | Sep 16 | 5,076 | 49.65 | 494.98 | 0.6059 | 30.12 | Fail | Fail | 14 |
+| [KV scale 3 / default credit 1.0](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789912551_alisachen-n3u-agg-ns2-agentx-kvs3c10-c160) | 160 | Sep 20 SLO | 10,073 | 108.52 | 4.75 | 26.3229 | 85.01 | Pass | Pass | 0 |
+| [KV scale 3 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789582550_alisachen-n3u-agg-ns2-agentx-kvs3c08-c96) | 96 | Sep 16 | 7,045 | 78.35 | 3.11 | 39.4930 | 86.25 | Pass | Pass | 0 |
+| [KV scale 3 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789901101_alisachen-n3u-agg-ns-agentx-kvs3c08-c160) | 160 | Sep 20 SLO | 9,894 | 105.19 | 4.85 | 24.6528 | 83.49 | Pass | Pass | 1 |
+| [KV scale 3 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789569414_alisachen-n3u-agg-ns-agentx-kvs3c08-c192) | 192 | Sep 16 | 11,012 | 108.87 | 6.33 | 19.7795 | 81.85 | Pass | Fail | 3 |
+| [KV scale 3 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789856381_alisachen-n3u-agg-ns2-agentx-kvs3c08-c192) | 192 | np-2 | 10,992 | 110.04 | 6.20 | 19.7385 | 81.92 | Pass | Fail | 2 |
+| [KV scale 3 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789900377_alisachen-n3u-agg-ns2-agentx-kvs3c08-c256) | 256 | Sep 20 SLO | 12,328 | 114.70 | 18.87 | 9.1777 | 79.93 | Fail | Fail | 3 |
+| [KV scale 2 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789906804_alisachen-n3u-agg-ns2-agentx-kvs2c08-c160) | 160 | Sep 20 SLO | 9,270 | 99.54 | 7.16 | 19.6589 | 79.07 | Pass | Fail | 2 |
+| [KV scale 2 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789575514_alisachen-n3u-agg-ns-agentx-kvs2c08-c192) | 192 | Sep 16 | 10,241 | 102.43 | 8.11 | 16.1477 | 77.49 | Pass | Fail | 3 |
+| [KV temperature 0.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789912551_alisachen-n3u-agg-ns-agentx-kvt05-c160) | 160 | Sep 20 SLO | 7,419 | 80.04 | 19.17 | 7.8906 | 62.39 | Fail | Fail | 3 |
+| [KV temperature 0.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789574468_alisachen-n3u-agg-ns2-agentx-kvt05-c192) | 192 | Sep 16 | 7,816 | 79.49 | 22.15 | 7.0315 | 60.99 | Fail | Fail | 3 |
+| [KV decay 0.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789906836_alisachen-n3u-agg-ns-agentx-kvd05-c160) | 160 | Sep 20 SLO | 8,697 | 93.57 | 9.24 | 15.4845 | 74.24 | Pass | Fail | 3 |
+| [KV decay 0.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789831067_alisachen-n3u-agg-ns-agentx-kvd05-c192) | 192 | np-2 | 9,362 | 94.58 | 12.70 | 12.0259 | 72.15 | Fail | Fail | 3 |
+| [KV decay 1.0](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789831039_alisachen-n3u-agg-ns2-agentx-kvd10-c192) | 192 | np-2 | 9,233 | 93.40 | 13.85 | 11.4805 | 71.37 | Fail | Fail | 3 |
+| [KV scale 3 / credit 0.8 / decay 0.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789862417_alisachen-n3u-agg-ns-agentx-kvs3c08d05-c192) | 192 | np-2 | 10,713 | 106.29 | 6.97 | 18.2395 | 80.09 | Pass | Fail | 3 |
 
 | Recipe | Collected concurrency | Exact router arguments |
 | --- | --- | --- |
@@ -267,23 +278,23 @@ Every completed agg run in the scoped inventory is shown, including repeated ref
 
 ### 2.3 Tuned KV versus RR at the same configuration, near the sampled knee
 
-| C192 setting | Total tok/s/GPU | Throughput / RR | TTFT p95 (s) | TTFT ratio (RR / policy) | E2E I90 | Errors |
-| --- | --- | --- | --- | --- | --- | --- |
-| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789560983_alisachen-n3u-agg-ns2-agentx-rr-c192) | 6,802 | 1.00× | 60.08 | 1.00× | 3.8961 | 3 |
-| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789555981_alisachen-n3u-agg-ns-agentx-kv-c192) | 9,655 | 1.42× | 11.66 | 5.15× | 13.5367 | 3 |
-| [KV scale 3 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789569414_alisachen-n3u-agg-ns-agentx-kvs3c08-c192) | 11,012 | 1.62× | 6.33 | 9.49× | 19.7795 | 3 |
+| C192 setting | Total tok/s/GPU | Throughput / RR | TTFT p95 (s) | TTFT ratio (RR / policy) | E2E I90 | Cache hit (%) | Δ cache vs RR (pp) | Errors |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789560983_alisachen-n3u-agg-ns2-agentx-rr-c192) | 6,802 | 1.00× | 60.08 | 1.00× | 3.8961 | 56.17 | +0.00 | 3 |
+| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789555981_alisachen-n3u-agg-ns-agentx-kv-c192) | 9,655 | 1.42× | 11.66 | 5.15× | 13.5367 | 74.38 | +18.21 | 3 |
+| [KV scale 3 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789569414_alisachen-n3u-agg-ns-agentx-kvs3c08-c192) | 11,012 | 1.62× | 6.33 | 9.49× | 19.7795 | 81.85 | +25.68 | 3 |
 
 At C192, tuned KV has **1.62× RR total served throughput/GPU**. TTFT p95 is **6.33 s for tuned KV** and **60.08 s for RR**, giving a **9.49× RR/KV latency ratio**. These measurements come from the September 16 campaign. The subsequent tuned repeat is reported separately; that campaign did not include a matched RR192 repeat.
 
 ### 2.4 Tuned KV versus RR under the same SLO: TTFT p95 <10 seconds
 
-For each policy, select the highest measured total served throughput passing the **TTFT-only** criterion and queue check. I90 ≥20 is evaluated separately in the last column.
+For each policy, select the highest measured total served throughput passing the **TTFT-only** criterion and queue check. I90 ≥20 is evaluated separately.
 
-| Policy / selected run | C | Total tok/s/GPU | Output tok/s/GPU | TTFT p95 (s) | E2E I90 | Throughput / RR | I90 ≥20 |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895323_alisachen-n3u-agg-ns2-agentx-rr-c64) | 64 | 3,910 | 42.88 | 9.21 | 35.3472 | 1.00× | Pass |
-| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895318_alisachen-n3u-agg-ns-agentx-kv-c160) | 160 | 8,755 | 94.00 | 9.57 | 16.1267 | 2.24× | Fail |
-| [KV scale 3 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789569414_alisachen-n3u-agg-ns-agentx-kvs3c08-c192) | 192 | 11,012 | 108.87 | 6.33 | 19.7795 | 2.82× | Fail |
+| Policy / selected run | C | Total tok/s/GPU | Output tok/s/GPU | TTFT p95 (s) | E2E I90 | Throughput / RR | I90 ≥20 | Cache hit (%) | Δ cache vs RR (pp) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895323_alisachen-n3u-agg-ns2-agentx-rr-c64) | 64 | 3,910 | 42.88 | 9.21 | 35.3472 | 1.00× | Pass | 71.16 | +0.00 |
+| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789895318_alisachen-n3u-agg-ns-agentx-kv-c160) | 160 | 8,755 | 94.00 | 9.57 | 16.1267 | 2.24× | Fail | 74.82 | +3.66 |
+| [KV scale 3 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789569414_alisachen-n3u-agg-ns-agentx-kvs3c08-c192) | 192 | 11,012 | 108.87 | 6.33 | 19.7795 | 2.82× | Fail | 81.85 | +10.69 |
 
 **TTFT-only selection:** default KV160/RR64 has a **2.24× total served throughput/GPU ratio**. Tuned KV192/RR64 has a **2.82×** ratio using the highest-throughput original sample. The np-2 C192 repeat measures **10,992 total tok/s/GPU, 6.20 s TTFT p95 and 2.81× RR64 throughput**, corresponding to the comparison in the source log. The original and repeated C192 trials have three and two client errors, respectively. Default KV160 has three errors; RR64 has zero.
 
@@ -291,13 +302,13 @@ Tuned C256 measures **12,328 total tok/s/GPU** with **18.87 s TTFT p95** and fai
 
 **Combined TTFT and E2E selection:** apply both latency criteria:
 
-| Policy | Selected C | Total tok/s/GPU | TTFT p95 (s) | E2E I90 | Throughput / RR |
-| --- | --- | --- | --- | --- | --- |
-| RR | 64 | 3,910 | 9.21 | 35.3472 | 1.00× |
-| Default KV | 96 | 6,844 | 5.36 | 29.5030 | 1.75× |
-| KV scale 3 / default credit 1.0 | 160 | 10,073 | 4.75 | 26.3229 | 2.58× |
+| Policy | Selected C | Total tok/s/GPU | TTFT p95 (s) | E2E I90 | Throughput / RR | Cache hit (%) | Δ cache vs RR (pp) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| RR | 64 | 3,910 | 9.21 | 35.3472 | 1.00× | 71.16 | +0.00 |
+| Default KV | 96 | 6,844 | 5.36 | 29.5030 | 1.75× | 79.19 | +8.03 |
+| KV scale 3 / default credit 1.0 | 160 | 10,073 | 4.75 | 26.3229 | 2.58× | 85.01 | +13.85 |
 
-![Aggregated serving: measured KV and RR: selected RR, default KV and tuned KV throughput under both SLOs, with concurrency and KV flags](agentx-serving-perf-report-agg-selected-throughput.png)
+![Aggregated serving: measured KV and RR: selected RR, default KV and tuned KV throughput versus concurrency under both SLOs, with KV flag labels](agentx-serving-perf-report-agg-selected-throughput.png)
 
 [SVG](agentx-serving-perf-report-agg-selected-throughput.svg) · [PDF](agentx-serving-perf-report-agg-selected-throughput.pdf)
 
@@ -366,32 +377,42 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
 
 ○ marks each policy's sampled throughput peak. ★ marks the point with the highest throughput that passes the queue check and TTFT criterion in the middle panel, or both SLO criteria in the E2E panel. Lines connect measured points in concurrency order; shaded bands bracket sampled transitions. These SLO brackets need matched repeats before claiming an exact crossing.
 
+**Default KV versus RR operating points:**
+
+| Operating point | Sessions KV / RR | Total tok/s/GPU KV / RR | Throughput ratio KV/RR | TTFT p95 (s) KV / RR | TTFT ratio RR/KV | I90 (tok/s/user) KV / RR | I90 ratio KV/RR | Cache hit (%) KV / RR | Δ cache KV − RR (pp) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Sampled knee reference¹ under the same configuration | 192 / 192 | 5,142 / 4,419 | 1.16× | 2.40 / 31.45 | 13.12× | 67.36 / 8.38 | 8.04× | 92.65 / 61.06 | +31.59 |
+| Best TTFT-SLO points | 480 / 72 | 12,204 / 1,763 | 6.92× | 7.12 / 9.91 | 1.39× | 33.52 / 37.40 | 0.90× | 89.10 / 65.52 | +23.58 |
+| Best combined-SLO points | 480 / 72 | 12,204 / 1,763 | 6.92× | 7.12 / 9.91 | 1.39× | 33.52 / 37.40 | 0.90× | 89.10 / 65.52 | +23.58 |
+
+¹C192 provides the same-concurrency knee reference; SLO selections are reported separately. Cache hit is the client-reported cached-input percentage; differences use unrounded values.
+
 ### 3.2 All collected data points, including tuned KV
 
 Every completed disagg run in the scoped inventory is shown, including repeated references. The flags identify the recipe; each linked name opens its hardware artifacts.
 
-| Setting / artifacts | C | Campaign | Total tok/s/GPU | Output tok/s/GPU | TTFT p95 (s) | E2E I90 | TTFT <10 | Both SLOs | Errors |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789808919_alisachen-n3u-mnnvl-88-agentx-kv-c96) | 96 | D88 | 2,810 | 31.52 | 1.56 | 80.9304 | Pass | Pass | 0 |
-| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789803115_alisachen-n3u-mnnvl-88-agentx-kv-c144) | 144 | D88 | 3,964 | 44.14 | 1.87 | 71.7317 | Pass | Pass | 0 |
-| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789672351_alisachen-n3u-mnnvl-88-agentx-kv-c192) | 192 | D88 | 5,142 | 50.75 | 2.40 | 67.3601 | Pass | Pass | 0 |
-| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789678827_alisachen-n3u-mnnvl-88-agentx-kv-c384) | 384 | D88 | 9,993 | 100.04 | 4.83 | 44.7508 | Pass | Pass | 0 |
-| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789740024_alisachen-n3u-mnnvl-88-agentx-kv-c480) | 480 | D88 | 12,204 | 123.36 | 7.12 | 33.5225 | Pass | Pass | 0 |
-| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789686412_alisachen-n3u-mnnvl-88-agentx-kv-c672) | 672 | D88 | 15,184 | 149.17 | 17.04 | 13.7406 | Fail | Fail | 0 |
-| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789695978_alisachen-n3u-mnnvl-88-agentx-kv-c768) | 768 | D88 | 15,543 | 152.20 | 27.14 | 7.4108 | Fail | Fail | 0 |
-| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789706033_alisachen-n3u-mnnvl-88-agentx-kv-c1152) | 1152 | D88 | 10,697 | 107.71 | 164.32 | 1.1161 | Fail | Fail | 0 |
-| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789773750_alisachen-n3u-mnnvl-88-agentx-rr-c72) | 72 | D88 | 1,763 | 20.47 | 9.91 | 37.3998 | Pass | Pass | 0 |
-| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789734386_alisachen-n3u-mnnvl-88-agentx-rr-c96) | 96 | D88 | 2,671 | 29.62 | 13.03 | 28.0935 | Fail | Fail | 0 |
-| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789728380_alisachen-n3u-mnnvl-88-agentx-rr-c144) | 144 | D88 | 3,588 | 40.78 | 21.63 | 13.9890 | Fail | Fail | 0 |
-| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789721971_alisachen-n3u-mnnvl-88-agentx-rr-c192) | 192 | D88 | 4,419 | 44.48 | 31.45 | 8.3783 | Fail | Fail | 0 |
-| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789795836_alisachen-n3u-mnnvl-88-agentx-rr-c384) | 384 | D88 | 3,504 | 36.04 | 289.39 | 1.0990 | Fail | Fail | 68 |
-| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789757358_alisachen-n3u-mnnvl-88-agentx-rr-c480) | 480 | D88 | 3,219 | 34.32 | 387.54 | 0.6525 | Fail | Fail | 39 |
-| [KV scale 3 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789748912_alisachen-n3u-mnnvl-88-agentx-kvs3c08-c480) | 480 | D88 | 12,018 | 121.56 | 10.48 | 24.1932 | Fail | Fail | 0 |
-| [KV credit 1.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789814379_alisachen-n3u-mnnvl-88-agentx-kvc15-c192) | 192 | D88 | 5,138 | 50.72 | 2.30 | 65.3478 | Pass | Pass | 0 |
-| [KV credit 1.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789778938_alisachen-n3u-mnnvl-88-agentx-kvc15-c480) | 480 | D88 | 12,239 | 123.83 | 6.02 | 37.9246 | Pass | Pass | 0 |
-| [KV credit 1.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789820579_alisachen-n3u-mnnvl-88-agentx-kvc15-c576) | 576 | D88 | 14,024 | 136.13 | 8.75 | 30.2479 | Pass | Pass | 0 |
-| [KV credit 2.0](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789787390_alisachen-n3u-mnnvl-88-agentx-kvc20-c480) | 480 | D88 | 12,239 | 123.55 | 6.55 | 36.6851 | Pass | Pass | 0 |
-| [KV decay 0.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789765406_alisachen-n3u-mnnvl-88-agentx-kvd05-c480) | 480 | D88 | 11,839 | 119.49 | 13.13 | 19.2392 | Fail | Fail | 0 |
+| Setting / artifacts | C | Campaign | Total tok/s/GPU | Output tok/s/GPU | TTFT p95 (s) | E2E I90 | Cache hit (%) | TTFT <10 | Both SLOs | Errors |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789808919_alisachen-n3u-mnnvl-88-agentx-kv-c96) | 96 | D88 | 2,810 | 31.52 | 1.56 | 80.9304 | 93.77 | Pass | Pass | 0 |
+| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789803115_alisachen-n3u-mnnvl-88-agentx-kv-c144) | 144 | D88 | 3,964 | 44.14 | 1.87 | 71.7317 | 92.78 | Pass | Pass | 0 |
+| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789672351_alisachen-n3u-mnnvl-88-agentx-kv-c192) | 192 | D88 | 5,142 | 50.75 | 2.40 | 67.3601 | 92.65 | Pass | Pass | 0 |
+| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789678827_alisachen-n3u-mnnvl-88-agentx-kv-c384) | 384 | D88 | 9,993 | 100.04 | 4.83 | 44.7508 | 90.61 | Pass | Pass | 0 |
+| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789740024_alisachen-n3u-mnnvl-88-agentx-kv-c480) | 480 | D88 | 12,204 | 123.36 | 7.12 | 33.5225 | 89.10 | Pass | Pass | 0 |
+| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789686412_alisachen-n3u-mnnvl-88-agentx-kv-c672) | 672 | D88 | 15,184 | 149.17 | 17.04 | 13.7406 | 85.74 | Fail | Fail | 0 |
+| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789695978_alisachen-n3u-mnnvl-88-agentx-kv-c768) | 768 | D88 | 15,543 | 152.20 | 27.14 | 7.4108 | 85.18 | Fail | Fail | 0 |
+| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789706033_alisachen-n3u-mnnvl-88-agentx-kv-c1152) | 1152 | D88 | 10,697 | 107.71 | 164.32 | 1.1161 | 77.23 | Fail | Fail | 0 |
+| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789773750_alisachen-n3u-mnnvl-88-agentx-rr-c72) | 72 | D88 | 1,763 | 20.47 | 9.91 | 37.3998 | 65.52 | Pass | Pass | 0 |
+| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789734386_alisachen-n3u-mnnvl-88-agentx-rr-c96) | 96 | D88 | 2,671 | 29.62 | 13.03 | 28.0935 | 67.14 | Fail | Fail | 0 |
+| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789728380_alisachen-n3u-mnnvl-88-agentx-rr-c144) | 144 | D88 | 3,588 | 40.78 | 21.63 | 13.9890 | 63.01 | Fail | Fail | 0 |
+| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789721971_alisachen-n3u-mnnvl-88-agentx-rr-c192) | 192 | D88 | 4,419 | 44.48 | 31.45 | 8.3783 | 61.06 | Fail | Fail | 0 |
+| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789795836_alisachen-n3u-mnnvl-88-agentx-rr-c384) | 384 | D88 | 3,504 | 36.04 | 289.39 | 1.0990 | 37.17 | Fail | Fail | 68 |
+| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789757358_alisachen-n3u-mnnvl-88-agentx-rr-c480) | 480 | D88 | 3,219 | 34.32 | 387.54 | 0.6525 | 29.27 | Fail | Fail | 39 |
+| [KV scale 3 / credit 0.8](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789748912_alisachen-n3u-mnnvl-88-agentx-kvs3c08-c480) | 480 | D88 | 12,018 | 121.56 | 10.48 | 24.1932 | 86.30 | Fail | Fail | 0 |
+| [KV credit 1.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789814379_alisachen-n3u-mnnvl-88-agentx-kvc15-c192) | 192 | D88 | 5,138 | 50.72 | 2.30 | 65.3478 | 93.39 | Pass | Pass | 0 |
+| [KV credit 1.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789778938_alisachen-n3u-mnnvl-88-agentx-kvc15-c480) | 480 | D88 | 12,239 | 123.83 | 6.02 | 37.9246 | 91.17 | Pass | Pass | 0 |
+| [KV credit 1.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789820579_alisachen-n3u-mnnvl-88-agentx-kvc15-c576) | 576 | D88 | 14,024 | 136.13 | 8.75 | 30.2479 | 90.36 | Pass | Pass | 0 |
+| [KV credit 2.0](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789787390_alisachen-n3u-mnnvl-88-agentx-kvc20-c480) | 480 | D88 | 12,239 | 123.55 | 6.55 | 36.6851 | 91.74 | Pass | Pass | 0 |
+| [KV decay 0.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789765406_alisachen-n3u-mnnvl-88-agentx-kvd05-c480) | 480 | D88 | 11,839 | 119.49 | 13.13 | 19.2392 | 84.15 | Fail | Fail | 0 |
 
 | Recipe | Collected concurrency | Exact router arguments |
 | --- | --- | --- |
@@ -404,42 +425,42 @@ Every completed disagg run in the scoped inventory is shown, including repeated 
 
 ### 3.3 Tuned KV versus RR at the same configuration, near the sampled knee
 
-| C192 setting | Total tok/s/GPU | Throughput / RR | TTFT p95 (s) | TTFT ratio (RR / policy) | E2E I90 | Errors |
-| --- | --- | --- | --- | --- | --- | --- |
-| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789721971_alisachen-n3u-mnnvl-88-agentx-rr-c192) | 4,419 | 1.00× | 31.45 | 1.00× | 8.3783 | 0 |
-| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789672351_alisachen-n3u-mnnvl-88-agentx-kv-c192) | 5,142 | 1.16× | 2.40 | 13.12× | 67.3601 | 0 |
-| [KV credit 1.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789814379_alisachen-n3u-mnnvl-88-agentx-kvc15-c192) | 5,138 | 1.16× | 2.30 | 13.68× | 65.3478 | 0 |
+| C192 setting | Total tok/s/GPU | Throughput / RR | TTFT p95 (s) | TTFT ratio (RR / policy) | E2E I90 | Cache hit (%) | Δ cache vs RR (pp) | Errors |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789721971_alisachen-n3u-mnnvl-88-agentx-rr-c192) | 4,419 | 1.00× | 31.45 | 1.00× | 8.3783 | 61.06 | +0.00 | 0 |
+| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789672351_alisachen-n3u-mnnvl-88-agentx-kv-c192) | 5,142 | 1.16× | 2.40 | 13.12× | 67.3601 | 92.65 | +31.59 | 0 |
+| [KV credit 1.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789814379_alisachen-n3u-mnnvl-88-agentx-kvc15-c192) | 5,138 | 1.16× | 2.30 | 13.68× | 65.3478 | 93.39 | +32.33 | 0 |
 
 At C192, KV with overlap credit 1.5 has **1.16× RR total served throughput/GPU**. TTFT p95 is **2.30 s for tuned KV** and **31.45 s for RR**, giving a **13.68× RR/KV latency ratio**. Default and tuned KV have similar throughput at this concurrency. At C480, the tuned-KV/RR throughput ratio is **3.80×**; the RR run exhibits overload. The C480 ratio therefore compares different saturation states and does not establish a capacity ratio under a common SLO.
 
 ### 3.4 Tuned KV versus RR under the same SLO: TTFT p95 <10 seconds
 
-For each policy, select the highest measured total served throughput passing the **TTFT-only** criterion and queue check. I90 ≥20 is evaluated separately in the last column.
+For each policy, select the highest measured total served throughput passing the **TTFT-only** criterion and queue check. I90 ≥20 is evaluated separately.
 
-| Policy / selected run | C | Total tok/s/GPU | Output tok/s/GPU | TTFT p95 (s) | E2E I90 | Throughput / RR | I90 ≥20 |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789773750_alisachen-n3u-mnnvl-88-agentx-rr-c72) | 72 | 1,763 | 20.47 | 9.91 | 37.3998 | 1.00× | Pass |
-| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789740024_alisachen-n3u-mnnvl-88-agentx-kv-c480) | 480 | 12,204 | 123.36 | 7.12 | 33.5225 | 6.92× | Pass |
-| [KV credit 1.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789820579_alisachen-n3u-mnnvl-88-agentx-kvc15-c576) | 576 | 14,024 | 136.13 | 8.75 | 30.2479 | 7.95× | Pass |
+| Policy / selected run | C | Total tok/s/GPU | Output tok/s/GPU | TTFT p95 (s) | E2E I90 | Throughput / RR | I90 ≥20 | Cache hit (%) | Δ cache vs RR (pp) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| [RR](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789773750_alisachen-n3u-mnnvl-88-agentx-rr-c72) | 72 | 1,763 | 20.47 | 9.91 | 37.3998 | 1.00× | Pass | 65.52 | +0.00 |
+| [Default KV](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789740024_alisachen-n3u-mnnvl-88-agentx-kv-c480) | 480 | 12,204 | 123.36 | 7.12 | 33.5225 | 6.92× | Pass | 89.10 | +23.58 |
+| [KV credit 1.5](https://console.cloud.google.com/storage/browser/alisachen-models/perf/1789820579_alisachen-n3u-mnnvl-88-agentx-kvc15-c576) | 576 | 14,024 | 136.13 | 8.75 | 30.2479 | 7.95× | Pass | 90.36 | +24.85 |
 
 **TTFT-only selection:** KV576 with credit 1.5/RR72 has a **7.95× total served throughput/GPU ratio**. Both runs also satisfy I90 ≥20 and have zero exported client errors. RR72's TTFT p95 is close to the 10-second threshold; repeated measurements are required to establish its margin. Default KV576 is outside the retained D88 snapshot, so the table does not quantify the tuning effect at fixed concurrency.
 
 **Combined TTFT and E2E selection:** apply both latency criteria:
 
-| Policy | Selected C | Total tok/s/GPU | TTFT p95 (s) | E2E I90 | Throughput / RR |
-| --- | --- | --- | --- | --- | --- |
-| RR | 72 | 1,763 | 9.91 | 37.3998 | 1.00× |
-| Default KV | 480 | 12,204 | 7.12 | 33.5225 | 6.92× |
-| KV credit 1.5 | 576 | 14,024 | 8.75 | 30.2479 | 7.95× |
+| Policy | Selected C | Total tok/s/GPU | TTFT p95 (s) | E2E I90 | Throughput / RR | Cache hit (%) | Δ cache vs RR (pp) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| RR | 72 | 1,763 | 9.91 | 37.3998 | 1.00× | 65.52 | +0.00 |
+| Default KV | 480 | 12,204 | 7.12 | 33.5225 | 6.92× | 89.10 | +23.58 |
+| KV credit 1.5 | 576 | 14,024 | 8.75 | 30.2479 | 7.95× | 90.36 | +24.85 |
 
-![Disaggregated serving: measured KV and RR: selected RR, default KV and tuned KV throughput under both SLOs, with concurrency and KV flags](agentx-serving-perf-report-disagg-selected-throughput.png)
+![Disaggregated serving: measured KV and RR: selected RR, default KV and tuned KV throughput versus concurrency under both SLOs, with KV flag labels](agentx-serving-perf-report-disagg-selected-throughput.png)
 
 [SVG](agentx-serving-perf-report-disagg-selected-throughput.svg) · [PDF](agentx-serving-perf-report-disagg-selected-throughput.pdf)
 
 
 **Tuned KV at C480 and C576:** both measured runs use overlap credit 1.5 and pass both SLOs with zero client errors. The throughput summary includes both tuned points alongside default KV and RR. The retained cohort contains only this configuration at C576; the multi-configuration flag comparison is at C480 in section 3.5.
 
-![Disagg C480 and C576 measured KV overlap credit 1.5: throughput, TTFT p95 and E2E interactivity](agentx-serving-perf-report-disagg-flags-c480-c576.png)
+![Disagg C480 and C576 measured KV overlap credit 1.5: throughput, TTFT p95 and E2E interactivity versus concurrency](agentx-serving-perf-report-disagg-flags-c480-c576.png)
 
 [SVG](agentx-serving-perf-report-disagg-flags-c480-c576.svg) · [PDF](agentx-serving-perf-report-disagg-flags-c480-c576.pdf)
 
