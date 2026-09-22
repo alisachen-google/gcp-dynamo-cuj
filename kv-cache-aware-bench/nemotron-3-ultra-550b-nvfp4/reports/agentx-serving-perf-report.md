@@ -425,7 +425,7 @@ For each policy, select the highest measured total served throughput passing the
 
 ### 3.5 What the flag sweep establishes
 
-![Measured disagg KV routing flags, with TTFT and E2E thresholds](agentx-serving-perf-report-disagg-flags.png)
+![Disagg C480 load-scale, overlap-credit and decay comparisons: throughput, TTFT and E2E interactivity](agentx-serving-perf-report-disagg-flags.png)
 
 [SVG](agentx-serving-perf-report-disagg-flags.svg) · [PDF](agentx-serving-perf-report-disagg-flags.pdf)
 

@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import yaml
 from markdown_it import MarkdownIt
-from matplotlib.ticker import FuncFormatter
+from matplotlib.ticker import FuncFormatter, MaxNLocator
 
 ROOT = Path(__file__).resolve().parents[1]
 REPORTS = ROOT / "reports"
@@ -843,7 +843,7 @@ def plots(points):
             one(points, arch, pol, concurrency, campaign) for pol, campaign in specs
         ]
         labels = [LABELS[point["policy"]].replace("KV ", "") for point in selected]
-        fig, axes = plt.subplots(1, 3, figsize=(16, 8.2 if arch == "agg" else 6.0))
+        fig, axes = plt.subplots(1, 3, figsize=(16, 8.2))
         for ax, key, title, threshold in [
             (axes[0], "total_tok_s_gpu", "Total input + output tok/s/GPU", None),
             (axes[1], "ttft_p95_s", "TTFT p95 (seconds)", 10),
@@ -869,6 +869,8 @@ def plots(points):
                 bbox={"facecolor": "white", "edgecolor": "none", "pad": 0.5},
             )
             ax.set_xlim(0, max(values) * 1.20)
+            if arch == "disagg" and key == "total_tok_s_gpu":
+                ax.xaxis.set_major_locator(MaxNLocator(nbins=5))
             ax.set_title(title, loc="left", fontsize=11)
             if threshold:
                 ax.axvline(threshold, color="#a62b3a", linestyle="--")
@@ -881,7 +883,7 @@ def plots(points):
             ax.grid(axis="x", alpha=0.15)
             ax.set_axisbelow(True)
         fig.suptitle(
-            f"{'Agg · 24 GPUs' if arch == 'agg' else 'D88 · 64 GPUs'} · measured router flags at C{concurrency}",
+            f"{'Agg · 24 GPUs' if arch == 'agg' else 'Disagg · 64 GPUs'} · measured router flags at C{concurrency}",
             x=0.04,
             ha="left",
             fontsize=15,
@@ -891,11 +893,11 @@ def plots(points):
             if concurrency == 160
             else "TTFT-only choice: scale 3 / credit 0.8 delivers the highest plotted throughput and meets the TTFT limit.\nThe selected run misses the E2E interactivity target and has client errors."
             if arch == "agg"
-            else "Credit 1.5 has the lowest measured C480 TTFT and highest E2E I90. Credit 2.0 gives essentially identical throughput.\nAll five KV rows have zero errors. RR480 is omitted from this scale: 387.54 s TTFT, 0.6525 I90, 39 client errors; see the full table."
+            else "Selected: credit 1.5 has the lowest plotted TTFT and highest E2E interactivity, meeting both SLOs.\nThe selected run has zero client errors."
         )
         fig.text(0.04, 0.015, footer, fontsize=9, color="#52657a")
         fig.subplots_adjust(
-            left=0.27 if arch == "agg" else 0.19,
+            left=0.27,
             right=0.98,
             top=0.88,
             bottom=0.20,
@@ -2184,7 +2186,7 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
             out.append(
                 figure(
                     "disagg-flags",
-                    "Measured disagg KV routing flags, with TTFT and E2E thresholds",
+                    "Disagg C480 load-scale, overlap-credit and decay comparisons: throughput, TTFT and E2E interactivity",
                 )
             )
             baseline = one(points, "disagg", "kv", 480)
