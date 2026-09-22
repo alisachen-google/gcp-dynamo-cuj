@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1040" height="612" viewBox="0 0 1040 612" role="img" aria-labelledby="title desc">
   <title id="title">AgentX Weka dataset replay</title>
-  <desc id="desc">The Weka 256K corpus has 393 recorded coding-session roots with growing shared prefixes, subagent trees and recorded pauses. AIPerf reconstructs tokenized prompts from trace blocks, preserves spawn and join dependencies, and schedules the next turn after the preceding response and recorded delay. Concurrency C counts live root sessions with their subagents, rather than individual requests. Dynamo and SGLang serve the replay under KV-aware routing or round-robin routing. Cache reuse, latency and throughput are measured outcomes. Blue token blocks show shared conversation history; gold blocks show new input. The illustration is schematic; the report specifies warmup, timing controls and cache busting.</desc>
+  <desc id="desc">A stack of recorded Weka 256K coding-session trees leads to three AIPerf prompt bubbles with growing shared-history blocks and new input. Clock symbols mark pauses between turns. Request and response arrows connect AIPerf to Dynamo and SGLang, with KV-aware routing and round-robin routing shown as comparison options. Blue token blocks show shared conversation history; gold blocks show new input. Cache, latency and throughput icons represent measured outcomes. The illustration is schematic.</desc>
   <defs>
     <style>
       text { font-family: 'DejaVu Sans', sans-serif; fill: #203952; }
@@ -95,12 +95,9 @@
   <path d="M935 337 L945 326 L954 331 L972 310" fill="none" stroke="#4486d6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 
-  <!-- Compact labels make the trace features and replay controls explicit. -->
+  <!-- Labels describe the visible trace features, prompt blocks and outcomes. -->
   <text class="small" x="157" y="416" text-anchor="middle">Recorded workload</text>
-  <rect class="prefix" x="391" y="399" width="17" height="18" rx="4"/>
-  <text class="detail" x="419" y="413">Shared prefix</text>
-  <rect class="new" x="550" y="399" width="17" height="18" rx="4"/>
-  <text class="detail" x="578" y="413">New input</text>
+  <text class="small" x="531" y="416" text-anchor="middle">Replayed prompts</text>
   <text class="small" x="900" y="416" text-anchor="middle">Measured outcomes</text>
 
   <rect x="30" y="439" width="283" height="148" rx="15" fill="#f8fbff" stroke="#dbe5ee" stroke-width="1.5"/>
@@ -119,10 +116,11 @@
   <text class="feature" x="92" y="565">Recorded pauses</text>
 
   <rect x="373" y="439" width="340" height="148" rx="15" fill="#f8fbff" stroke="#dbe5ee" stroke-width="1.5"/>
-  <!-- Replay controls are text annotations, not extra symbols in the flow. -->
-  <text class="feature" x="393" y="475">Preserve spawn / join</text>
-  <text class="detail" x="393" y="520" style="fill:#203952">Response → delay → next turn</text>
-  <text class="feature" x="393" y="565">C = live sessions</text>
+  <!-- Only symbols that appear in the replay flow belong in its legend. -->
+  <rect class="prefix" x="393" y="475" width="17" height="18" rx="4"/>
+  <text class="feature" x="421" y="490">Shared prefix</text>
+  <rect class="new" x="393" y="533" width="17" height="18" rx="4"/>
+  <text class="feature" x="421" y="548">New input</text>
 
   <rect x="788" y="439" width="227" height="148" rx="15" fill="#f5fbf8" stroke="#d9e9e2" stroke-width="1.5"/>
   <g transform="translate(807 458)" fill="none" stroke="#078568" stroke-width="2" stroke-linejoin="round">

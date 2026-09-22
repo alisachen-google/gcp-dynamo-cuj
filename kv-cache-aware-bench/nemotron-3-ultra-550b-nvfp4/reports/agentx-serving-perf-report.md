@@ -132,11 +132,11 @@ Three properties make those sequences relevant to KV-aware routing:
 
 These properties motivate **trace replay as part of the benchmark**. We use AIPerf to reconstruct requests from the Weka corpus's block identifiers and recorded lengths, retaining shared-prefix structure and parent/subagent dependencies. The [Weka loader documentation](https://github.com/ai-dynamo/aiperf/blob/main/docs/tutorials/weka-trace.md) describes how traces become a dependency graph.
 
-![Weka 256K coding sessions preserve growing prefixes, subagents and pauses; AIPerf reconstructs prompts and replays dependencies and response-to-next-turn timing against Dynamo and SGLang](agentx-serving-perf-report-agentx-dataset-outline.png)
+![Weka 256K session trees, growing AIPerf prompts, pauses between turns, and request/response traffic to Dynamo and SGLang](agentx-serving-perf-report-agentx-dataset-outline.png)
 
 [SVG](agentx-serving-perf-report-agentx-dataset-outline.svg) · [PDF](agentx-serving-perf-report-agentx-dataset-outline.pdf)
 
-*Blue blocks show shared history; gold shows new input. AIPerf preserves spawn/join dependencies and schedules each stream's next turn after its response and recorded delay. C counts live root sessions with their subagents. Cache reuse is measured during serving. Section 1 specifies the timing controls, warmup and cache busting. [Editable SVG](agentx-serving-perf-report-agentx-dataset-outline.svg).*
+*Blue blocks show shared history; gold shows new input. The clocks mark pauses between turns. Arrows show requests to Dynamo + SGLang and responses back to AIPerf. [Editable SVG](agentx-serving-perf-report-agentx-dataset-outline.svg).*
 
 Our **AgentX replay is closed-loop**: response completion and the recorded end-to-start delay control subsequent turns, subject to the scenario's whole-system idle-gap cap. Concurrency **C** counts live session trees, so active requests vary with think time and fan-out. Replay reconstructs the recorded workload; it does not execute the original coding tools or grade task completion. **Cache-hit rate is a measured outcome of replay, placement and residency.** The [AgentX scenario documentation](https://github.com/ai-dynamo/aiperf/blob/main/docs/tutorials/agentx-mvp.md) defines the replay framework; section 1 records our specific controls.
 
