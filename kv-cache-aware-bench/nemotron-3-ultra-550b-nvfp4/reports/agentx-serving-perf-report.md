@@ -303,7 +303,7 @@ The default-KV/RR throughput ratio under the combined SLO is **1.75×**, compare
 
 **C160 parameter sweep:** load scale 3 with default overlap credit 1.0 has the highest measured agg throughput among the sampled configurations satisfying both SLOs.
 
-![New agg C160 flag sweep: measured throughput, TTFT and E2E interactivity](agentx-serving-perf-report-agg-flags-c160.png)
+![Agg C160 load-scale, overlap-credit and decay comparisons: throughput, TTFT and E2E interactivity](agentx-serving-perf-report-agg-flags-c160.png)
 
 [SVG](agentx-serving-perf-report-agg-flags-c160.svg) · [PDF](agentx-serving-perf-report-agg-flags-c160.pdf)
 
@@ -325,7 +325,7 @@ Scale 2/credit 0.8 satisfies TTFT but fails I90 at **19.6589**. Decay 0.5 has **
 
 **C192 parameter sweep:** the retained sweep evaluates a higher session concurrency. No sampled C192 configuration satisfies both SLOs.
 
-![Retained agg C192 flag sweep, with TTFT and E2E thresholds](agentx-serving-perf-report-agg-flags.png)
+![Agg C192 load-scale, overlap-credit and decay comparisons, with TTFT and E2E thresholds](agentx-serving-perf-report-agg-flags.png)
 
 [SVG](agentx-serving-perf-report-agg-flags.svg) · [PDF](agentx-serving-perf-report-agg-flags.pdf)
 

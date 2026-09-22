@@ -817,7 +817,7 @@ def plots(points):
             "agg",
             192,
             "agg-flags",
-            [(p, "agg-20260916") for p in ["kv", "kvs2c08", "kvs3c08", "kvt05"]]
+            [(p, "agg-20260916") for p in ["kv", "kvs2c08", "kvs3c08"]]
             + [
                 (p, "agg-np2-20260919")
                 for p in ["kv", "kvs3c08", "kvd05", "kvd10", "kvs3c08d05"]
@@ -829,7 +829,7 @@ def plots(points):
             "agg-flags-c160",
             [
                 (p, "agg-slo10-20260920")
-                for p in ["kv", "kvs3c10", "kvs3c08", "kvs2c08", "kvd05", "kvt05"]
+                for p in ["kv", "kvs3c10", "kvs3c08", "kvs2c08", "kvd05"]
             ],
         ),
         (
@@ -842,19 +842,13 @@ def plots(points):
         selected = [
             one(points, arch, pol, concurrency, campaign) for pol, campaign in specs
         ]
-        labels = [
-            (
-                ""
-                if concurrency == 160
-                else "np-2: "
-                if p["campaign"] == "agg-np2-20260919"
-                else "Sep 16: "
-                if arch == "agg"
-                else ""
-            )
-            + LABELS[p["policy"]].replace("KV ", "")
-            for p in selected
-        ]
+        labels, seen_policies = [], set()
+        for point in selected:
+            label = LABELS[point["policy"]].replace("KV ", "")
+            if point["policy"] in seen_policies:
+                label += " (repeat)"
+            labels.append(label)
+            seen_policies.add(point["policy"])
         fig, axes = plt.subplots(1, 3, figsize=(16, 8.2 if arch == "agg" else 6.0))
         for ax, key, title, threshold in [
             (axes[0], "total_tok_s_gpu", "Total input + output tok/s/GPU", None),
@@ -868,11 +862,6 @@ def plots(points):
                 color=[COLORS[p["policy"]] for p in selected],
                 height=0.62,
             )
-            for bar, point in zip(bars, selected):
-                if arch == "agg" and point["campaign"] == "agg-20260916":
-                    bar.set_hatch("///")
-                    bar.set_edgecolor("#52657a")
-                    bar.set_alpha(0.55)
             ax.set_yticks(np.arange(len(selected)), labels if ax is axes[0] else [])
             ax.invert_yaxis()
             ax.bar_label(
@@ -904,9 +893,9 @@ def plots(points):
             fontsize=15,
         )
         footer = (
-            "Scale 3 / default credit 1.0: +15.0% throughput, −50.4% TTFT versus default KV; both SLOs pass, zero client errors.\nCredit 0.8 also passes both at C160. Their 1.8% throughput gap needs repeats. Other rows have 1–3 client errors; temperature 0.5 fails TTFT."
+            "Selected: scale 3 / default credit 1.0 delivers the highest plotted throughput while meeting both SLOs.\nThe selected run has zero client errors."
             if concurrency == 160
-            else "Hatched: Sep 16. Solid: later np-2 campaign, including both fresh references. Decay loses alone and on top of scale 3 / credit 0.8.\nNo measured agg C192 variant passes both SLOs. Both scale-3 / credit-0.8 trials pass TTFT and miss I90; each C192 run has 2–3 client errors."
+            else "TTFT-only choice: scale 3 / credit 0.8 delivers the highest plotted throughput and meets the TTFT limit.\nThe selected run misses the E2E interactivity target and has client errors."
             if arch == "agg"
             else "Credit 1.5 has the lowest measured C480 TTFT and highest E2E I90. Credit 2.0 gives essentially identical throughput.\nAll five KV rows have zero errors. RR480 is omitted from this scale: 387.54 s TTFT, 0.6525 I90, 39 client errors; see the full table."
         )
@@ -2120,7 +2109,7 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
                 "**C160 parameter sweep:** load scale 3 with default overlap credit 1.0 has the highest measured agg throughput among the sampled configurations satisfying both SLOs.\n\n"
                 + figure(
                     "agg-flags-c160",
-                    "New agg C160 flag sweep: measured throughput, TTFT and E2E interactivity",
+                    "Agg C160 load-scale, overlap-credit and decay comparisons: throughput, TTFT and E2E interactivity",
                 )
             )
             out.append(
@@ -2168,7 +2157,7 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
             out.append(
                 figure(
                     "agg-flags",
-                    "Retained agg C192 flag sweep, with TTFT and E2E thresholds",
+                    "Agg C192 load-scale, overlap-credit and decay comparisons, with TTFT and E2E thresholds",
                 )
             )
             out.append(
