@@ -69,6 +69,7 @@ FIGURES = [
     "agg-flags",
     "agg-flags-c160",
     "disagg-flags",
+    "disagg-flags-c576",
     "operating-points",
     "simulation-agg",
     "simulation-disagg-d88",
@@ -858,12 +859,14 @@ def plots(points):
             "disagg-flags",
             [(p, None) for p in ["kv", "kvc15", "kvc20", "kvs3c08", "kvd05"]],
         ),
+        ("disagg", 576, "disagg-flags-c576", [("kvc15", None)]),
     ]:
         selected = [
             one(points, arch, pol, concurrency, campaign) for pol, campaign in specs
         ]
         labels = [LABELS[point["policy"]].replace("KV ", "") for point in selected]
-        fig, axes = plt.subplots(1, 3, figsize=(16, 8.2))
+        single_setting = len(selected) == 1
+        fig, axes = plt.subplots(1, 3, figsize=(16, 4.8 if single_setting else 8.2))
         for ax, key, title, threshold in [
             (axes[0], "total_tok_s_gpu", "Total input + output tok/s/GPU", None),
             (axes[1], "ttft_p95_s", "TTFT p95 (seconds)", 10),
@@ -878,6 +881,8 @@ def plots(points):
             )
             ax.set_yticks(np.arange(len(selected)), labels if ax is axes[0] else [])
             ax.invert_yaxis()
+            if single_setting:
+                ax.set_ylim(1, -1)
             ax.bar_label(
                 bars,
                 labels=[
@@ -902,8 +907,11 @@ def plots(points):
             ax.spines[["top", "right", "left"]].set_visible(False)
             ax.grid(axis="x", alpha=0.15)
             ax.set_axisbelow(True)
+        plot_subject = (
+            "measured tuned KV" if single_setting else "measured router flags"
+        )
         fig.suptitle(
-            f"{'Agg · 24 GPUs' if arch == 'agg' else 'Disagg · 64 GPUs'} · measured router flags at C{concurrency}",
+            f"{'Agg · 24 GPUs' if arch == 'agg' else 'Disagg · 64 GPUs'} · {plot_subject} at C{concurrency}",
             x=0.04,
             ha="left",
             fontsize=15,
@@ -915,6 +923,11 @@ def plots(points):
             if arch == "agg"
             else "Selected: credit 1.5 has the lowest plotted TTFT and highest E2E interactivity, meeting both SLOs.\nThe selected run has zero client errors."
         )
+        if single_setting:
+            footer = (
+                "Selected: overlap credit 1.5 meets both SLOs with zero client errors.\n"
+                "Single measured configuration at this concurrency."
+            )
         fig.text(0.04, 0.015, footer, fontsize=9, color="#52657a")
         fig.subplots_adjust(
             left=0.27,
@@ -2119,6 +2132,14 @@ There is **no shared throughput knee** for KV and RR. The same-concurrency table
         if arch == "agg":
             out.append(
                 "The default-KV/RR throughput ratio under the combined SLO is **1.75×**, compared with 2.11× in the previous snapshot. This change results from selecting RR64 in place of RR48; the default-KV96 measurement is unchanged."
+            )
+        else:
+            out.append(
+                "**Selected tuned KV at C576:** the retained cohort contains one measured configuration here, overlap credit 1.5. It passes both SLOs with zero client errors. The multi-configuration flag comparison is at C480 in section 3.5.\n\n"
+                + figure(
+                    "disagg-flags-c576",
+                    "Disagg C576 measured KV overlap credit 1.5: throughput, TTFT p95 and E2E interactivity",
+                )
             )
         out.append(f"### {number}.5 What the flag sweep establishes")
         if arch == "agg":

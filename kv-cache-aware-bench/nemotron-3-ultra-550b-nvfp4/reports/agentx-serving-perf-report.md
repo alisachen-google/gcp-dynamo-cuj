@@ -427,6 +427,13 @@ For each policy, select the highest measured total served throughput passing the
 | Default KV | 480 | 12,204 | 7.12 | 33.5225 | 6.92× |
 | KV credit 1.5 | 576 | 14,024 | 8.75 | 30.2479 | 7.95× |
 
+**Selected tuned KV at C576:** the retained cohort contains one measured configuration here, overlap credit 1.5. It passes both SLOs with zero client errors. The multi-configuration flag comparison is at C480 in section 3.5.
+
+![Disagg C576 measured KV overlap credit 1.5: throughput, TTFT p95 and E2E interactivity](agentx-serving-perf-report-disagg-flags-c576.png)
+
+[SVG](agentx-serving-perf-report-disagg-flags-c576.svg) · [PDF](agentx-serving-perf-report-disagg-flags-c576.pdf)
+
+
 ### 3.5 What the flag sweep establishes
 
 ![Disagg C480 load-scale, overlap-credit and decay comparisons: throughput, TTFT and E2E interactivity](agentx-serving-perf-report-disagg-flags.png)
