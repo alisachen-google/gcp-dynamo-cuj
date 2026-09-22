@@ -350,12 +350,16 @@ The C192 reference repeats differ from the original throughput measurements by l
 [SVG](agentx-serving-perf-report-disagg-curves.svg) · [PDF](agentx-serving-perf-report-disagg-curves.pdf)
 
 
+Separate PNGs: [Throughput](agentx-serving-perf-report-disagg-throughput.png) · [TTFT p95](agentx-serving-perf-report-disagg-ttft-p95.png) · [E2E interactivity](agentx-serving-perf-report-disagg-e2e-interactivity.png)
+
 | Policy | Sampled throughput / knee evidence | TTFT <10 s boundary | Additional E2E boundary |
 | --- | --- | --- | --- |
 | Default KV | C672→768 adds only **2.4%** throughput while TTFT rises **59%**. C768 is the sampled peak; C1152 then loses **31.2%** and develops growing queues. Plateau begins around **672–768**. | C480 passes; C672 fails. Refine **480–672**. | I90 also crosses between 480 and 672. |
 | RR | C192 is the sampled peak; C384 loses **20.7%**, has 68 errors and TTFT p95 **289.39 s**. Overload transition lies in **192–384**. | C72 passes by only **0.0885 s**; C96 fails. Refine **72–96**. | C96 passes I90; C144 fails. |
 
 There is **no shared throughput knee** for KV and RR. The same-concurrency table uses **C192, RR's sampled peak**, where tuned credit 1.5 also has a real measurement. No tuned/RR pair exists at the default-KV plateau of 672–768; that comparison cannot be filled by extrapolation.
+
+○ marks each policy's sampled throughput peak. ★ marks the point with the highest throughput that passes the queue check and TTFT criterion in the middle panel, or both SLO criteria in the E2E panel. Lines connect measured points in concurrency order; shaded bands bracket sampled transitions. These SLO brackets need matched repeats before claiming an exact crossing.
 
 ### 3.2 All collected data points, including tuned KV
 

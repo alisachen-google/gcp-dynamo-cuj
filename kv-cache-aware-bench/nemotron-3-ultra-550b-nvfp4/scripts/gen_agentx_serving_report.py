@@ -576,6 +576,9 @@ def plots(points):
         ("agg", (0,)),
         ("agg", (1,)),
         ("agg", (2,)),
+        ("disagg", (0,)),
+        ("disagg", (1,)),
+        ("disagg", (2,)),
     ]:
         standalone = len(columns) == 1
         fig, panel_axes = plt.subplots(
@@ -688,21 +691,13 @@ def plots(points):
                 ax.axvspan(192, 384, color=COLORS["rr"], alpha=0.06)
                 if arch == "disagg":
                     ax.axvspan(672, 768, color=COLORS["kv"], alpha=0.10)
-                    ax.annotate(
-                        "KV 672 → 768:\n+2.4% throughput, +59% TTFT",
-                        xy=(768, 15543),
-                        xytext=(0.22, 0.57),
-                        textcoords="axes fraction",
+                    ax.text(
+                        0.49,
+                        0.87,
+                        "Sampled peaks:\nKV C768 · RR C192",
+                        transform=ax.transAxes,
                         fontsize=8,
-                        arrowprops={"arrowstyle": "->"},
-                    )
-                    ax.annotate(
-                        "RR peak: C192\nC384: −20.7%; TTFT 289 s",
-                        xy=(192, 4419),
-                        xytext=(0.48, 0.23),
-                        textcoords="axes fraction",
-                        fontsize=8,
-                        arrowprops={"arrowstyle": "->"},
+                        va="top",
                     )
                 else:
                     ax.text(
@@ -758,37 +753,60 @@ def plots(points):
                 )
         else:
             boundary = one(points, "disagg", "kv", 480)
-            axes[1].axvspan(480, 672, alpha=0.07, color=COLORS["kv"])
-            axes[1].annotate(
-                "Default KV: C480 passes both SLOs\nC672 fails; boundary lies in 480–672",
-                xy=(480, boundary["ttft_p95_s"]),
-                xytext=(0.04, 0.20),
-                textcoords="axes fraction",
-                fontsize=8,
-                arrowprops={"arrowstyle": "->"},
-            )
+            if 1 in axes:
+                axes[1].axvspan(480, 672, alpha=0.08, color=COLORS["kv"])
+                axes[1].axvspan(72, 96, alpha=0.06, color=COLORS["rr"])
+                axes[1].annotate(
+                    "TTFT boundary: KV C480–672\nRR C72–96",
+                    xy=(480, boundary["ttft_p95_s"]),
+                    xytext=(0.08, 0.22),
+                    textcoords="axes fraction",
+                    fontsize=8,
+                    arrowprops={"arrowstyle": "->"},
+                )
+            if 2 in axes:
+                axes[2].text(
+                    0.06,
+                    0.27,
+                    "Both SLOs: KV C480, RR C72",
+                    transform=axes[2].transAxes,
+                    fontsize=8,
+                )
         if standalone:
             column = columns[0]
             tag, marker_note = [
-                ("agg-throughput", "○ Sampled throughput peak per policy."),
+                ("throughput", "○ Sampled throughput peak per policy."),
                 (
-                    "agg-ttft-p95",
+                    "ttft-p95",
                     "★ Highest throughput passing the queue check and TTFT criterion.",
                 ),
                 (
-                    "agg-e2e-interactivity",
+                    "e2e-interactivity",
                     "★ Highest throughput passing the queue check and the TTFT + E2E criteria.",
                 ),
             ][column]
-            fig.suptitle("Aggregated serving · 24 GPUs", x=0.12, ha="left", fontsize=16)
+            fig.suptitle(
+                "Aggregated serving · 24 GPUs"
+                if arch == "agg"
+                else "Disaggregated serving · 64 GPUs",
+                x=0.12,
+                ha="left",
+                fontsize=16,
+            )
             footer = (
                 marker_note
-                + "\n◆ Measurements added after the initial sweep. Lines connect measured points."
+                + "\n"
+                + (
+                    "◆ Measurements added after the initial sweep. "
+                    if arch == "agg"
+                    else ""
+                )
+                + "Lines connect measured points."
                 + ("\nShading brackets sampled transitions." if column < 2 else "")
             )
             fig.text(0.12, 0.035, footer, fontsize=9, color="#52657a")
             fig.subplots_adjust(left=0.12, right=0.97, top=0.86, bottom=0.25)
-            save(fig, tag, extensions=("png",))
+            save(fig, f"{arch}-{tag}", extensions=("png",))
             continue
         fig.suptitle(
             f"{'Agg · 24 GPUs' if arch == 'agg' else 'Disagg · 64 GPUs'} · default KV versus round-robin",
@@ -801,10 +819,12 @@ def plots(points):
             0.025,
             (
                 "○ Sampled throughput peak per policy. ★ Highest throughput passing the queue check and TTFT criterion (middle); both SLO criteria (right).\n"
-                "◆ Measurements added after the initial sweep. Lines connect measured points; shading brackets sampled transitions."
-                if arch == "agg"
-                else "Rings: sampled throughput peaks. Stars: TTFT-only choice in the TTFT panel; both-SLO choice in the I90 panel. Shading brackets transitions.\n"
-                "Lines are guides. Knees need intermediate points and repeats."
+                + (
+                    "◆ Measurements added after the initial sweep. "
+                    if arch == "agg"
+                    else ""
+                )
+                + "Lines connect measured points; shading brackets sampled transitions."
             ),
             fontsize=9,
             color="#52657a",
@@ -1906,12 +1926,12 @@ Most configuration/concurrency combinations have one trial. The agg C192 referen
                 f"{title}: default KV and RR only, with throughput peaks and latency boundaries",
             )
         )
+        out.append(
+            f"Separate PNGs: [Throughput]({STEM}-{arch}-throughput.png) · "
+            f"[TTFT p95]({STEM}-{arch}-ttft-p95.png) · "
+            f"[E2E interactivity]({STEM}-{arch}-e2e-interactivity.png)"
+        )
         if arch == "agg":
-            out.append(
-                f"Separate PNGs: [Throughput]({STEM}-agg-throughput.png) · "
-                f"[TTFT p95]({STEM}-agg-ttft-p95.png) · "
-                f"[E2E interactivity]({STEM}-agg-e2e-interactivity.png)"
-            )
             out.append("""| Policy | Sampled throughput / knee evidence | TTFT <10 s boundary | Additional E2E boundary |
 | --- | --- | --- | --- |
 | Default KV | Peak at **C192**; C384 loses **14.5%** throughput and TTFT p95 rises **11.66→119.44 s**. Saturation transition lies in 192–384. | **C160 passes at 9.57 s**; both C192 references fail. Refine **160–192**. | C96 passes; **C160 fails at I90 16.1267**. Refine **96–160**. |
@@ -1926,7 +1946,9 @@ The throughput-knee comparison below uses **C192 for both arms**. It does not cl
 | Default KV | C672→768 adds only **2.4%** throughput while TTFT rises **59%**. C768 is the sampled peak; C1152 then loses **31.2%** and develops growing queues. Plateau begins around **672–768**. | C480 passes; C672 fails. Refine **480–672**. | I90 also crosses between 480 and 672. |
 | RR | C192 is the sampled peak; C384 loses **20.7%**, has 68 errors and TTFT p95 **289.39 s**. Overload transition lies in **192–384**. | C72 passes by only **0.0885 s**; C96 fails. Refine **72–96**. | C96 passes I90; C144 fails. |
 
-There is **no shared throughput knee** for KV and RR. The same-concurrency table uses **C192, RR's sampled peak**, where tuned credit 1.5 also has a real measurement. No tuned/RR pair exists at the default-KV plateau of 672–768; that comparison cannot be filled by extrapolation.""")
+There is **no shared throughput knee** for KV and RR. The same-concurrency table uses **C192, RR's sampled peak**, where tuned credit 1.5 also has a real measurement. No tuned/RR pair exists at the default-KV plateau of 672–768; that comparison cannot be filled by extrapolation.
+
+○ marks each policy's sampled throughput peak. ★ marks the point with the highest throughput that passes the queue check and TTFT criterion in the middle panel, or both SLO criteria in the E2E panel. Lines connect measured points in concurrency order; shaded bands bracket sampled transitions. These SLO brackets need matched repeats before claiming an exact crossing.""")
         out.append(
             f"### {number}.2 All collected data points, including tuned KV\n\nEvery completed {arch} run in the scoped inventory is shown, including repeated references. The flags identify the recipe; each linked name opens its hardware artifacts."
         )
