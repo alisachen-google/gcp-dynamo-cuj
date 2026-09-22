@@ -437,11 +437,11 @@ For each policy, select the highest measured total served throughput passing the
 [SVG](agentx-serving-perf-report-disagg-selected-throughput.svg) · [PDF](agentx-serving-perf-report-disagg-selected-throughput.pdf)
 
 
-**Selected tuned KV at C576:** the retained cohort contains one measured configuration here, overlap credit 1.5. It passes both SLOs with zero client errors. The multi-configuration flag comparison is at C480 in section 3.5.
+**Tuned KV at C480 and C576:** both measured runs use overlap credit 1.5 and pass both SLOs with zero client errors. The throughput summary includes both tuned points alongside default KV and RR. The retained cohort contains only this configuration at C576; the multi-configuration flag comparison is at C480 in section 3.5.
 
-![Disagg C576 measured KV overlap credit 1.5: throughput, TTFT p95 and E2E interactivity](agentx-serving-perf-report-disagg-flags-c576.png)
+![Disagg C480 and C576 measured KV overlap credit 1.5: throughput, TTFT p95 and E2E interactivity](agentx-serving-perf-report-disagg-flags-c480-c576.png)
 
-[SVG](agentx-serving-perf-report-disagg-flags-c576.svg) · [PDF](agentx-serving-perf-report-disagg-flags-c576.pdf)
+[SVG](agentx-serving-perf-report-disagg-flags-c480-c576.svg) · [PDF](agentx-serving-perf-report-disagg-flags-c480-c576.pdf)
 
 
 ### 3.5 What the flag sweep establishes
