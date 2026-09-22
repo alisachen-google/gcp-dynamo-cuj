@@ -119,19 +119,10 @@
   <text class="feature" x="92" y="565">Recorded pauses</text>
 
   <rect x="373" y="439" width="340" height="148" rx="15" fill="#f8fbff" stroke="#dbe5ee" stroke-width="1.5"/>
-  <g transform="translate(392 460)" class="icon">
-    <path d="M0 0 L10 8 L0 16 M26 0 L16 8 L26 16 M10 8 H16"/>
-  </g>
-  <text class="feature" x="435" y="475">Preserve spawn / join</text>
-  <g transform="translate(405 512)" class="icon">
-    <path d="M-9 -6 A12 12 0 1 1 -11 5 M-9 -6 V-13 M-9 -6 H-16"/>
-  </g>
-  <text class="detail" x="435" y="520" style="fill:#203952">Response → delay → next turn</text>
-  <g transform="translate(393 552)" class="icon">
-    <circle cx="8" cy="1" r="4"/><path d="M0 17 V12 Q0 7 8 7 Q16 7 16 12 V17"/>
-    <circle cx="23" cy="5" r="3"/><path d="M21 11 Q29 11 29 16 V18"/>
-  </g>
-  <text class="feature" x="435" y="565">C = live sessions</text>
+  <!-- Replay controls are text annotations, not extra symbols in the flow. -->
+  <text class="feature" x="393" y="475">Preserve spawn / join</text>
+  <text class="detail" x="393" y="520" style="fill:#203952">Response → delay → next turn</text>
+  <text class="feature" x="393" y="565">C = live sessions</text>
 
   <rect x="788" y="439" width="227" height="148" rx="15" fill="#f5fbf8" stroke="#d9e9e2" stroke-width="1.5"/>
   <g transform="translate(807 458)" fill="none" stroke="#078568" stroke-width="2" stroke-linejoin="round">
