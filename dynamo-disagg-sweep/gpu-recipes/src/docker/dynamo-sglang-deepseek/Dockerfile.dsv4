@@ -1,0 +1,55 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Worker/frontend image for the DeepSeek-V4-Pro Pareto-sweep recipe
+# (inference/a4xmax/disaggregated-serving/dynamo/pareto-sweep).
+#
+# The InferenceX dsv4 recipe installs Dynamo from a git commit rather than a
+# released wheel (`dynamo.install: true`). This Dockerfile bakes that build into
+# the SGLang nightly so pods start without compiling anything. Build on an arm64
+# host (or with QEMU emulation); the Rust build takes a while.
+#
+#   docker buildx build --platform linux/arm64 -f Dockerfile.dsv4 \
+#     -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/dynamo-sglang-dsv4:81d0555 --push .
+#
+# Note: the recipe originally pinned lmsysorg/sglang:nightly-dev-20260527-14f81a67,
+# which was removed from Docker Hub. The next surviving nightly is used instead.
+ARG BASE_IMAGE=lmsysorg/sglang:nightly-dev-20260601-373cadc9
+FROM ${BASE_IMAGE}
+
+ARG DYNAMO_REPO=https://github.com/ai-dynamo/dynamo.git
+ARG DYNAMO_COMMIT=81d0555ee23519cea80a42b4fe824e30368b7300
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+# The nightly bundles a Rust toolchain under /root/.cargo; use it instead of rustup.
+ENV PATH=/root/.cargo/bin:${PATH}
+
+RUN apt-get update && apt-get install -y --no-install-recommends git build-essential pkg-config \
+ && rm -rf /var/lib/apt/lists/*
+
+# NIXL ships its shared libraries inside the Python package; expose them where
+# the Dynamo bindings look for them during the build and at runtime.
+RUN mkdir -p /opt/nvidia/nvda_nixl/lib/aarch64-linux-gnu \
+ && ln -sf /usr/local/lib/python3.*/dist-packages/.nixl_cu13.mesonpy.libs/*.so* \
+      /opt/nvidia/nvda_nixl/lib/aarch64-linux-gnu/ 2>/dev/null || true
+
+RUN git clone ${DYNAMO_REPO} /opt/dynamo-src \
+ && cd /opt/dynamo-src && git checkout ${DYNAMO_COMMIT} \
+ && pip install --no-cache-dir maturin \
+ && cd lib/bindings/python && maturin build --release --out /wheels \
+ && cd /opt/dynamo-src && pip wheel --no-deps --no-build-isolation -w /wheels . \
+ && pip install --no-cache-dir /wheels/*.whl hf_transfer \
+ && rm -rf /opt/dynamo-src /root/.cargo/registry
+
+# Sanity check: the Dynamo SGLang worker and frontend modules import.
+RUN python3 -c "import dynamo.sglang, dynamo.frontend; print('dynamo', '${DYNAMO_COMMIT}'[:7], 'ok')"

@@ -170,6 +170,7 @@ common/         shared tooling
   stage-model-to-gcs.sh, slim-results.py, run-rdma-test.sh
 
 dynamo-disagg-sweep/reports/        benchmark reports (DSR1, DSv4) + GKE RDMA issue writeup
+dynamo-disagg-sweep/gpu-recipes/    gpu-recipes export: DSv4 + DSR1 Pareto-sweep recipes/setup guide for A4X-MAX GKE (values + serving configs)
 ```
 
 Regenerate reports after new results:
