@@ -1,5 +1,7 @@
 # Simulation Guide — Every Process, Command, and Result (Showcase Edition)
 
+> **New to the simulator?** Start with [Simulating Serving Curves with AIConfigurator + DynoSim](AIC_DYNOSIM_SIMULATION_GUIDE.md), a step-by-step guide using Nemotron-3-Ultra. This page is the historical Kimi-K2.5 record.
+
 The complete simulation record of the KV-cache-aware routing study: what we ran,
 the exact commands, what came out, and how each result fed the next stage.
 Companion docs: `SWEEP_METHODOLOGY.md` (decision rules), `sglang/SELECTION.md`

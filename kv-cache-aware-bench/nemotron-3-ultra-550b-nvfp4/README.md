@@ -4,6 +4,8 @@ Second model of the KV-cache-aware routing study: agg + disagg KV-vs-RR on
 GB300 NVL72, sglang backend, replaying `semianalysisai/cc-traces-weka-062126-256k`
 (same dataset as the Kimi-K2.5 study for cross-model comparability).
 
+How to run the simulator (AIC + native DynoSim) for this model, which curves it produces and how sim-vs-hardware gaps were found and closed: [Simulation guide](../AIC_DYNOSIM_SIMULATION_GUIDE.md).
+
 Latest measured comparison (2026-09-20): [KV-Aware vs. Round-Robin Routing: NVIDIA Dynamo on Google Cloud](reports/agentx-serving-perf-report.md) · [standalone HTML](reports/agentx-serving-perf-report.html). This Google Cloud customer use journey follows coding-agent requests through Dynamo and measures how routing affects throughput, TTFT, and end-to-end responsiveness. Includes **37 hardware runs**, default-KV/RR curves with knee annotations, full tables including tuned KV, and comparisons at equal concurrency and under **TTFT p95 <10 s**. The E2E requirement is shown separately. At the best sampled points meeting both limits, default KV delivers **2.11× agg** and **6.92× disagg** total served tokens/s/GPU relative to RR, at different selected concurrency values; the tables also retain fixed-concurrency comparisons.
 
 Current AgentX simulation performance (2026-09-17) uses the **new AIPerf replay** for agg and disagg; v3/v5 results are historical. Start with the [current result index](reports/agentx-aiperf-results.md): [64-GPU KV/RR topology curves](reports/agentx-64gpu-topology.md), [replay audit and simulation-vs-hardware gaps](reports/agentx-faithful-replay.md), and [reproduction commands](reports/agentx-replay-howto.md).
