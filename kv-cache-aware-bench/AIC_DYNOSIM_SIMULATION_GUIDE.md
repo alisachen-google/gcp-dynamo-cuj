@@ -1,68 +1,169 @@
 # Simulating Serving Curves with AIConfigurator + DynoSim
 
-A practical guide to sweeping simulated operating points for **normal** (fixed input/output length) and **agentic** (multi-turn coding-agent) workloads before spending GPU hours, with **Nemotron-3-Ultra 550B NVFP4 (N3U) on GB300** as the worked example.
+This guide explains how we simulate LLM serving on GB300 before spending GPU hours, using **Nemotron-3-Ultra 550B NVFP4 (N3U)** as the worked example throughout.
 
-Everything here comes from the study in this directory. The deep-dive records are linked at each step:
+**Bottom line for N3U:** the simulator reproduced every measured throughput point within 15% on aggregated serving (24 GPUs) and within 9% on disaggregated D88 (64 GPUs). That makes it good enough to rank policies, flags and topologies and to find the throughput knee. TTFT near saturation can still be off by up to 39% in either direction, so SLO boundary points must be confirmed on hardware.
 
-* [`SIMULATION_GUIDE.md`](SIMULATION_GUIDE.md): the original Kimi-K2.5 pipeline (AIC solves and the historical custom simulator).
-* [`nemotron-3-ultra-550b-nvfp4/`](nemotron-3-ultra-550b-nvfp4/README.md): the N3U study (design, simulation, hardware runs, calibration).
-* [`SWEEP_METHODOLOGY.md`](SWEEP_METHODOLOGY.md): how knees and operating points are chosen.
+Everything here comes from the study in this directory:
+
+* [`nemotron-3-ultra-550b-nvfp4/`](nemotron-3-ultra-550b-nvfp4/README.md): the N3U study (design, hardware runs, simulation, calibration)
+* [`agentx-serving-perf-report.md`](nemotron-3-ultra-550b-nvfp4/reports/agentx-serving-perf-report.md): measured KV vs RR, plus simulation against hardware
+* [`original-calibration-report.md`](nemotron-3-ultra-550b-nvfp4/reports/agentx-agg-kv-rr-data/native-v10/original-calibration-report.md): every calibration attempt, with build hashes
+* [`SIMULATION_GUIDE.md`](SIMULATION_GUIDE.md): the earlier Kimi-K2.5 pipeline
 
 ## Contents
 
-1. [The tools and what each one simulates](#1-the-tools-and-what-each-one-simulates)
-2. [What curves and data the simulator produces](#2-what-curves-and-data-the-simulator-produces)
-3. [Worked example: Nemotron-3-Ultra](#3-worked-example-nemotron-3-ultra)
-4. [Appendix A: detecting drift and gaps between simulation and hardware](#appendix-a-detecting-drift-and-gaps-between-simulation-and-hardware)
-5. [Appendix B: further reading](#appendix-b-further-reading)
+1. [Why we need a simulator](#1-why-we-need-a-simulator)
+2. [What each part of DynoSim does](#2-what-each-part-of-dynosim-does)
+3. [How to use the simulator (N3U walk-through)](#3-how-to-use-the-simulator-n3u-walk-through)
+4. [What the simulator delivers](#4-what-the-simulator-delivers)
+5. [How to calibrate the simulation](#5-how-to-calibrate-the-simulation)
+6. [References](#6-references)
 
 ---
 
-## 1. The tools and what each one simulates
+## 1. Why we need a simulator
 
-Four tools are involved. Each one answers a different question.
+### 1.1 Hardware points are expensive
 
-| Tool | What it is | Question it answers | What it does **not** do |
-| :--- | :--- | :--- | :--- |
-| **[AIConfigurator (AIC)](https://github.com/ai-dynamo/aiconfigurator)** | NVIDIA's analytical performance model. It uses kernel-level databases measured per GPU, backend and version (for example `gb300 / sglang / 0.5.14`). | *For a fixed ISL/OSL and GPU budget, which parallelism (TP/EP), agg vs disagg split and batch size gives the best throughput at each interactivity level?* It also gives per-forward-pass timing for prefill and decode. | It has no routing, no prefix cache and no multi-turn sessions. Every request is identical (one ISL, one OSL, optional fixed prefix). |
-| **[Dynamo](https://github.com/ai-dynamo/dynamo) frontend + KV router** | The real Dynamo frontend and router (`round-robin` or `kv`), unmodified, running on a CPU host. | *Which worker gets each request?* The router uses the same cost function, overlap scores and flags as production. | It does not execute a model. |
-| **DynoSim (Dynamo Mocker)** | Dynamo's [`mocker`](https://github.com/ai-dynamo/dynamo/tree/v1.4.2/lib/mocker) engine. It is a simulated worker with a real SGLang-style scheduler ([`scheduler/sglang`](https://github.com/ai-dynamo/dynamo/tree/v1.4.2/lib/mocker/src/scheduler/sglang)): waiting and running queues, chunked prefill, batch limits, a prefix cache and KV events. With the `aic-forward-pass` feature, each simulated forward pass asks AIC for its duration. | *Given the router's placements, how do queueing, batching, cache hits and prefill/decode interference turn into TTFT, ITL and throughput?* | It generates synthetic tokens, not real text. Its timing is only as good as AIC plus the calibration in [Appendix A](#appendix-a-detecting-drift-and-gaps-between-simulation-and-hardware). |
-| **[AIPerf](https://github.com/ai-dynamo/aiperf)** | NVIDIA's benchmark client. It is the same binary and the same flags we use against real GB300 deployments. | *What does the workload look like?* It covers fixed-length synthetic traffic or the real [AgentX](https://github.com/ai-dynamo/aiperf/blob/v0.12.0/docs/tutorials/agentx-mvp.md) coding-agent replay: session trees, branches and joins, think time, warmup and recycling. | It does not model the server; it measures whatever endpoint it is pointed at. |
+One agentic hardware point is a fresh deployment, a trajectory warmup, and a one-hour profile. The warmup alone grows with concurrency. On D88 (64 GB300 GPUs) the measured warmups were 815 s at RR C72 and 6,389 s at KV C1152 ([D88 audit table](nemotron-3-ultra-550b-nvfp4/reports/agentx-serving-perf-report.md#42-d88-native-forecasts-alongside-the-measured-kvrr-curves)).
 
-How they fit together:
+| Point | GPUs | Warmup + 3,600 s profile | GPU-hours (lower bound, model load not counted) |
+| :--- | ---: | ---: | ---: |
+| D88 RR C72 | 64 | 815 + 3,600 s = 1.2 h | about 78 |
+| D88 KV C480 | 64 | 3,334 + 3,600 s = 1.9 h | about 123 |
+| D88 KV C1152 | 64 | 6,389 + 3,600 s = 2.8 h | about 178 |
+
+Loading the 550B checkpoint from GCS FUSE adds more on every fresh install, and each KV vs RR pair needs two installs so that both arms start with a cold cache ([recipe section 4.3](https://github.com/AI-Hypercomputer/gpu-recipes/blob/main/inference/a4xmax/disaggregated-serving/dynamo/nemotron3-ultra-kv-vs-rr/README.md#deploy-rr)). The study's own proposed next agg flag batch is 8 profiles on 24 GPUs, 192 GPU-hours before any warmup or drain ([next-sweep plan](nemotron-3-ultra-550b-nvfp4/reports/agentx-agg-kv-rr-report-next-sweep.json)).
+
+### 1.2 The question space is large
+
+A routing study crosses several axes, and every cell is one of the points above:
+
+* **Router policy:** round-robin vs KV-aware.
+* **Router flags:** overlap credit, prefill load scale, temperature, credit decay. The [C480 disagg flag plan](nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/README.md) alone lists 11 configurations plus 2 repeats.
+* **Topology:** aggregated vs disaggregated, and the P:D split at a fixed GPU count (4:12, 8:8, 12:4 on 64 GPUs).
+* **Concurrency ladder:** 4 to 8 points per curve to find the knee and the SLO boundary.
+
+### 1.3 Agentic load has no closed-form answer
+
+AgentX is closed loop: each agent session waits for its previous response, plus recorded think time, before it sends its next turn. Latency therefore changes how much work arrives. Cache hits depend on which worker the router picked for earlier turns, and queueing depends on both. A formula, or AIC on its own, cannot capture that feedback. A replay through the real router can.
+
+### 1.4 What the simulator buys
 
 ```mermaid
 flowchart LR
-  subgraph Client["Workload (identical to hardware runs)"]
-    A["AIPerf 0.12.0<br/>synthetic ISL/OSL or<br/>AgentX replay"]
-  end
-  subgraph Server["Simulated serving stack (CPU only)"]
-    F["Dynamo 1.4.2 frontend<br/>+ KV / RR router<br/>(real code)"]
-    W1["DynoSim worker 1<br/>SGLang scheduler<br/>+ prefix cache"]
-    W2["DynoSim worker N"]
-  end
-  T[("AIConfigurator 0.11.0<br/>forward-pass timing<br/>gb300 / sglang DB")]
-  A -->|"HTTP /v1/chat/completions"| F
-  F --> W1
-  F --> W2
-  W1 -.->|"time this batch?"| T
-  W2 -.-> T
-  W1 -.->|"KV events"| F
+  Q["Question space<br/>policy x flags x topology x concurrency"] --> S["Simulate every cell<br/>on CPU, no GPUs"]
+  S --> R["Rank and find knees<br/>+ SLO boundary cells"]
+  R --> H["Run only the selected cells<br/>on GB300"]
+  H --> C["Compare with simulation<br/>(section 5)"]
+  C -->|"gap found"| S
 ```
 
-The key idea: **only the GPU is simulated**. The client, the workload, the router and the scheduler logic are the same code that runs in production, so routing effects (cache hits, load balance, queueing) come out of the simulation instead of being assumed.
+* **Screening:** rank policies, flags and splits before any GPU time.
+* **Point selection:** choose which concurrencies are worth a hardware run (the knee and the SLO boundary).
+* **Explanation:** every simulated run records per-engine metrics and native forward-pass events (batch sizes, computed prefill tokens), which help explain a gap that hardware summaries only show in aggregate.
+
+---
+
+## 2. What each part of DynoSim does
+
+### 2.1 The stack
+
+Only the GPU is simulated. The client, the workload, the router and the scheduler logic are the same code that runs in production.
+
+```mermaid
+flowchart LR
+  subgraph CLIENT["Client (real)"]
+    A["AIPerf 0.12.0<br/>AgentX replay<br/>sessions, think time, warmup"]
+  end
+  subgraph FRONT["Dynamo 1.4.2 frontend (real)"]
+    F["HTTP /v1/chat/completions<br/>tokenizer"]
+    RT["KV or round-robin router<br/>overlap score, load cost"]
+    F --> RT
+  end
+  subgraph MOCK["DynoSim worker = Dynamo Mocker (simulated GPU)"]
+    direction TB
+    SCH["SGLang scheduler<br/>waiting/running queues,<br/>chunked prefill, batch limits"]
+    PC["Prefix cache<br/>KV pages + Mamba-state<br/>checkpoints"]
+    TIME["Forward-pass timer<br/>asks AIC per batch"]
+    EV["KV event publisher"]
+    SCH --> PC
+    SCH --> TIME
+    PC --> EV
+  end
+  AIC[("AIConfigurator 0.11.0<br/>gb300 / sglang 0.5.14<br/>kernel tables")]
+  A -->|"requests"| F
+  RT -->|"pick worker"| SCH
+  TIME -.->|"batch shape"| AIC
+  AIC -.->|"duration"| TIME
+  EV -.->|"which prefixes are cached"| RT
+  SCH -->|"synthetic tokens<br/>streamed back"| A
+```
+
+### 2.2 The parts and what each one does
+
+| Part | Code | What it does in the simulation | What it does not do |
+| :--- | :--- | :--- | :--- |
+| AIPerf client | [AIPerf 0.12.0](https://github.com/ai-dynamo/aiperf), [AgentX scenario](https://github.com/ai-dynamo/aiperf/blob/v0.12.0/docs/tutorials/agentx-mvp.md) | Replays the 393-root [Weka 256K trace](https://huggingface.co/datasets/semianalysisai/cc-traces-weka-062126-256k) with the same flags as hardware: session trees, branches and joins, think time, trajectory warmup, recycling | Does not model the server |
+| Frontend + router | [Dynamo 1.4.2](https://github.com/ai-dynamo/dynamo/tree/v1.4.2), [routing concepts](https://docs.nvidia.com/dynamo/knowledge-base/modular-components/router/routing-concepts) | The production router, unmodified. KV mode scores each worker by cached-prefix overlap against its prefill and decode load, using the same `--router-*` flags as the hardware recipe. | Runs no model |
+| Mocker scheduler | [`lib/mocker/src/scheduler/sglang`](https://github.com/ai-dynamo/dynamo/tree/v1.4.2/lib/mocker/src/scheduler/sglang) | An SGLang-style scheduler: waiting and running queues, chunked prefill (16,384-token chunks), `max_num_seqs` (16 for agg), and the admission rules that create queueing | Executes no kernels |
+| Prefix cache | Mocker cache + our [hybrid-cache patches](nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/patches/) | 64-token KV pages sized to the measured 28,396,608 tokens per worker. For N3U it also models Mamba-state checkpoints: a prefix is reusable only where a checkpoint exists (769 slots, 256-token interval). | The Mamba settings are assumptions, not measured values |
+| Forward-pass timer | `aic-forward-pass` build feature + our [prefill](nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/patches/dynamo-1.4.2-aic-prefill-calibration.patch) and [decode](nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/patches/dynamo-1.4.2-aic-decode-calibration.patch) calibration patches | For each scheduled batch, asks AIC how long the prefill or decode step takes, then applies the shared calibration terms (section 5.4) | Timing is only as good as AIC plus calibration |
+| KV event publisher | Mocker, ZMQ event plane | Tells the router which prefixes each worker holds, exactly as a real SGLang worker does, so KV routing sees realistic cache state | — |
+| P to D handoff (disagg only) | [`faithful-disaggregation`](nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/patches/dynamo-1.4.2-faithful-disaggregation.patch), [`d88-handoff-queue`](nemotron-3-ultra-550b-nvfp4/sim-results/agentx_d88_matched_20260920/patches/) | Moves a finished prefill to a decode worker through a bounded queue (`handoff_max_sessions=4096`), with 64 GB/s per rank | Shared-link transfer contention is not modeled |
+| AIConfigurator | [aiconfigurator](https://github.com/ai-dynamo/aiconfigurator) 0.11.0, `--database-mode SILICON` | Analytical model built from measured kernel tables (`gb300 / sglang / 0.5.14`). Used two ways: standalone for normal-workload Pareto solves, and as the Mocker's per-batch timer. | No routing, no prefix cache, no multi-turn sessions when standalone |
+
+### 2.3 One request through the simulator
+
+```mermaid
+sequenceDiagram
+  participant A as AIPerf (agent session)
+  participant R as Dynamo router
+  participant W as Mocker worker
+  participant T as AIC timer
+  A->>R: turn N (long prompt, shared prefix)
+  R->>R: score workers by cached overlap and load
+  R->>W: route to the best worker
+  W->>W: queue, then admit into a prefill chunk
+  W->>W: look up the cached prefix and Mamba checkpoint
+  W->>T: how long is this prefill batch?
+  T-->>W: duration (AIC x calibration)
+  W-->>A: first token after the simulated prefill
+  loop decode steps
+    W->>T: how long is this decode batch?
+    T-->>W: duration
+    W-->>A: next token
+  end
+  W->>R: KV events (new cached prefix)
+  A->>A: think time, then turn N+1
+```
 
 > [!NOTE]
-> **Two simulators carry the "dynosim" name in this directory.** The `scripts/dynosim_*.py` files are an earlier custom Python serving model written for this study, not NVIDIA's DynoSim. Their results are historical. The [serving-model audit](nemotron-3-ultra-550b-nvfp4/reports/agentx-serving-model-audit.md) explains the difference. **All current N3U simulation results use the native Dynamo Mocker path above** (labelled "Native DynoSim V10/V11").
+> **Two simulators carry the "dynosim" name in this study.** [`scripts/dynosim_*.py`](scripts/) (for example [`dynosim_agentx_v5.py`](scripts/dynosim_agentx_v5.py)) is an earlier custom Python model. Its results, including the [64-GPU topology sweep](nemotron-3-ultra-550b-nvfp4/reports/agentx-64gpu-topology.md), are historical. All current results use the native Mocker path above. The [serving-model audit](nemotron-3-ultra-550b-nvfp4/reports/agentx-serving-model-audit.md) explains the difference.
 
-### Where AIC is used on its own
+---
 
-AIC also runs standalone, with no Mocker and no client. That is the fastest way to get **normal-workload curves** and to choose the engine shape (TP/EP and agg vs disagg) before any routing study. A solve takes minutes:
+## 3. How to use the simulator (N3U walk-through)
+
+### 3.1 Prepare the environment
+
+| Item | Version | Why |
+| :--- | :--- | :--- |
+| CPU host | No GPU needed | Runs everything. The simulator runs in real time, so a point takes as long as on hardware. |
+| AIC CLI | `pip install aiconfigurator==0.11.0` | Standalone solves. 0.10.0 does not support NemotronH ([design notes](nemotron-3-ultra-550b-nvfp4/DESIGN.md)). |
+| Simulator environment | `ai-dynamo==1.4.2`, the patched `ai_dynamo_runtime` wheel, `aiconfigurator-core==0.11.0` | Frontend, router, Mocker, and the AIC library the Mocker calls |
+| Client environment | `aiperf==0.12.0`, kept separate from the simulator | Same client as hardware ([reproduction notes](nemotron-3-ultra-550b-nvfp4/reports/agentx-agg-kv-rr-data/native-v10/original-calibration-report.md#reproducing-the-native-builds-and-live-comparison)) |
+| NATS and etcd | Running locally before launch | Request plane and discovery. The launch scripts expect them already up (`--nats`, `--etcd`). |
+| Dataset and tokenizer | Weka 256K trace, N3U tokenizer | Staging commands: [replay how-to](nemotron-3-ultra-550b-nvfp4/reports/agentx-replay-howto.md) |
+
+### 3.2 Step 1: solve the normal workload with AIC
+
+Use AIC first to choose the engine shape. The N3U workload is encoded from the trace means (ISL 96,000, OSL 900), as a warm bracket (`--prefix 92000`, about 96% cached) and a cold one:
 
 ```bash
-pip install aiconfigurator==0.11.0          # 0.10.0 does not support NemotronH
 aiconfigurator cli support --model nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4 \
-  --system gb300 --backend sglang            # stage 0: is this model/system/backend covered?
+  --system gb300 --backend sglang                 # is this model/system/backend covered?
 
 aiconfigurator cli default --model-path <local N3U config dir> --system gb300 \
   --backend sglang --total-gpus 24 --isl 96000 --osl 900 --prefix 92000 \
@@ -71,268 +172,278 @@ aiconfigurator cli default --model-path <local N3U config dir> --system gb300 \
 ```
 
 * `--database-mode SILICON` uses measured kernel tables. Use it for every solve.
-* `--prefix 92000` models the warm case, where about 96% of each prompt is already cached. Drop it (and relax `--ttft`) for the cold case.
-* `--ttft` and `--tpot` are solver targets for ranking, not SLO gates.
+* `--ttft` and `--tpot` rank candidates; they are not SLO gates.
+* Repeat with `--total-gpus 72` and without `--prefix` (relax `--ttft`) for the other brackets.
 
-The full N3U solve set (warm and cold at 24 and 72 GPUs) is in [`sim-results/aic-nvfp4/`](nemotron-3-ultra-550b-nvfp4/sim-results/aic-nvfp4/).
+Results: [`sim-results/aic-nvfp4/`](nemotron-3-ultra-550b-nvfp4/sim-results/aic-nvfp4/), read in [section 4.1](#41-normal-workload-curves-from-aic).
 
----
+### 3.3 Step 2: build the native DynoSim worker
 
-## 2. What curves and data the simulator produces
+Build Dynamo v1.4.2 with the study's patches, applied in this order. [Section 5.4](#54-how-each-gap-was-filled) says what each one fixes.
 
-### Normal workload (fixed ISL/OSL)
+```bash
+git clone https://github.com/ai-dynamo/dynamo.git && cd dynamo && git checkout v1.4.2
+P=<repo>/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/patches
+for p in cpu-build first-visible-token aic-prefill-calibration full-prefix-before-chunk \
+         prefill-priority-hybrid-cache hybrid-checkpoint-publication hybrid-checkpoint-tracking \
+         hybrid-checkpoint-lru prefill-prefix-admission prefill-remaining-budget \
+         aic-decode-calibration; do
+  git apply $P/dynamo-1.4.2-$p.patch
+done
+# Disaggregated (D88) only:
+git apply $P/dynamo-1.4.2-faithful-disaggregation.patch
+git apply <repo>/kv-cache-aware-bench/nemotron-3-ultra-550b-nvfp4/sim-results/agentx_d88_matched_20260920/patches/d88-handoff-queue.patch
 
-| Output | Source | How to read it |
-| :--- | :--- | :--- |
-| **Pareto frontier**: throughput per GPU against throughput per user | AIC `pareto.csv` and `pareto_frontier.png`, separately for agg and disagg | Each point is one engine configuration at one concurrency. Moving right means faster per-user generation (interactivity); moving up means more fleet throughput. AIC's `tokens/s` columns count **output** tokens. |
-| **Best configurations** (top-N) | AIC `best_config_topn.csv` | Parallelism (`tp4pp1dp2etp4ep2`, ...), P:D worker split, batch size, TTFT and TPOT for each candidate. |
-| **Launchable configs** | AIC `top*/k8s_deploy.yaml`, `run_*.sh` | A starting point for a real deployment of the chosen shape. |
-| **Warm vs cold bracket** | Two solves (`--prefix` on and off) | Bounds what prefix reuse is worth before any routing is modeled. |
-
-### Agentic workload (AgentX replay through native DynoSim)
-
-AgentX is **closed loop**: concurrency `C` is the number of live agent sessions, and each session's next turn waits for the previous response plus its recorded think time. Latency therefore changes how much work arrives, so these curves must come from a full replay rather than a formula.
-
-| Curve or metric | Per run (AIPerf export) | Why it matters |
-| :--- | :--- | :--- |
-| **Total tokens/s/GPU against session concurrency** | `total_token_throughput / GPUs` | Fleet capacity, including cached input tokens. The peak locates the throughput knee. |
-| **TTFT p50/p95 against concurrency** | `time_to_first_token` | Where queueing starts. Re-prefill caused by a poor routing choice shows up here first. |
-| **E2E-normalized interactivity (I90)** | Per-request output tokens per second | What each agent session experiences end to end. |
-| **Prefix cache-hit rate** | Worker metrics and forward-pass counters | The mechanism behind the KV-vs-RR gap. |
-| **KV vs RR at equal concurrency, and at a latency SLO** | Pairs of runs that differ only in router mode | The headline comparison: throughput at `TTFT p95 < 10 s` (and `I90 >= 20`) for each policy at its own best concurrency. |
-| **Router-flag sweep** | Same point, different `DYN_ROUTER_*` settings | Screens tuning candidates (for example `--router-prefill-load-scale 3`) before hardware. |
-| **Topology search** | Sweep of P:D splits at a fixed GPU count | Ranks disagg splits, for example 4:12, 8:8 and 12:4 on 64 GPUs. |
-
-```mermaid
-flowchart TB
-  S["Pick model, GPU budget, workload"] --> A1["AIC solve<br/>normal-workload Pareto<br/>chooses TP/EP and agg vs disagg"]
-  A1 --> D1["DynoSim + AIPerf AgentX<br/>concurrency ladder for KV and RR"]
-  D1 --> C1["Curves: throughput, TTFT p95, I90,<br/>cache hit vs concurrency"]
-  C1 --> K["Locate knees and SLO cells"]
-  K --> H["Run only the selected cells<br/>on GB300 hardware"]
-  H --> V["Compare with simulation<br/>(Appendix A)"]
-  V -->|"gap found"| D1
+maturin build --release --features aic-forward-pass \
+  --manifest-path lib/bindings/python/Cargo.toml --out /tmp/path1-wheels
+pip install /tmp/path1-wheels/ai_dynamo_runtime-*.whl ai-dynamo==1.4.2 aiconfigurator-core==0.11.0
 ```
 
+Check the build identity before trusting a result. The frozen V10 agg build has native-core SHA-256 `5e298de4...5bedd0d02`, and every run records its own ([V10 launcher notes](nemotron-3-ultra-550b-nvfp4/scripts/native_v10_agg/README.md), [patch reconstruction](nemotron-3-ultra-550b-nvfp4/reports/agentx-agg-kv-rr-data/native-v10/v10_patch_reconstruction.json)).
+
+### 3.4 Step 3: describe the engine
+
+The worker reads one engine JSON that mirrors the hardware recipe. The N3U agg file preserved with each run, for example [`agg-kv-c192-calibrated-v10/engine.json`](nemotron-3-ultra-550b-nvfp4/reports/agentx-agg-kv-rr-data/native-v10/agg-kv-c192-calibrated-v10/engine.json), sets:
+
+```json
+{
+  "engine_type": "sglang", "worker_type": "aggregated",
+  "num_gpu_blocks": 443697, "block_size": 64,
+  "max_num_seqs": 16, "max_num_batched_tokens": 16384,
+  "enable_prefix_caching": true, "enable_chunked_prefill": true,
+  "speedup_ratio": 1.0, "decode_speedup_ratio": 1.0,
+  "aic_system": "gb300", "aic_backend": "sglang", "aic_backend_version": "0.5.14",
+  "aic_tp_size": 4, "aic_moe_ep_size": 4, "aic_moe_dtype": "nvfp4",
+  "sglang": {"page_size": 64, "chunked_prefill_size": 16384,
+             "mamba_state_capacity": 769, "mamba_track_interval": 256},
+  "aic_calibration": {"prefill_scale": 1.705, "prefill_attention_ms_per_billion_pairs": 165.57,
+                      "decode_fixed_ms": 0.288, "decode_ms_per_request": 0.0315}
+}
+```
+
+* `num_gpu_blocks` x `block_size` = 28,396,608 KV tokens, the value measured on hardware.
+* `max_num_seqs` and `max_num_batched_tokens` match the serving config (`max-running-requests 16`, `chunked-prefill-size 16384`).
+* `aic_calibration` holds the shared calibration terms from section 5. Never change them per point.
+
+### 3.5 Step 4: run one point
+
+[`scripts/native_v10_agg/run_path1_agentx.py`](nemotron-3-ultra-550b-nvfp4/scripts/native_v10_agg/run_path1_agentx.py) starts the frontend, six Mocker workers ([`path1_mocker.py`](nemotron-3-ultra-550b-nvfp4/scripts/native_v10_agg/path1_mocker.py)) and the AIPerf client ([`path1_agentx_client.py`](nemotron-3-ultra-550b-nvfp4/scripts/native_v10_agg/path1_agentx_client.py)). It reads the matching hardware run's AIPerf summary and records, so the replay reuses the same benchmark ID and warmup.
+
+```bash
+python3 scripts/native_v10_agg/run_path1_agentx.py \
+  --hardware-summary <hardware run>/profile summary JSON \
+  --hardware-records <hardware run>/per-request records \
+  --engine-config reports/agentx-agg-kv-rr-data/native-v10/agg-kv-c192-calibrated-v10/engine.json \
+  --router kv \
+  --router-args-file <JSON list of the hardware recipe's router flags> \
+  --workers 6 --gpus 24 \
+  --namespace n3u-sim-kv-c192 --http-port 18000 --metrics-port 18090 \
+  --run-dir runs/kv-c192
+```
+
+* The default router args for `kv` are `--router-temperature 0.0 --router-queue-policy fcfs`. For a tuned arm, pass the exact flags from the hardware values file, for example the [agg KV recipe](https://github.com/AI-Hypercomputer/gpu-recipes/blob/main/inference/a4xmax/aggregated-serving/dynamo/nemotron3-ultra-kv-vs-rr/nemotron3_ultra_agg_kv.yaml) (prefill load scale 3, overlap credit 0.8).
+* The client side is the same AIPerf command as hardware: `--scenario inferencex-agentx-mvp`, `--random-seed 42`, 393 roots, `--trajectory-start-min-ratio 0.25 --trajectory-start-max-ratio 0.75`, a 3,600 s profile.
+* Disaggregated and topology points use [`run_d88_matched.py`](nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/run_d88_matched.py) and [`run_path1_topology.py`](nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/run_path1_topology.py). The [`controller.py`](nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/controller.py) queues many points under memory and parallelism limits.
+
+### 3.6 Step 5: sweep and collect
+
+1. Sweep `C` over a geometric ladder for each router mode: 48, 96, 192, 384 for agg; 72 to 1,152 for D88.
+2. Add points where a curve bends, such as the knee or a TTFT crossing.
+3. Run points in parallel, each with its own `--namespace` and ports.
+4. Collect and check them with [`collect_agg_v10_holdouts.py`](nemotron-3-ultra-550b-nvfp4/scripts/collect_agg_v10_holdouts.py). It verifies the frozen build, engine, router args and warmup identity ([`check_path1_inputs.py`](nemotron-3-ultra-550b-nvfp4/scripts/native_v10_agg/check_path1_inputs.py)) before keeping a point. Metric parsing is covered by [`test_metrics.py`](nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/test_metrics.py).
+5. Pick knees and SLO cells with [`SWEEP_METHODOLOGY.md`](SWEEP_METHODOLOGY.md), then send only those cells to hardware.
+
+Each run directory keeps `engine.json`, `provenance.json`, `server-environment.json`, `comparison.json` and `simulation_summary.json`. See [`agg-kv-c192-calibrated-v10/`](nemotron-3-ultra-550b-nvfp4/reports/agentx-agg-kv-rr-data/native-v10/agg-kv-c192-calibrated-v10/).
+
 ---
 
-## 3. Worked example: Nemotron-3-Ultra
+## 4. What the simulator delivers
 
-### 3.1 Why this model needs care
+### 4.1 Normal-workload curves from AIC
 
-N3U is a hybrid model: 108 layers, of which 48 are Mamba-2, 48 are LatentMoE and **only 12 are full attention** ([design notes](nemotron-3-ultra-550b-nvfp4/DESIGN.md#0-model-facts-and-why-they-reshape-the-experiment)).
+AIC writes a Pareto frontier (`pareto.csv`, `pareto_frontier.png`), the top configurations (`best_config_topn.csv`) and launchable starting configs (`top*/k8s_deploy.yaml`), for agg and disagg separately. For N3U, the best output tokens/s/GPU with at least 20 tokens/s/user ([`sim-results/aic-nvfp4/`](nemotron-3-ultra-550b-nvfp4/sim-results/aic-nvfp4/)):
 
-* The attention KV cache is small (about 6 KB/token), so cache capacity is rarely the limit.
-* Each request also carries about 200 MB of **Mamba recurrent state**. A cached prefix is only reusable if it ends at a stored state checkpoint. This is the main reason a plain attention-only cache model mispredicts this model.
-
-The serving setup being simulated matches the published recipes:
-
-| | Aggregated | Disaggregated (D88) |
-| :--- | :--- | :--- |
-| GPUs | 24 (6 workers × TP4/EP4) | 64 (8 prefill + 8 decode, TP4/EP4) |
-| Worker limits | max running 16, 16,384-token chunks | P: 8 running, D: 64 running |
-| Software | Dynamo 1.4.2 + SGLang 0.5.16 (hardware); AIC 0.11.0 tables for SGLang 0.5.14 | same |
-| Workload | AgentX, [`semianalysisai/cc-traces-weka-062126-256k`](https://huggingface.co/datasets/semianalysisai/cc-traces-weka-062126-256k), 393 roots, seed 42 | same |
-
-### 3.2 Step 1: AIC normal-workload solve (engine shape)
-
-The workload is encoded from the trace means (ISL 96,000, OSL 900) as warm and cold brackets at 24 and 72 GPUs. Results ([`sim-results/aic-nvfp4/`](nemotron-3-ultra-550b-nvfp4/sim-results/aic-nvfp4/)), best output tokens/s/GPU with at least 20 tokens/s/user:
-
-| Bracket | Agg | Disagg | Frontier plot |
+| Bracket | Agg | Disagg | Frontier |
 | :--- | :--- | :--- | :--- |
 | Warm, 24 GPUs | **713** @ 36.5 tok/s/user | 558 @ 47.9 | [png](nemotron-3-ultra-550b-nvfp4/sim-results/aic-nvfp4/warm24/n3u-fp4_gb300_sglang_isl96000_osl900_ttft5000_tpot10_356262/pareto_frontier.png) |
 | Warm, 72 GPUs | **713** @ 36.5 | 611 @ 21.3 | [png](nemotron-3-ultra-550b-nvfp4/sim-results/aic-nvfp4/warm72/n3u-fp4_gb300_sglang_isl96000_osl900_ttft5000_tpot10_73217/pareto_frontier.png) |
 | Cold, 24 GPUs | **120** @ 20.2 | 110 @ 22.4 | [png](nemotron-3-ultra-550b-nvfp4/sim-results/aic-nvfp4/cold24/n3u-fp4_gb300_sglang_isl96000_osl900_ttft30000_tpot10_427557/pareto_frontier.png) |
 | Cold, 72 GPUs | **120** @ 20.2 | 112 @ 35.5 | [png](nemotron-3-ultra-550b-nvfp4/sim-results/aic-nvfp4/cold72/n3u-fp4_gb300_sglang_isl96000_osl900_ttft30000_tpot10_375345/pareto_frontier.png) |
 
-What this tells us:
+What it told us:
 
-* **Agg leads disagg** for this architecture, because prefill is cheap and transfers are light. That is why the agg 24-GPU study came first.
-* **Prefix reuse is worth about 6× per GPU** (warm vs cold). This upper bound is what KV-aware routing tries to capture on real traffic.
-* AIC's best warm agg point uses TP4 workers (`tp4pp1dp2etp4ep2`). The hardware recipe uses TP4/EP4 workers, and the agentic simulations below model that recipe shape.
+* **Agg leads disagg** for N3U. Prefill is cheap (only 12 of 108 layers are full attention) and KV transfers are light, so the 24-GPU agg study came first.
+* **Prefix reuse is worth about 6x per GPU** (713 warm vs 120 cold). That is the upper bound KV-aware routing tries to capture.
 
-### 3.3 Step 2: build the native DynoSim server
+### 4.2 Agentic curves from DynoSim
 
-DynoSim is built from Dynamo v1.4.2 source with the study's patches applied in order. The patches are listed with their purpose in [Appendix A](#a3-how-each-gap-was-filled-n3u-calibration-history). They live in [`scripts/native_disagg_flags/patches/`](nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/patches/):
+| Output | Source per run | What it answers |
+| :--- | :--- | :--- |
+| Total tokens/s/GPU vs concurrency | AIPerf `total_token_throughput` / GPUs | Fleet capacity and the throughput knee |
+| TTFT p50/p95 vs concurrency | AIPerf `time_to_first_token` | Where queueing starts |
+| E2E interactivity I90 | Per-request output tokens/s | What each agent session experiences |
+| Per-engine metrics and forward-pass events | Mocker metrics endpoint and native event logs | Batch sizes and computed prefill tokens behind each curve |
+| KV vs RR at equal C and at an SLO | Paired runs differing only in router mode | The headline comparison at TTFT p95 < 10 s and I90 >= 20 |
+| Router-flag effects | Same point, different `--router-*` flags | Which tuning candidates deserve hardware time |
+| Topology ranking | P:D splits at a fixed GPU count | Which disagg split to deploy |
 
-```bash
-git clone https://github.com/ai-dynamo/dynamo.git && cd dynamo && git checkout v1.4.2
-for p in cpu-build first-visible-token aic-prefill-calibration full-prefix-before-chunk \
-         prefill-priority-hybrid-cache hybrid-checkpoint-publication hybrid-checkpoint-tracking \
-         hybrid-checkpoint-lru prefill-prefix-admission prefill-remaining-budget \
-         aic-decode-calibration; do
-  git apply <study>/nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/patches/dynamo-1.4.2-$p.patch
-done
-# disagg (D88) additionally: dynamo-1.4.2-faithful-disaggregation.patch and
-# sim-results/agentx_d88_matched_20260920/patches/d88-handoff-queue.patch
-maturin build --release --features aic-forward-pass \
-  --manifest-path lib/bindings/python/Cargo.toml --out /tmp/path1-wheels
-pip install /tmp/path1-wheels/ai_dynamo_runtime-*.whl ai-dynamo==1.4.2 aiconfigurator-core==0.11.0
-```
+### 4.3 N3U results against hardware
 
-The full build and reproduction steps, including native-core SHA-256 values for each candidate, are in the [calibration report](nemotron-3-ultra-550b-nvfp4/reports/agentx-agg-kv-rr-data/native-v10/original-calibration-report.md#reproducing-the-native-builds-and-live-comparison).
+**Aggregated, 24 GPUs**: 12 simulated points paired with the 12 original hardware jobs, four for calibration and eight frozen holdouts ([report section 4.1](nemotron-3-ultra-550b-nvfp4/reports/agentx-serving-perf-report.md#41-agg-twelve-paired-native-dynosim-v10-results)). Total tokens/s/GPU, measured / simulated:
 
-The engine configuration shared by every N3U run:
-
-* six TP4/EP4 workers, max running 16, 16,384-token chunks, 64-token cache pages
-* **28,396,608 attention-KV tokens per worker** (measured on hardware)
-* hybrid state: 769 Mamba state slots, 256-token checkpoint interval (model assumptions)
-
-### 3.4 Step 3: sweep the agentic curves
-
-The launch adapters run local NATS/etcd, the real Dynamo frontend, the patched Mocker workers and AIPerf, then write all outputs to a new directory per point:
-
-* agg: [`scripts/native_v10_agg/run_path1_agentx.py`](nemotron-3-ultra-550b-nvfp4/scripts/native_v10_agg/README.md)
-* disagg and topology: [`scripts/native_disagg_flags/`](nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/README.md) (`run_d88_matched.py`, `run_path1_topology.py`)
-
-The client side is the same AIPerf command used on hardware:
-
-```bash
-aiperf profile --scenario inferencex-agentx-mvp \
-  --url http://localhost:8000 --endpoint-type chat \
-  --model nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4 \
-  --tokenizer <tokenizer dir> --tokenizer-trust-remote-code \
-  --public-dataset semianalysis_cc_traces_weka_062126_256k \
-  --num-dataset-entries 393 --max-context-length 262144 \
-  --concurrency ${C} --random-seed 42 \
-  --trajectory-start-min-ratio 0.25 --trajectory-start-max-ratio 0.75 \
-  --system-idle-gap-cap-seconds 10 --cache-bust first_turn_prefix \
-  --benchmark-duration 3600 --benchmark-grace-period 60 --request-timeout-seconds 1200 \
-  --streaming --use-server-token-count --extra-inputs ignore_eos:true \
-  --artifact-dir runs/${POLICY}-c${C}
-```
-
-Sweep `C` over a geometric ladder for each router mode (for example 48, 96, 192 and 384 for agg; up to 1,152 for D88). Then add points around wherever a curve bends. The [reproduction guide](nemotron-3-ultra-550b-nvfp4/reports/agentx-replay-howto.md) has the dataset staging commands.
-
-> [!TIP]
-> Each point is a full one-hour profile plus warmup on CPU (the simulator runs in real time). Run several points in parallel with separate namespaces and ports.
-
-### 3.5 What came out
-
-**Agg, 24 GPUs** ([full report](nemotron-3-ultra-550b-nvfp4/reports/agentx-agg-kv-rr-report.md#31-native-dynosim-v10-current-completed-calibration-samples)). Native V10 against hardware for the default policies (total tokens/s/GPU, real / simulated):
-
-| C | Default KV | RR |
-| ---: | :--- | :--- |
-| 48 | 3,334 / 3,321 | 3,250 / 3,232 |
-| 96 | 6,844 / 6,842 | 6,137 / 6,121 |
-| 192 | 9,655 / 10,182 | 6,802 / 6,830 |
-| 384 | 8,257 / 9,433 | 5,076 / 5,324 |
+| Setting | C48 | C96 | C192 | C384 |
+| :--- | :--- | :--- | :--- | :--- |
+| Default KV | 3,334 / 3,321 | 6,844 / 6,842 | 9,655 / 10,182 (+5.5%) | 8,257 / 9,433 (+14.2%) |
+| RR | 3,250 / 3,232 | 6,137 / 6,121 | 6,802 / 6,830 | 5,076 / 5,324 (+4.9%) |
+| KV scale 3 / credit 0.8 | | 7,045 / 7,021 | 11,012 / 11,379 (+3.3%) | |
+| KV scale 2 / credit 0.8 | | | 10,241 / 10,848 (+5.9%) | |
+| KV temperature 0.5 | | | 7,816 / 8,018 (+2.6%) | |
 
 ![Native V10 agg KV/RR simulation versus hardware](nemotron-3-ultra-550b-nvfp4/reports/agentx-agg-kv-rr-report-native-simulation.png)
 
-The simulation reproduced:
-* the KV-over-RR advantage
-* both policies peaking near C192 and declining by C384
-* the direction of the router-flag effects (scale 3 / credit 0.8 helps; temperature 0.5 hurts)
+**Disaggregated D88, 64 GPUs**: eight holdouts with the agg calibration frozen and no D88-specific fit ([report section 4.2](nemotron-3-ultra-550b-nvfp4/reports/agentx-serving-perf-report.md#42-d88-native-forecasts-alongside-the-measured-kvrr-curves), [paired CSV](nemotron-3-ultra-550b-nvfp4/reports/agentx-serving-perf-report-d88-simulation.csv)):
 
-**Disagg D88, 64 GPUs** ([report section 4.2](nemotron-3-ultra-550b-nvfp4/reports/agentx-serving-perf-report.md#42-d88-native-forecasts-alongside-the-measured-kvrr-curves)). Eight holdout points with the agg coefficients frozen and no D88-specific fit: throughput is within 9% at every point, and KV's peak near C768 and RR's peak near C192 both match hardware.
+| Setting | Measured / simulated tok/s/GPU | Error | TTFT p95 measured / simulated (s) |
+| :--- | :--- | ---: | :--- |
+| KV C192 | 5,142 / 5,093 | -0.9% | 2.40 / 2.30 |
+| KV C480 | 12,204 / 12,168 | -0.3% | 7.12 / 7.60 |
+| KV C768 | 15,543 / 14,188 | -8.7% | 27.14 / 37.71 |
+| KV C1152 | 10,697 / 10,236 | -4.3% | 164.32 / 137.60 |
+| RR C72 | 1,763 / 1,726 | -2.1% | 9.91 / 10.31 |
+| RR C96 | 2,671 / 2,639 | -1.2% | 13.03 / 12.87 |
+| RR C192 | 4,419 / 4,359 | -1.4% | 31.45 / 31.70 |
+| RR C384 | 3,504 / 3,501 | -0.1% | 289.39 / 288.80 |
 
 ![D88 hardware versus native simulation](nemotron-3-ultra-550b-nvfp4/reports/agentx-serving-perf-report-simulation-disagg-d88.png)
 
-**How to use these curves:**
-1. Use the simulation to **screen**: rank policies, flags and splits, find the throughput knee, and pick which concurrencies deserve hardware time.
-2. Then **confirm SLO boundaries on hardware**: TTFT tails are the least accurate output (Appendix A).
+### 4.4 What we could and could not decide from it
+
+| The simulator delivered | Evidence |
+| :--- | :--- |
+| Agg before disagg for N3U | AIC brackets, section 4.1 |
+| KV beats RR, and by how much at equal C | D88 C192: simulated KV/RR 1.17x vs 1.16x on hardware |
+| Where each curve peaks | Agg: both policies near C192. D88: KV at C768, RR at C192. Both match hardware. |
+| Direction of router-flag effects | Scale 3 / credit 0.8 helps and temperature 0.5 hurts, in both simulation and hardware |
+
+| Not yet reliable | Why |
+| :--- | :--- |
+| Exact SLO boundary | Agg tuned KV C192 passes both SLOs in simulation and fails on hardware. D88 RR C72 sits on the TTFT line (9.91 s measured vs 10.31 s simulated). |
+| TTFT near saturation | D88 KV C768 TTFT is +39.0% off, agg RR C384 is -38.4% off |
+| Overload error rates | D88 RR C384: 1.40% simulated vs 0.76% measured request errors |
+| Disagg flag ranking | The [C480 native flag sweep](nemotron-3-ultra-550b-nvfp4/reports/agentx-disagg-c480-kv-flags.md) completed 0 of 12 runs, so no ranking exists yet |
 
 ---
 
-## Appendix A: detecting drift and gaps between simulation and hardware
+## 5. How to calibrate the simulation
 
-### A.1 The checks, in order
+### 5.1 The rule: shared fixes only, judged on frozen holdouts
 
-A simulated point is only compared with hardware after the workload itself is proven identical. Otherwise a gap could come from a different workload rather than a different serving model.
+* Every fix is a model change or a calibration term shared by **all** points. Per-point multipliers are never used.
+* A small set of calibration points is fitted. Everything else is a holdout, run against the frozen build with no refit.
+* Errors keep their sign and are never averaged across points.
+* Every attempt stays on record, including the failures ([calibration report](nemotron-3-ultra-550b-nvfp4/reports/agentx-agg-kv-rr-data/native-v10/original-calibration-report.md)).
+
+### 5.2 The check ladder
 
 ```mermaid
 flowchart TB
-  R["1. Replay identity<br/>same warmup conversations, turns,<br/>input/output token counts, cache-bust IDs"] --> T["2. Throughput gate<br/>|sim / real - 1| <= 20%<br/>at every calibration point"]
-  T --> M["3. Mechanism diagnostics<br/>cache-hit fraction, computed prefill tokens,<br/>queue and batch sizes, errors"]
-  M --> L["4. Latency diagnostics<br/>TTFT p95, I90, SLO pass/fail agreement"]
-  L --> HO["5. Frozen holdouts<br/>new concurrencies, flags, topologies<br/>with no refit"]
-  HO -->|"drift"| FIX["Find the missing mechanism,<br/>patch the simulator, re-run all points"]
+  R["1. Replay identity<br/>same warmup conversations, turns,<br/>token counts, cache-bust IDs"] --> T["2. Throughput gate<br/>|sim/real - 1| <= 20%<br/>at every calibration point"]
+  T --> M["3. Mechanism diagnostics<br/>cache-hit share, computed prefill tokens,<br/>queue and batch sizes, errors"]
+  M --> L["4. Latency diagnostics<br/>TTFT p95, I90,<br/>SLO pass/fail agreement"]
+  L --> HO["5. Frozen holdouts<br/>new concurrencies, flags,<br/>topologies, no refit"]
+  HO -->|"drift"| FIX["Find the missing mechanism,<br/>patch it, re-run every point"]
   FIX --> R
 ```
 
-1. **Replay identity** ([audit](nemotron-3-ultra-550b-nvfp4/reports/agentx-faithful-replay.md#parity-results)). The simulated run reuses the hardware run's benchmark ID, so the cache-bust text is identical. The audit then checks that the warmup conversations, turns and token counts match exactly (for example 185/185 at C192 and 349/349 at C384).
-2. **Throughput gate.** Total tokens/s/GPU within ±20% at each calibration point (default KV and RR at C192 and C384). Errors keep their sign and are never averaged across points.
-3. **Mechanism diagnostics.** Compare *why*, not just *how much*: newly computed prefill tokens against cached input tokens, cache-hit rate, and request errors and timeouts on the same source turns.
+1. **Replay identity.** The simulated run reuses the hardware run's benchmark ID, so the cache-bust text is identical. Warmup conversations, turns and token counts must match exactly, for example 185/185 at C192 and 349/349 at C384 ([replay audit](nemotron-3-ultra-550b-nvfp4/reports/agentx-faithful-replay.md), [`check_path1_inputs.py`](nemotron-3-ultra-550b-nvfp4/scripts/native_v10_agg/check_path1_inputs.py)). Without this, a gap could come from a different workload.
+2. **Throughput gate.** Total tokens/s/GPU within ±20% at each calibration point. For N3U agg these are default KV and RR at C192 and C384 ([targets](nemotron-3-ultra-550b-nvfp4/sim-results/agentx_calibration_targets.json)).
+3. **Mechanism diagnostics.** Compare why, not only how much: newly computed prefill tokens against cached input tokens, the cache-hit rate, and errors and timeouts on the same source turns.
 4. **Latency diagnostics.** TTFT p95 and I90 errors, and whether simulation and hardware agree on SLO pass/fail.
-5. **Frozen holdouts.** New concurrencies, tuned flags and a new topology (D88) run with **no refit**. This is the real test of predictive power.
+5. **Frozen holdouts.** New concurrencies, tuned flags and a new topology (D88), with no refit. This is the real test.
 
-Drift means a holdout leaves the gate, or the error grows steadily with concurrency (for example, it is fine at low C and too optimistic past the knee). Either one points to a missing mechanism, not a wrong constant.
+**Drift** means a holdout leaves the gate, or the error grows steadily with concurrency (fine at low C, too optimistic past the knee). Either points to a missing mechanism, not a wrong constant.
 
-### A.2 What the gaps looked like for N3U
+### 5.3 What the gaps looked like for N3U
 
-**The first simulator (custom Python model) drifted with load.** On D88 it under-predicted at low concurrency and over-predicted badly past the knee: measured/simulated was 1.32× at KV C96 and 0.43× at KV C1152 ([D88 record](nemotron-3-ultra-550b-nvfp4/AGENTX_D88_RESULTS.md#ii-simulated-curve-and-the-selected-points)). The [serving-model audit](nemotron-3-ultra-550b-nvfp4/reports/agentx-serving-model-audit.md) traced this to structure, not constants:
-* decode speed was fixed when a request was admitted
-* there was no chunked-prefill scheduler and no admission limits
-* the cache was idealized
+The first simulator, a [custom Python model](nemotron-3-ultra-550b-nvfp4/reports/agentx-serving-model-audit.md), drifted with load. On D88, measured/simulated was 1.32x at KV C96 and 0.43x at KV C1152 ([D88 record](nemotron-3-ultra-550b-nvfp4/AGENTX_D88_RESULTS.md)). The cause was structural: decode speed was fixed at admission, there was no chunked-prefill scheduler or admission limit, and the cache was idealized. It was replaced by the native Mocker.
 
-The fix was to replace it with the native Mocker scheduler.
+The native Mocker, before calibration, over-predicted RR C384 by 64.8% and missed TTFT by about half. Mechanism diagnostics found these causes one at a time:
 
-**Native Mocker, before calibration**, over-predicted RR384 by **+64.8%** and missed TTFT by about half ([calibration table](nemotron-3-ultra-550b-nvfp4/reports/agentx-agg-kv-rr-data/native-v10/original-calibration-report.md#completed-end-to-end-comparisons)). The mechanism diagnostics found the causes one at a time:
-
-| Symptom (diagnostic) | Root cause found | Effect |
+| Symptom (diagnostic) | Root cause | Effect |
 | :--- | :--- | :--- |
 | One-token warmup requests flagged invalid by AIPerf | The Mocker sampled token IDs that decode to whitespace, so the first response was empty | Changed the workload itself; fixed before any timing fit |
-| Simulated reuse **12.4%** vs hardware cached input **56.2%** | The Mocker looked up the cached prefix only for the first 16K chunk | Long agent prompts lost most of their cache hits |
-| KV over-predicted most at high C | No Mamba-state constraint: a prefix was reused even where no recurrent-state checkpoint existed | Hybrid cache was too generous |
-| Decode too fast at every batch | AIC's analytical Mamba decode fallback omitted the recurrent-state read/write (about 100 MB per request per GPU) | Missing per-request decode cost |
-| Disagg handoffs rejected under bursts | The handoff limit reused `max_num_seqs` | 2/32 burst completed; 32/32 after the fix |
+| Simulated reuse 12.4% vs hardware cached input 56.2% | The cached prefix was looked up only for the first 16K chunk | Long agent prompts lost most of their cache hits |
+| KV over-predicted most at high C | No Mamba-state constraint: prefixes reused where no checkpoint existed | Hybrid cache too generous |
+| Decode too fast at every batch | AIC's Mamba decode fallback omitted the recurrent-state read/write (about 100 MB per request per GPU) | Missing per-request decode cost |
+| Disagg handoffs rejected under bursts | The handoff limit reused `max_num_seqs` | 2 of 32 burst requests completed; 32 of 32 after the fix |
 
-### A.3 How each gap was filled (N3U calibration history)
+### 5.4 How each gap was filled
 
-Every fix is a **shared** model change or calibration term applied to all points. No per-point multipliers were used, and every attempt was kept on record.
+| Candidate | Patch | What it changes | Agg RR C384 throughput error |
+| :--- | :--- | :--- | ---: |
+| Baseline | [`first-visible-token`](nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/patches/dynamo-1.4.2-first-visible-token.patch) | Upstream Mocker + AIC, with a visible first token | +64.8% |
+| v2 | [`aic-prefill-calibration`](nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/patches/dynamo-1.4.2-aic-prefill-calibration.patch) | Prefill timing fit to 93 isolated hardware warmups ([fit](nemotron-3-ultra-550b-nvfp4/reports/agentx-agg-kv-rr-data/native-v10/prefill_calibration_v2.json)) | not run alone; carried into v3 |
+| v3 | [`full-prefix-before-chunk`](nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/patches/dynamo-1.4.2-full-prefix-before-chunk.patch) | Look up the full cached prefix before chunking | +55.5% |
+| v4 | [`prefill-priority-hybrid-cache`](nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/patches/dynamo-1.4.2-prefill-priority-hybrid-cache.patch) | Prefill priority and a finite Mamba-state cache | stopped in warmup |
+| v5 | [`hybrid-checkpoint-publication`](nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/patches/dynamo-1.4.2-hybrid-checkpoint-publication.patch) | Publish checkpoints only when complete | +4.5% |
+| v6 | [`hybrid-checkpoint-tracking`](nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/patches/dynamo-1.4.2-hybrid-checkpoint-tracking.patch) | Track branch and decode checkpoints | +6.1% |
+| v7 | [`hybrid-checkpoint-lru`](nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/patches/dynamo-1.4.2-hybrid-checkpoint-lru.patch) | Checkpoint recency (LRU) | +4.4% |
+| v8-v9 | [`prefill-prefix-admission`](nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/patches/dynamo-1.4.2-prefill-prefix-admission.patch), [`prefill-remaining-budget`](nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/patches/dynamo-1.4.2-prefill-remaining-budget.patch) | Fix prefix-lookup side effects; admit into the remaining prefill budget | +5.2% |
+| **v10** | [`aic-decode-calibration`](nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/patches/dynamo-1.4.2-aic-decode-calibration.patch) | Add the missing Mamba decode work ([derivation](nemotron-3-ultra-550b-nvfp4/reports/agentx-agg-kv-rr-data/native-v10/decode_mamba_timing_candidate_v10.json)) | **+4.9%** |
+| v11 (disagg only) | [`faithful-disaggregation`](nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/patches/dynamo-1.4.2-faithful-disaggregation.patch), [`d88-handoff-queue`](nemotron-3-ultra-550b-nvfp4/sim-results/agentx_d88_matched_20260920/patches/) | Faithful prefill-to-decode handoff with a bounded queue | judged on D88 holdouts instead |
 
-| Candidate | Change (patch) | Agg RR384 throughput error |
-| :--- | :--- | ---: |
-| Baseline | Upstream Mocker + AIC + visible first token (`first-visible-token`) | +64.8% |
-| v2 | Prefill timing fit to 93 isolated hardware warmups (`aic-prefill-calibration`): `prefill = 1.705 × AIC + 165.6 × b·q·(p + q/2) / 1e9` ms | — |
-| v3 | Full-prefix lookup before chunking (`full-prefix-before-chunk`) | +55.5% |
-| v4 | Prefill priority and a finite hybrid Mamba-state cache (`prefill-priority-hybrid-cache`) | stopped in warmup |
-| v5 | Checkpoints published only when complete (`hybrid-checkpoint-publication`) | +4.5% |
-| v6 | Branch and decode checkpoint tracking (`hybrid-checkpoint-tracking`) | +6.1% |
-| v7 | Checkpoint recency / LRU (`hybrid-checkpoint-lru`) | +4.4% |
-| v8–v9 | Prefix-lookup side effects, admission into the remaining prefill budget (`prefill-prefix-admission`, `prefill-remaining-budget`) | +5.2% |
-| **v10** | Missing Mamba decode work (`aic-decode-calibration`): `decode = AIC + 0.288 + 0.0315 × ready_requests` ms | **+4.9%** |
-| v11 (disagg) | Faithful P→D handoff + bounded handoff queue (`faithful-disaggregation`, `d88-handoff-queue`) | — |
+The two shared timing terms, applied to every batch at every point:
 
-Patch files: [`scripts/native_disagg_flags/patches/`](nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/patches/). Fit inputs: [prefill fit](nemotron-3-ultra-550b-nvfp4/reports/agentx-agg-kv-rr-data/native-v10/prefill_calibration_v2.json), [decode derivation](nemotron-3-ultra-550b-nvfp4/reports/agentx-agg-kv-rr-data/native-v10/decode_mamba_timing_candidate_v10.json).
+```text
+prefill_ms = 1.705 x AIC_prefill_ms + 165.57 x batch x new_tokens x (prefix_tokens + new_tokens / 2) / 1e9
+decode_ms  = AIC_decode_ms + 0.288 + 0.0315 x ready_decode_requests
+```
 
-### A.4 Where the gap stands now, and what is left
+* The prefill term was fitted to 93 isolated one-token RR C192 hardware warmups.
+* The decode term is derived from model geometry and bandwidth assumptions, not from measured Nemotron kernel times.
 
-| Check | Result |
+### 5.5 Where calibration stands, and what to do next
+
+| Check | N3U result |
 | :--- | :--- |
-| Agg throughput, 4 calibration points | all within ±20% (worst +14.2%, KV384); mean absolute error 6.2% |
-| Agg throughput, 8 frozen holdouts | 8/8 within ±20%; mean absolute error 1.7% |
-| D88 throughput, 8 frozen holdouts | all within 9% |
-| Agg TTFT p95 | mean absolute error 23.7% (calibration) and 9.4% (holdout); RR384 tail under-predicted by 38.4% |
-| SLO pass/fail agreement | 1 of 12 agg pairs disagrees (tuned KV C192 passes in simulation, fails on hardware); D88 RR C72 sits on the TTFT boundary |
+| Agg throughput, 4 calibration points | All within ±20%; worst +14.2% (KV C384); mean absolute error 6.2% |
+| Agg throughput, 8 frozen holdouts | 8 of 8 within ±20%; mean absolute error 1.7% |
+| D88 throughput, 8 frozen holdouts | All within 9%; mean absolute error 3.6% (KV) and 1.2% (RR) |
+| Agg TTFT p95 | Mean absolute error 23.7% (calibration) and 9.4% (holdout) |
+| SLO pass/fail agreement | 1 of 12 agg pairs and 1 of 8 D88 pairs disagree |
 
-**Remaining gaps and how to treat them:**
+Next steps:
 
-* **TTFT tails** are under-predicted when the system is overloaded. Treat simulated SLO boundaries as estimates and confirm the boundary cell on hardware.
-* **Hybrid-state settings** (769 slots, 256-token interval) are assumptions; the hardware Mamba pool was not captured. Capturing it is the next calibration input.
-* **Version skew**: AIC's tables are for SGLang 0.5.14, while hardware runs 0.5.16. Re-check the gate when AIC publishes newer tables.
-* **New hardware points become new holdouts.** Run them against the frozen build first. Only refit (and re-run every point) if a holdout leaves the gate.
+* **Capture the hardware Mamba pool.** The 769 slots and 256-token interval are assumptions. Measuring them is the next calibration input.
+* **Close the version skew.** AIC's tables are for SGLang 0.5.14, while hardware runs 0.5.16. Re-check the gate when newer tables ship.
+* **Treat new hardware points as holdouts.** Run them against the frozen build first, and refit (re-running every point) only if one leaves the gate.
+* **Model transfer contention** before trusting disagg TTFT ([disagg limits](nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/README.md)).
 
 ---
 
-## Appendix B: further reading
+## 6. References
 
 | Topic | Link |
 | :--- | :--- |
 | AIConfigurator (CLI, databases, SILICON mode) | <https://github.com/ai-dynamo/aiconfigurator> |
-| Dynamo Mocker / DynoSim source | <https://github.com/ai-dynamo/dynamo/tree/v1.4.2/lib/mocker> |
+| Dynamo v1.4.2 | <https://github.com/ai-dynamo/dynamo/tree/v1.4.2> |
+| Dynamo Mocker (DynoSim) source | <https://github.com/ai-dynamo/dynamo/tree/v1.4.2/lib/mocker> |
+| Mocker SGLang scheduler | <https://github.com/ai-dynamo/dynamo/tree/v1.4.2/lib/mocker/src/scheduler/sglang> |
 | Dynamo KV router cost function and flags | <https://docs.nvidia.com/dynamo/knowledge-base/modular-components/router/routing-concepts> |
 | Dynamo disaggregated routing | <https://docs.nvidia.com/dynamo/knowledge-base/modular-components/router/disaggregated-serving> |
+| AIPerf | <https://github.com/ai-dynamo/aiperf> |
 | AIPerf AgentX scenario | <https://github.com/ai-dynamo/aiperf/blob/v0.12.0/docs/tutorials/agentx-mvp.md> |
 | AIPerf Weka trace loader | <https://github.com/ai-dynamo/aiperf/blob/v0.12.0/docs/tutorials/weka-trace.md> |
 | AgentX dataset | <https://huggingface.co/datasets/semianalysisai/cc-traces-weka-062126-256k> |
 | Nemotron-3-Ultra NVFP4 checkpoint | <https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4> |
 | Mamba-2 (state-space models) | <https://arxiv.org/abs/2405.21060> |
-| SGLang (RadixAttention prefix cache) | <https://github.com/sgl-project/sglang> |
-| Knee and operating-point selection | [`SWEEP_METHODOLOGY.md`](SWEEP_METHODOLOGY.md) |
-| Original Kimi-K2.5 simulation pipeline | [`SIMULATION_GUIDE.md`](SIMULATION_GUIDE.md) |
-| N3U experiment design | [`nemotron-3-ultra-550b-nvfp4/DESIGN.md`](nemotron-3-ultra-550b-nvfp4/DESIGN.md) |
-| N3U measured KV vs RR report | [`agentx-serving-perf-report.md`](nemotron-3-ultra-550b-nvfp4/reports/agentx-serving-perf-report.md) |
-| N3U native calibration record (v2–v10) | [`original-calibration-report.md`](nemotron-3-ultra-550b-nvfp4/reports/agentx-agg-kv-rr-data/native-v10/original-calibration-report.md) |
-| Replay audit and reproduction | [`agentx-faithful-replay.md`](nemotron-3-ultra-550b-nvfp4/reports/agentx-faithful-replay.md), [`agentx-replay-howto.md`](nemotron-3-ultra-550b-nvfp4/reports/agentx-replay-howto.md) |
+| SGLang | <https://github.com/sgl-project/sglang> |
+| N3U hardware recipes (KV vs RR) | [aggregated](https://github.com/AI-Hypercomputer/gpu-recipes/tree/main/inference/a4xmax/aggregated-serving/dynamo/nemotron3-ultra-kv-vs-rr), [disaggregated](https://github.com/AI-Hypercomputer/gpu-recipes/tree/main/inference/a4xmax/disaggregated-serving/dynamo/nemotron3-ultra-kv-vs-rr) |
+| N3U study README and design | [README](nemotron-3-ultra-550b-nvfp4/README.md), [DESIGN.md](nemotron-3-ultra-550b-nvfp4/DESIGN.md) |
+| N3U measured KV vs RR and simulation comparison | [agentx-serving-perf-report.md](nemotron-3-ultra-550b-nvfp4/reports/agentx-serving-perf-report.md), [agg KV vs RR report](nemotron-3-ultra-550b-nvfp4/reports/agentx-agg-kv-rr-report.md) |
+| N3U native calibration record | [original-calibration-report.md](nemotron-3-ultra-550b-nvfp4/reports/agentx-agg-kv-rr-data/native-v10/original-calibration-report.md) |
+| Replay audit and how-to | [agentx-faithful-replay.md](nemotron-3-ultra-550b-nvfp4/reports/agentx-faithful-replay.md), [agentx-replay-howto.md](nemotron-3-ultra-550b-nvfp4/reports/agentx-replay-howto.md) |
+| Knee and SLO selection | [SWEEP_METHODOLOGY.md](SWEEP_METHODOLOGY.md), [KNEE_ANALYSIS.md](nemotron-3-ultra-550b-nvfp4/KNEE_ANALYSIS.md), [SLO_COMPARISON.md](nemotron-3-ultra-550b-nvfp4/SLO_COMPARISON.md) |
+| Native launch scripts | [agg V10](nemotron-3-ultra-550b-nvfp4/scripts/native_v10_agg/README.md), [disagg and flags](nemotron-3-ultra-550b-nvfp4/scripts/native_disagg_flags/README.md) |
+| D88 matched simulation inputs | [`sim-results/agentx_d88_matched_20260920/`](nemotron-3-ultra-550b-nvfp4/sim-results/agentx_d88_matched_20260920/README.md) |
+| Earlier Kimi-K2.5 pipeline | [SIMULATION_GUIDE.md](SIMULATION_GUIDE.md) |
