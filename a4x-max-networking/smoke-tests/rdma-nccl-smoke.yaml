@@ -1,0 +1,116 @@
+# RDMA (RoCE) smoke test for GKE A4X Max (GB300).
+#
+# Two nodes, 8 GPUs, one 1 GiB NCCL all-reduce that can only cross nodes over the 8
+# RDMA NICs: there is no ComputeDomain claim and MNNVL is off. Each pod claims all 8 RDMA
+# NICs through DRA (DeviceClass mrdma.google.com).
+#
+# Run (see ../README.md, section 6.3):
+#   sed "s/NODE_POOL/${NODE_POOL}/" rdma-nccl-smoke.yaml | kubectl apply -n ${NAMESPACE} -f -
+#
+# PASS: "NET/IB : Using [0]mlx5_0:1/RoCE ... [7]mlx5_7:1/RoCE", connections on "GID 5", and
+#       busbw close to the 400 GB/s line rate of 8 x 400 Gb/s (validated on 2026-10-26: 353 GB/s).
+apiVersion: resource.k8s.io/v1
+kind: ResourceClaimTemplate
+metadata:
+  name: rdma-smoke-mrdma
+spec:
+  spec:
+    devices:
+      requests:
+      - name: req-mrdma
+        exactly:
+          deviceClassName: mrdma.google.com
+          allocationMode: ExactCount
+          count: 8
+          # Use the per-pod ipvlan children of the RDMA NICs, not the host NICs.
+          selectors:
+          - cel:
+              expression: device.attributes["dra.net"].type == "ipvlan"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rdma-smoke
+spec:
+  clusterIP: None
+  selector:
+    job-name: rdma-smoke
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rdma-smoke
+spec:
+  completions: 2
+  parallelism: 2
+  completionMode: Indexed
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: Never
+      subdomain: rdma-smoke
+      nodeSelector:
+        cloud.google.com/gke-nodepool: NODE_POOL
+      tolerations:
+      - {key: nvidia.com/gpu, operator: Exists, effect: NoSchedule}
+      - {key: kubernetes.io/arch, operator: Exists, effect: NoSchedule}
+      resourceClaims:
+      - name: rdma
+        resourceClaimTemplateName: rdma-smoke-mrdma
+      containers:
+      - name: nccl
+        image: lmsysorg/sglang:v0.5.19-cu130-runtime
+        command: ["bash", "-c"]
+        args:
+        - |
+          cat > /tmp/allreduce.py <<'PY'
+          import time, torch, torch.distributed as dist
+          dist.init_process_group("nccl")
+          rank, world = dist.get_rank(), dist.get_world_size()
+          torch.cuda.set_device(rank % 4)
+          x = torch.ones(256 * 1024 * 1024, device="cuda")  # 1 GiB fp32
+          for _ in range(5):
+              dist.all_reduce(x)
+          torch.cuda.synchronize()
+          iters = 20
+          t0 = time.perf_counter()
+          for _ in range(iters):
+              dist.all_reduce(x)
+          torch.cuda.synchronize()
+          dt = (time.perf_counter() - t0) / iters
+          busbw = 2 * (world - 1) / world * x.numel() * 4 / dt / 1e9
+          if rank == 0:
+              print(f"allreduce 1 GiB on {world} GPUs: {dt*1e3:.2f} ms, busbw {busbw:.0f} GB/s", flush=True)
+          dist.barrier()
+          print(f"rank {rank}: OK", flush=True)
+          PY
+          # No ComputeDomain claim and MNNVL off: traffic between the two nodes can only use
+          # the RoCE NICs (or fail). GPUs inside one node still use NVLink P2P.
+          export NCCL_MNNVL_ENABLE=0 NCCL_NVLS_ENABLE=0
+          export NCCL_NET=IB NCCL_IB_HCA=mlx5
+          # GID 5 = RoCEv2 GID of the in-pod gpuXipvlanY interface (0-3 belong to the host NIC).
+          export NCCL_IB_GID_INDEX=5
+          # The 8 rails are separate /64 subnets with no routes between them: keep each
+          # connection on the same rail (mlx5_k <-> mlx5_k).
+          export NCCL_CROSS_NIC=0
+          export NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,NET
+          export GLOO_SOCKET_IFNAME=eth0 NCCL_SOCKET_IFNAME=eth0
+          python3 -m torch.distributed.run --nnodes=2 --nproc_per_node=4 \
+            --node_rank=${JOB_COMPLETION_INDEX} \
+            --master_addr=rdma-smoke-0.rdma-smoke --master_port=29500 \
+            /tmp/allreduce.py > /tmp/nccl.log 2>&1
+          RC=$?
+          grep -E "MNNVL|NVLS|NET/|busbw|OK|WARN|Error" /tmp/nccl.log | grep -vE "Channel|comm 0x"
+          [ $RC -eq 0 ] || tail -40 /tmp/nccl.log
+          exit $RC
+        volumeMounts:
+        - {name: dshm, mountPath: /dev/shm}
+        resources:
+          limits:
+            nvidia.com/gpu: 4
+          claims:
+          - name: rdma
+      volumes:
+      - name: dshm
+        emptyDir: {medium: Memory, sizeLimit: 16Gi}

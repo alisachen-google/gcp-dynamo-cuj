@@ -1,5 +1,7 @@
 # DeepSeek-R1 Pareto Curve Sweep — GKE A4X Max (GB300)
 
+> **Networking guide:** [MNNVL and RDMA on GKE A4X Max: setup and smoke tests](a4x-max-networking/README.md)
+
 Workspace for sweeping DeepSeek-R1 inference configurations and building
 throughput-vs-latency Pareto curves.
 
