@@ -11,6 +11,7 @@ GKE measurements behind the recipe.
 * DeepSeek-R1 values files: [`deepseek-r1-nvfp4/`](https://github.com/AI-Hypercomputer/gpu-recipes/tree/main/inference/a4xmax/disaggregated-serving/dynamo/pareto-sweep/deepseek-r1-nvfp4) and [`deepseek-r1-fp8/`](https://github.com/AI-Hypercomputer/gpu-recipes/tree/main/inference/a4xmax/disaggregated-serving/dynamo/pareto-sweep/deepseek-r1-fp8)
 * Serving configs: [`src/frameworks/a4xmax/dynamo-configs/dsr1-*`](https://github.com/AI-Hypercomputer/gpu-recipes/tree/main/src/frameworks/a4xmax/dynamo-configs)
 * Image: [`src/docker/dynamo-sglang-deepseek/Dockerfile`](https://github.com/AI-Hypercomputer/gpu-recipes/blob/main/src/docker/dynamo-sglang-deepseek/Dockerfile)
+* Mid-curve deep dive: [DSR1 NVFP4 mid-curve bottleneck and kernel analysis](dsr1-nvfp4-mid-curve-analysis.md)
 * Full measurement reports: [DSR1 NVFP4](benchmark-report-dsr1-8k1k.md), [DSR1 FP8](benchmark-report-dsr1-fp8-8k1k.md), [tuning walkthrough](perf-tuning-walkthrough.md)
 
 ## Contents
@@ -44,8 +45,10 @@ The largest gains come from four changes:
   is about 1.6× FP8's (TPOT 6.25 ms vs 10.0 ms at concurrency 4).
 * **A topology for each Pareto point.** The prefill-to-decode GPU ratio and the decode
   expert-parallel width are matched to the concurrency each point serves.
-* **KV transfer and MoE all-to-all on the NVL72 fabric (MNNVL).** No RDMA NICs are needed, and
-  the transfer cost is negligible: under 0.5 % of NVLink bandwidth.
+* **KV transfer and MoE all-to-all on the NVL72 fabric (MNNVL).** No RDMA NICs are needed,
+  and the KV stream uses under 0.5 % of NVLink bandwidth. On the wide 72-GPU points, moving
+  KV to GPUDirect RDMA measured a further +5 % to +11 %. That is an optional add-on the merged
+  recipe does not configure yet (section 3.4).
 * **A fair, warm measurement method.** The recipe's warm-up and measurement protocol reports
   the server's real steady state. A short run understated the same server by 11 %.
 
@@ -135,7 +138,7 @@ every worker of a point shares one NVLink domain.
 | `UCX_TLS=cuda_copy,cuda_ipc,tcp` + `UCX_CUDA_IPC_ENABLE_MNNVL=y` | NIXL moves each KV block GPU to GPU over the NVL72 fabric with `cuda_ipc`, even across nodes. TCP carries control traffic only. | KV transfer at NVLink bandwidth. At concurrency 64, the KV stream is about 1.2 GB/s against a measured 723 to 730 GB/s fabric: under 0.5 % utilization, and about 1 to 3 ms inside requests that take 6 seconds or more. |
 | `MC_FORCE_MNNVL=1`, `NCCL_MNNVL_ENABLE=1`, `NCCL_CUMEM_ENABLE=1` | Mooncake and NCCL also use the NVLink domain for collectives and DeepEP. | All MoE all-to-all traffic stays on NVLink. |
 | `UCX_MEMTYPE_CACHE=n`, `UCX_MEMTYPE_REG_WHOLE=n` | Turns off UCX memory-type caching and whole-allocation registration for SGLang's pooled CUDA memory (adopted from the GKE reference values). | Consistent `cuda_ipc` transport selection for KV blocks. |
-| No RDMA resource claim | The KV path no longer needs DraNet NICs or GID and rail tuning. | A simpler deployment. Our RDMA-KV A/B showed RDMA did not beat MNNVL on this workload ([walkthrough cases 2 and 8](perf-tuning-walkthrough.md)). |
+| No RDMA resource claim | The KV path no longer needs DraNet NICs or GID and rail tuning. | A simpler deployment that is already at or near parity. It is not the fastest KV path on the wide points, though: with RDMA KV transfer (`rc_mlx5`, `UCX_IB_GID_INDEX=5`, `UCX_NET_DEVICES=mlx5_0:1..mlx5_7:1`, mrdma claims), NVFP4 mid-curve measured +4.7 % / +5.1 % / +11.1 % at concurrency 512 / 2048 / 4096, and NVFP4 max throughput +7.6 %, all against the same NATS + MNNVL run ([walkthrough case 8](perf-tuning-walkthrough.md), [RDMA-KV report](benchmark-report-rdma-kv.md)). |
 
 ### 3.5 Pinned software stack and image
 
@@ -182,8 +185,10 @@ Throughput is output tok/s per decode GPU, and interactivity is 1000 / mean TPOT
 | mid-curve (6P1D) | 2048 | 816.5 | 838.8 | −2.7 % | 18.71 | 53 |
 | mid-curve (6P1D) | 4096 | 837.4 | 765.5 | **+9.4 %** | 17.90 | 56 |
 | max throughput (10P1D) | 2048 | 1,646.7 | 1,781.6 | −7.6 % | — | — |
+| max throughput (10P1D), RDMA KV | 2048 | 1,771.7 | 1,781.6 | −0.6 % | — | — |
 
-TPOT at concurrency 4 and 8 comes from the first low-latency run. The concurrency 4 and 8
+The RDMA KV row uses the optional RDMA KV path from section 3.4; every other row uses the
+recipe's MNNVL path. TPOT at concurrency 4 and 8 comes from the first low-latency run. The concurrency 4 and 8
 throughput comes from the NATS, 10× rerun.
 
 ### 4.2 DeepSeek-R1 FP8
@@ -204,17 +209,18 @@ throughput comes from the NATS, 10× rerun.
   per decode GPU from concurrency 2048 to 4096, while the reference drops 9 %. The FP8 DEP32
   point scales throughput 5.8× from concurrency 128 to 1024 while losing only 21 % of
   interactivity.
-* **MNNVL KV transfer costs nothing measurable.** Every point at or near parity uses NVLink
-  KV transfer without RDMA NICs.
+* **MNNVL KV transfer is enough for parity, and RDMA KV adds more on the wide points.** Every
+  MNNVL point is at or near parity. On 72-GPU points RDMA KV is worth +5 % to +11 %, and it
+  takes max throughput from −7.6 % to −0.6 %.
 * **TTFT is better at mid-curve.** FP8 mid-curve median TTFT is 15 % to 18 % lower than the
   reference at every measured concurrency.
 
 ## 5. Open items
 
-* **NVFP4 max throughput trails the reference by 7.6 %.** The cause is bursty dispatch across
-  the 10-way prefill fan-out: about 30 of 64 requests per rank actually decode. This is
-  independent of the request plane and still open
-  ([walkthrough case 6](perf-tuning-walkthrough.md)).
+* **NVFP4 max throughput on the recipe's MNNVL path trails the reference by 7.6 %.** RDMA KV
+  transfer closes it to −0.6 % ([walkthrough cases 6 and 8](perf-tuning-walkthrough.md)).
+  Adding the RDMA KV option (mrdma claim with the ipvlan selector, plus `UCX_NET_DEVICES`) to
+  the gpu-recipes values files is the follow-up.
 * **The FP8 max-throughput point (6P1D DEP24) is not measured on GKE yet.** The FP8
   low-latency point at concurrency 8 also needs a rerun: its client failed with "Never
   received a valid chunk".

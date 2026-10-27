@@ -1,0 +1,16 @@
+decode  dsr1-m4-decode-0       c2048        running/rank= 15.7 tok/s/rank=   851 step_ms= 18.5 transfer/rank= 13.2 kv_usage=0.42 retracted=0 cuda_graph_always=True
+decode  dsr1-m4-decode-0       c2048-tuned  running/rank= 14.7 tok/s/rank=   843 step_ms= 17.5 transfer/rank= 14.5 kv_usage=0.42 retracted=0 cuda_graph_always=True
+decode  dsr1-m4-decode-0       c4096        running/rank= 15.2 tok/s/rank=   851 step_ms= 17.8 transfer/rank= 14.6 kv_usage=0.43 retracted=0 cuda_graph_always=True
+decode  dsr1-m4-decode-0       c512         running/rank=  7.3 tok/s/rank=   433 step_ms= 16.8 transfer/rank=  2.9 kv_usage=0.15 retracted=0 cuda_graph_always=True
+decode  dsr1-m4-decode-7       c2048        running/rank= 15.6 tok/s/rank=   851 step_ms= 18.3 transfer/rank= 13.4 kv_usage=0.42 retracted=0 cuda_graph_always=True
+decode  dsr1-m4-decode-7       c2048-tuned  running/rank= 14.8 tok/s/rank=   849 step_ms= 17.5 transfer/rank= 14.3 kv_usage=0.43 retracted=0 cuda_graph_always=True
+decode  dsr1-m4-decode-7       c4096        running/rank= 15.2 tok/s/rank=   853 step_ms= 17.9 transfer/rank= 14.6 kv_usage=0.44 retracted=0 cuda_graph_always=True
+decode  dsr1-m4-decode-7       c512         running/rank=  7.3 tok/s/rank=   432 step_ms= 16.8 transfer/rank=  3.1 kv_usage=0.15 retracted=0 cuda_graph_always=True
+prefill 26md7                  c2048        tok/s/worker=  49232 tok/s/GPU= 12308 batches=376 queue_nonempty=1.00 median_batch_tokens=51104
+prefill 26md7                  c2048-tuned  tok/s/worker=  51499 tok/s/GPU= 12875 batches=246 queue_nonempty=1.00 median_batch_tokens=124832
+prefill 26md7                  c4096        tok/s/worker=  50347 tok/s/GPU= 12587 batches=1022 queue_nonempty=0.49 median_batch_tokens=44384
+prefill 26md7                  c512         tok/s/worker=  26527 tok/s/GPU=  6632 batches=460 queue_nonempty=0.04 median_batch_tokens=7808
+prefill q85c8                  c2048        tok/s/worker=  49164 tok/s/GPU= 12291 batches=374 queue_nonempty=1.00 median_batch_tokens=64032
+prefill q85c8                  c2048-tuned  tok/s/worker=  49241 tok/s/GPU= 12310 batches=207 queue_nonempty=1.00 median_batch_tokens=126016
+prefill q85c8                  c4096        tok/s/worker=  50519 tok/s/GPU= 12630 batches=375 queue_nonempty=1.00 median_batch_tokens=126464
+prefill q85c8                  c512         tok/s/worker=  27930 tok/s/GPU=  6982 batches=357 queue_nonempty=0.13 median_batch_tokens=7808
